@@ -1,36 +1,30 @@
-# annotate types for all arrays involved in RHS evaluation
-mutable struct RefElemData
-    Nfaces; fv # face vertex tuple list
+#####
+##### ordering of faces in terms of vertices
+#####
 
-    # non-RHS operators
-    V1      # low order interp nodes and matrix
-    VDM     # Vandermonde matrix
-    Vp      # interp to equispaced nodes
-
-    r; s; t         # interpolation nodes
-    rq; sq; tq      # volume quadrature
-    rf; sf; tf;     # surface quadrature
-    rp; sp; tp      # plotting nodes
-
-    # quadrature weights
-    wq::Array{Float64,1}
-    wf::Array{Float64,1}
-
-    nrJ; nsJ; ntJ # reference normals
-
-    # differentiation matrices
-    Dr::Array{Float64,2}
-    Ds::Array{Float64,2}
-    Dt::Array{Float64,2}
-    Vq::Array{Float64,2}        # quadrature interpolation matrices
-    Vf::Array{Float64,2}
-    M::Array{Float64,2}         # mass matrix
-    Pq::Array{Float64,2}        # L2 projection matrix
-    LIFT::Array{Float64,2}      # quadrature-based lift matrix
-
-    RefElemData() = new() # empty initializer
+function tri_face_vertices()
+        return [1,2],[2,3],[3,1]
 end
 
+function quad_face_vertices()
+        return [1,2],[2,4],[3,4],[1,3] # ordering matters
+end
+
+function hex_face_vertices()
+        x1D = LinRange(-1,1,2)
+        r, s, t = meshgrid(x1D,x1D,x1D)
+        fv1 = map(x->x[1], findall(@. abs(r+1) < 1e-10))
+        fv2 = map(x->x[1], findall(@. abs(r-1) < 1e-10))
+        fv3 = map(x->x[1], findall(@. abs(s+1) < 1e-10))
+        fv4 = map(x->x[1], findall(@. abs(s-1) < 1e-10))
+        fv5 = map(x->x[1], findall(@. abs(t+1) < 1e-10))
+        fv6 = map(x->x[1], findall(@. abs(t-1) < 1e-10))
+        return fv1,fv2,fv3,fv4,fv5,fv6
+end
+
+#####
+##### initialization of RefElemData
+#####
 
 function init_reference_interval(N;Nq=N+1)
     # initialize a new reference element data struct
@@ -69,9 +63,9 @@ function init_reference_tri(N;Nq=2*N)
     # initialize a new reference element data struct
     rd = RefElemData()
 
-    fv = UniformMeshes.tri_face_vertices() # set faces for triangle
+    fv = tri_face_vertices() # set faces for triangle
     Nfaces = length(fv)
-    @pack! rd = fv, Nfaces
+    @pack! rd = fv
 
     # Construct matrices on reference elements
     r, s = Tri.nodes_2D(N)
@@ -122,9 +116,9 @@ function init_reference_quad(N,quad_nodes_1D = gauss_quad(0,0,N))
     # initialize a new reference element data struct
     rd = RefElemData()
 
-    fv = UniformMeshes.quad_face_vertices() # set faces for triangle
+    fv = quad_face_vertices() # set faces for triangle
     Nfaces = length(fv)
-    @pack! rd = fv, Nfaces
+    @pack! rd = fv
 
     # Construct matrices on reference elements
     r, s = Quad.nodes_2D(N)
@@ -173,14 +167,13 @@ function init_reference_quad(N,quad_nodes_1D = gauss_quad(0,0,N))
     return rd
 end
 
-
 function init_reference_hex(N,quad_nodes_1D=gauss_quad(0,0,N))
     # initialize a new reference element data struct
     rd = RefElemData()
 
-    fv = UniformMeshes.hex_face_vertices() # set faces for triangle
+    fv = hex_face_vertices() # set faces for triangle
     Nfaces = length(fv)
-    @pack! rd = fv, Nfaces
+    @pack! rd = fv
 
     # Construct matrices on reference elements
     r,s,t = Hex.nodes_3D(N)
@@ -221,7 +214,7 @@ function init_reference_hex(N,quad_nodes_1D=gauss_quad(0,0,N))
     @pack! rd = rq,sq,tq,wq,Vq,M,Pq
 
     Vf = Hex.vandermonde_3D(N,rf,sf,tf)/VDM
-    LIFT = M\(Vf'*diagm(wf))    
+    LIFT = M\(Vf'*diagm(wf))
     @pack! rd = Dr,Ds,Dt,Vf,LIFT
 
     # plotting nodes

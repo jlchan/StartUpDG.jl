@@ -1,3 +1,61 @@
+"""
+    function readGmsh2D(filename)
+
+reads GMSH 2D file format 2.2 0 8
+returns EToV,VX,VY
+
+# Examples
+
+EToV,VX,VY = readGmsh2D("eulerSquareCylinder2D.msh")
+
+```jldoctest
+"""
+function readGmsh2D(filename)
+    f = open(filename)
+    lines = readlines(f)
+
+    function findline(name,lines)
+        for (i,line) in enumerate(lines)
+            if line==name
+                return i
+            end
+        end
+    end
+
+    node_start = findline("\$Nodes",lines)+1
+    Nv = parse(Int64,lines[node_start])
+    VX,VY,VZ = ntuple(x->zeros(Float64,Nv),3)
+    for i = 1:Nv
+        vals = [parse(Float64,c) for c in split(lines[i+node_start])]
+        # first entry =
+        VX[i] = vals[2]
+        VY[i] = vals[3]
+    end
+
+    elem_start = findline("\$Elements",lines)+1
+    K_all      = parse(Int64,lines[elem_start])
+    K = 0
+    for e = 1:K_all
+        if length(split(lines[e+elem_start]))==8
+            K = K + 1
+        end
+    end
+    EToV = zeros(Int64,K,3)
+    sk = 1
+    for e = 1:K_all
+        if length(split(lines[e+elem_start]))==8
+            vals = [parse(Int64,c) for c in split(lines[e+elem_start])]
+            EToV[sk,:] .= vals[6:8]
+            sk = sk + 1
+        end
+    end
+
+    EToV = EToV[:,vec([1 3 2])] # permute for Gmsh ordering
+
+    return EToV,VX,VY
+end
+
+
 ###########################
 ### Triangular meshes #####
 ###########################
@@ -34,11 +92,6 @@ end
 function uniform_tri_mesh(Kx)
         return uniform_tri_mesh(Kx,Kx)
 end
-
-function tri_face_vertices()
-        return [1,2],[2,3],[3,1]
-end
-
 
 ##############################
 ### Quadrilateral meshes #####
@@ -82,19 +135,12 @@ function uniform_quad_mesh(Nx,Ny)
 end
 
 function uniform_quad_mesh(Kx)
-        return uniform_quad_mesh(Kx,Ky)
-end
-
-function quad_face_vertices()
-        return [1,2],[2,4],[3,4],[1,3] # ordering matters
+        return uniform_quad_mesh(Kx,Kx)
 end
 
 #############################
 ##### Hexahedral meshes #####
 #############################
-
-export uniform_hex_mesh
-export hex_face_vertices
 
 """
 uniform_hex_mesh(Kx::Int,Ky::Int)
@@ -165,17 +211,4 @@ end
 
 function uniform_hex_mesh(Kx)
         return uniform_hex_mesh(Kx,Kx,Kx)
-end
-
-
-function hex_face_vertices()
-        x1D = LinRange(-1,1,2)
-        r, s, t = meshgrid(x1D,x1D,x1D)
-        fv1 = map(x->x[1], findall(@. abs(r+1) < 1e-10))
-        fv2 = map(x->x[1], findall(@. abs(r-1) < 1e-10))
-        fv3 = map(x->x[1], findall(@. abs(s+1) < 1e-10))
-        fv4 = map(x->x[1], findall(@. abs(s-1) < 1e-10))
-        fv5 = map(x->x[1], findall(@. abs(t+1) < 1e-10))
-        fv6 = map(x->x[1], findall(@. abs(t-1) < 1e-10))
-        return fv1,fv2,fv3,fv4,fv5,fv6
 end
