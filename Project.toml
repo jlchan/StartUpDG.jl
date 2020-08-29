@@ -3,6 +3,11 @@ uuid = "472ebc20-7c99-4d4b-9470-8fde4e9faa0f"
 authors = ["Jesse Chan", "Yimin Lin"]
 version = "0.1.0"
 
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
+VectorizedRoutines = "0e69188a-a5d4-5622-b4e4-a72373136fc5"
+
 [compat]
 julia = "1"
 
