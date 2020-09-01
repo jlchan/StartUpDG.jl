@@ -39,6 +39,7 @@ rd = init_reference_tri(N)
 mutable struct RefElemData
     # annotate types for all arrays involved in RHS evaluation
 
+    Nfaces # num faces
     fv # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
 
     V1      # low order interpolation matrix

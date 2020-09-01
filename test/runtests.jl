@@ -95,8 +95,10 @@ end
 
         # check periodic node connectivity maps
         LX,LY = 2,2
-        mapPB = build_periodic_boundary_maps(xf,yf,LX,LY,Nfaces*K,mapM,mapP,mapB)
-        mapP[mapB] = mapPB
+        build_periodic_boundary_maps!(md,rd,LX,LY)
+        @unpack mapP = md
+        #mapPB = build_periodic_boundary_maps(xf,yf,LX,LY,Nfaces*K,mapM,mapP,mapB)
+        #mapP[mapB] = mapPB
         u = @. sin(pi*(.5+x))*sin(pi*(.5+y))
         uf = Vf*u
         @test uf ≈ uf[mapP]
@@ -107,7 +109,7 @@ end
     tol = 5e2*eps()
 
     N = 2
-    K1D = 1
+    K1D = 2
     init_ref_elem = [init_reference_hex]
     unif_mesh = [uniform_hex_mesh]
     for (init_ref_elem,unif_mesh) in zip(init_ref_elem,unif_mesh)
@@ -159,9 +161,11 @@ end
 
         # check periodic node connectivity maps
         LX,LY,LZ = 2,2,2
-        mapPB = build_periodic_boundary_maps(
-            xf,yf,zf,LX,LY,LZ,Nfaces*K,mapM,mapP,mapB)
-        mapP[mapB] = mapPB
+        build_periodic_boundary_maps!(md,rd,LX,LY,LZ)
+        @unpack mapP = md
+        # mapPB = build_periodic_boundary_maps(
+        #     xf,yf,zf,LX,LY,LZ,Nfaces*K,mapM,mapP,mapB)
+        # mapP[mapB] = mapPB
         u = @. sin(pi*(.5+x))*sin(pi*(.5+y))*sin(pi*(.5+z))
         uf = Vf*u
         @test uf ≈ uf[mapP]

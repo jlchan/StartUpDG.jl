@@ -64,6 +64,17 @@ function build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FT
 
 """
 
+"function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY)
+    dispatch, infer dimension from LX,LY = 2D
+    modifies both mapP and FToF in md::MeshData"
+function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY)
+    @unpack fv,Vf = rd
+    Nfaces = length(fv)
+    @unpack xf,yf,FToF,K,mapM,mapP,mapB = md
+    mapPB = build_periodic_boundary_maps!(xf,yf,LX,LY,Nfaces*K,mapM,mapP,mapB,FToF)
+    mapP[mapB] = mapPB
+end
+
 # version which mods FToF as well
 function build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FToF)
 
@@ -138,8 +149,31 @@ function build_periodic_boundary_maps(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB)
     return mapPB[:]
 end
 
+"function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY,LZ)
+    dispatch, infer dimension from LX,LY,LZ = 3D
+    modifies both mapP and FToF in md::MeshData"
+function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY,LZ)
+    @unpack fv,Vf = rd
+    Nfaces = length(fv)
+    @unpack xf,yf,zf,FToF,K,mapM,mapP,mapB = md
+    mapPB = build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,
+                                          Nfaces*K,mapM,mapP,mapB,FToF)
+    mapP[mapB] = mapPB
+end
+
 "3D version of build_periodic_boundary_maps"
 function build_periodic_boundary_maps(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,mapB)
+    FToF = collect(1:NfacesTotal) # dummy argument
+    mapPB = build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,mapB,FToF)
+    return mapPB[:]
+end
+
+"3D version of build_periodic_boundary_maps, mods FToF"
+function build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,mapB,FToF)
+
+    # find boundary faces (e.g., when FToF[f] = f)
+    Flist = 1:length(FToF)
+    Bfaces = findall(vec(FToF) .== Flist)
 
     xb = xf[mapB]
     yb = yf[mapB]
@@ -177,6 +211,8 @@ function build_periodic_boundary_maps(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,ma
                     D = @. abs(Ya-Yb) + abs(Za-Zb)
                     ids = map(x->x[1],findall(@.D < NODETOL*LY))
                     mapPB[:,i]=mapMB[ids,j]
+
+                    FToF[Bfaces[i]] = Bfaces[j]
                 end
             end
         end
@@ -192,6 +228,8 @@ function build_periodic_boundary_maps(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,ma
                     D = @. abs(Xa-Xb) + abs(Za-Zb)
                     ids = map(x->x[1],findall(@.D < NODETOL*LX))
                     mapPB[:,i]=mapMB[ids,j]
+
+                    FToF[Bfaces[i]] = Bfaces[j]
                 end
             end
         end
@@ -207,6 +245,8 @@ function build_periodic_boundary_maps(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,ma
                     D = @. abs(Xa-Xb) + abs(Ya-Yb)
                     ids = map(x->x[1],findall(@.D < NODETOL*LX))
                     mapPB[:,i]=mapMB[ids,j]
+
+                    FToF[Bfaces[i]] = Bfaces[j]
                 end
             end
         end

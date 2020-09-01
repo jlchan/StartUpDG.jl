@@ -12,7 +12,7 @@ end
 
 function hex_face_vertices()
         x1D = LinRange(-1,1,2)
-        r, s, t = meshgrid(x1D,x1D,x1D)
+        r, s, t = vec.(meshgrid(x1D,x1D,x1D))
         fv1 = map(x->x[1], findall(@. abs(r+1) < 1e-10))
         fv2 = map(x->x[1], findall(@. abs(r-1) < 1e-10))
         fv3 = map(x->x[1], findall(@. abs(s+1) < 1e-10))
@@ -20,6 +20,7 @@ function hex_face_vertices()
         fv5 = map(x->x[1], findall(@. abs(t+1) < 1e-10))
         fv6 = map(x->x[1], findall(@. abs(t-1) < 1e-10))
         return fv1,fv2,fv3,fv4,fv5,fv6
+        # return fv3,fv4,fv1,fv2,fv5,fv6
 end
 
 #####
@@ -29,6 +30,10 @@ end
 function init_reference_interval(N;Nq=N+1)
     # initialize a new reference element data struct
     rd = RefElemData()
+
+    # 2 faces
+    Nfaces = 2
+    @pack! rd = Nfaces
 
     # Construct matrices on reference elements
     r,_ = gauss_lobatto_quad(0,0,N)
@@ -65,7 +70,7 @@ function init_reference_tri(N;Nq=2*N)
 
     fv = tri_face_vertices() # set faces for triangle
     Nfaces = length(fv)
-    @pack! rd = fv
+    @pack! rd = fv, Nfaces
 
     # Construct matrices on reference elements
     r, s = Tri.nodes_2D(N)
@@ -118,7 +123,7 @@ function init_reference_quad(N,quad_nodes_1D = gauss_quad(0,0,N))
 
     fv = quad_face_vertices() # set faces for triangle
     Nfaces = length(fv)
-    @pack! rd = fv
+    @pack! rd = fv, Nfaces
 
     # Construct matrices on reference elements
     r, s = Quad.nodes_2D(N)
@@ -173,7 +178,7 @@ function init_reference_hex(N,quad_nodes_1D=gauss_quad(0,0,N))
 
     fv = hex_face_vertices() # set faces for triangle
     Nfaces = length(fv)
-    @pack! rd = fv
+    @pack! rd = fv, Nfaces
 
     # Construct matrices on reference elements
     r,s,t = Hex.nodes_3D(N)
