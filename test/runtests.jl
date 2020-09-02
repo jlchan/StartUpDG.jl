@@ -3,6 +3,13 @@ using Test
 using UnPack
 using LinearAlgebra
 
+@testset "Other utils" begin
+    @test eye(4)≈I
+
+    EToV,VX,VY = readGmsh2D("squareCylinder2D.msh")
+    @test size(EToV)==(3031,3)
+end
+
 # some code not tested to avoid redundancy from tests in NodesAndModes.
 @testset "Reference elements" begin
     tol = 5e2*eps()

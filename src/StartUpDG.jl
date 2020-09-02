@@ -6,17 +6,16 @@ Module to aid in setting up reference operators, meshes, and geometric terms
 
 module StartUpDG
 
-# non-DG modules
 using LinearAlgebra # for diagm, identity matrix I
-using UnPack # for setting/getting values in RefElemData and MeshData
+export eye # Convenience routine for identity matrices.
+eye(n) = diagm(ones(n))
+
 import VectorizedRoutines.Matlab.meshgrid
 export meshgrid
 
 using NodesAndModes # for basis functions
 
-# Convenience routines for identity matrices.
-export eye
-eye(n) = diagm(ones(n))
+using UnPack # for setting/getting values in RefElemData and MeshData
 
 # containers for reference element and physical data types.
 # these are optional and provided for convenience.
