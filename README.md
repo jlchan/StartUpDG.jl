@@ -5,5 +5,5 @@
 
 Routines to initialize reference element operators, physical mesh arrays, and connectivity for nodal DG methods 
 
-Codes roughly based on Nodal Discontinuous Galerkin methods by Hesthaven and Warburton (2007). Original port from Matlab to Julia by Yimin Lin.
+Codes roughly based on Nodal Discontinuous Galerkin methods by Hesthaven and Warburton (2007). Original port from Matlab to Julia by [Yimin Lin](https://github.com/yiminllin)
 
