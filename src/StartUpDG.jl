@@ -44,4 +44,13 @@ export uniform_quad_mesh, uniform_tri_mesh, uniform_hex_mesh
 export tri_face_vertices, quad_face_vertices, hex_face_vertices
 include("mesh_utils.jl")
 
+# submodule for explicit time-stepping included for convenience
+module ExplicitTimestepUtils
+import ..@unpack
+export bcopy!, bmult
+export ck45, dp56 # carpenter/kennedy and dormand/prince
+export PIparams, init_PI_controller, compute_adaptive_dt # for embedded RK methods like dp56()
+include("explicit_timestep_utils.jl")
+end
+
 end

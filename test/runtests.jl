@@ -4,10 +4,29 @@ using UnPack
 using LinearAlgebra
 
 @testset "Other utils" begin
+    tol = 5e2*eps()
+
     @test eye(4)≈I
 
     EToV,VX,VY = readGmsh2D("squareCylinder2D.msh")
     @test size(EToV)==(3031,3)
+
+    using StartUpDG.ExplicitTimestepUtils
+    a = ntuple(x->randn(2,3),3)
+    b = ntuple(x->randn(2,3),3)
+    bcopy!.(a,b)
+    @test a==b
+
+    # feed zero rhs to PI controller = max timestep, errEst = 0
+    rka,rkE,rkc = dp56()
+    PI = init_PI_controller(5)
+    Q = (randn(2,4),randn(2,4))
+    rhsQrk = ntuple(x->zero.(Q),length(rkE))
+    accept_step, dt_new, errEst =
+        compute_adaptive_dt(Q,rhsQrk,1.0,rkE,PI)
+    @test accept_step == true
+    @test dt_new == PI.dtmax
+    @test abs(errEst) < tol
 end
 
 # some code not tested to avoid redundancy from tests in NodesAndModes.
