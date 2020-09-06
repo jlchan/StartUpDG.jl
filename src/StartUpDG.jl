@@ -45,6 +45,7 @@ export tri_face_vertices, quad_face_vertices, hex_face_vertices
 include("mesh_utils.jl")
 
 # submodule for explicit time-stepping included for convenience
+export ExplicitTimestepUtils
 module ExplicitTimestepUtils
 import ..@unpack
 export bcopy!, bmult
