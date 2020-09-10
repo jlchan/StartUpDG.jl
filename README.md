@@ -9,9 +9,7 @@ Codes roughly based on Nodal Discontinuous Galerkin (NDG) methods by Hesthaven a
 
 # Usage
 
-Variables are contained within (mutable) convenience structs `rd::RefElemData` and `md::MeshData`. In terms of the NDG book codes, these structs contain variables from `Globals1D, Globals2D, Globals3D`. Variables can be unpacked from (and repacked into) `rd::RefElemData` and `md::MeshData` using `@unpack` from [UnPack](https://github.com/mauro3/UnPack.jl).
-
-Example
+Variables are contained within (mutable) convenience structs `rd::RefElemData` and `md::MeshData`. In terms of the NDG book codes, these structs contain variables from `Globals1D, Globals2D, Globals3D`. Variables can be unpacked from (and repacked into) `rd::RefElemData` and `md::MeshData` using [`@unpack`](https://github.com/mauro3/UnPack.jl).
 
 ```
 using StartUpDG
