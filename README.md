@@ -13,7 +13,6 @@ Variables are contained within (mutable) convenience structs `rd::RefElemData` a
 
 ```
 using StartUpDG
-using UnPack
 
 # polynomial degree and mesh size
 N = 3
