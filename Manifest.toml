@@ -83,8 +83,8 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[NodesAndModes]]
 deps = ["DelimitedFiles", "LinearAlgebra", "SpecialFunctions", "VectorizedRoutines"]
-git-tree-sha1 = "907b0a623c3fb232b949662f317a3bbb3ed67097"
-repo-rev = "master"
+git-tree-sha1 = "bdc5e748839313da75bfb03d0635f0ce64e5e695"
+repo-rev = "dev"
 repo-url = "https://github.com/jlchan/NodesAndModes.jl"
 uuid = "7aca2e03-f7e2-4192-9ec8-f4ca66d597fb"
 version = "0.2.0"
