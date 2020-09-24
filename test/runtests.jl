@@ -1,6 +1,5 @@
 using StartUpDG
 using Test
-using UnPack
 using LinearAlgebra
 
 @testset "Other utils" begin

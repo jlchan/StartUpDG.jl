@@ -6,6 +6,9 @@ Module to aid in setting up reference operators, meshes, and geometric terms
 
 module StartUpDG
 
+import UnPack: @unpack
+export @unpack 
+
 using LinearAlgebra # for diagm, identity matrix I
 export eye # Convenience routine for identity matrices.
 eye(n) = diagm(ones(n))
