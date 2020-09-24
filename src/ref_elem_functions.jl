@@ -3,11 +3,25 @@
 #####
 
 function tri_face_vertices()
-        return [1,2],[2,3],[3,1]
+        #return [1,2],[2,3],[3,1]
+        # return [1,3],[3,2],[2,1]
+        tol = 5e2*eps()
+        r,s = Tri.nodes(1)
+        e1 = findall(@. abs(s+1)<tol)
+        e2 = findall(@. abs(r+s)<tol)
+        e3 = findall(@. abs(r+1)<tol)
+        return e1,e2,e3
 end
 
 function quad_face_vertices()
-        return [1,2],[2,4],[3,4],[1,3] # ordering matters
+        #return [1,2],[2,4],[3,4],[1,3] # ordering matters
+        tol = 5e2*eps()
+        r,s = Quad.nodes(1)
+        e1 = findall(@. abs(s+1)<tol)
+        e2 = findall(@. abs(r-1)<tol)
+        e3 = findall(@. abs(s-1)<tol)
+        e4 = findall(@. abs(r+1)<tol)
+        return e1,e2,e3,e4
 end
 
 function hex_face_vertices()
