@@ -37,28 +37,28 @@ function init_reference_interval(N;Nq=N+1)
 
     # Construct matrices on reference elements
     r,_ = gauss_lobatto_quad(0,0,N)
-    VDM = vandermonde_1D(N, r)
-    Dr = grad_vandermonde_1D(N, r)/VDM
+    VDM = Line.vandermonde(N, r)
+    Dr = Line.grad_vandermonde(N, r)/VDM
     @pack! rd = r,VDM,Dr
 
-    V1 = vandermonde_1D(1,r)/vandermonde_1D(1,[-1;1])
+    V1 = Line.vandermonde(1,r)/Line.vandermonde(1,[-1;1])
     @pack! rd = V1
 
     rq,wq = gauss_quad(0,0,Nq)
-    Vq = vandermonde_1D(N, rq)/VDM
+    Vq = Line.vandermonde(N, rq)/VDM
     M = Vq'*diagm(wq)*Vq
     Pq = M\(Vq'*diagm(wq))
     @pack! rd = rq,wq,Vq,M,Pq
 
     rf = [-1.0;1.0]
     nrJ = [-1.0;1.0]
-    Vf = vandermonde_1D(N,rf)/VDM
+    Vf = Line.vandermonde(N,rf)/VDM
     LIFT = M\(Vf') # lift matrix
     @pack! rd = rf,nrJ,Vf,LIFT
 
     # plotting nodes
     rp = LinRange(-1,1,50)
-    Vp = vandermonde_1D(N,rp)/VDM
+    Vp = Line.vandermonde(N,rp)/VDM
     @pack! rd = rp,Vp
 
     return rd
@@ -73,16 +73,16 @@ function init_reference_tri(N;Nq=2*N)
     @pack! rd = fv, Nfaces
 
     # Construct matrices on reference elements
-    r, s = Tri.nodes_2D(N)
-    VDM = Tri.vandermonde_2D(N, r, s)
-    Vr, Vs = Tri.grad_vandermonde_2D(N, r, s)
+    r, s = Tri.nodes(N)
+    VDM = Tri.vandermonde(N, r, s)
+    Vr, Vs = Tri.grad_vandermonde(N, r, s)
     Dr = Vr/VDM
     Ds = Vs/VDM
     @pack! rd = r,s,VDM,Dr,Ds
 
     # low order interpolation nodes
-    r1,s1 = Tri.nodes_2D(1)
-    V1 = Tri.vandermonde_2D(1,r,s)/Tri.vandermonde_2D(1,r1,s1)
+    r1,s1 = Tri.nodes(1)
+    V1 = Tri.vandermonde(1,r,s)/Tri.vandermonde(1,r1,s1)
     @pack! rd = V1
 
     #Nodes on faces, and face node coordinate
@@ -97,19 +97,19 @@ function init_reference_tri(N;Nq=2*N)
     nsJ = [-e; e; z]
     @pack! rd = rf,sf,wf,nrJ,nsJ
 
-    rq,sq,wq = Tri.quad_nodes_2D(Nq)
-    Vq = Tri.vandermonde_2D(N,rq,sq)/VDM
+    rq,sq,wq = Tri.quad_nodes(Nq)
+    Vq = Tri.vandermonde(N,rq,sq)/VDM
     M = Vq'*diagm(wq)*Vq
     Pq = M\(Vq'*diagm(wq))
     @pack! rd = rq,sq,wq,Vq,M,Pq
 
-    Vf = Tri.vandermonde_2D(N,rf,sf)/VDM # interpolates from nodes to face nodes
+    Vf = Tri.vandermonde(N,rf,sf)/VDM # interpolates from nodes to face nodes
     LIFT = M\(Vf'*diagm(wf)) # lift matrix used in rhs evaluation
     @pack! rd = Vf,LIFT
 
     # plotting nodes
-    rp, sp = Tri.equi_nodes_2D(10)
-    Vp = Tri.vandermonde_2D(N,rp,sp)/VDM
+    rp, sp = Tri.equi_nodes(10)
+    Vp = Tri.vandermonde(N,rp,sp)/VDM
     @pack! rd = rp,sp,Vp
 
     return rd
@@ -126,16 +126,16 @@ function init_reference_quad(N,quad_nodes_1D = gauss_quad(0,0,N))
     @pack! rd = fv, Nfaces
 
     # Construct matrices on reference elements
-    r, s = Quad.nodes_2D(N)
-    VDM = Quad.vandermonde_2D(N, r, s)
-    Vr, Vs = Quad.grad_vandermonde_2D(N, r, s)
+    r, s = Quad.nodes(N)
+    VDM = Quad.vandermonde(N, r, s)
+    Vr, Vs = Quad.grad_vandermonde(N, r, s)
     Dr = Vr/VDM
     Ds = Vs/VDM
     @pack! rd = r,s,VDM
 
     # low order interpolation nodes
-    r1,s1 = Quad.nodes_2D(1)
-    V1 = Quad.vandermonde_2D(1,r,s)/Quad.vandermonde_2D(1,r1,s1)
+    r1,s1 = Quad.nodes(1)
+    V1 = Quad.vandermonde(1,r,s)/Quad.vandermonde(1,r1,s1)
     @pack! rd = V1
 
     #Nodes on faces, and face node coordinate
@@ -151,22 +151,22 @@ function init_reference_quad(N,quad_nodes_1D = gauss_quad(0,0,N))
     @pack! rd = rf,sf,wf,nrJ,nsJ
 
     # quadrature nodes - build from 1D nodes.
-    # can also use "rq,sq,wq = Quad.quad_nodes_2D(2*N)"
+    # can also use "rq,sq,wq = Quad.quad_nodes(2*N)"
     rq,sq = vec.(meshgrid(r1D))
     wr,ws = vec.(meshgrid(w1D))
     wq = wr .* ws
-    Vq = Quad.vandermonde_2D(N,rq,sq)/VDM
+    Vq = Quad.vandermonde(N,rq,sq)/VDM
     M = Vq'*diagm(wq)*Vq
     Pq = M\(Vq'*diagm(wq))
     @pack! rd = rq,sq,wq,Vq,M,Pq
 
-    Vf = Quad.vandermonde_2D(N,rf,sf)/VDM # interpolates from nodes to face nodes
+    Vf = Quad.vandermonde(N,rf,sf)/VDM # interpolates from nodes to face nodes
     LIFT = M\(Vf'*diagm(wf)) # lift matrix used in rhs evaluation
     @pack! rd = Dr,Ds,Vf,LIFT
 
     # plotting nodes
-    rp, sp = Quad.equi_nodes_2D(15)
-    Vp = Quad.vandermonde_2D(N,rp,sp)/VDM
+    rp, sp = Quad.equi_nodes(15)
+    Vp = Quad.vandermonde(N,rp,sp)/VDM
     @pack! rd = rp,sp,Vp
 
     return rd
@@ -181,15 +181,15 @@ function init_reference_hex(N,quad_nodes_1D=gauss_quad(0,0,N))
     @pack! rd = fv, Nfaces
 
     # Construct matrices on reference elements
-    r,s,t = Hex.nodes_3D(N)
-    VDM = Hex.vandermonde_3D(N,r,s,t)
-    Vr,Vs,Vt = Hex.grad_vandermonde_3D(N,r,s,t)
-    Dr,Ds,Dt = (A->A/VDM).(Hex.grad_vandermonde_3D(N,r,s,t))
+    r,s,t = Hex.nodes(N)
+    VDM = Hex.vandermonde(N,r,s,t)
+    Vr,Vs,Vt = Hex.grad_vandermonde(N,r,s,t)
+    Dr,Ds,Dt = (A->A/VDM).(Hex.grad_vandermonde(N,r,s,t))
     @pack! rd = r,s,t,VDM
 
     # low order interpolation nodes
-    r1,s1,t1 = Hex.nodes_3D(1)
-    V1 = Hex.vandermonde_3D(1,r,s,t)/Hex.vandermonde_3D(1,r1,s1,t1)
+    r1,s1,t1 = Hex.nodes(1)
+    V1 = Hex.vandermonde(1,r,s,t)/Hex.vandermonde(1,r1,s1,t1)
     @pack! rd = V1
 
     #Nodes on faces, and face node coordinate
@@ -213,18 +213,18 @@ function init_reference_hex(N,quad_nodes_1D=gauss_quad(0,0,N))
     rq,sq,tq = vec.(meshgrid(r1D,r1D,r1D))
     wr,ws,wt = vec.(meshgrid(w1D,w1D,w1D))
     wq = wr.*ws.*wt
-    Vq = Hex.vandermonde_3D(N,rq,sq,tq)/VDM
+    Vq = Hex.vandermonde(N,rq,sq,tq)/VDM
     M = Vq'*diagm(wq)*Vq
     Pq = M\(Vq'*diagm(wq))
     @pack! rd = rq,sq,tq,wq,Vq,M,Pq
 
-    Vf = Hex.vandermonde_3D(N,rf,sf,tf)/VDM
+    Vf = Hex.vandermonde(N,rf,sf,tf)/VDM
     LIFT = M\(Vf'*diagm(wf))
     @pack! rd = Dr,Ds,Dt,Vf,LIFT
 
     # plotting nodes
-    rp,sp,tp = Hex.equi_nodes_3D(15)
-    Vp = Hex.vandermonde_3D(N,rp,sp,tp)/VDM
+    rp,sp,tp = Hex.equi_nodes(15)
+    Vp = Hex.vandermonde(N,rp,sp,tp)/VDM
     @pack! rd = rp,sp,tp,Vp
 
     return rd
