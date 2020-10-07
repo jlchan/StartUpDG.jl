@@ -61,8 +61,21 @@ function build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FT
     returns mapPB, such that
         mapP[mapB] = mapPB modifies mapP to produce a periodic node map
     optional: modifies FToF to get periodic boundary face map (for implicit)
-
 """
+
+"function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX)
+    dispatch, infer dimension from LX = 1D
+    modifies both mapP and FToF in md::MeshData"
+function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX)
+    @unpack xf,mapM,mapP = md
+
+    # Make periodic
+    idL,idR = argmin(xf), argmax(xf)
+    mapP[idL] = mapM[idR]
+    mapP[idR] = mapM[idL]
+
+    @pack! md = mapM,mapP
+end
 
 "function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY)
     dispatch, infer dimension from LX,LY = 2D

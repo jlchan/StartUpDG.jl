@@ -47,7 +47,8 @@ function init_reference_interval(N;Nq=N+1)
 
     # 2 faces
     Nfaces = 2
-    @pack! rd = Nfaces
+    fv = [1,2]
+    @pack! rd = Nfaces,fv
 
     # Construct matrices on reference elements
     r,_ = gauss_lobatto_quad(0,0,N)
@@ -66,9 +67,10 @@ function init_reference_interval(N;Nq=N+1)
 
     rf = [-1.0;1.0]
     nrJ = [-1.0;1.0]
+    wf = [1.0;1.0]
     Vf = Line.vandermonde(N,rf)/VDM
     LIFT = M\(Vf') # lift matrix
-    @pack! rd = rf,nrJ,Vf,LIFT
+    @pack! rd = rf,wf,nrJ,Vf,LIFT
 
     # plotting nodes
     rp = LinRange(-1,1,50)

@@ -72,6 +72,51 @@ end
     @test rd.Pq*rd.Vq ≈ I
 end
 
+@testset "1D mesh initialization" begin
+    tol = 5e2*eps()
+
+    N = 3
+    K1D = 2
+    rd = init_reference_interval(N)
+    VX,EToV = uniform_1D_mesh(K1D)
+    md = init_DG_mesh(VX,EToV,rd)
+    @unpack wq,Dr,Vq,Vf,wf = rd
+    @unpack Nfaces = rd
+    @unpack x,xq,xf,K = md
+    @unpack rxJ,J,nxJ,wJq = md
+    @unpack mapM,mapP,mapB = md
+
+    # check differentiation
+    u = @. x^2 + 2*x
+    dudx_exact = @. 2*x + 2
+    dudr = Dr*u
+    dudx = (rxJ.*dudr)./J
+    @test dudx ≈ dudx_exact
+
+    # check volume integration
+    @test Vq*x ≈ xq
+    @test diagm(wq)*(Vq*J) ≈ wJq
+    @test abs(sum(xq.*wJq)) < tol
+
+    # check surface integration
+    @test Vf*x ≈ xf
+    @test abs(sum(nxJ)) < tol
+
+    # check connectivity and boundary maps
+    u = @. (1-x)*(1+x)
+    uf = Vf*u
+    @test uf ≈ uf[mapP]
+    @test norm(uf[mapB]) < tol
+
+    # check periodic node connectivity maps
+    LX = 2
+    build_periodic_boundary_maps!(md,rd,LX)
+    @unpack mapP = md
+    u = @. sin(pi*(.5+x))
+    uf = Vf*u
+    @test uf ≈ uf[mapP]
+end
+
 @testset "2D tri mesh initialization" begin
     tol = 5e2*eps()
 

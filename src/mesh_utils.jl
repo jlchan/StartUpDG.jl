@@ -55,6 +55,16 @@ function readGmsh2D(filename)
     return EToV,VX,VY
 end
 
+###########################
+#####     1D mesh     #####
+###########################
+
+function uniform_1D_mesh(K1D)
+        VX = collect(LinRange(-1,1,K1D+1))
+        EToV = transpose(reshape(sort([1:K1D; 2:K1D+1]),2,K1D))
+        return VX,EToV
+end
+
 
 ###########################
 ### Triangular meshes #####

@@ -37,10 +37,59 @@ end
 
 
 # dispatch to 2D or 3D version if tuple called
-function init_DG_mesh(VXYZ,EToV,rd::RefElemData)
+function init_DG_mesh(VXYZ::Tuple,EToV,rd::RefElemData)
     return init_DG_mesh(VXYZ...,EToV,rd)
 end
 
+
+"
+function init_DG_mesh(VX::AbstractArray,EToV,rd::RefElemData)
+    init DG mesh in 1D
+"
+# distinguish 1D mesh construction from 2D/3D
+# assumes VX is ordered left-to-right
+function init_DG_mesh(VX::AbstractArray,EToV,rd::RefElemData)
+    md = MeshData()
+
+    # Construct global coordinates
+    @unpack V1 = rd
+    x = V1*VX[transpose(EToV)]
+    K = size(EToV,1)
+    @pack! md = K,x
+
+    # Connectivity maps
+    @unpack Vf = rd
+    xf = Vf*x
+    mapM = reshape(1:2*K,2,K)
+    mapP = copy(mapM)
+    mapP[1,2:end] .= mapM[2,1:end-1]
+    mapP[2,1:end-1] .= mapM[1,2:end]
+    mapB = findall(@. mapM[:]==mapP[:])
+    @pack! md = xf,mapM,mapP,mapB
+
+    # # Make periodic
+    # mapP[1] = mapM[end]
+    # mapP[end] = mapM[1]
+
+    # Geometric factors and surface normals
+    J = repeat(transpose(diff(VX)/2),length(rd.r),1)
+    rxJ = one.(J)
+    nxJ = repeat([-1;1],1,K)
+    sJ = abs.(nxJ)
+    @pack! md = J,rxJ,nxJ,sJ
+
+    @unpack Vq,wq = rd
+    xq = Vq*x
+    wJq = diagm(wq)*(Vq*J)
+    @pack! md = xq,wJq
+
+    return md
+end
+
+"
+function init_DG_mesh(VX,VY,EToV,rd::RefElemData)
+    init DG mesh in 2D
+"
 function init_DG_mesh(VX,VY,EToV,rd::RefElemData)
     # initialize a new mesh data struct
     md = MeshData()
@@ -85,7 +134,9 @@ function init_DG_mesh(VX,VY,EToV,rd::RefElemData)
     return md
 end
 
-"init mesh in 3D"
+"function init_DG_mesh(VX,VY,VZ,EToV,rd::RefElemData)
+    init mesh in 3D
+"
 function init_DG_mesh(VX,VY,VZ,EToV,rd::RefElemData)
     # initialize a new mesh data struct
     md = MeshData()

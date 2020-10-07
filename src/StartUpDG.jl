@@ -41,7 +41,7 @@ include("./node_connectivity_functions.jl")
 
 # uniform meshes + face vertex orderings are included
 export readGmsh2D
-export uniform_quad_mesh, uniform_tri_mesh, uniform_hex_mesh
+export uniform_1D_mesh, uniform_quad_mesh, uniform_tri_mesh, uniform_hex_mesh
 export tri_face_vertices, quad_face_vertices, hex_face_vertices
 include("mesh_utils.jl")
 
