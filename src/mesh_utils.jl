@@ -79,20 +79,20 @@ Matlab uniform triangular mesh.
 ```jldoctest
 ```
 """
-
 function uniform_tri_mesh(Kx,Ky)
+
         (VY, VX) = meshgrid(LinRange(-1,1,Ky+1),LinRange(-1,1,Kx+1))
         sk = 1
         EToV = zeros(Int,2*Kx*Ky,3)
         for ey = 1:Ky
                 for ex = 1:Kx
                         id(ex,ey) = ex + (ey-1)*(Kx+1) # index function
-                        id1 = id(ex,ey);
-                        id2 = id(ex+1,ey);
-                        id3 = id(ex+1,ey+1);
-                        id4 = id(ex,ey+1);
-                        EToV[2*sk-1,:] = [id1 id2 id3];
-                        EToV[2*sk,:] = [id3 id4 id1];
+                        id1 = id(ex,ey)
+                        id2 = id(ex+1,ey)
+                        id3 = id(ex+1,ey+1)
+                        id4 = id(ex,ey+1)
+                        EToV[2*sk-1,:] = [id1 id3 id2]
+                        EToV[2*sk,:]   = [id3 id1 id4]
                         sk += 1
                 end
         end
@@ -202,13 +202,21 @@ function uniform_hex_mesh(Nx,Ny,Nz)
                 j = div(em - k*Nx*Ny,Nx)
                 i = em % Nx
 
+                # EToV[e,1] = i     + Nxp*j     + Nxp*Nyp*k
+                # EToV[e,2] = (i+1) + Nxp*j     + Nxp*Nyp*k
+                # EToV[e,3] = i     + Nxp*(j+1) + Nxp*Nyp*k
+                # EToV[e,4] = (i+1) + Nxp*(j+1) + Nxp*Nyp*k
+                # EToV[e,5] = i     + Nxp*j     + Nxp*Nyp*(k+1)
+                # EToV[e,6] = (i+1) + Nxp*j     + Nxp*Nyp*(k+1)
+                # EToV[e,7] = i     + Nxp*(j+1) + Nxp*Nyp*(k+1)
+                # EToV[e,8] = (i+1) + Nxp*(j+1) + Nxp*Nyp*(k+1)
                 EToV[e,1] = i     + Nxp*j     + Nxp*Nyp*k
-                EToV[e,2] = (i+1) + Nxp*j     + Nxp*Nyp*k
-                EToV[e,3] = i     + Nxp*(j+1) + Nxp*Nyp*k
+                EToV[e,2] = i     + Nxp*(j+1) + Nxp*Nyp*k
+                EToV[e,3] = (i+1) + Nxp*j     + Nxp*Nyp*k
                 EToV[e,4] = (i+1) + Nxp*(j+1) + Nxp*Nyp*k
                 EToV[e,5] = i     + Nxp*j     + Nxp*Nyp*(k+1)
-                EToV[e,6] = (i+1) + Nxp*j     + Nxp*Nyp*(k+1)
-                EToV[e,7] = i     + Nxp*(j+1) + Nxp*Nyp*(k+1)
+                EToV[e,6] = i     + Nxp*(j+1) + Nxp*Nyp*(k+1)
+                EToV[e,7] = (i+1) + Nxp*j     + Nxp*Nyp*(k+1)
                 EToV[e,8] = (i+1) + Nxp*(j+1) + Nxp*Nyp*(k+1)
         end
         EToV = @. EToV + 1 # re-index to 1 index

@@ -86,6 +86,9 @@ end
     @unpack rxJ,J,nxJ,wJq = md
     @unpack mapM,mapP,mapB = md
 
+    # check positivity of Jacobian
+    @test all(J .> 0)
+
     # check differentiation
     u = @. x^2 + 2*x
     dudx_exact = @. 2*x + 2
@@ -131,6 +134,10 @@ end
     @unpack rxJ,sxJ,ryJ,syJ,J,nxJ,nyJ,sJ,wJq = md
     @unpack FToF,mapM,mapP,mapB = md
 
+    # check positivity of Jacobian
+    # @show J[1,:]
+    @test all(J .> 0)
+
     # check differentiation
     u = @. x^2 + 2*x*y - y^2
     dudx_exact = @. 2*x + 2*y
@@ -151,8 +158,9 @@ end
     # check surface integration
     @test Vf*x ≈ xf
     @test Vf*y ≈ yf
-    @test abs(sum(diagm(wf)*nxJ)) < tol
-    @test abs(sum(diagm(wf)*nyJ)) < tol
+    @test abs(sum(wf.*nxJ)) < tol
+    @test abs(sum(wf.*nyJ)) < tol
+    @test sum(@. wf*nxJ*(1+xf)/2) ≈ 2.0 # check sign of normals
 
     # check connectivity and boundary maps
     u = @. (1-x)*(1+x)*(1-y)*(1+y)
@@ -185,6 +193,9 @@ end
     @unpack rxJ,sxJ,ryJ,syJ,J,nxJ,nyJ,sJ,wJq = md
     @unpack FToF,mapM,mapP,mapB = md
 
+    # check positivity of Jacobian
+    @test all(J .> 0)
+
     # check differentiation
     u = @. x^2 + 2*x*y - y^2
     dudx_exact = @. 2*x + 2*y
@@ -207,6 +218,7 @@ end
     @test Vf*y ≈ yf
     @test abs(sum(diagm(wf)*nxJ)) < tol
     @test abs(sum(diagm(wf)*nyJ)) < tol
+    @test sum(@. wf*nxJ*(1+xf)/2) ≈ 2.0 # check sign of normals
 
     # check connectivity and boundary maps
     u = @. (1-x)*(1+x)*(1-y)*(1+y)
@@ -240,6 +252,10 @@ end
         @unpack rxJ,sxJ,txJ,ryJ,syJ,tyJ,rzJ,szJ,tzJ,J = md
         @unpack nxJ,nyJ,nzJ,sJ = md
         @unpack FToF,mapM,mapP,mapB = md
+
+        # check positivity of Jacobian
+        # @show J[1,:]
+        @test all(J .> 0)
 
         # check differentiation
         u = @. x^2 + 2*x*y - y^2 + x*y*z
