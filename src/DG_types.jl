@@ -1,3 +1,14 @@
+# abstract type AbstractRefElem end
+#
+# struct RefElem1D
+# end
+#
+# struct RefElem2D
+# end
+#
+# struct RefElem3D
+# end
+
 "RefElemData: contains info on a general 3D reference element.
 For 1D and 2D reference elements, some fields may be unused.
 
