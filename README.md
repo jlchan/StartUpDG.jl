@@ -1,6 +1,7 @@
 # StartUpDG
 [![Build Status](https://travis-ci.com/jlchan/StartUpDG.jl.svg?branch=master)](https://travis-ci.com/jlchan/StartUpDG.jl)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/jlchan/StartUpDG.jl?svg=true)](https://ci.appveyor.com/project/jlchan/StartUpDG-jl)
+[![Build status](https://github.com/jlchan/StartUpDG.jl/workflows/CI/badge.svg)](https://github.com/jlchan/StartUpDG.jl/actions)
 [![Codecov](https://codecov.io/gh/jlchan/StartUpDG.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/jlchan/StartUpDG.jl)
 
 Routines to initialize reference element operators, physical mesh arrays, and connectivity for nodal DG methods
