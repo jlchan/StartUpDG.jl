@@ -6,7 +6,7 @@ function tri_face_vertices()
         #return [1,2],[2,3],[3,1]
         # return [1,3],[3,2],[2,1]
         tol = 5e2*eps()
-        r,s = Tri.nodes(1)
+        r,s = nodes(Tri(),1)
         e1 = findall(@. abs(s+1)<tol)
         e2 = findall(@. abs(r+s)<tol)
         e3 = findall(@. abs(r+1)<tol)
@@ -16,7 +16,7 @@ end
 function quad_face_vertices()
         #return [1,2],[2,4],[3,4],[1,3] # ordering matters
         tol = 5e2*eps()
-        r,s = Quad.nodes(1)
+        r,s = nodes(Quad(),1)
         e1 = findall(@. abs(s+1)<tol)
         e2 = findall(@. abs(r-1)<tol)
         e3 = findall(@. abs(s-1)<tol)
@@ -52,15 +52,15 @@ function init_reference_interval(N;Nq=N+1)
 
     # Construct matrices on reference elements
     r,_ = gauss_lobatto_quad(0,0,N)
-    VDM = Line.vandermonde(N, r)
-    Dr = Line.grad_vandermonde(N, r)/VDM
+    VDM = vandermonde(Line(),N, r)
+    Dr = grad_vandermonde(Line(),N, r)/VDM
     @pack! rd = r,VDM,Dr
 
-    V1 = Line.vandermonde(1,r)/Line.vandermonde(1,[-1;1])
+    V1 = vandermonde(Line(),1,r)/vandermonde(Line(),1,[-1;1])
     @pack! rd = V1
 
     rq,wq = gauss_quad(0,0,Nq)
-    Vq = Line.vandermonde(N, rq)/VDM
+    Vq = vandermonde(Line(),N, rq)/VDM
     M = Vq'*diagm(wq)*Vq
     Pq = M\(Vq'*diagm(wq))
     @pack! rd = rq,wq,Vq,M,Pq
@@ -68,13 +68,13 @@ function init_reference_interval(N;Nq=N+1)
     rf = [-1.0;1.0]
     nrJ = [-1.0;1.0]
     wf = [1.0;1.0]
-    Vf = Line.vandermonde(N,rf)/VDM
+    Vf = vandermonde(Line(),N,rf)/VDM
     LIFT = M\(Vf') # lift matrix
     @pack! rd = rf,wf,nrJ,Vf,LIFT
 
     # plotting nodes
     rp = LinRange(-1,1,50)
-    Vp = Line.vandermonde(N,rp)/VDM
+    Vp = vandermonde(Line(),N,rp)/VDM
     @pack! rd = rp,Vp
 
     return rd
@@ -89,16 +89,15 @@ function init_reference_tri(N;Nq=2*N)
     @pack! rd = fv, Nfaces
 
     # Construct matrices on reference elements
-    r, s = Tri.nodes(N)
-    VDM = Tri.vandermonde(N, r, s)
-    Vr, Vs = Tri.grad_vandermonde(N, r, s)
+    r, s = nodes(Tri(),N)
+    VDM,Vr,Vs = basis(Tri(),N, r, s)
     Dr = Vr/VDM
     Ds = Vs/VDM
     @pack! rd = r,s,VDM,Dr,Ds
 
     # low order interpolation nodes
-    r1,s1 = Tri.nodes(1)
-    V1 = Tri.vandermonde(1,r,s)/Tri.vandermonde(1,r1,s1)
+    r1,s1 = nodes(Tri(),1)
+    V1 = vandermonde(Tri(),1,r,s)/vandermonde(Tri(),1,r1,s1)
     @pack! rd = V1
 
     #Nodes on faces, and face node coordinate
@@ -113,19 +112,19 @@ function init_reference_tri(N;Nq=2*N)
     nsJ = [-e; e; z]
     @pack! rd = rf,sf,wf,nrJ,nsJ
 
-    rq,sq,wq = Tri.quad_nodes(Nq)
-    Vq = Tri.vandermonde(N,rq,sq)/VDM
+    rq,sq,wq = quad_nodes(Tri(),Nq)
+    Vq = vandermonde(Tri(),N,rq,sq)/VDM
     M = Vq'*diagm(wq)*Vq
     Pq = M\(Vq'*diagm(wq))
     @pack! rd = rq,sq,wq,Vq,M,Pq
 
-    Vf = Tri.vandermonde(N,rf,sf)/VDM # interpolates from nodes to face nodes
+    Vf = vandermonde(Tri(),N,rf,sf)/VDM # interpolates from nodes to face nodes
     LIFT = M\(Vf'*diagm(wf)) # lift matrix used in rhs evaluation
     @pack! rd = Vf,LIFT
 
     # plotting nodes
-    rp, sp = Tri.equi_nodes(10)
-    Vp = Tri.vandermonde(N,rp,sp)/VDM
+    rp, sp = equi_nodes(Tri(),10)
+    Vp = vandermonde(Tri(),N,rp,sp)/VDM
     @pack! rd = rp,sp,Vp
 
     return rd
@@ -142,16 +141,15 @@ function init_reference_quad(N,quad_nodes_1D = gauss_quad(0,0,N))
     @pack! rd = fv, Nfaces
 
     # Construct matrices on reference elements
-    r, s = Quad.nodes(N)
-    VDM = Quad.vandermonde(N, r, s)
-    Vr, Vs = Quad.grad_vandermonde(N, r, s)
+    r, s = nodes(Quad(),N)
+    VDM,Vr,Vs = basis(Quad(),N, r, s)
     Dr = Vr/VDM
     Ds = Vs/VDM
     @pack! rd = r,s,VDM
 
     # low order interpolation nodes
-    r1,s1 = Quad.nodes(1)
-    V1 = Quad.vandermonde(1,r,s)/Quad.vandermonde(1,r1,s1)
+    r1,s1 = nodes(Quad(),1)
+    V1 = vandermonde(Quad(),1,r,s)/vandermonde(Quad(),1,r1,s1)
     @pack! rd = V1
 
     #Nodes on faces, and face node coordinate
@@ -167,22 +165,21 @@ function init_reference_quad(N,quad_nodes_1D = gauss_quad(0,0,N))
     @pack! rd = rf,sf,wf,nrJ,nsJ
 
     # quadrature nodes - build from 1D nodes.
-    # can also use "rq,sq,wq = Quad.quad_nodes(2*N)"
     rq,sq = vec.(meshgrid(r1D))
     wr,ws = vec.(meshgrid(w1D))
     wq = wr .* ws
-    Vq = Quad.vandermonde(N,rq,sq)/VDM
+    Vq = vandermonde(Quad(),N,rq,sq)/VDM
     M = Vq'*diagm(wq)*Vq
     Pq = M\(Vq'*diagm(wq))
     @pack! rd = rq,sq,wq,Vq,M,Pq
 
-    Vf = Quad.vandermonde(N,rf,sf)/VDM # interpolates from nodes to face nodes
+    Vf = vandermonde(Quad(),N,rf,sf)/VDM # interpolates from nodes to face nodes
     LIFT = M\(Vf'*diagm(wf)) # lift matrix used in rhs evaluation
     @pack! rd = Dr,Ds,Vf,LIFT
 
     # plotting nodes
-    rp, sp = Quad.equi_nodes(15)
-    Vp = Quad.vandermonde(N,rp,sp)/VDM
+    rp, sp = equi_nodes(Quad(),15)
+    Vp = vandermonde(Quad(),N,rp,sp)/VDM
     @pack! rd = rp,sp,Vp
 
     return rd
@@ -197,15 +194,14 @@ function init_reference_hex(N,quad_nodes_1D=gauss_quad(0,0,N))
     @pack! rd = fv, Nfaces
 
     # Construct matrices on reference elements
-    r,s,t = Hex.nodes(N)
-    VDM = Hex.vandermonde(N,r,s,t)
-    Vr,Vs,Vt = Hex.grad_vandermonde(N,r,s,t)
-    Dr,Ds,Dt = (A->A/VDM).(Hex.grad_vandermonde(N,r,s,t))
+    r,s,t = nodes(Hex(),N)
+    VDM,Vr,Vs,Vt = basis(Hex(),N,r,s,t)
+    Dr,Ds,Dt = (A->A/VDM).((Vr,Vs,Vt))
     @pack! rd = r,s,t,VDM
 
     # low order interpolation nodes
-    r1,s1,t1 = Hex.nodes(1)
-    V1 = Hex.vandermonde(1,r,s,t)/Hex.vandermonde(1,r1,s1,t1)
+    r1,s1,t1 = nodes(Hex(),1)
+    V1 = vandermonde(Hex(),1,r,s,t)/vandermonde(Hex(),1,r1,s1,t1)
     @pack! rd = V1
 
     #Nodes on faces, and face node coordinate
@@ -229,18 +225,18 @@ function init_reference_hex(N,quad_nodes_1D=gauss_quad(0,0,N))
     rq,sq,tq = vec.(meshgrid(r1D,r1D,r1D))
     wr,ws,wt = vec.(meshgrid(w1D,w1D,w1D))
     wq = wr.*ws.*wt
-    Vq = Hex.vandermonde(N,rq,sq,tq)/VDM
+    Vq = vandermonde(Hex(),N,rq,sq,tq)/VDM
     M = Vq'*diagm(wq)*Vq
     Pq = M\(Vq'*diagm(wq))
     @pack! rd = rq,sq,tq,wq,Vq,M,Pq
 
-    Vf = Hex.vandermonde(N,rf,sf,tf)/VDM
+    Vf = vandermonde(Hex(),N,rf,sf,tf)/VDM
     LIFT = M\(Vf'*diagm(wf))
     @pack! rd = Dr,Ds,Dt,Vf,LIFT
 
     # plotting nodes
-    rp,sp,tp = Hex.equi_nodes(15)
-    Vp = Hex.vandermonde(N,rp,sp,tp)/VDM
+    rp,sp,tp = equi_nodes(Hex(),15)
+    Vp = vandermonde(Hex(),N,rp,sp,tp)/VDM
     @pack! rd = rp,sp,tp,Vp
 
     return rd

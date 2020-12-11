@@ -9,7 +9,8 @@
 # struct RefElem3D
 # end
 
-"RefElemData: contains info on a general 3D reference element.
+"""
+RefElemData: contains info on a general 3D reference element.
 For 1D and 2D reference elements, some fields may be unused.
 
 Fields:
@@ -46,7 +47,7 @@ N = 4
 rd = init_reference_tri(N)
 @unpack r,s = rd
 
-"
+"""
 mutable struct RefElemData
     # annotate types for all arrays involved in RHS evaluation
 
@@ -81,7 +82,7 @@ mutable struct RefElemData
     RefElemData() = new() # empty initializer
 end
 
-"
+"""
 mutable struct MeshData: container for info related to a physical mesh
 Fields:
     VX; VY; VZ              # vertex coordinates
@@ -116,7 +117,7 @@ Fields:
     nyJ::Array{Float64,2}
     nzJ::Array{Float64,2}
     sJ::Array{Float64,2}
-"
+"""
 # annotate types for geofacs + connectivity arrays for speed in RHS evals
 mutable struct MeshData
     VX; VY; VZ              # vertex coordinates
