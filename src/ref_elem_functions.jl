@@ -2,7 +2,7 @@
 ##### ordering of faces in terms of vertices
 #####
 
-function tri_face_vertices()
+function face_vertices(elem::Tri)
         #return [1,2],[2,3],[3,1]
         # return [1,3],[3,2],[2,1]
         tol = 5e2*eps()
@@ -13,7 +13,7 @@ function tri_face_vertices()
         return e1,e2,e3
 end
 
-function quad_face_vertices()
+function face_vertices(elem::Quad)
         #return [1,2],[2,4],[3,4],[1,3] # ordering matters
         tol = 5e2*eps()
         r,s = nodes(Quad(),1)
@@ -24,7 +24,7 @@ function quad_face_vertices()
         return e1,e2,e3,e4
 end
 
-function hex_face_vertices()
+function face_vertices(elem::Hex)
         x1D = LinRange(-1,1,2)
         r, s, t = vec.(meshgrid(x1D,x1D,x1D))
         fv1 = map(x->x[1], findall(@. abs(r+1) < 1e-10))
@@ -41,7 +41,7 @@ end
 ##### initialization of RefElemData
 #####
 
-function init_reference_interval(N;Nq=N+1)
+function init_reference_elem(elem::Line,N;Nq=N+1)
     # initialize a new reference element data struct
     rd = RefElemData()
 
@@ -80,11 +80,11 @@ function init_reference_interval(N;Nq=N+1)
     return rd
 end
 
-function init_reference_tri(N;Nq=2*N)
+function init_reference_elem(elem::Tri, N; Nq=2*N)
     # initialize a new reference element data struct
     rd = RefElemData()
 
-    fv = tri_face_vertices() # set faces for triangle
+    fv = face_vertices(Tri()) # set faces for triangle
     Nfaces = length(fv)
     @pack! rd = fv, Nfaces
 
@@ -132,11 +132,11 @@ end
 
 # default to full quadrature nodes
 # if quad_nodes_1D=tuple of (r1D,w1D) is supplied, use those nodes
-function init_reference_quad(N,quad_nodes_1D = gauss_quad(0,0,N))
+function init_reference_elem(elem::Quad, N; quad_nodes_1D = gauss_quad(0,0,N))
     # initialize a new reference element data struct
     rd = RefElemData()
 
-    fv = quad_face_vertices() # set faces for triangle
+    fv = face_vertices(Quad()) # set faces for triangle
     Nfaces = length(fv)
     @pack! rd = fv, Nfaces
 
@@ -185,11 +185,11 @@ function init_reference_quad(N,quad_nodes_1D = gauss_quad(0,0,N))
     return rd
 end
 
-function init_reference_hex(N,quad_nodes_1D=gauss_quad(0,0,N))
+function init_reference_elem(elem::Hex, N; quad_nodes_1D=gauss_quad(0,0,N))
     # initialize a new reference element data struct
     rd = RefElemData()
 
-    fv = hex_face_vertices() # set faces for triangle
+    fv = face_vertices(Hex()) # set faces for triangle
     Nfaces = length(fv)
     @pack! rd = fv, Nfaces
 

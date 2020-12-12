@@ -8,7 +8,6 @@ returns EToV,VX,VY
 
 EToV,VX,VY = readGmsh2D("eulerSquareCylinder2D.msh")
 
-```jldoctest
 """
 function readGmsh2D(filename)
     f = open(filename)
@@ -59,7 +58,7 @@ end
 #####     1D mesh     #####
 ###########################
 
-function uniform_1D_mesh(K1D)
+function uniform_mesh(elem::Line,K1D)
         VX = collect(LinRange(-1,1,K1D+1))
         EToV = transpose(reshape(sort([1:K1D; 2:K1D+1]),2,K1D))
         return VX,EToV
@@ -71,7 +70,7 @@ end
 ###########################
 
 """
-uniform_tri_mesh(Kx::Int,Ky::Int)
+uniform_mesh(elem::Tri,Kx::Int,Ky::Int)
 
 Matlab uniform triangular mesh.
 
@@ -79,7 +78,7 @@ Matlab uniform triangular mesh.
 ```jldoctest
 ```
 """
-function uniform_tri_mesh(Kx,Ky)
+function uniform_mesh(elem::Tri,Kx,Ky)
 
         (VY, VX) = meshgrid(LinRange(-1,1,Ky+1),LinRange(-1,1,Kx+1))
         sk = 1
@@ -99,8 +98,11 @@ function uniform_tri_mesh(Kx,Ky)
         return (VX[:],VY[:],EToV)
 end
 
-function uniform_tri_mesh(Kx)
-        return uniform_tri_mesh(Kx,Kx)
+function uniform_mesh(elem::Union{Tri,Quad},Kx)
+        return uniform_mesh(elem,Kx,Kx)
+end
+function uniform_mesh(elem::Hex,Kx)
+        return uniform_mesh(elem,Kx,Kx,Kx)
 end
 
 ##############################
@@ -108,7 +110,7 @@ end
 ##############################
 
 """
-uniform_quad_mesh(Kx,Ky)
+uniform_mesh(Quad(),Kx,Ky)
 
 Matlab uniform triangular mesh.
 
@@ -117,7 +119,7 @@ Matlab uniform triangular mesh.
 ```
 """
 
-function uniform_quad_mesh(Nx,Ny)
+function uniform_mesh(elem::Quad,Nx,Ny)
 
         Nxp = Nx+1;
         Nyp = Ny+1;
@@ -144,10 +146,6 @@ function uniform_quad_mesh(Nx,Ny)
         return VX[:],VY[:],EToV
 end
 
-function uniform_quad_mesh(Kx)
-        return uniform_quad_mesh(Kx,Kx)
-end
-
 #############################
 ##### Hexahedral meshes #####
 #############################
@@ -162,7 +160,7 @@ Matlab uniform hexahedral mesh.
 ```
 """
 
-function uniform_hex_mesh(Nx,Ny,Nz)
+function uniform_mesh(elem::Hex,Nx,Ny,Nz)
         Nxp = Nx+1
         Nyp = Ny+1
         Nzp = Nz+1
@@ -225,8 +223,4 @@ function uniform_hex_mesh(Nx,Ny,Nz)
         VY = y[:];
         VZ = z[:];
         return VX[:],VY[:],VZ[:],EToV
-end
-
-function uniform_hex_mesh(Kx)
-        return uniform_hex_mesh(Kx,Kx,Kx)
 end
