@@ -66,6 +66,7 @@ end
 
     Q: container of arrays, Q[i] = ith solution field
     rhsQrk: container whose entries are type(Q) for RK rhs evaluations"
+
 function compute_adaptive_dt(Q,rhsQrk,dt,rkE,PI::PIparams,prevErrEst=nothing)
 
     @unpack errTol,order,dtmax,dtmin = PI

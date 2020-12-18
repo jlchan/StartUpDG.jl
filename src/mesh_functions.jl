@@ -15,24 +15,24 @@ is provided.
 ```
 """
 function connect_mesh(EToV,fv)
-        Nfaces = length(fv)
-        K = size(EToV,1)
+    Nfaces = length(fv)
+    K = size(EToV,1)
 
-        # sort and find matches
-        fnodes = [[sort(EToV[e,ids]) for ids = fv, e = 1:K]...]
-        p = sortperm(fnodes) # sorts by lexicographic ordering by default
-        fnodes = fnodes[p,:]
+    # sort and find matches
+    fnodes = [[sort(EToV[e,ids]) for ids = fv, e = 1:K]...]
+    p = sortperm(fnodes) # sorts by lexicographic ordering by default
+    fnodes = fnodes[p,:]
 
-        FToF = reshape(collect(1:Nfaces*K),Nfaces,K)
-        for f = 1:size(fnodes,1)-1
-                if fnodes[f,:]==fnodes[f+1,:]
-                        f1 = FToF[p[f]]
-                        f2 = FToF[p[f+1]]
-                        FToF[p[f]] = f2
-                        FToF[p[f+1]] = f1
-                end
+    FToF = reshape(collect(1:Nfaces*K),Nfaces,K)
+    for f = 1:size(fnodes,1)-1
+        if fnodes[f,:]==fnodes[f+1,:]
+            f1 = FToF[p[f]]
+            f2 = FToF[p[f+1]]
+            FToF[p[f]] = f2
+            FToF[p[f+1]] = f1
         end
-        return FToF
+    end
+    return FToF
 end
 
 

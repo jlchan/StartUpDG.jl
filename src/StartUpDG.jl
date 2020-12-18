@@ -7,17 +7,19 @@ Module to aid in setting up reference operators, meshes, and geometric terms
 module StartUpDG
 
 using NodesAndModes # for basis functions
+export Line, Tri, Quad, Hex # element types from NodesAndModes
+
 using UnPack # for setting/getting values in RefElemData and MeshData
 using LinearAlgebra # for diagm, identity matrix I
 
 import UnPack: @unpack
-import VectorizedRoutines.Matlab.meshgrid
+#import VectorizedRoutines.Matlab.meshgrid
+import NodesAndModes.meshgrid
 
 export @unpack
 export meshgrid
 export eye # Convenience routine for identity matrices.
 eye(n) = diagm(ones(n))
-
 
 # convenience containers for reference element and physical data types.
 export RefElemData
@@ -25,9 +27,7 @@ export MeshData
 include("DG_types.jl")
 
 # initialization of mesh/reference element data
-export init_reference_interval
-export init_reference_tri, init_reference_quad
-export init_reference_hex
+export init_reference_elem
 include("ref_elem_functions.jl")
 
 # spatial assembly routines
@@ -41,8 +41,8 @@ include("./node_connectivity_functions.jl")
 
 # uniform meshes + face vertex orderings are included
 export readGmsh2D
-export uniform_1D_mesh, uniform_quad_mesh, uniform_tri_mesh, uniform_hex_mesh
-export tri_face_vertices, quad_face_vertices, hex_face_vertices
+export uniform_mesh
+export face_vertices
 include("mesh_utils.jl")
 
 # submodule for explicit time-stepping included for convenience

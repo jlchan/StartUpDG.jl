@@ -1,5 +1,4 @@
 # StartUpDG
-[![Build Status](https://travis-ci.com/jlchan/StartUpDG.jl.svg?branch=master)](https://travis-ci.com/jlchan/StartUpDG.jl)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/jlchan/StartUpDG.jl?svg=true)](https://ci.appveyor.com/project/jlchan/StartUpDG-jl)
 [![Build status](https://github.com/jlchan/StartUpDG.jl/workflows/CI/badge.svg)](https://github.com/jlchan/StartUpDG.jl/actions)
 [![Codecov](https://codecov.io/gh/jlchan/StartUpDG.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/jlchan/StartUpDG.jl)
@@ -20,8 +19,8 @@ N = 3
 K1D = 8
 
 # init ref element and mesh
-rd = init_reference_tri(N)
-VX,VY,EToV = uniform_tri_mesh(K1D)
+rd = init_reference_elem(Tri(),N)
+VX,VY,EToV = uniform_mesh(Tri(),K1D)
 md = init_DG_mesh(VX,VY,EToV,rd)
 
 # Define a function by interpolation
