@@ -18,8 +18,6 @@ import NodesAndModes.meshgrid
 
 export @unpack
 export meshgrid
-export eye # Convenience routine for identity matrices.
-eye(n) = diagm(ones(n))
 
 # convenience containers for reference element and physical data types.
 export RefElemData
