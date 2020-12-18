@@ -18,8 +18,8 @@ N = 3
 K1D = 8
 
 # init ref element and mesh
-rd = init_reference_tri(N)
-VX,VY,EToV = uniform_tri_mesh(K1D)
+rd = init_reference_elem(Tri(),N)
+VX,VY,EToV = uniform_mesh(Tri(),K1D)
 md = init_DG_mesh(VX,VY,EToV,rd)
 
 # Define a function by interpolation
