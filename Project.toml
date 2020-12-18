@@ -7,10 +7,10 @@ version = "0.1.1"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 NodesAndModes = "7aca2e03-f7e2-4192-9ec8-f4ca66d597fb"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
-VectorizedRoutines = "0e69188a-a5d4-5622-b4e4-a72373136fc5"
 
 [compat]
 julia = "1.4"
+NodesAndModes = "0.4"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
