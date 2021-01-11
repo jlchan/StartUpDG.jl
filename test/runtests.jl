@@ -105,7 +105,7 @@ end
 
     # check periodic node connectivity maps
     LX = 2
-    build_periodic_boundary_maps!(md,rd,LX)
+    make_nodemaps_periodic!(md,rd,LX)
     @unpack mapP = md
     u = @. sin(pi*(.5+x))
     uf = Vf*u
@@ -161,8 +161,7 @@ end
     @test norm(uf[mapB]) < tol
 
     # check periodic node connectivity maps
-    LX,LY = 2,2
-    build_periodic_boundary_maps!(md,rd,LX,LY)
+    make_nodemaps_periodic!(md,rd,(true,true))
     @unpack mapP = md
     u = @. sin(pi*(.5+x))*sin(pi*(.5+y))
     uf = Vf*u
@@ -217,8 +216,7 @@ end
     @test norm(uf[mapB]) < tol
 
     # check periodic node connectivity maps
-    LX,LY = 2,2
-    build_periodic_boundary_maps!(md,rd,LX,LY)
+    make_nodemaps_periodic!(md,rd,(true,true))
     @unpack mapP = md
     u = @. sin(pi*(.5+x))*sin(pi*(.5+y))
     uf = Vf*u
@@ -281,8 +279,7 @@ end
     @test norm(uf[mapB]) < tol
 
     # check periodic node connectivity maps
-    LX,LY,LZ = 2,2,2
-    build_periodic_boundary_maps!(md,rd,LX,LY,LZ)
+    make_nodemaps_periodic!(md,rd,(true,true,true))
     @unpack mapP = md
     u = @. sin(pi*(.5+x))*sin(pi*(.5+y))*sin(pi*(.5+z))
     uf = Vf*u

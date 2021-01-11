@@ -84,35 +84,43 @@ function build_node_maps(FToF,Xf...)
 end
 
 """
-    build_periodic_boundary_maps!(md::MeshData2,rd::RefElemData2,LXYZ...)
-    build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FToF)
+    make_nodemaps_periodic!(md::MeshData2{Dim},rd::RefElemData2,
+                            is_periodic...) where {Dim}
+    make_nodemaps_periodic!(md::MeshData2{Dim},rd::RefElemData2,
+                            is_periodic=ntuple(x->true,Dim)) where {Dim}
+    make_nodemaps_periodic!(md::MeshData2{1},rd::RefElemData2,is_periodic=true)
 
-These functions return index array `mapPB`, such that `mapP[mapB] = mapPB` modifies
-mapP to produce a periodic node map.
-
-These functions also modify `FToF` to reflect periodicity (used for implicit).
+Modifies md, rd such that the node maps `mapP` and face maps `FToF` are periodic.
+Here, `is_periodic` is a tuple of `Bool` indicating whether or not to impose
+periodic BCs in the `x`,`y`, or `z` coordinate.
 """
+make_nodemaps_periodic!(md::MeshData2,rd::RefElemData2,is_periodic...) =
+    make_nodemaps_periodic!(md,rd,is_periodic)
 
-function build_periodic_boundary_maps!(md::MeshData2,rd::RefElemData2,LXYZ...)
+function make_nodemaps_periodic!(md::MeshData2{Dim},rd::RefElemData2,
+                                 is_periodic::NTuple{Dim,T}=ntuple(x->true,Dim)) where {Dim,T}
     @unpack mapM,mapP,mapB,xyzf,FToF = md
     NfacesTotal = prod(size(FToF))
-    mapPB = build_periodic_boundary_maps!(xyzf...,LXYZ...,NfacesTotal,
+    mapPB = build_periodic_boundary_maps!(xyzf...,is_periodic...,NfacesTotal,
                                           mapM, mapP, mapB, FToF)
     mapP[mapB] = mapPB
     md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
 end
 
-# specialize to 1D - periodic = find min/max indices of xf and reverse their order
-function build_periodic_boundary_maps!(md::MeshData2{1},rd::RefElemData2,LXYZ...)
-    @unpack mapP,mapB,xf,FToF = md
-    mapPB = argmax(vec(xf)),argmin(vec(xf))
-    mapP[mapB] .= mapPB
-    FToF[[1,length(FToF)]] .= mapPB
-    md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
+# specializes to 1D - periodic = find min/max indices of xf and reverse their order
+function make_nodemaps_periodic!(md::MeshData2{1},rd::RefElemData2,is_periodic=true)
+    if is_periodic == true
+        @unpack mapP,mapB,xf,FToF = md
+        mapPB = argmax(vec(xf)),argmin(vec(xf))
+        mapP[mapB] .= mapPB
+        FToF[[1,length(FToF)]] .= mapPB
+        md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
+    end
 end
 
-# 2D version which modifies FToF
-function build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FToF)
+# Helper functions for `make_nodemaps_periodic!`, 2D version which modifies FToF.
+function build_periodic_boundary_maps!(xf,yf,is_periodic_x, is_periodic_y,
+                                       NfacesTotal,mapM,mapP,mapB,FToF)
 
         # find boundary faces (e.g., when FToF[f] = f)
         Flist = 1:length(FToF)
@@ -134,16 +142,23 @@ function build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FT
         xmin,xmax = extrema(xc)
         ymin,ymax = extrema(yc)
 
-        # determine which faces lie on x and y boundaries
         NODETOL = 1e-12
+        LX,LY = map((x->x[2]-x[1])∘extrema,(xf,yf))
+        if abs(abs(xmax-xmin)-LX)>NODETOL && is_periodic_x
+            error("periodicity requested in x, but max_dist(xf) != max_dist(xc)")
+        end
+        if abs(abs(ymax-ymin)-LY)>NODETOL && is_periodic_y
+            error("periodicity requested in y, but max_dist(yf) != max_dist(yc)")
+        end
+
+        # determine which faces lie on x and y boundaries
         Xscale = max(1,LX)
         Yscale = max(1,LY)
         yfaces = map(x->x[1],findall(@. (@. abs(yc-ymax)<NODETOL*Yscale) | (@. abs(yc-ymin)<NODETOL*Yscale)))
         xfaces = map(x->x[1],findall(@. (@. abs(xc-xmax)<NODETOL*Xscale) | (@. abs(xc-xmin)<NODETOL*Xscale)))
 
-        # find matches in y faces
-        for i in yfaces
-            for j in yfaces
+        if is_periodic_y # find matches in y faces
+            for i in yfaces, j in yfaces
                 if i!=j
                     if abs(xc[i]-xc[j])<NODETOL*Xscale && abs(abs(yc[i]-yc[j])-LY)<NODETOL*Yscale
                         Xa,Xb = meshgrid(xb[:,i],xb[:,j])
@@ -157,9 +172,8 @@ function build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FT
             end
         end
 
-        # find matches in x faces
-        for i in xfaces
-            for j in xfaces
+        if is_periodic_x # find matches in x faces
+            for i in xfaces, j in xfaces
                 if i!=j
                     if abs(yc[i]-yc[j])<NODETOL*Yscale && abs(abs(xc[i]-xc[j])-LX)<NODETOL*Xscale
                         Ya,Yb = meshgrid(yb[:,i],yb[:,j])
@@ -177,7 +191,9 @@ function build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FT
 end
 
 # 3D version of build_periodic_boundary_maps, modifies FToF
-function build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,mapB,FToF)
+function build_periodic_boundary_maps!(xf,yf,zf,
+                                       is_periodic_x,is_periodic_y,is_periodic_z,
+                                       NfacesTotal,mapM,mapP,mapB,FToF)
 
     # find boundary faces (e.g., when FToF[f] = f)
     Flist = 1:length(FToF)
@@ -198,19 +214,26 @@ function build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,m
     xmin,xmax = extrema(xc)
     ymin,ymax = extrema(yc)
     zmin,zmax = extrema(zc)
-    # xmax = maximum(xc);  xmin = minimum(xc)
-    # ymax = maximum(yc);  ymin = minimum(yc)
-    # zmax = maximum(zc);  zmin = minimum(zc)
 
-    "determine which faces lie on x and y boundaries"
     NODETOL = 1e-12
+    LX,LY,LZ = map((x->x[2]-x[1])∘extrema,(xf,yf,zf))
+    if abs(abs(xmax-xmin)-LX)>NODETOL && is_periodic_x
+        error("periodicity requested in x, but max_dist(xf) != max_dist(xc)")
+    end
+    if abs(abs(ymax-ymin)-LY)>NODETOL && is_periodic_y
+        error("periodicity requested in y, but max_dist(yf) != max_dist(yc)")
+    end
+    if abs(abs(zmax-zmin)-LZ)>NODETOL && is_periodic_z
+        error("periodicity requested in z, but max_dist(zf) != max_dist(zc)")
+    end
+
+    # determine which faces lie on x and y boundaries
     xfaces = map(x->x[1],findall(@. (@. abs(xc-xmax)<NODETOL*LX) | (@. abs(xc-xmin)<NODETOL*LX)))
     yfaces = map(x->x[1],findall(@. (@. abs(yc-ymax)<NODETOL*LY) | (@. abs(yc-ymin)<NODETOL*LY)))
     zfaces = map(x->x[1],findall(@. (@. abs(zc-zmax)<NODETOL*LZ) | (@. abs(zc-zmin)<NODETOL*LZ)))
 
-    # find matches in x faces
-    for i = xfaces
-        for j = xfaces
+    if is_periodic_x # find matches in x faces
+        for i in xfaces, j in xfaces
             if i!=j
                 if abs(yc[i]-yc[j])<NODETOL*LY && abs(zc[i]-zc[j])<NODETOL*LZ && abs(abs(xc[i]-xc[j])-LX)<NODETOL*LX
                     Ya,Yb = meshgrid(yb[:,i],yb[:,j])
@@ -226,8 +249,8 @@ function build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,m
     end
 
     # find matches in y faces
-    for i = yfaces
-        for j = yfaces
+    if is_periodic_y
+        for i in yfaces, j = yfaces
             if i!=j
                 if abs(xc[i]-xc[j])<NODETOL*LX && abs(zc[i]-zc[j])<NODETOL*LZ && abs(abs(yc[i]-yc[j])-LY)<NODETOL*LY
                     Xa,Xb = meshgrid(xb[:,i],xb[:,j])
@@ -242,9 +265,9 @@ function build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,m
         end
     end
 
-    # find matches in y faces
-    for i = zfaces
-        for j = zfaces
+    # find matches in z faces
+    if is_periodic_z
+        for i in zfaces, j in zfaces
             if i!=j
                 if abs(xc[i]-xc[j])<NODETOL*LX && abs(yc[i]-yc[j])<NODETOL*LY && abs(abs(zc[i]-zc[j])-LZ)<NODETOL*LZ
                     Xa,Xb = meshgrid(xb[:,i],xb[:,j])

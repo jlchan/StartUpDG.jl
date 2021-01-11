@@ -18,7 +18,6 @@ import UnPack: @unpack
 
 export Line, Tri, Quad, Hex # element types from NodesAndModes
 export @unpack
-export meshgrid
 
 # reference element utility functions
 export RefElemData2
@@ -28,17 +27,17 @@ include("ref_elem_utils.jl")
 export MeshData2
 include("MeshData.jl")
 
+# ref-to-physical geometric terms
+export geometric_factors
+include("geometric_mapping_functions.jl")
+
 # spatial connectivity routines
-export build_periodic_boundary_maps!
-include("./connectivity_functions.jl")
+export make_nodemaps_periodic!
+include("connectivity_functions.jl")
 
 # uniform meshes + face vertex orderings are included
 export readGmsh2D, uniform_mesh
 include("simple_meshes.jl")
-
-# ref-to-physical geometric terms
-export geometric_factors
-include("./geometric_mapping_functions.jl")
 
 # simple explicit time-stepping included for conveniencea
 export ck45, dp56, PIparams, compute_adaptive_dt # LSERK 45 + Dormand-Prince 56
