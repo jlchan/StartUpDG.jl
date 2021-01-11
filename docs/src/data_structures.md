@@ -53,4 +53,4 @@ The aliases for `MeshData` are below:
 3. `xf` for `xyzf[1]` (similarly for `yf`, `zf`)
 4. `xq` for `xyzq[1]` (similarly for `yq`, `zq`)
 5. `nxJ` for `nxyzJ[1]` (similarly for `nyJ`, `nzJ`)
-6. `rxJ` for `rstxyzJ[1,1]` (similarly for `sxJ,txJ,ryJ,syJ,tyJ,rzJ,szJ,tzJ`)
+6. `rxJ, sxJ` for `rstxyzJ[1,1],rstxyzJ[1,2]` (similarly for `txJ,ryJ,syJ,tyJ,rzJ,szJ,tzJ`)
