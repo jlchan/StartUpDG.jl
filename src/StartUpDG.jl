@@ -7,14 +7,17 @@ Module to aid in setting up reference operators, meshes, and geometric terms
 module StartUpDG
 
 using NodesAndModes # for basis functions
-export Line, Tri, Quad, Hex # element types from NodesAndModes
-
-using UnPack # for setting/getting values in RefElemData and MeshData
 using LinearAlgebra # for diagm, identity matrix I
+using StaticArrays
+using UnPack        # for getting values in RefElemData and MeshData
+using Setfield      # for "modifying" structs to modify node mappings
 
+import SparseArrays: sparse, droptol!
 import UnPack: @unpack
-#import VectorizedRoutines.Matlab.meshgrid
-import NodesAndModes.meshgrid
+
+import NodesAndModes: meshgrid
+
+export Line, Tri, Quad, Hex # element types from NodesAndModes
 
 export @unpack
 export meshgrid
@@ -27,6 +30,12 @@ include("DG_types.jl")
 # initialization of mesh/reference element data
 export init_reference_elem
 include("ref_elem_functions.jl")
+
+# WARNING: experimental
+export RefElemData2
+include("ref_elem_data.jl")
+export MeshData2
+include("mesh_data.jl")
 
 # spatial assembly routines
 export connect_mesh

@@ -55,17 +55,17 @@ function build_node_maps(Xf,FToF)
 end
 
 """
-function build_periodic_boundary_maps(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB)
-function build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FToF)
+    build_periodic_boundary_maps(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB)
+    build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FToF)
+    build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY)
 
-    returns mapPB, such that
-        mapP[mapB] = mapPB modifies mapP to produce a periodic node map
-    optional: modifies FToF to get periodic boundary face map (for implicit)
+returns mapPB, such that
+    mapP[mapB] = mapPB
+modifies mapP to produce a periodic node map
+
+optional: modifies FToF to get periodic boundary face map (for implicit)
 """
 
-"function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX)
-    dispatch, infer dimension from LX = 1D
-    modifies both mapP and FToF in md::MeshData"
 function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX)
     @unpack xf,mapM,mapP = md
 
@@ -77,9 +77,6 @@ function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX)
     @pack! md = mapM,mapP
 end
 
-"function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY)
-    dispatch, infer dimension from LX,LY = 2D
-    modifies both mapP and FToF in md::MeshData"
 function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY)
     @unpack fv,Vf = rd
     Nfaces = length(fv)
@@ -88,7 +85,36 @@ function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY)
     mapP[mapB] = mapPB
 end
 
-# version which mods FToF as well
+function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY,LZ)
+    @unpack fv,Vf = rd
+    Nfaces = length(fv)
+    @unpack xf,yf,zf,FToF,K,mapM,mapP,mapB = md
+    mapPB = build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,
+                                          Nfaces*K,mapM,mapP,mapB,FToF)
+    mapP[mapB] = mapPB
+end
+
+# =============== WARNING: new version using MeshData2 ================
+
+function build_periodic_boundary_maps!(md::MeshData2,rd::RefElemData2,LXYZ...)
+    @unpack mapM,mapP,mapB,xyzf,FToF = md
+    NfacesTotal = prod(size(FToF))
+    mapPB = build_periodic_boundary_maps!(xyzf...,LXYZ...,NfacesTotal,
+                                          mapM, mapP, mapB, FToF)
+    mapP[mapB] = mapPB
+    md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
+end
+
+# specialize to 1D - periodic = find min/max indices of xf and reverse their order
+function build_periodic_boundary_maps!(md::MeshData2{1},rd::RefElemData2,LXYZ...)
+    @unpack mapP,mapB,xf,FToF = md
+    mapPB = argmax(vec(xf)),argmin(vec(xf))
+    mapP[mapB] .= mapPB
+    FToF[[1,length(FToF)]] .= mapPB
+    md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
+end
+
+# 2D version which modifies FToF
 function build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FToF)
 
         # find boundary faces (e.g., when FToF[f] = f)
@@ -108,12 +134,10 @@ function build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FT
         mapMB = reshape(mapM[mapB],Nfp,Nbfaces)
         mapPB = reshape(mapP[mapB],Nfp,Nbfaces)
 
-        xmax = maximum(xc)
-        xmin = minimum(xc)
-        ymax = maximum(yc)
-        ymin = minimum(yc)
+        xmin,xmax = extrema(xc)
+        ymin,ymax = extrema(yc)
 
-        "determine which faces lie on x and y boundaries"
+        # determine which faces lie on x and y boundaries
         NODETOL = 1e-12
         Xscale = max(1,LX)
         Yscale = max(1,LY)
@@ -155,47 +179,17 @@ function build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FT
         return mapPB[:]
 end
 
-"Build 2D periodic boundary maps without mutating FToF"
-function build_periodic_boundary_maps(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB)
-    FToF = collect(1:NfacesTotal) # dummy argument
-    mapPB = build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FToF)
-    return mapPB[:]
-end
-
-"function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY,LZ)
-    dispatch, infer dimension from LX,LY,LZ = 3D
-    modifies both mapP and FToF in md::MeshData"
-function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY,LZ)
-    @unpack fv,Vf = rd
-    Nfaces = length(fv)
-    @unpack xf,yf,zf,FToF,K,mapM,mapP,mapB = md
-    mapPB = build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,
-                                          Nfaces*K,mapM,mapP,mapB,FToF)
-    mapP[mapB] = mapPB
-end
-
-"3D version of build_periodic_boundary_maps"
-function build_periodic_boundary_maps(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,mapB)
-    FToF = collect(1:NfacesTotal) # dummy argument
-    mapPB = build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,mapB,FToF)
-    return mapPB[:]
-end
-
-"3D version of build_periodic_boundary_maps, mods FToF"
+# 3D version of build_periodic_boundary_maps, modifies FToF
 function build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,mapB,FToF)
 
     # find boundary faces (e.g., when FToF[f] = f)
     Flist = 1:length(FToF)
     Bfaces = findall(vec(FToF) .== Flist)
 
-    xb = xf[mapB]
-    yb = yf[mapB]
-    zb = zf[mapB]
+    xb,yb,zb = xf[mapB],yf[mapB],zf[mapB]
     Nfp = convert(Int,length(xf)/NfacesTotal)
     Nbfaces = convert(Int,length(xb)/Nfp)
-    xb = reshape(xb,Nfp,Nbfaces)
-    yb = reshape(yb,Nfp,Nbfaces)
-    zb = reshape(zb,Nfp,Nbfaces)
+    xb,yb,zb = (x->reshape(x,Nfp,Nbfaces)).((xb,yb,zb))
 
     # compute centroids of faces
     xc = vec(sum(xb,dims=1)/Nfp)
@@ -204,9 +198,12 @@ function build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,NfacesTotal,mapM,mapP,m
     mapMB = reshape(mapM[mapB],Nfp,Nbfaces)
     mapPB = reshape(mapP[mapB],Nfp,Nbfaces)
 
-    xmax = maximum(xc);  xmin = minimum(xc)
-    ymax = maximum(yc);  ymin = minimum(yc)
-    zmax = maximum(zc);  zmin = minimum(zc)
+    xmin,xmax = extrema(xc)
+    ymin,ymax = extrema(yc)
+    zmin,zmax = extrema(zc)
+    # xmax = maximum(xc);  xmin = minimum(xc)
+    # ymax = maximum(yc);  ymin = minimum(yc)
+    # zmax = maximum(zc);  zmin = minimum(zc)
 
     "determine which faces lie on x and y boundaries"
     NODETOL = 1e-12

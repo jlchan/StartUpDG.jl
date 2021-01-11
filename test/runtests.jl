@@ -2,9 +2,9 @@ using StartUpDG
 using Test
 using LinearAlgebra
 
-@testset "Other utils" begin
+@testset "Timestep utils" begin
     tol = 5e2*eps()
-    
+
     EToV,VX,VY = readGmsh2D("squareCylinder2D.msh")
     @test size(EToV)==(3031,3)
 
@@ -35,7 +35,7 @@ end
     #####
     ##### interval
     #####
-    rd = init_reference_elem(Line(),N)
+    rd = RefElemData2(Line(),N)
     @test abs(sum(rd.rq.*rd.wq)) < tol
     @test rd.nrJ ≈ [-1,1]
     @test rd.Pq*rd.Vq ≈ I
@@ -43,7 +43,7 @@ end
     #####
     ##### triangles
     #####
-    rd = init_reference_elem(Tri(),N)
+    rd = RefElemData2(Tri(),N)
     @test abs(sum(rd.wq)) ≈ 2
     @test abs(sum(rd.wf)) ≈ 6
     @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
@@ -52,7 +52,7 @@ end
     #####
     ##### quads
     #####
-    rd = init_reference_elem(Quad(),N)
+    rd = RefElemData2(Quad(),N)
     @test abs(sum(rd.wq)) ≈ 4
     @test abs(sum(rd.wf)) ≈ 8
     @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
@@ -61,7 +61,7 @@ end
     #####
     ##### hexes
     #####
-    rd = init_reference_elem(Hex(),N)
+    rd = RefElemData2(Hex(),N)
     @test abs(sum(rd.wq)) ≈ 8
     @test abs(sum(rd.wf)) ≈ 6*4
     @test abs(sum(rd.wf .* rd.nrJ)) < tol
@@ -75,9 +75,9 @@ end
 
     N = 3
     K1D = 2
-    rd = init_reference_elem(Line(),N)
+    rd = RefElemData2(Line(),N)
     VX,EToV = uniform_mesh(Line(),K1D)
-    md = init_DG_mesh(VX,EToV,rd)
+    md = MeshData2(VX,EToV,rd)
     @unpack wq,Dr,Vq,Vf,wf = rd
     @unpack Nfaces = rd
     @unpack x,xq,xf,K = md
@@ -123,9 +123,9 @@ end
 
     N = 3
     K1D = 2
-    rd = init_reference_elem(Tri(),N)
+    rd = RefElemData2(Tri(),N)
     VX,VY,EToV = uniform_mesh(Tri(),K1D)
-    md = init_DG_mesh(VX,VY,EToV,rd)
+    md = MeshData2(VX,VY,EToV,rd)
     @unpack wq,Dr,Ds,Vq,Vf,wf = rd
     Nfaces = length(rd.fv)
     @unpack x,y,xq,yq,xf,yf,K = md
@@ -170,8 +170,6 @@ end
     LX,LY = 2,2
     build_periodic_boundary_maps!(md,rd,LX,LY)
     @unpack mapP = md
-    #mapPB = build_periodic_boundary_maps(xf,yf,LX,LY,Nfaces*K,mapM,mapP,mapB)
-    #mapP[mapB] = mapPB
     u = @. sin(pi*(.5+x))*sin(pi*(.5+y))
     uf = Vf*u
     @test uf ≈ uf[mapP]
