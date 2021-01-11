@@ -14,7 +14,7 @@ makedocs(
         "Meshes" => "mesh_usage.md",
         "Time-stepping" => "tstep_usage.md",
         "Authors" => "authors.md",
-        "Reference" => "reference.md"
+        "Reference" => "index_refs.md"
     ]
 )
 

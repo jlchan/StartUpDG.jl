@@ -1,12 +1,6 @@
-"""
-Module StartUpDG
-
-Module to aid in setting up reference operators, meshes, and geometric terms
-"""
-
 module StartUpDG
 
-using ConstructionBase  # for constructorof
+using ConstructionBase  # for constructorof(...)
 using LinearAlgebra     # for diagm, identity matrix I
 using NodesAndModes     # for basis functions
 using StaticArrays
@@ -17,7 +11,8 @@ import NodesAndModes: meshgrid
 import SparseArrays: sparse, droptol!
 import UnPack: @unpack
 
-export Line, Tri, Quad, Hex # element types from NodesAndModes
+# element types from NodesAndModes
+export Line, Tri, Quad, Hex
 export @unpack
 
 # reference element utility functions
@@ -33,7 +28,7 @@ export geometric_factors
 include("geometric_mapping_functions.jl")
 
 # spatial connectivity routines
-export make_periodic 
+export make_periodic
 include("connectivity_functions.jl")
 
 # uniform meshes + face vertex orderings are included

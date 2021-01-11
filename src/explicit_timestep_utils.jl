@@ -1,3 +1,8 @@
+"""
+    bcopy!(x,y) = x .= y
+
+Convenience routine for operations on tuples of arrays.
+"""
 bcopy!(x,y) = x .= y
 
 """
@@ -77,8 +82,8 @@ returns accept_step (true/false), dt_new, errEst.
 uses PI error control method copied from Paranumal library (Warburton et al).
 
 Inputs:
-    Q: container of arrays, Q[i] = ith solution field
-    rhsQrk: container whose entries are type(Q) for RK rhs evaluations
+* Q: container of arrays, Q[i] = ith solution field
+* rhsQrk: container whose entries are type(Q) for RK rhs evaluations
 """
 function compute_adaptive_dt(Q,rhsQrk,dt,rkE,PI::PIparams,prevErrEst=nothing)
 

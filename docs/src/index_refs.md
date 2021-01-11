@@ -1,9 +1,9 @@
-## Index
+# Index
 
 ```@index
 ```
 
-## Functions
+# Functions
 
 ```@autodocs
 Modules = [StartUpDG]
