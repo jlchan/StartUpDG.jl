@@ -2,10 +2,14 @@
     connect_mesh(EToV,fv)
 
 Initialize element connectivity matrices, element to element and element to face
-connectivity. `EToV` is a `K` by `Nv` matrix whose rows identify the `Nv` vertices
-which make up an element.
+connectivity.
 
-`fv` (an array of arrays containing unordered indices of face vertices).
+Inputs:
+- `EToV` is a `K` by `Nv` matrix whose rows identify the `Nv` vertices
+which make up an element.
+- `fv` (an array of arrays containing unordered indices of face vertices).
+
+Output: `FToF`, `length(fv)` by `K` index array containing face-to-face connectivity.
 """
 function connect_mesh(EToV,fv)
     Nfaces = length(fv)
@@ -30,7 +34,7 @@ end
 
 
 """
-build_node_maps(Xf,FToF)
+    build_node_maps(Xf,FToF)
 
 Intialize the connectivity table along all edges and boundary node tables of all
 elements. mapM - map minus (interior). mapP - map plus (exterior).
@@ -40,18 +44,12 @@ Xf = (xf,yf,zf) and FToF is size (Nfaces*K) and FToF[face] = face neighbor
 mapM,mapP are size Nfp x (Nfaces*K)
 
 # Examples
-```jldoctest
-mapM,mapP,mapB = build_node_maps((xf,yf),FToF)
+```julia
+julia> mapM,mapP,mapB = build_node_maps((xf,yf),FToF)
 ```
 """
-function build_node_maps(xf,yf,FToF)
-    build_node_maps((xf,yf),FToF)
-end
-function build_node_maps(xf,yf,zf,FToF)
-    build_node_maps((xf,yf,zf),FToF)
-end
 
-function build_node_maps(Xf,FToF)
+function build_node_maps(FToF,Xf...)
 
     NfacesK = length(FToF)
     NODETOL = 1e-10;

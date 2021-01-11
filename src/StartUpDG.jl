@@ -28,8 +28,7 @@ include("ref_elem_utils.jl")
 export MeshData2
 include("MeshData.jl")
 
-# spatial assembly routines
-export connect_mesh, build_node_maps
+# spatial connectivity routines
 export build_periodic_boundary_maps!
 include("./connectivity_functions.jl")
 

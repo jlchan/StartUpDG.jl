@@ -149,7 +149,7 @@ function MeshData2(VX,VY,EToV,rd::RefElemData2)
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
     @unpack r,s,Vf = rd
     xf,yf = Vf*x, Vf*y
-    mapM,mapP,mapB = build_node_maps((xf,yf),FToF)
+    mapM,mapP,mapB = build_node_maps(FToF,xf,yf)
     Nfp = convert(Int,size(Vf,1)/Nfaces)
     mapM = reshape(mapM,Nfp*Nfaces,K)
     mapP = reshape(mapP,Nfp*Nfaces,K)
@@ -190,7 +190,7 @@ function MeshData2(VX,VY,VZ,EToV,rd::RefElemData2)
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
     @unpack r,s,t,Vf = rd
     xf,yf,zf = (x->Vf*x).((x,y,z))
-    mapM,mapP,mapB = build_node_maps((xf,yf,zf),FToF)
+    mapM,mapP,mapB = build_node_maps(FToF,xf,yf,zf)
     Nfp = convert(Int,size(Vf,1)/Nfaces)
     mapM = reshape(mapM,Nfp*Nfaces,K)
     mapP = reshape(mapP,Nfp*Nfaces,K)
