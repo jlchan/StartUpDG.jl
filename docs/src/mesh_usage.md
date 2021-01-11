@@ -18,7 +18,7 @@ VX,VY = mesh.point[1,:],mesh.point[2,:]
 EToV = permutedims(mesh.cell)
 ```
 
-## Initializing DG data on a mesh
+## Initializing high order DG mesh data
 
 ## Enforcing periodic boundary conditions
 

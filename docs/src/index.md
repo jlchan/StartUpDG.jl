@@ -1,15 +1,16 @@
-# StartUpDG
+# Overview
 
 This package contains routines to initialize reference element operators, physical mesh arrays, and connectivities for nodal DG methods. Codes roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007).
 
-## Overview
+Data is contained within (mutable) convenience structs `rd::RefElemData` and `md::MeshData`, which contain fields from `Globals1D, Globals2D, Globals3D` in the NDG book codes.
 
-Variables are contained within (mutable) convenience structs `rd::RefElemData` and `md::MeshData` which contain variables from `Globals1D, Globals2D, Globals3D` in the NDG book codes. Variables can be unpacked from using [`@unpack`](https://github.com/mauro3/UnPack.jl).
+Fields can be unpacked from using [`@unpack`](https://github.com/mauro3/UnPack.jl).
 
-### A short example
+## A short example
 
 ```julia
 using StartUpDG
+using UnPack
 
 # polynomial degree and mesh size
 N = 3
@@ -22,7 +23,7 @@ md = MeshData(VX,VY,EToV,rd)
 
 # Define a function by interpolation
 @unpack x,y = md
-u = @. 2 + .5*exp(-100*(x^2+y^2))
+u = @. exp(-10*(x^2+y^2))
 
 # Compute derivatives using geometric mapping + chain rule
 @unpack Dr,Ds = rd

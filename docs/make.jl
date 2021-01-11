@@ -10,10 +10,10 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Reference elements" => "refelem_usage.md",
-        "Meshes" => "refelem_usage.md",
+        "Meshes" => "mesh_usage.md",
         "Time-stepping" => "tstep_usage.md",
         "Authors" => "authors.md",
-        "Reference" => "refs.md"
+        "Reference" => "reference.md"
     ]
 )
 
