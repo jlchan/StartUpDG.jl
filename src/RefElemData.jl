@@ -1,4 +1,7 @@
 """
+    struct RefElemData{Dim,ElemShape <: ElementShape,
+                       IvMat,IfMat,MMat,PMat,DMat,LMat}
+
 RefElemData: contains info (interpolation points, volume/face quadrature, operators)
 for a high order nodal polynomial basis on a given reference element.
 

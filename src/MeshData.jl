@@ -1,4 +1,6 @@
 """
+    struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
+
 MeshData: contains info for a high order piecewise polynomial discretization on an
 unstructured mesh.
 
@@ -251,7 +253,6 @@ Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometr
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
 `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
-
 function MeshData(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
 
     # compute new quad and plotting points

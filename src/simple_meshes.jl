@@ -74,7 +74,7 @@ end
 Uniform Kx mesh on [-1,1].
 
         uniform_mesh(elem::Tri,Kx,Ky)
-        uniform_mesh(elem::Quad,Nx,Ny)
+        uniform_mesh(elem::Quad,Kx,Ky)
 
 Uniform Kx by Ky mesh on [-1,1]^2.
 
