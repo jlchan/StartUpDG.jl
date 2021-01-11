@@ -25,7 +25,7 @@ include("MeshData.jl")
 
 # ref-to-physical geometric terms
 export geometric_factors
-include("geometric_mapping_functions.jl")
+include("geometric_mappings.jl")
 
 # spatial connectivity routines
 export make_periodic
