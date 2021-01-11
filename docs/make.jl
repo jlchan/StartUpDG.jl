@@ -11,10 +11,10 @@ makedocs(
         "Home" => "index.md",
         "Data structures" => "data_structures.md",
         "Reference elements" => "refelem_usage.md",
-        "Meshes" => "mesh_usage.md",
-        "Time-stepping" => "tstep_usage.md",
+        "DG mesh data" => "mesh_usage.md",
+        "Timestepping" => "tstep_usage.md",
+        "Reference" => "index_refs.md",
         "Authors" => "authors.md",
-        "Reference" => "index_refs.md"
     ]
 )
 

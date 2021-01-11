@@ -13,7 +13,7 @@ rd = RefElemData(Hex(),N)
 
 ## Specifying different quadrature rules.
 
-By default, `RefElemData` initializes volume and surface quadrature rules to be the minimum rules which exactly integrate the unweighted volume and surface mass matrices. If
+By default, `RefElemData` initializes volume and surface quadrature rules to be the minimum rules which exactly integrate the unweighted volume and surface mass matrices. If different quadrature rules are desired, they can be specified as follows:
 ```julia
 N = 3
 
@@ -26,4 +26,6 @@ wq = @. wr*ws
 rd = RefElemData(Quad(),N; quad_rule_vol =(rq,sq,wq),  
                            quad_rule_face=(r1D,w1D))
 ```
-This results in a DG spectral element method (DG-SEM) discretization, with a diagonal lumped mass matrix and differentiation matrices which satisfy a summation-by-parts property. 
+This results in a DG spectral element method (DG-SEM) discretization, with a diagonal lumped mass matrix and differentiation matrices which satisfy a summation-by-parts property.
+
+There are not currently methods to change interpolation nodes, as these transformations can be performed as algebraic changes of basis after setting up a `RefElemData`.
