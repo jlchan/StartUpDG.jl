@@ -2,9 +2,9 @@
 
 ## Creating a simple uniform mesh
 
-For convenience, simple uniform meshes are included in the
+For convenience, simple uniform meshes are included in with `StartUpDG.jl`.
 
-## Generating meshes
+### Meshes for complex geometries
 
 Unstructured meshes for more complex geometries can be generated using external packages. For example, `TriangleMesh.jl`
 
@@ -20,6 +20,8 @@ EToV = permutedims(mesh.cell)
 
 ## Initializing high order DG mesh data
 
+
 ## Enforcing periodic boundary conditions
+
 
 ## Curved meshes
