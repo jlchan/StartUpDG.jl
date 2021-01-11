@@ -28,4 +28,4 @@ rd = RefElemData(Quad(),N; quad_rule_vol =(rq,sq,wq),
 ```
 This results in a DG spectral element method (DG-SEM) discretization, with a diagonal lumped mass matrix and differentiation matrices which satisfy a summation-by-parts property.
 
-There are not currently methods to change interpolation nodes, as these transformations can be performed as algebraic changes of basis after setting up a `RefElemData`.
+There is not an option to change interpolation nodes, as these transformations can be performed as algebraic changes of basis after setting up a `RefElemData`.

@@ -1,6 +1,8 @@
 # Data structures `RefElemData` and `MeshData`
 
-The structs `RefElemData{Dim,ElemShape,...}` and `MeshData{Dim}` contain fields which are useful for computing right hand sides for DG methods in a matrix-free fashion. `RefElemData` is immutable, while `MeshData` is mutable (in order to accomodate changes to geometric terms, e.g., curving meshes).
+The structs `RefElemData{Dim,ElemShape,...}` and `MeshData{Dim}` contain fields which are useful for computing right hand sides for DG methods in a matrix-free fashion.
+
+Fields can be unpacked from using [`@unpack`](https://github.com/mauro3/UnPack.jl).
 
 ## `RefElemData`
 

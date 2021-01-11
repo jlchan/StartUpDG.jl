@@ -114,6 +114,12 @@ end
 
 Returns a MeshData struct with high order DG mesh information from the unstructured
 mesh information (VXYZ...,EToV).
+
+    MeshData(md::MeshData,rd::RefElemData,xyz...)
+
+Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
+and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
+    `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
 
 function MeshData(VX,EToV,rd::RefElemData)
@@ -236,23 +242,6 @@ function MeshData(VX,VY,VZ,EToV,rd::RefElemData)
                      rstxyzJ,J,tuple(nxJ,nyJ,nzJ),sJ)
 end
 
-# physical normals are computed via G*nhatJ, G = matrix of geometric terms
-function compute_normals(geo::SMatrix{Dim,Dim},Vf,nrstJ...) where {Dim}
-    nxyzJ = ntuple(x->zeros(size(Vf,1),size(first(geo),2)),Dim)
-    for i = 1:Dim, j = 1:Dim
-        nxyzJ[i] .+= (Vf*geo[i,j]).*nrstJ[j]
-    end
-    sJ = sqrt.(sum(map(x->x.^2,nxyzJ)))
-    return nxyzJ...,sJ
-end
-
-"""
-    MeshData(md::MeshData,rd::RefElemData,xyz...)
-
-Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
-and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
-`xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
-"""
 function MeshData(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
 
     # compute new quad and plotting points
@@ -276,4 +265,15 @@ function MeshData(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
     setproperties(md,(xyz=xyz,xyzq=xyzq,xyzf=xyzf,
                   rstxyzJ=rstxyzJ,J=last(geo),
                   nxyzJ=geof[1:Dim],sJ=last(geof)))
+end
+
+
+# physical normals are computed via G*nhatJ, G = matrix of geometric terms
+function compute_normals(geo::SMatrix{Dim,Dim},Vf,nrstJ...) where {Dim}
+    nxyzJ = ntuple(x->zeros(size(Vf,1),size(first(geo),2)),Dim)
+    for i = 1:Dim, j = 1:Dim
+        nxyzJ[i] .+= (Vf*geo[i,j]).*nrstJ[j]
+    end
+    sJ = sqrt.(sum(map(x->x.^2,nxyzJ)))
+    return nxyzJ...,sJ
 end

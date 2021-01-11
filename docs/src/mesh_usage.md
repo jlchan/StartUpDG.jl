@@ -2,7 +2,7 @@
 
 The `MeshData` struct contains data for high order DG methods useful for evaluating DG formulations in a matrix-free fashion.
 
-## Creating unstructured meshes
+## Generating unstructured meshes
 
 For convenience, simple uniform meshes are included in with `StartUpDG.jl`.
 ```julia
@@ -34,6 +34,7 @@ md = MeshData(VXYZ...,EToV,rd)
 
 ## Enforcing periodic boundary conditions
 
+Periodic boundary conditions can be enforced by calling `make_periodic`, which returns another `MeshData` struct with modified `mapP` and `FToF` indexing arrays which account for periodicity.
 ```julia
 md = MeshData(VX,VY,EToV,rd)
 md_periodic = make_periodic(md,rd) # periodic in both x and y coordinates
@@ -42,9 +43,13 @@ md_periodic_x = make_periodic(md,rd,true,false) # periodic in x direction, but n
 
 ## Curved meshes
 
+It's common to generate curved meshes by first generating a linear mesh, then moving high order nodes on the linear mesh. This can be done by calling `MeshData` again with new `x,y` coordinates:
 ```julia
 md = MeshData(VX,VY,EToV,rd)
 @unpack x,y = md
-# <-- code to modify x,y
+# <-- code to modify high order nodes (x,y)
 md_curved = MeshData(md,rd,x,y)
 ```
+This is not currently implemented in 1D.
+
+More generally, one can copy `MeshData` with certain fields modified by using `@set` or `setproperties` from `Setfield.jl`.
