@@ -27,6 +27,9 @@ struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
     sJ::GeoType
 end
 
+# enable use of @set and setproperties(...) for MeshData
+ConstructionBase.constructorof(::Type{MeshData{A,B,C,D}}) where {A,B,C,D} = MeshData{A,B,C,D}
+
 # type alias for just dim/shape
 const MeshData{Dim} = MeshData{Dim,GeoType,IndexType,BdryIndexType} where {GeoType,IndexType,BdryIndexType}
 
@@ -222,42 +225,6 @@ function compute_normals(geo::SMatrix{Dim,Dim},Vf,nrstJ...) where {Dim}
     sJ = sqrt.(sum(map(x->x.^2,nxyzJ)))
     return nxyzJ...,sJ
 end
-
-# """
-#     MeshData!(md::MeshData,rd::RefElemData,xyz...)
-#
-# Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric
-# terms. Only field modified are the geometric terms `md.rstxyzJ`.
-# """
-# function MeshData!(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
-#
-#     # compute new quad and plotting points
-#     xyzf = map(x->rd.Vf*x,xyz)
-#     xyzq = map(x->rd.Vq*x,xyz)
-#
-#     #Compute geometric factors and surface normals
-#     geo = geometric_factors(xyz...,rd.Drst...)
-#     J = last(geo)
-#     if Dim==1
-#         rstxyzJ = SMatrix{Dim,Dim}(geo[1])
-#     elseif Dim==2
-#         rstxyzJ = SMatrix{Dim,Dim}(geo[1],geo[3],
-#                                    geo[2],geo[4])
-#     elseif Dim==3
-#         rstxyzJ = SMatrix{Dim,Dim}(geo[1],geo[4],geo[7],
-#                                    geo[2],geo[5],geo[8],
-#                                    geo[3],geo[6],geo[9])
-#     end
-#     geof = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
-#     nxyzJ = geof[1:Dim]
-#     sJ = last(geof)
-#
-#     # md.xyz .= xyz
-#     @pack! md = xyz,xyzq,xyzf,rstxyzJ,J,nxyzJ,sJ
-# end
-
-#ConstructionBase.constructorof(::Type{MeshData{Dim,GeoType,IndexType,BdryIndexType}}) where {T1} = Foo{T1}
-ConstructionBase.constructorof(::Type{MeshData{A,B,C,D}}) where {A,B,C,D} = MeshData{A,B,C,D}
 
 """
     MeshData(md::MeshData,rd::RefElemData,xyz...)
