@@ -53,6 +53,15 @@ function readGmsh2D(filename)
     return EToV,VX,VY
 end
 
+"""
+        uniform_mesh(elem::Line,Kx)
+        uniform_mesh(elem::Tri,Kx,Ky)
+        uniform_mesh(elem::Quad,Kx,Ky)
+        uniform_mesh(elem::Hex,Kx,Ky,Kz)
+
+Uniform Kx (by Ky by Kz) mesh on ``[-1,1]^d``, where `d` is the spatial dimension.
+"""
+
 ###########################
 #####     1D mesh     #####
 ###########################
@@ -68,20 +77,6 @@ end
 ### Triangular meshes #####
 ###########################
 
-"""
-        uniform_mesh(elem::Line,Kx)
-
-Uniform Kx mesh on [-1,1].
-
-        uniform_mesh(elem::Tri,Kx,Ky)
-        uniform_mesh(elem::Quad,Kx,Ky)
-
-Uniform Kx by Ky mesh on [-1,1]^2.
-
-        uniform_mesh(elem::Hex,Nx,Ny,Nz)
-
-Uniform Nx by Ny by Nz mesh on [-1,1]^3.
-"""
 function uniform_mesh(elem::Tri,Kx,Ky)
 
         (VY, VX) = meshgrid(LinRange(-1,1,Ky+1),LinRange(-1,1,Kx+1))
@@ -102,12 +97,8 @@ function uniform_mesh(elem::Tri,Kx,Ky)
         return (VX[:],VY[:],EToV)
 end
 
-function uniform_mesh(elem::Union{Tri,Quad},Kx)
-        return uniform_mesh(elem,Kx,Kx)
-end
-function uniform_mesh(elem::Hex,Kx)
-        return uniform_mesh(elem,Kx,Kx,Kx)
-end
+uniform_mesh(elem::Union{Tri,Quad},Kx) = uniform_mesh(elem,Kx,Kx)
+uniform_mesh(elem::Hex,Kx) = uniform_mesh(elem,Kx,Kx,Kx)
 
 ##############################
 ### Quadrilateral meshes #####
