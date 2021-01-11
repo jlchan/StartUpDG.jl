@@ -166,13 +166,6 @@ end
     uf = Vf*u
     @test uf ≈ uf[mapP]
 
-    # check MeshData! copying
-    # @unpack xyzf,rstxyzJ,nxyzJ = md
-    # MeshData!(md,rd,md.xyz...)
-    # @test all(md.rstxyzJ .≈ rstxyzJ)
-    # @test all(md.nxyzJ .≈ nxyzJ)
-    # @test all(md.xyzf .≈ xyzf)
-
     # check MeshData struct copying
     xyz = (x->x .+ 1).(md.xyz) # affine shift
     md2 = MeshData(md,rd,xyz...)
