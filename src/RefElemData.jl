@@ -177,8 +177,10 @@ function RefElemData(elem::Union{Tri,Quad}, N;
     Vp = vandermonde(elem,N,rp,sp)/VDM
 
     # sparsify for Quad
-    Drs = typeof(elem)==Quad ? droptol!.(sparse.((Dr,Ds)),1e-12) : (Dr,Ds)
-    Vf = typeof(elem)==Quad ? droptol!(sparse(Vf),1e-12) : Vf
+    tol = 1e-13
+    Drs = typeof(elem)==Quad ? droptol!.(sparse.((Dr,Ds)),tol) : (Dr,Ds)
+    # Vf = typeof(elem)==Quad ? droptol!(sparse(Vf),tol) : Vf
+    # LIFT = typeof(elem)==Quad ? droptol!(sparse(LIFT),tol) : LIFT
 
     return RefElemData(elem,Nfaces,fv,V1,tuple(r,s),VDM,tuple(rp,sp),Vp,
                        tuple(rq,sq),wq,Vq,tuple(rf,sf),wf,Vf,tuple(nrJ,nsJ),

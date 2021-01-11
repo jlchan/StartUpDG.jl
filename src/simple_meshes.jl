@@ -209,3 +209,17 @@ function uniform_mesh(elem::Hex,Nx,Ny,Nz)
         VZ = z[:];
         return VX[:],VY[:],VZ[:],EToV
 end
+
+# # WARNING: may not work in 3D. Should loop over faces then
+# function plotMesh(EToV,xyz...)
+#         plotobj = plot()
+#         plotTriMesh!(h,EToV,xyz...)
+# end
+#
+# function plotMesh!(plotobj,EToV,xyz...)
+#     for vertex_ids in eachrow(EToV)
+#         ids = vcat(vertex_ids, first(vertex_ids))
+#         plot!(getindex.(xyz,ids)...,linecolor=:black)
+#     end
+#     display(plot!(legend=false,ratio=1))
+# end

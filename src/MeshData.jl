@@ -1,5 +1,7 @@
 # annotate types for geofacs + connectivity arrays for speed in RHS evals
-struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
+
+# TODO: figure out if we need mutability? Depends on whether Setfield works with parametric structs
+mutable struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
 
     VXYZ::NTuple{Dim,T} where{T}  # vertex coordinates
     K::Int                       # num elems
@@ -7,7 +9,7 @@ struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
     FToF::IndexType                # face connectivity
 
     xyz::NTuple{Dim,GeoType}   # physical points
-    xyzf::NTuple{Dim,GeoType}   # face nodes
+    xyzf::NTuple{Dim,GeoType}  # face nodes
     xyzq::NTuple{Dim,GeoType}  # phys quad points, Jacobian-scaled weights
     wJq::GeoType
 
@@ -90,7 +92,7 @@ function Base.getproperty(x::MeshData,s::Symbol)
     end
 end
 
-function MeshData(VX::AbstractArray,EToV,rd::RefElemData)
+function MeshData(VX,EToV,rd::RefElemData)
 
     # Construct global coordinates
     @unpack V1 = rd
@@ -144,11 +146,13 @@ function MeshData(VX,VY,EToV,rd::RefElemData)
 
     #Construct global coordinates
     @unpack V1 = rd
-    x,y = V1*VX[transpose(EToV)], V1*VY[transpose(EToV)]
+    x = V1*VX[transpose(EToV)]
+    y = V1*VY[transpose(EToV)]
 
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
     @unpack r,s,Vf = rd
-    xf,yf = Vf*x, Vf*y
+    xf = Vf*x
+    yf = Vf*y
     mapM,mapP,mapB = build_node_maps(FToF,xf,yf)
     Nfp = convert(Int,size(Vf,1)/Nfaces)
     mapM = reshape(mapM,Nfp*Nfaces,K)
@@ -157,16 +161,13 @@ function MeshData(VX,VY,EToV,rd::RefElemData)
     #Compute geometric factors and surface normals
     @unpack Dr,Ds = rd
     rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, Dr, Ds)
+    rstxyzJ = SMatrix{2,2}(rxJ,ryJ,sxJ,syJ)
 
     @unpack Vq,wq = rd
     xq,yq = (x->Vq*x).((x,y))
     wJq = diagm(wq)*(Vq*J)
 
-    #physical normals are computed via G*nhatJ, G = matrix of geometric terms
-    @unpack nrJ,nsJ = rd
-    nxJ = (Vf*rxJ).*nrJ + (Vf*sxJ).*nsJ
-    nyJ = (Vf*ryJ).*nrJ + (Vf*syJ).*nsJ
-    sJ = @. sqrt(nxJ^2 + nyJ^2)
+    nxJ,nyJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
 
     return MeshData(tuple(VX,VY),K,EToV,FToF,
                      tuple(x,y),tuple(xf,yf),tuple(xq,yq),wJq,
@@ -198,21 +199,58 @@ function MeshData(VX,VY,VZ,EToV,rd::RefElemData)
     #Compute geometric factors and surface normals
     @unpack Dr,Ds,Dt = rd
     rxJ,sxJ,txJ,ryJ,syJ,tyJ,rzJ,szJ,tzJ,J = geometric_factors(x,y,z,Dr,Ds,Dt)
+    rstxyzJ = SMatrix{3,3}(rxJ,ryJ,rzJ,sxJ,syJ,szJ,txJ,tyJ,tzJ)
 
     @unpack Vq,wq = rd
     xq,yq,zq = (x->Vq*x).((x,y,z))
     wJq = diagm(wq)*(Vq*J)
 
-    #physical normals are computed via G*nhatJ, G = matrix of geometric terms
-    @unpack nrJ,nsJ,ntJ = rd
-    nxJ = nrJ.*(Vf*rxJ) + nsJ.*(Vf*sxJ) + ntJ.*(Vf*txJ)
-    nyJ = nrJ.*(Vf*ryJ) + nsJ.*(Vf*syJ) + ntJ.*(Vf*tyJ)
-    nzJ = nrJ.*(Vf*rzJ) + nsJ.*(Vf*szJ) + ntJ.*(Vf*tzJ)
-    sJ = @. sqrt(nxJ.^2 + nyJ.^2 + nzJ.^2)
+    nxJ,nyJ,nzJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
 
     return MeshData(tuple(VX,VY,VZ),K,EToV,FToF,
                      tuple(x,y,z),tuple(xf,yf,zf),tuple(xq,yq,zq),wJq,
                      mapM,mapP,mapB,
-                     SMatrix{3,3}(rxJ,ryJ,rzJ,sxJ,syJ,szJ,txJ,tyJ,tzJ),J,
-                     tuple(nxJ,nyJ,nzJ),sJ)
+                     rstxyzJ,J,tuple(nxJ,nyJ,nzJ),sJ)
+end
+
+# physical normals are computed via G*nhatJ, G = matrix of geometric terms
+function compute_normals(geo::SMatrix{Dim,Dim},Vf,nrstJ...) where {Dim}
+    nxyzJ = ntuple(x->zeros(size(Vf,1),size(first(geo),2)),Dim)
+    for i = 1:Dim, j = 1:Dim
+        nxyzJ[i] .+= (Vf*geo[i,j]).*nrstJ[j]
+    end
+    sJ = sqrt.(sum(map(x->x.^2,nxyzJ)))
+    return nxyzJ...,sJ
+end
+
+"""
+    MeshData!(md::MeshData,rd::RefElemData,xyz...)
+
+Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
+and outputs a new MeshData struct. Only field modified are the geometric terms `md.rstxyzJ`.
+"""
+function MeshData!(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
+
+    # compute new quad and plotting points
+    xyzf = map(x->rd.Vf,xyz)
+    xyzq = map(x->rd.Vq,xyz)
+
+    #Compute geometric factors and surface normals
+    geo = geometric_factors(xyz...,rd.Drst...)
+    J = last(geo)
+    if Dim==1
+        rstxyzJ = SMatrix{Dim,Dim}(geo[1])
+    elseif Dim==2
+        rstxyzJ = SMatrix{Dim,Dim}(geo[1],geo[3],
+                                   geo[2],geo[4])
+    elseif Dim==3
+        rstxyzJ = SMatrix{Dim,Dim}(geo[1],geo[4],geo[7],
+                                   geo[2],geo[5],geo[8],
+                                   geo[3],geo[6],geo[9])
+    end
+    geof = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
+    nxyzJ = geof[1:Dim]
+    sJ = last(geof)
+
+    @pack! md = xyz,xyzq,xyzf,rstxyzJ,J,nxyzJ,sJ
 end

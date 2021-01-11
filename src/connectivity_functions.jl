@@ -104,7 +104,10 @@ function make_nodemaps_periodic!(md::MeshData{Dim},rd::RefElemData,
     mapPB = build_periodic_boundary_maps!(xyzf...,is_periodic...,NfacesTotal,
                                           mapM, mapP, mapB, FToF)
     mapP[mapB] = mapPB
-    md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
+    # md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
+    # return nothing
+
+    @pack! md = mapP, FToF
 end
 
 # specializes to 1D - periodic = find min/max indices of xf and reverse their order
@@ -114,7 +117,9 @@ function make_nodemaps_periodic!(md::MeshData{1},rd::RefElemData,is_periodic=tru
         mapPB = argmax(vec(xf)),argmin(vec(xf))
         mapP[mapB] .= mapPB
         FToF[[1,length(FToF)]] .= mapPB
-        md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
+        # md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
+        # return nothing
+        @pack! md = mapP, FToF
     end
 end
 

@@ -24,7 +24,7 @@ export RefElemData
 include("RefElemData.jl")
 include("ref_elem_utils.jl")
 
-export MeshData
+export MeshData, MeshData!
 include("MeshData.jl")
 
 # ref-to-physical geometric terms
