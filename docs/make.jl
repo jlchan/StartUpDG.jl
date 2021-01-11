@@ -12,6 +12,7 @@ makedocs(
         "Data structures" => "data_structures.md",
         "Reference elements" => "refelem_usage.md",
         "DG mesh data" => "mesh_usage.md",
+        "Example: computing DG derivatives" => "ex_dg_deriv.md",
         "Timestepping" => "tstep_usage.md",
         "Reference" => "index_refs.md",
         "Authors" => "authors.md",
