@@ -108,7 +108,7 @@ end
 
 Constructor for RefElemData for different element types.
 """
-function RefElemData(elem::Line, N; Nq=N+1)
+function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1))
 
     fv = face_vertices(elem)
     Nfaces = length(fv)
@@ -120,7 +120,7 @@ function RefElemData(elem::Line, N; Nq=N+1)
 
     V1 = vandermonde(elem,1,r)/vandermonde(elem,1,[-1;1])
 
-    rq,wq = quad_nodes(elem,Nq)
+    rq,wq = quad_rule_vol
     Vq = vandermonde(elem,N,rq)/VDM
     M = Vq'*diagm(wq)*Vq
     Pq = M\(Vq'*diagm(wq))
@@ -136,13 +136,13 @@ function RefElemData(elem::Line, N; Nq=N+1)
     Vp = vandermonde(elem,N,rp)/VDM
 
     return RefElemData(elem,Nfaces,fv,V1,tuple(r),VDM,tuple(rp),Vp,
-                        tuple(rq),wq,Vq,tuple(rf),wf,Vf,tuple(nrJ),
-                        M,Pq,tuple(Dr),LIFT)
+                       tuple(rq),wq,Vq,tuple(rf),wf,Vf,tuple(nrJ),
+                       M,Pq,tuple(Dr),LIFT)
 end
 
 function RefElemData(elem::Union{Tri,Quad}, N;
-                      quad_rule_vol = quad_nodes(elem,N),
-                      quad_rule_face = gauss_quad(0,0,N))
+                     quad_rule_vol = quad_nodes(elem,N),
+                     quad_rule_face = gauss_quad(0,0,N))
 
     fv = face_vertices(elem) # set faces for triangle
     Nfaces = length(fv)
@@ -176,13 +176,13 @@ function RefElemData(elem::Union{Tri,Quad}, N;
     Vf = typeof(elem)==Quad ? droptol!(sparse(Vf),1e-12) : Vf
 
     return RefElemData(elem,Nfaces,fv,V1,tuple(r,s),VDM,tuple(rp,sp),Vp,
-                        tuple(rq,sq),wq,Vq,tuple(rf,sf),wf,Vf,tuple(nrJ,nsJ),
-                        M,Pq,Drs,LIFT)
+                       tuple(rq,sq),wq,Vq,tuple(rf,sf),wf,Vf,tuple(nrJ,nsJ),
+                       M,Pq,Drs,LIFT)
 end
 
 function RefElemData(elem::Hex,N;
-                      quad_rule_vol = quad_nodes(elem,N),
-                      quad_rule_face = quad_nodes(Quad(),N))
+                     quad_rule_vol = quad_nodes(elem,N),
+                     quad_rule_face = quad_nodes(Quad(),N))
 
     fv = face_vertices(elem) # set faces for triangle
     Nfaces = length(fv)
@@ -216,7 +216,7 @@ function RefElemData(elem::Hex,N;
     Vf = sparse(Vf)
 
     return RefElemData(elem,Nfaces,fv,V1,tuple(r,s,t),VDM,tuple(rp,sp,tp),Vp,
-                        tuple(rq,sq,tq),wq,Vq,
-                        tuple(rf,sf,tf),wf,Vf,tuple(nrJ,nsJ,ntJ),
-                        M,Pq,Drst,LIFT)
+                       tuple(rq,sq,tq),wq,Vq,
+                       tuple(rf,sf,tf),wf,Vf,tuple(nrJ,nsJ,ntJ),
+                       M,Pq,Drst,LIFT)
 end
