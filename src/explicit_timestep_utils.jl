@@ -1,6 +1,16 @@
 bcopy!(x,y) = x .= y
 
-"4th order 5-stage low storage Runge Kutta from Carpenter/Kennedy."
+"""
+    ck45()
+
+Returns coefficients rka,rkb,rkc for the 4th order 5-stage low storage Carpenter/Kennedy
+Runge Kutta method. Coefficients evolve the residual, solution, and local time, e.g.,
+```julia
+res = rk4a[INTRK]*res + dt*rhs
+@. u += rk4b[INTRK]*res
+```
+"""
+
 function ck45()
     rk4a = [            0.0 ...
     -567301805773.0/1357537059087.0 ...
@@ -23,9 +33,17 @@ function ck45()
     return rk4a,rk4b,rk4c
 end
 
-"dormand-prince 5th order 7 stage (6 function evals via the FSAL property)"
+"""
+    dp56()
+
+Dormand-prince 5th order 7 stage Runge-Kutta method (6 function evals via the FSAL property)
+Returns Butcher table arrays `A`,`c` and error evolution coefficients `rkE`.
+
+Note there is no `b` array needed due to the FSAL property and because the last stage
+is used to compute the error estimator.
+"""
 function dp56()
-    rk4a = [0.0             0.0             0.0             0.0             0.0             0.0         0.0
+    rka = [0.0             0.0             0.0             0.0             0.0             0.0         0.0
             0.2             0.0             0.0             0.0             0.0             0.0         0.0
             3.0/40.0        9.0/40.0        0.0             0.0             0.0             0.0         0.0
             44.0/45.0      -56.0/15.0       32.0/9.0        0.0             0.0             0.0         0.0
@@ -33,15 +51,19 @@ function dp56()
             9017.0/3168.0  -355.0/33.0      46732.0/5247.0  49.0/176.0      -5103.0/18656.0 0.0         0.0
             35.0/384.0      0.0             500.0/1113.0    125.0/192.0     -2187.0/6784.0  11.0/84.0   0.0 ]
 
-    rk4c = vec([0.0 0.2 0.3 0.8 8.0/9.0 1.0 1.0 ])
+    rkc = vec([0.0 0.2 0.3 0.8 8.0/9.0 1.0 1.0 ])
 
     # coefficients to evolve error estimator = b1-b2
-    rk4E = vec([71.0/57600.0  0.0 -71.0/16695.0 71.0/1920.0 -17253.0/339200.0 22.0/525.0 -1.0/40.0 ])
+    rkE = vec([71.0/57600.0  0.0 -71.0/16695.0 71.0/1920.0 -17253.0/339200.0 22.0/525.0 -1.0/40.0 ])
 
-    return rk4a,rk4E,rk4c
+    return rka,rkE,rkc
 end
 
-# PI control parameters
+"""
+    struct PIparams
+
+Struct containing PI controller parameters.
+"""
 Base.@kwdef struct PIparams{T}
     order
     errTol::T = 5e-4

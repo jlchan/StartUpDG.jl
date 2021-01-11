@@ -33,7 +33,7 @@ export geometric_factors
 include("geometric_mapping_functions.jl")
 
 # spatial connectivity routines
-export make_periodic #, make_nodemaps_periodic!
+export make_periodic 
 include("connectivity_functions.jl")
 
 # uniform meshes + face vertex orderings are included

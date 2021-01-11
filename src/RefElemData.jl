@@ -1,5 +1,6 @@
 """
-RefElemData: contains info for a general reference element.
+RefElemData: contains info (interpolation points, volume/face quadrature, operators)
+for a high order nodal polynomial basis on a given reference element.
 
 Use `@unpack` to extract fields. Example:
 ```julia

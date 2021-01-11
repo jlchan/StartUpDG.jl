@@ -1,6 +1,16 @@
-# annotate types for geofacs + connectivity arrays for speed in RHS evals
+"""
+MeshData: contains info for a high order piecewise polynomial discretization on an
+unstructured mesh.
 
-# TODO: figure out if we need mutability? Depends on whether Setfield works with parametric structs
+Use `@unpack` to extract fields. Example:
+```julia
+N,K1D = 3,2
+rd = RefElemData(Tri(),N)
+VX,VY,EToV = uniform_mesh(Tri(),K1D)
+md = MeshElemData(VX,VY,EToV,rd)
+@unpack x,y = md
+```
+"""
 struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
 
     VXYZ::NTuple{Dim,T} where{T}  # vertex coordinates
@@ -30,7 +40,7 @@ end
 # enable use of @set and setproperties(...) for MeshData
 ConstructionBase.constructorof(::Type{MeshData{A,B,C,D}}) where {A,B,C,D} = MeshData{A,B,C,D}
 
-# type alias for just dim/shape
+# type alias for just Dim
 const MeshData{Dim} = MeshData{Dim,GeoType,IndexType,BdryIndexType} where {GeoType,IndexType,BdryIndexType}
 
 # convenience routines for unpacking individual tuple entries
@@ -94,6 +104,15 @@ function Base.getproperty(x::MeshData,s::Symbol)
         return getfield(x,s)
     end
 end
+
+"""
+    MeshData(VX,EToV,rd::RefElemData)
+    MeshData(VX,VY,EToV,rd::RefElemData)
+    MeshData(VX,VY,VZ,EToV,rd::RefElemData)
+
+Returns a MeshData struct with high order DG mesh information from the unstructured
+mesh information (VXYZ...,EToV).
+"""
 
 function MeshData(VX,EToV,rd::RefElemData)
 
@@ -180,7 +199,6 @@ function MeshData(VX,VY,EToV,rd::RefElemData)
 
 end
 
-
 function MeshData(VX,VY,VZ,EToV,rd::RefElemData)
 
     @unpack fv = rd
@@ -230,7 +248,8 @@ end
     MeshData(md::MeshData,rd::RefElemData,xyz...)
 
 Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
-and outputs a new MeshData struct. Only field modified are the geometric terms `md.rstxyzJ`.
+and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
+`xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
 
 function MeshData(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}

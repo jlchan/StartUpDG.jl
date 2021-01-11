@@ -184,15 +184,7 @@ function uniform_mesh(elem::Hex,Nx,Ny,Nz)
                 k = div(em,(Nx*Ny))
                 j = div(em - k*Nx*Ny,Nx)
                 i = em % Nx
-
-                # EToV[e,1] = i     + Nxp*j     + Nxp*Nyp*k
-                # EToV[e,2] = (i+1) + Nxp*j     + Nxp*Nyp*k
-                # EToV[e,3] = i     + Nxp*(j+1) + Nxp*Nyp*k
-                # EToV[e,4] = (i+1) + Nxp*(j+1) + Nxp*Nyp*k
-                # EToV[e,5] = i     + Nxp*j     + Nxp*Nyp*(k+1)
-                # EToV[e,6] = (i+1) + Nxp*j     + Nxp*Nyp*(k+1)
-                # EToV[e,7] = i     + Nxp*(j+1) + Nxp*Nyp*(k+1)
-                # EToV[e,8] = (i+1) + Nxp*(j+1) + Nxp*Nyp*(k+1)
+                
                 EToV[e,1] = i     + Nxp*j     + Nxp*Nyp*k
                 EToV[e,2] = i     + Nxp*(j+1) + Nxp*Nyp*k
                 EToV[e,3] = (i+1) + Nxp*j     + Nxp*Nyp*k
