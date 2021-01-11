@@ -9,7 +9,11 @@ makedocs(
     modules=[StartUpDG],
     pages = [
         "Home" => "index.md",
-        "Authors" => "authors.md"
+        "Reference elements" => "refelem_usage.md",
+        "Meshes" => "refelem_usage.md",
+        "Time-stepping" => "tstep_usage.md",
+        "Authors" => "authors.md",
+        "Reference" => "refs.md"
     ]
 )
 
