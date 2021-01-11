@@ -1,5 +1,5 @@
 # annotate types for geofacs + connectivity arrays for speed in RHS evals
-struct MeshData2{Dim, GeoType, IndexType, BdryIndexType}
+struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
 
     VXYZ::NTuple{Dim,T} where{T}  # vertex coordinates
     K::Int                       # num elems
@@ -26,10 +26,10 @@ struct MeshData2{Dim, GeoType, IndexType, BdryIndexType}
 end
 
 # type alias for just dim/shape
-const MeshData2{Dim} = MeshData2{Dim,GeoType,IndexType,BdryIndexType} where {GeoType,IndexType,BdryIndexType}
+const MeshData{Dim} = MeshData{Dim,GeoType,IndexType,BdryIndexType} where {GeoType,IndexType,BdryIndexType}
 
 # convenience routines for unpacking individual tuple entries
-function Base.getproperty(x::MeshData2,s::Symbol)
+function Base.getproperty(x::MeshData,s::Symbol)
 
     if s==:VX
         return getproperty(x, :VXYZ)[1]
@@ -90,7 +90,7 @@ function Base.getproperty(x::MeshData2,s::Symbol)
     end
 end
 
-function MeshData2(VX::AbstractArray,EToV,rd::RefElemData2)
+function MeshData(VX::AbstractArray,EToV,rd::RefElemData)
 
     # Construct global coordinates
     @unpack V1 = rd
@@ -128,7 +128,7 @@ function MeshData2(VX::AbstractArray,EToV,rd::RefElemData2)
     xq = Vq*x
     wJq = diagm(wq)*(Vq*J)
 
-    return MeshData2(tuple(VX),K,EToV,FToF,
+    return MeshData(tuple(VX),K,EToV,FToF,
                      tuple(x),tuple(xf),tuple(xq),wJq,
                      collect(mapM),mapP,mapB,
                      SMatrix{1,1}(tuple(rxJ)),J,
@@ -136,7 +136,7 @@ function MeshData2(VX::AbstractArray,EToV,rd::RefElemData2)
 
 end
 
-function MeshData2(VX,VY,EToV,rd::RefElemData2)
+function MeshData(VX,VY,EToV,rd::RefElemData)
 
     @unpack fv = rd
     FToF = connect_mesh(EToV,fv)
@@ -168,7 +168,7 @@ function MeshData2(VX,VY,EToV,rd::RefElemData2)
     nyJ = (Vf*ryJ).*nrJ + (Vf*syJ).*nsJ
     sJ = @. sqrt(nxJ^2 + nyJ^2)
 
-    return MeshData2(tuple(VX,VY),K,EToV,FToF,
+    return MeshData(tuple(VX,VY),K,EToV,FToF,
                      tuple(x,y),tuple(xf,yf),tuple(xq,yq),wJq,
                      mapM,mapP,mapB,
                      SMatrix{2,2}(tuple(rxJ,ryJ,sxJ,syJ)),J,
@@ -177,7 +177,7 @@ function MeshData2(VX,VY,EToV,rd::RefElemData2)
 end
 
 
-function MeshData2(VX,VY,VZ,EToV,rd::RefElemData2)
+function MeshData(VX,VY,VZ,EToV,rd::RefElemData)
 
     @unpack fv = rd
     FToF = connect_mesh(EToV,fv)
@@ -210,7 +210,7 @@ function MeshData2(VX,VY,VZ,EToV,rd::RefElemData2)
     nzJ = nrJ.*(Vf*rzJ) + nsJ.*(Vf*szJ) + ntJ.*(Vf*tzJ)
     sJ = @. sqrt(nxJ.^2 + nyJ.^2 + nzJ.^2)
 
-    return MeshData2(tuple(VX,VY,VZ),K,EToV,FToF,
+    return MeshData(tuple(VX,VY,VZ),K,EToV,FToF,
                      tuple(x,y,z),tuple(xf,yf,zf),tuple(xq,yq,zq),wJq,
                      mapM,mapP,mapB,
                      SMatrix{3,3}(rxJ,ryJ,rzJ,sxJ,syJ,szJ,txJ,tyJ,tzJ),J,

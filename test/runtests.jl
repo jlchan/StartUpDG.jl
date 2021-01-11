@@ -29,7 +29,7 @@ end
     #####
     ##### interval
     #####
-    rd = RefElemData2(Line(),N)
+    rd = RefElemData(Line(),N)
     @test abs(sum(rd.rq.*rd.wq)) < tol
     @test rd.nrJ ≈ [-1,1]
     @test rd.Pq*rd.Vq ≈ I
@@ -37,7 +37,7 @@ end
     #####
     ##### triangles
     #####
-    rd = RefElemData2(Tri(),N)
+    rd = RefElemData(Tri(),N)
     @test abs(sum(rd.wq)) ≈ 2
     @test abs(sum(rd.wf)) ≈ 6
     @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
@@ -46,7 +46,7 @@ end
     #####
     ##### quads
     #####
-    rd = RefElemData2(Quad(),N)
+    rd = RefElemData(Quad(),N)
     @test abs(sum(rd.wq)) ≈ 4
     @test abs(sum(rd.wf)) ≈ 8
     @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
@@ -55,7 +55,7 @@ end
     #####
     ##### hexes
     #####
-    rd = RefElemData2(Hex(),N)
+    rd = RefElemData(Hex(),N)
     @test abs(sum(rd.wq)) ≈ 8
     @test abs(sum(rd.wf)) ≈ 6*4
     @test abs(sum(rd.wf .* rd.nrJ)) < tol
@@ -69,9 +69,9 @@ end
 
     N = 3
     K1D = 2
-    rd = RefElemData2(Line(),N)
+    rd = RefElemData(Line(),N)
     VX,EToV = uniform_mesh(Line(),K1D)
-    md = MeshData2(VX,EToV,rd)
+    md = MeshData(VX,EToV,rd)
     @unpack wq,Dr,Vq,Vf,wf = rd
     @unpack Nfaces = rd
     @unpack x,xq,xf,K = md
@@ -117,9 +117,9 @@ end
 
     N = 3
     K1D = 2
-    rd = RefElemData2(Tri(),N)
+    rd = RefElemData(Tri(),N)
     VX,VY,EToV = uniform_mesh(Tri(),K1D)
-    md = MeshData2(VX,VY,EToV,rd)
+    md = MeshData(VX,VY,EToV,rd)
     @unpack wq,Dr,Ds,Vq,Vf,wf = rd
     Nfaces = length(rd.fv)
     @unpack x,y,xq,yq,xf,yf,K = md
@@ -173,9 +173,9 @@ end
 
     N = 3
     K1D = 2
-    rd = RefElemData2(Quad(),N)
+    rd = RefElemData(Quad(),N)
     VX,VY,EToV = uniform_mesh(Quad(),K1D)
-    md = MeshData2(VX,VY,EToV,rd)
+    md = MeshData(VX,VY,EToV,rd)
     @unpack wq,Dr,Ds,Vq,Vf,wf = rd
     Nfaces = length(rd.fv)
     @unpack x,y,xq,yq,xf,yf,K = md
@@ -228,9 +228,9 @@ end
 
     N = 2
     K1D = 2
-    rd = RefElemData2(Hex(),N)
+    rd = RefElemData(Hex(),N)
     VX,VY,VZ,EToV = uniform_mesh(Hex(),K1D)
-    md = MeshData2(VX,VY,VZ,EToV,rd)
+    md = MeshData(VX,VY,VZ,EToV,rd)
     @unpack wq,Dr,Ds,Dt,Vq,Vf,wf = rd
     Nfaces = length(rd.fv)
     @unpack x,y,z,xq,yq,zq,wJq,xf,yf,zf,K = md

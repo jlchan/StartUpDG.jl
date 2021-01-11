@@ -20,11 +20,11 @@ export Line, Tri, Quad, Hex # element types from NodesAndModes
 export @unpack
 
 # reference element utility functions
-export RefElemData2
+export RefElemData
 include("RefElemData.jl")
 include("ref_elem_utils.jl")
 
-export MeshData2
+export MeshData
 include("MeshData.jl")
 
 # ref-to-physical geometric terms

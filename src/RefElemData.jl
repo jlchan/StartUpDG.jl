@@ -1,15 +1,15 @@
 """
-RefElemData2: contains info for a general reference element.
+RefElemData: contains info for a general reference element.
 
 Use `@unpack` to extract fields. Example:
 ```julia
 N = 3
-rd = RefElemData2(Tri(),N)
+rd = RefElemData(Tri(),N)
 @unpack r,s = rd
 ```
 """
 
-struct RefElemData2{Dim,ElemShape <: ElementShape,
+struct RefElemData{Dim,ElemShape <: ElementShape,
                     IvMat,IfMat,MMat,PMat,DMat,LMat}
 
     elemShape::ElemShape
@@ -45,11 +45,11 @@ struct RefElemData2{Dim,ElemShape <: ElementShape,
 end
 
 # type alias for just dim/shape
-const RefElemData2{Dim,ElemShape<:ElementShape} =
-    RefElemData2{Dim,ElemShape,IvMat,IfMat,MMat,PMat,DMat,LMat} where {IvMat,IfMat,MMat,PMat,DMat,LMat}
+const RefElemData{Dim,ElemShape<:ElementShape} =
+    RefElemData{Dim,ElemShape,IvMat,IfMat,MMat,PMat,DMat,LMat} where {IvMat,IfMat,MMat,PMat,DMat,LMat}
 
 # convenience unpacking routines
-function Base.getproperty(x::RefElemData2, s::Symbol)
+function Base.getproperty(x::RefElemData, s::Symbol)
     if s==:r
         return getproperty(x,:rst)[1]
     elseif s==:s
@@ -98,17 +98,17 @@ function Base.getproperty(x::RefElemData2, s::Symbol)
 end
 
 """
-    RefElemData2(elem::Line, N; Nq=N+1)
-    RefElemData2(elem::Union{Tri,Quad}, N;
+    RefElemData(elem::Line, N; Nq=N+1)
+    RefElemData(elem::Union{Tri,Quad}, N;
                  quad_rule_vol = quad_nodes(elem,N),
                  quad_rule_face = gauss_quad(0,0,N))
-    RefElemData2(elem::Hex,N;
+    RefElemData(elem::Hex,N;
                  quad_rule_vol = quad_nodes(elem,N),
                  quad_rule_face = quad_nodes(Quad(),N))
 
-Constructor for RefElemData2 for different element types.
+Constructor for RefElemData for different element types.
 """
-function RefElemData2(elem::Line, N; Nq=N+1)
+function RefElemData(elem::Line, N; Nq=N+1)
 
     fv = face_vertices(elem)
     Nfaces = length(fv)
@@ -135,12 +135,12 @@ function RefElemData2(elem::Line, N; Nq=N+1)
     rp = equi_nodes(elem,10)
     Vp = vandermonde(elem,N,rp)/VDM
 
-    return RefElemData2(elem,Nfaces,fv,V1,tuple(r),VDM,tuple(rp),Vp,
+    return RefElemData(elem,Nfaces,fv,V1,tuple(r),VDM,tuple(rp),Vp,
                         tuple(rq),wq,Vq,tuple(rf),wf,Vf,tuple(nrJ),
                         M,Pq,tuple(Dr),LIFT)
 end
 
-function RefElemData2(elem::Union{Tri,Quad}, N;
+function RefElemData(elem::Union{Tri,Quad}, N;
                       quad_rule_vol = quad_nodes(elem,N),
                       quad_rule_face = gauss_quad(0,0,N))
 
@@ -175,12 +175,12 @@ function RefElemData2(elem::Union{Tri,Quad}, N;
     Drs = typeof(elem)==Quad ? droptol!.(sparse.((Dr,Ds)),1e-12) : (Dr,Ds)
     Vf = typeof(elem)==Quad ? droptol!(sparse(Vf),1e-12) : Vf
 
-    return RefElemData2(elem,Nfaces,fv,V1,tuple(r,s),VDM,tuple(rp,sp),Vp,
+    return RefElemData(elem,Nfaces,fv,V1,tuple(r,s),VDM,tuple(rp,sp),Vp,
                         tuple(rq,sq),wq,Vq,tuple(rf,sf),wf,Vf,tuple(nrJ,nsJ),
                         M,Pq,Drs,LIFT)
 end
 
-function RefElemData2(elem::Hex,N;
+function RefElemData(elem::Hex,N;
                       quad_rule_vol = quad_nodes(elem,N),
                       quad_rule_face = quad_nodes(Quad(),N))
 
@@ -215,7 +215,7 @@ function RefElemData2(elem::Hex,N;
     Drst = sparse.((Dr,Ds,Dt))
     Vf = sparse(Vf)
 
-    return RefElemData2(elem,Nfaces,fv,V1,tuple(r,s,t),VDM,tuple(rp,sp,tp),Vp,
+    return RefElemData(elem,Nfaces,fv,V1,tuple(r,s,t),VDM,tuple(rp,sp,tp),Vp,
                         tuple(rq,sq,tq),wq,Vq,
                         tuple(rf,sf,tf),wf,Vf,tuple(nrJ,nsJ,ntJ),
                         M,Pq,Drst,LIFT)
