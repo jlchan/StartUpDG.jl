@@ -10,7 +10,7 @@ rd = RefElemData(Tri(),N)
 """
 
 struct RefElemData{Dim,ElemShape <: ElementShape,
-                    IvMat,IfMat,MMat,PMat,DMat,LMat}
+                   IvMat,IfMat,MMat,PMat,DMat,LMat}
 
     elemShape::ElemShape
 
@@ -47,6 +47,11 @@ end
 # type alias for just dim/shape
 const RefElemData{Dim,ElemShape<:ElementShape} =
     RefElemData{Dim,ElemShape,IvMat,IfMat,MMat,PMat,DMat,LMat} where {IvMat,IfMat,MMat,PMat,DMat,LMat}
+
+# type alias for just dim
+const RefElemData{Dim} = RefElemData{Dim,ElemShape,IvMat,IfMat,MMat,PMat,DMat,LMat} where
+                        {ElemShape <: ElementShape, IvMat,IfMat,MMat,PMat,DMat,LMat}
+
 
 # convenience unpacking routines
 function Base.getproperty(x::RefElemData, s::Symbol)
