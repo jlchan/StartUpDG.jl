@@ -1,4 +1,4 @@
-push!(LOAD_PATH,"src/") # necessary for unregistered packages
+push!(LOAD_PATH,"../src/") # necessary for unregistered packages
 
 using Documenter
 using StartUpDG

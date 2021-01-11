@@ -9,7 +9,6 @@ rd = RefElemData(Tri(),N)
 @unpack r,s = rd
 ```
 """
-
 struct RefElemData{Dim,ElemShape <: ElementShape,
                    IvMat,IfMat,MMat,PMat,DMat,LMat}
 
