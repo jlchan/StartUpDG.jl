@@ -10,7 +10,6 @@ res = rk4a[INTRK]*res + dt*rhs
 @. u += rk4b[INTRK]*res
 ```
 """
-
 function ck45()
     rk4a = [            0.0 ...
     -567301805773.0/1357537059087.0 ...
@@ -81,7 +80,6 @@ Inputs:
     Q: container of arrays, Q[i] = ith solution field
     rhsQrk: container whose entries are type(Q) for RK rhs evaluations
 """
-
 function compute_adaptive_dt(Q,rhsQrk,dt,rkE,PI::PIparams,prevErrEst=nothing)
 
     @unpack errTol,order,dtmax,dtmin = PI

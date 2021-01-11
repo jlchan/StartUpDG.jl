@@ -1,13 +1,12 @@
 """
     function readGmsh2D(filename)
 
-reads GMSH 2D file format 2.2 0 8
-returns EToV,VX,VY
+reads triangular GMSH 2D file format 2.2 0 8. returns EToV,VX,VY
 
 # Examples
-
+```julia
 EToV,VX,VY = readGmsh2D("eulerSquareCylinder2D.msh")
-
+```
 """
 function readGmsh2D(filename)
     f = open(filename)
@@ -184,7 +183,7 @@ function uniform_mesh(elem::Hex,Nx,Ny,Nz)
                 k = div(em,(Nx*Ny))
                 j = div(em - k*Nx*Ny,Nx)
                 i = em % Nx
-                
+
                 EToV[e,1] = i     + Nxp*j     + Nxp*Nyp*k
                 EToV[e,2] = i     + Nxp*(j+1) + Nxp*Nyp*k
                 EToV[e,3] = (i+1) + Nxp*j     + Nxp*Nyp*k
