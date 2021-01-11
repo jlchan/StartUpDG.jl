@@ -1,4 +1,35 @@
 """
+    connect_mesh(EToV,fv)
+
+Initialize element connectivity matrices, element to element and element to face
+connectivity. `EToV` is a `K` by `Nv` matrix whose rows identify the `Nv` vertices
+which make up an element.
+
+`fv` (an array of arrays containing unordered indices of face vertices).
+"""
+function connect_mesh(EToV,fv)
+    Nfaces = length(fv)
+    K = size(EToV,1)
+
+    # sort and find matches
+    fnodes = [[sort(EToV[e,ids]) for ids = fv, e = 1:K]...]
+    p = sortperm(fnodes) # sorts by lexicographic ordering by default
+    fnodes = fnodes[p,:]
+
+    FToF = reshape(collect(1:Nfaces*K),Nfaces,K)
+    for f = 1:size(fnodes,1)-1
+        if fnodes[f,:]==fnodes[f+1,:]
+            f1 = FToF[p[f]]
+            f2 = FToF[p[f+1]]
+            FToF[p[f]] = f2
+            FToF[p[f+1]] = f1
+        end
+    end
+    return FToF
+end
+
+
+"""
 build_node_maps(Xf,FToF)
 
 Intialize the connectivity table along all edges and boundary node tables of all
@@ -55,46 +86,14 @@ function build_node_maps(Xf,FToF)
 end
 
 """
-    build_periodic_boundary_maps(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB)
+    build_periodic_boundary_maps!(md::MeshData2,rd::RefElemData2,LXYZ...)
     build_periodic_boundary_maps!(xf,yf,LX,LY,NfacesTotal,mapM,mapP,mapB,FToF)
-    build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY)
 
-returns mapPB, such that
-    mapP[mapB] = mapPB
-modifies mapP to produce a periodic node map
+These functions return index array `mapPB`, such that `mapP[mapB] = mapPB` modifies
+mapP to produce a periodic node map.
 
-optional: modifies FToF to get periodic boundary face map (for implicit)
+These functions also modify `FToF` to reflect periodicity (used for implicit).
 """
-
-function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX)
-    @unpack xf,mapM,mapP = md
-
-    # Make periodic
-    idL,idR = argmin(xf), argmax(xf)
-    mapP[idL] = mapM[idR]
-    mapP[idR] = mapM[idL]
-
-    @pack! md = mapM,mapP
-end
-
-function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY)
-    @unpack fv,Vf = rd
-    Nfaces = length(fv)
-    @unpack xf,yf,FToF,K,mapM,mapP,mapB = md
-    mapPB = build_periodic_boundary_maps!(xf,yf,LX,LY,Nfaces*K,mapM,mapP,mapB,FToF)
-    mapP[mapB] = mapPB
-end
-
-function build_periodic_boundary_maps!(md::MeshData,rd::RefElemData,LX,LY,LZ)
-    @unpack fv,Vf = rd
-    Nfaces = length(fv)
-    @unpack xf,yf,zf,FToF,K,mapM,mapP,mapB = md
-    mapPB = build_periodic_boundary_maps!(xf,yf,zf,LX,LY,LZ,
-                                          Nfaces*K,mapM,mapP,mapB,FToF)
-    mapP[mapB] = mapPB
-end
-
-# =============== WARNING: new version using MeshData2 ================
 
 function build_periodic_boundary_maps!(md::MeshData2,rd::RefElemData2,LXYZ...)
     @unpack mapM,mapP,mapB,xyzf,FToF = md

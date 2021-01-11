@@ -1,9 +1,4 @@
-"bcopy!(x,y) = x .= y
-convenience routines for broadcast over tuples of arrays (update of soln fields)"
 bcopy!(x,y) = x .= y
-"bmult(x,y) = x .* y
-convenience routines for broadcast over tuples of arrays (update of soln fields)"
-bmult(x,y) = x .* y
 
 "4th order 5-stage low storage Runge Kutta from Carpenter/Kennedy."
 function ck45()
@@ -47,25 +42,23 @@ function dp56()
 end
 
 # PI control parameters
-struct PIparams{T}
-    errTol::T
-    order::T
-    dtmax::T
-    dtmin::T
+Base.@kwdef struct PIparams{T}
+    order
+    errTol::T = 5e-4
+    dtmax::T = 1e6
+    dtmin::T = 1e-12
 end
 
-"function init_PI_controller(order; errTol=5e-4, dtmax=1e7, dtmin=1e-14)"
-function init_PI_controller(order; errTol=5e-4, dtmax=1e7, dtmin=1e-14)
-    return PIparams(errTol,convert(eltype(errTol),order),dtmax,dtmin)
-end
+"""
+    compute_adaptive_dt(Q,rhsQrk,dt,rkE,PI::PIparams,prevErrEst=nothing)
 
-"function compute_adaptive_timestep!(Q,rhsQrk,rk::ERKparams,prevErrEst=nothing)
-    returns accept_step, dt_new, errEst
+returns accept_step (true/false), dt_new, errEst.
+uses PI error control method copied from Paranumal library (Warburton et al).
 
-    uses PI error control method from Paranumal library by Tim Warburton
-
+Inputs:
     Q: container of arrays, Q[i] = ith solution field
-    rhsQrk: container whose entries are type(Q) for RK rhs evaluations"
+    rhsQrk: container whose entries are type(Q) for RK rhs evaluations
+"""
 
 function compute_adaptive_dt(Q,rhsQrk,dt,rkE,PI::PIparams,prevErrEst=nothing)
 
@@ -74,7 +67,8 @@ function compute_adaptive_dt(Q,rhsQrk,dt,rkE,PI::PIparams,prevErrEst=nothing)
     # assemble error estimate using rkE = error est coefficients
     errEstVec = zero.(Q)
     for s = 1:7
-        bcopy!.(errEstVec, @. errEstVec + rkE[s]*rhsQrk[s])
+        map(bcopy!,errEstVec, @. errEstVec + rkE[s]*rhsQrk[s])
+        #bcopy!.(errEstVec, @. errEstVec + rkE[s]*rhsQrk[s])
     end
 
     # compute scalar error estimate
