@@ -180,9 +180,9 @@ end
 
     N = 3
     K1D = 2
-    rd = init_reference_elem(Quad(),N)
+    rd = RefElemData2(Quad(),N)
     VX,VY,EToV = uniform_mesh(Quad(),K1D)
-    md = init_DG_mesh(VX,VY,EToV,rd)
+    md = MeshData2(VX,VY,EToV,rd)
     @unpack wq,Dr,Ds,Vq,Vf,wf = rd
     Nfaces = length(rd.fv)
     @unpack x,y,xq,yq,xf,yf,K = md
@@ -236,9 +236,9 @@ end
 
     N = 2
     K1D = 2
-    rd = init_reference_elem(Hex(),N)
+    rd = RefElemData2(Hex(),N)
     VX,VY,VZ,EToV = uniform_mesh(Hex(),K1D)
-    md = init_DG_mesh(VX,VY,VZ,EToV,rd)
+    md = MeshData2(VX,VY,VZ,EToV,rd)
     @unpack wq,Dr,Ds,Dt,Vq,Vf,wf = rd
     Nfaces = length(rd.fv)
     @unpack x,y,z,xq,yq,zq,wJq,xf,yf,zf,K = md
