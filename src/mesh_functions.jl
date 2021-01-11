@@ -1,18 +1,11 @@
 """
-connect_mesh(EToV,fv)
+    connect_mesh(EToV,fv)
 
-Initialize element connectivity matrices, element to element and
-element to face connectivity. Works on general element types, so long as
+Initialize element connectivity matrices, element to element and element to face
+connectivity. `EToV` is a `K` by `Nv` matrix whose rows identify the `Nv` vertices
+which make up an element.
 
-        fv = array of arrays containing (unordered) indices of face vertices
-
-is provided.
-
-# Examples
-- connect_mesh(EToV,UniformTriMesh.fv())
-- connect_mesh(EToV,[[1,2],[2,3],[3,1]])
-```jldoctest
-```
+`fv` (an array of arrays containing unordered indices of face vertices).
 """
 function connect_mesh(EToV,fv)
     Nfaces = length(fv)
@@ -36,16 +29,13 @@ function connect_mesh(EToV,fv)
 end
 
 
-# dispatch to 2D or 3D version if tuple called
-function init_DG_mesh(VXYZ::Tuple,EToV,rd::RefElemData)
-    return init_DG_mesh(VXYZ...,EToV,rd)
-end
+"""
+    init_DG_mesh(VX::AbstractArray,EToV,rd::RefElemData)
+    init_DG_mesh(VX,VY,EToV,rd::RefElemData)
+    init_DG_mesh(VX,VY,VZ,EToV,rd::RefElemData)
 
-
-"
-function init_DG_mesh(VX::AbstractArray,EToV,rd::RefElemData)
-    init DG mesh in 1D
-"
+Initializes mesh data (node connectivity, geometric terms, etc).
+"""
 # distinguish 1D mesh construction from 2D/3D
 # assumes VX is ordered left-to-right
 function init_DG_mesh(VX::AbstractArray,EToV,rd::RefElemData)
@@ -86,10 +76,6 @@ function init_DG_mesh(VX::AbstractArray,EToV,rd::RefElemData)
     return md
 end
 
-"
-function init_DG_mesh(VX,VY,EToV,rd::RefElemData)
-    init DG mesh in 2D
-"
 function init_DG_mesh(VX,VY,EToV,rd::RefElemData)
     # initialize a new mesh data struct
     md = MeshData()
@@ -134,9 +120,7 @@ function init_DG_mesh(VX,VY,EToV,rd::RefElemData)
     return md
 end
 
-"function init_DG_mesh(VX,VY,VZ,EToV,rd::RefElemData)
-    init mesh in 3D
-"
+
 function init_DG_mesh(VX,VY,VZ,EToV,rd::RefElemData)
     # initialize a new mesh data struct
     md = MeshData()
