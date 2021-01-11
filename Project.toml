@@ -4,6 +4,7 @@ authors = ["Jesse Chan", "Yimin Lin"]
 version = "0.2.0"
 
 [deps]
+ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 NodesAndModes = "7aca2e03-f7e2-4192-9ec8-f4ca66d597fb"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"

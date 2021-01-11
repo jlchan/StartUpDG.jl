@@ -1,7 +1,7 @@
 # annotate types for geofacs + connectivity arrays for speed in RHS evals
 
 # TODO: figure out if we need mutability? Depends on whether Setfield works with parametric structs
-mutable struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
+struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
 
     VXYZ::NTuple{Dim,T} where{T}  # vertex coordinates
     K::Int                       # num elems
@@ -223,21 +223,57 @@ function compute_normals(geo::SMatrix{Dim,Dim},Vf,nrstJ...) where {Dim}
     return nxyzJ...,sJ
 end
 
+# """
+#     MeshData!(md::MeshData,rd::RefElemData,xyz...)
+#
+# Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric
+# terms. Only field modified are the geometric terms `md.rstxyzJ`.
+# """
+# function MeshData!(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
+#
+#     # compute new quad and plotting points
+#     xyzf = map(x->rd.Vf*x,xyz)
+#     xyzq = map(x->rd.Vq*x,xyz)
+#
+#     #Compute geometric factors and surface normals
+#     geo = geometric_factors(xyz...,rd.Drst...)
+#     J = last(geo)
+#     if Dim==1
+#         rstxyzJ = SMatrix{Dim,Dim}(geo[1])
+#     elseif Dim==2
+#         rstxyzJ = SMatrix{Dim,Dim}(geo[1],geo[3],
+#                                    geo[2],geo[4])
+#     elseif Dim==3
+#         rstxyzJ = SMatrix{Dim,Dim}(geo[1],geo[4],geo[7],
+#                                    geo[2],geo[5],geo[8],
+#                                    geo[3],geo[6],geo[9])
+#     end
+#     geof = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
+#     nxyzJ = geof[1:Dim]
+#     sJ = last(geof)
+#
+#     # md.xyz .= xyz
+#     @pack! md = xyz,xyzq,xyzf,rstxyzJ,J,nxyzJ,sJ
+# end
+
+#ConstructionBase.constructorof(::Type{MeshData{Dim,GeoType,IndexType,BdryIndexType}}) where {T1} = Foo{T1}
+ConstructionBase.constructorof(::Type{MeshData{A,B,C,D}}) where {A,B,C,D} = MeshData{A,B,C,D}
+
 """
-    MeshData!(md::MeshData,rd::RefElemData,xyz...)
+    MeshData(md::MeshData,rd::RefElemData,xyz...)
 
 Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
 and outputs a new MeshData struct. Only field modified are the geometric terms `md.rstxyzJ`.
 """
-function MeshData!(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
+
+function MeshData(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
 
     # compute new quad and plotting points
-    xyzf = map(x->rd.Vf,xyz)
-    xyzq = map(x->rd.Vq,xyz)
+    xyzf = map(x->rd.Vf*x,xyz)
+    xyzq = map(x->rd.Vq*x,xyz)
 
     #Compute geometric factors and surface normals
     geo = geometric_factors(xyz...,rd.Drst...)
-    J = last(geo)
     if Dim==1
         rstxyzJ = SMatrix{Dim,Dim}(geo[1])
     elseif Dim==2
@@ -249,8 +285,8 @@ function MeshData!(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
                                    geo[3],geo[6],geo[9])
     end
     geof = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
-    nxyzJ = geof[1:Dim]
-    sJ = last(geof)
 
-    @pack! md = xyz,xyzq,xyzf,rstxyzJ,J,nxyzJ,sJ
+    setproperties(md,(xyz=xyz,xyzq=xyzq,xyzf=xyzf,
+                  rstxyzJ=rstxyzJ,J=last(geo),
+                  nxyzJ=geof[1:Dim],sJ=last(geof)))
 end

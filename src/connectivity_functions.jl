@@ -83,43 +83,77 @@ function build_node_maps(FToF,Xf...)
     return mapM,mapP,mapB
 end
 
-"""
-    make_nodemaps_periodic!(md::MeshData{Dim},rd::RefElemData,
-                            is_periodic...) where {Dim}
-    make_nodemaps_periodic!(md::MeshData{Dim},rd::RefElemData,
-                            is_periodic=ntuple(x->true,Dim)) where {Dim}
-    make_nodemaps_periodic!(md::MeshData{1},rd::RefElemData,is_periodic=true)
+# """
+#     make_nodemaps_periodic!(md::MeshData{Dim},rd::RefElemData,
+#                             is_periodic...) where {Dim}
+#     make_nodemaps_periodic!(md::MeshData{Dim},rd::RefElemData,
+#                             is_periodic=ntuple(x->true,Dim)) where {Dim}
+#     make_nodemaps_periodic!(md::MeshData{1},rd::RefElemData,is_periodic=true)
+#
+# Modifies md, rd such that the node maps `mapP` and face maps `FToF` are periodic.
+# Here, `is_periodic` is a tuple of `Bool` indicating whether or not to impose
+# periodic BCs in the `x`,`y`, or `z` coordinate.
+# """
+# make_nodemaps_periodic!(md::MeshData,rd::RefElemData,is_periodic...) =
+#     make_nodemaps_periodic!(md,rd,is_periodic)
+#
+# function make_nodemaps_periodic!(md::MeshData{Dim},rd::RefElemData,
+#                                  is_periodic::NTuple{Dim,T}=ntuple(x->true,Dim)) where {Dim,T}
+#     @unpack mapM,mapP,mapB,xyzf,FToF = md
+#     NfacesTotal = prod(size(FToF))
+#     mapPB = build_periodic_boundary_maps!(xyzf...,is_periodic...,NfacesTotal,
+#                                           mapM, mapP, mapB, FToF)
+#     mapP[mapB] = mapPB
+#     # md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
+#     # return nothing
+#
+#     @pack! md = mapP, FToF
+# end
+#
+# # specializes to 1D - periodic = find min/max indices of xf and reverse their order
+# function make_nodemaps_periodic!(md::MeshData{1},rd::RefElemData,is_periodic=true)
+#     if is_periodic == true
+#         @unpack mapP,mapB,xf,FToF = md
+#         mapPB = argmax(vec(xf)),argmin(vec(xf))
+#         mapP[mapB] .= mapPB
+#         FToF[[1,length(FToF)]] .= mapPB
+#         # md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
+#         # return nothing
+#         @pack! md = mapP, FToF
+#     end
+# end
 
-Modifies md, rd such that the node maps `mapP` and face maps `FToF` are periodic.
-Here, `is_periodic` is a tuple of `Bool` indicating whether or not to impose
-periodic BCs in the `x`,`y`, or `z` coordinate.
 """
-make_nodemaps_periodic!(md::MeshData,rd::RefElemData,is_periodic...) =
-    make_nodemaps_periodic!(md,rd,is_periodic)
+    make_periodic(md::MeshData{Dim},rd::RefElemData,is_periodic...) where {Dim}
+    make_periodic(md::MeshData{Dim},rd::RefElemData,is_periodic=ntuple(x->true,Dim)) where {Dim}
+    make_periodic(md::MeshData{1},rd::RefElemData,is_periodic=true)
 
-function make_nodemaps_periodic!(md::MeshData{Dim},rd::RefElemData,
-                                 is_periodic::NTuple{Dim,T}=ntuple(x->true,Dim)) where {Dim,T}
+Returns new MeshData such that the node maps `mapP` and face maps `FToF` are now periodic.
+Here, `is_periodic` is a tuple of `Bool` indicating whether or not to impose periodic
+BCs in the `x`,`y`, or `z` coordinate.
+"""
+make_periodic(md::MeshData,rd::RefElemData,is_periodic...) = make_periodic(md,rd,is_periodic)
+
+function make_periodic(md::MeshData{Dim},rd::RefElemData,
+                       is_periodic::NTuple{Dim,T}=ntuple(x->true,Dim)) where {Dim,T}
     @unpack mapM,mapP,mapB,xyzf,FToF = md
     NfacesTotal = prod(size(FToF))
     mapPB = build_periodic_boundary_maps!(xyzf...,is_periodic...,NfacesTotal,
                                           mapM, mapP, mapB, FToF)
     mapP[mapB] = mapPB
-    # md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
+    return setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
     # return nothing
-
-    @pack! md = mapP, FToF
+    # @pack! md = mapP, FToF
 end
 
 # specializes to 1D - periodic = find min/max indices of xf and reverse their order
-function make_nodemaps_periodic!(md::MeshData{1},rd::RefElemData,is_periodic=true)
+function make_periodic(md::MeshData{1},rd::RefElemData,is_periodic=true)
     if is_periodic == true
         @unpack mapP,mapB,xf,FToF = md
         mapPB = argmax(vec(xf)),argmin(vec(xf))
         mapP[mapB] .= mapPB
         FToF[[1,length(FToF)]] .= mapPB
-        # md = setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
-        # return nothing
-        @pack! md = mapP, FToF
+        return setproperties(md,(mapP=mapP,FToF=FToF)) # from Setfield.jl
     end
 end
 

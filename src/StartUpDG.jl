@@ -6,11 +6,12 @@ Module to aid in setting up reference operators, meshes, and geometric terms
 
 module StartUpDG
 
-using LinearAlgebra # for diagm, identity matrix I
-using NodesAndModes # for basis functions
-using StaticArrays  # for SMatrix
-using Setfield      # for "modifying" structs to modify node mappings
-using UnPack        # for getting values in RefElemData and MeshData
+using ConstructionBase  # for constructorof
+using LinearAlgebra     # for diagm, identity matrix I
+using NodesAndModes     # for basis functions
+using StaticArrays
+using Setfield          # for "modifying" structs to modify node mappings
+using UnPack            # for getting values in RefElemData and MeshData
 
 import NodesAndModes: meshgrid
 import SparseArrays: sparse, droptol!
@@ -32,7 +33,7 @@ export geometric_factors
 include("geometric_mapping_functions.jl")
 
 # spatial connectivity routines
-export make_nodemaps_periodic!
+export make_periodic #, make_nodemaps_periodic!
 include("connectivity_functions.jl")
 
 # uniform meshes + face vertex orderings are included
