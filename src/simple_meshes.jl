@@ -70,13 +70,18 @@ end
 ###########################
 
 """
-uniform_mesh(elem::Tri,Kx::Int,Ky::Int)
+        uniform_mesh(elem::Line,Kx)
 
-Matlab uniform triangular mesh.
+Uniform Kx mesh on [-1,1].
 
-# Examples
-```jldoctest
-```
+        uniform_mesh(elem::Tri,Kx,Ky)
+        uniform_mesh(elem::Quad,Nx,Ny)
+
+Uniform Kx by Ky mesh on [-1,1]^2.
+
+        uniform_mesh(elem::Hex,Nx,Ny,Nz)
+
+Uniform Nx by Ny by Nz mesh on [-1,1]^3.
 """
 function uniform_mesh(elem::Tri,Kx,Ky)
 
@@ -109,16 +114,6 @@ end
 ### Quadrilateral meshes #####
 ##############################
 
-"""
-uniform_mesh(Quad(),Kx,Ky)
-
-Matlab uniform triangular mesh.
-
-# Examples
-```jldoctest
-```
-"""
-
 function uniform_mesh(elem::Quad,Nx,Ny)
 
         Nxp = Nx+1;
@@ -149,16 +144,6 @@ end
 #############################
 ##### Hexahedral meshes #####
 #############################
-
-"""
-uniform_hex_mesh(Kx::Int,Ky::Int)
-
-Matlab uniform hexahedral mesh.
-
-# Examples
-```jldoctest
-```
-"""
 
 function uniform_mesh(elem::Hex,Nx,Ny,Nz)
         Nxp = Nx+1
