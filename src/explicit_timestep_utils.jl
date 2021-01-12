@@ -87,24 +87,11 @@ Inputs:
 * Q: container of arrays, Q[i] = ith solution field
 * rhsQrk: container whose entries are type(Q) for RK rhs evaluations
 """
-function compute_adaptive_dt(Q,rhsQrk,dt,rkE,PI::PIparams,prevErrEst=nothing)
+function compute_adaptive_dt(errEst,dt,PI::PIparams,prevErrEst=nothing)
 
     @unpack errTol,order,dtmax,dtmin = PI
 
-    # assemble error estimate using rkE = error est coefficients
-    errEstVec = zero.(Q)
-    for s = 1:7
-        map(bcopy!,errEstVec, @. errEstVec + rkE[s]*rhsQrk[s])
-        #bcopy!.(errEstVec, @. errEstVec + rkE[s]*rhsQrk[s])
-    end
-
     # compute scalar error estimate
-    errEst = 0.0
-    for field = 1:length(Q)
-        errEstScale = @. abs(errEstVec[field]) / (errTol*(1+abs(Q[field])))
-        errEst += sum(errEstScale.^2) # hairer seminorm
-    end
-    errEst = sqrt(errEst/sum(length.(Q)))
     accept_step = errEst < 1.0
 
     # default values taken from Paranumal library by Tim Warburton

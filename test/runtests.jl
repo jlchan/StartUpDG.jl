@@ -8,16 +8,15 @@ using LinearAlgebra
     EToV,VX,VY = readGmsh2D("squareCylinder2D.msh")
     @test size(EToV)==(3031,3)
 
-    # feed zero rhs to PI controller = max timestep, errEst = 0
+    # # feed zero rhs to PI controller = max timestep, errEst = 0
     rka,rkE,rkc = dp56()
     PI = PIparams(order=5)
-    Q = (randn(2,4),randn(2,4))
-    rhsQrk = ntuple(x->zero.(Q),length(rkE))
-    accept_step, dt_new, errEst =
-        compute_adaptive_dt(Q,rhsQrk,1.0,rkE,PI)
+    errEst = 1e-10
+    dt = 1e8
+    accept_step,dt_new,prevErrEst = compute_adaptive_dt(errEst,dt,PI)
     @test accept_step == true
     @test dt_new == PI.dtmax
-    @test abs(errEst) < tol
+    @test errEst ≈ prevErrEst
 end
 
 # some code not tested to avoid redundancy from tests in NodesAndModes.

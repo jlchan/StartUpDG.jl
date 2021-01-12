@@ -36,7 +36,7 @@ export readGmsh2D, uniform_mesh
 include("simple_meshes.jl")
 
 # simple explicit time-stepping included for conveniencea
-export ck45, dp56, PIparams, compute_adaptive_dt # LSERK 45 + Dormand-Prince 56
+export ck45, dp56, PIparams, compute_adaptive_dt, bcopy! # LSERK 45 + Dormand-Prince 56
 include("explicit_timestep_utils.jl")
 
 end
