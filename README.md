@@ -3,6 +3,7 @@
 [![Docs-dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://jlchan.github.io/StartUpDG.jl/dev)
 [![Build status](https://github.com/jlchan/StartUpDG.jl/workflows/CI/badge.svg)](https://github.com/jlchan/StartUpDG.jl/actions)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/jlchan/StartUpDG.jl?svg=true)](https://ci.appveyor.com/project/jlchan/StartUpDG-jl)
+[![Build status](https://github.com/jlchan/StartUpDG.jl/workflows/CI/badge.svg)](https://github.com/jlchan/StartUpDG.jl/actions)
 [![Codecov](https://codecov.io/gh/jlchan/StartUpDG.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/jlchan/StartUpDG.jl)
 
 Routines to initialize reference element operators, physical mesh arrays, and connectivity for nodal discontinuous Galerkin (DG) methods. Codes roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007). Original port from Matlab to Julia by [Yimin Lin](https://github.com/yiminllin).
