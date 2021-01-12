@@ -1,11 +1,22 @@
-"bcopy!(x,y) = x .= y
-convenience routines for broadcast over tuples of arrays (update of soln fields)"
-bcopy!(x,y) = x .= y
-"bmult(x,y) = x .* y
-convenience routines for broadcast over tuples of arrays (update of soln fields)"
-bmult(x,y) = x .* y
+"""
+    bcopy!(x,y) = x .= y
 
-"4th order 5-stage low storage Runge Kutta from Carpenter/Kennedy."
+Convenience routine for operations on tuples of arrays.
+"""
+bcopy!(x,y) = x .= y
+
+"""
+    ck45()
+
+Returns coefficients rka,rkb,rkc for the 4th order 5-stage low storage Carpenter/Kennedy
+Runge Kutta method. Coefficients evolve the residual, solution, and local time, e.g.,
+
+# Example
+```julia
+res = rk4a[i]*res + dt*rhs # i = RK stage
+@. u += rk4b[i]*res
+```
+"""
 function ck45()
     rk4a = [            0.0 ...
     -567301805773.0/1357537059087.0 ...
@@ -28,9 +39,17 @@ function ck45()
     return rk4a,rk4b,rk4c
 end
 
-"dormand-prince 5th order 7 stage (6 function evals via the FSAL property)"
+"""
+    dp56()
+
+Dormand-prince 5th order 7 stage Runge-Kutta method (6 function evals via the FSAL property)
+Returns Butcher table arrays `A`,`c` and error evolution coefficients `rkE`.
+
+Note there is no `b` array needed due to the FSAL property and because the last stage
+is used to compute the error estimator.
+"""
 function dp56()
-    rk4a = [0.0             0.0             0.0             0.0             0.0             0.0         0.0
+    rka = [0.0             0.0             0.0             0.0             0.0             0.0         0.0
             0.2             0.0             0.0             0.0             0.0             0.0         0.0
             3.0/40.0        9.0/40.0        0.0             0.0             0.0             0.0         0.0
             44.0/45.0      -56.0/15.0       32.0/9.0        0.0             0.0             0.0         0.0
@@ -38,52 +57,41 @@ function dp56()
             9017.0/3168.0  -355.0/33.0      46732.0/5247.0  49.0/176.0      -5103.0/18656.0 0.0         0.0
             35.0/384.0      0.0             500.0/1113.0    125.0/192.0     -2187.0/6784.0  11.0/84.0   0.0 ]
 
-    rk4c = vec([0.0 0.2 0.3 0.8 8.0/9.0 1.0 1.0 ])
+    rkc = vec([0.0 0.2 0.3 0.8 8.0/9.0 1.0 1.0 ])
 
     # coefficients to evolve error estimator = b1-b2
-    rk4E = vec([71.0/57600.0  0.0 -71.0/16695.0 71.0/1920.0 -17253.0/339200.0 22.0/525.0 -1.0/40.0 ])
+    rkE = vec([71.0/57600.0  0.0 -71.0/16695.0 71.0/1920.0 -17253.0/339200.0 22.0/525.0 -1.0/40.0 ])
 
-    return rk4a,rk4E,rk4c
+    return rka,rkE,rkc
 end
 
-# PI control parameters
-struct PIparams{T}
-    errTol::T
-    order::T
-    dtmax::T
-    dtmin::T
+"""
+    struct PIparams
+
+Struct containing PI controller parameters.
+"""
+Base.@kwdef struct PIparams{T}
+    order
+    errTol::T = 5e-4
+    dtmax::T = 1e6
+    dtmin::T = 1e-12
 end
 
-"function init_PI_controller(order; errTol=5e-4, dtmax=1e7, dtmin=1e-14)"
-function init_PI_controller(order; errTol=5e-4, dtmax=1e7, dtmin=1e-14)
-    return PIparams(errTol,convert(eltype(errTol),order),dtmax,dtmin)
-end
+"""
+    compute_adaptive_dt(Q,rhsQrk,dt,rkE,PI::PIparams,prevErrEst=nothing)
 
-"function compute_adaptive_timestep!(Q,rhsQrk,rk::ERKparams,prevErrEst=nothing)
-    returns accept_step, dt_new, errEst
+returns accept_step (true/false), dt_new, errEst.
+uses PI error control method copied from Paranumal library (Warburton et al).
 
-    uses PI error control method from Paranumal library by Tim Warburton
-
-    Q: container of arrays, Q[i] = ith solution field
-    rhsQrk: container whose entries are type(Q) for RK rhs evaluations"
-
-function compute_adaptive_dt(Q,rhsQrk,dt,rkE,PI::PIparams,prevErrEst=nothing)
+Inputs:
+* Q: container of arrays, Q[i] = ith solution field
+* rhsQrk: container whose entries are type(Q) for RK rhs evaluations
+"""
+function compute_adaptive_dt(errEst,dt,PI::PIparams,prevErrEst=nothing)
 
     @unpack errTol,order,dtmax,dtmin = PI
 
-    # assemble error estimate using rkE = error est coefficients
-    errEstVec = zero.(Q)
-    for s = 1:7
-        bcopy!.(errEstVec, @. errEstVec + rkE[s]*rhsQrk[s])
-    end
-
     # compute scalar error estimate
-    errEst = 0.0
-    for field = 1:length(Q)
-        errEstScale = @. abs(errEstVec[field]) / (errTol*(1+abs(Q[field])))
-        errEst += sum(errEstScale.^2) # hairer seminorm
-    end
-    errEst = sqrt(errEst/sum(length.(Q)))
     accept_step = errEst < 1.0
 
     # default values taken from Paranumal library by Tim Warburton

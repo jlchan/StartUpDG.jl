@@ -1,36 +1,29 @@
 """
     geometric_factors(x, y, Dr, Ds)
-    geometric_factors(x, y, z, Dr, Ds, Dt)
+    geometric_factors(x, y, z, Dr, Ds, Dt, Filters=(I,I,I))
 
 Compute metrics of mappings between "real" elements and reference elements,
 outward pointing normals on faces of every elements, and Jacobian.
 
 x,y,z are arrays of coordinates, and Dr, Ds, Dt are nodal differentiation matrices
+Filters = tuple of filtering matrices (e.g., to reduce degree in r,s, and t for GCL)
 
-Geometric terms in 3D are constructed to ensure satisfaction of free-stream
-preservation using the curl-based construction of David Kopriva (2001).
-
+Geometric terms in 3D are constructed to ensure satisfaction of free-stream preservation
+using the curl-based construction from 'Metric identities and the DG-SEM on curvilinear
+meshes' (Kopriva 2006).
 """
 
-# 2D version
 function geometric_factors(x, y, Dr, Ds)
-    "Transformation and Jacobian"
+    xr = Dr*x;   xs = Ds*x
+    yr = Dr*y;   ys = Ds*y
 
-    xr = Dr*x;   xs = Ds*x;
-    yr = Dr*y;   ys = Ds*y;
-
-    J = -xs.*yr + xr.*ys;
-    rxJ =  ys;  sxJ = -yr;
-    ryJ = -xs;  syJ =  xr;
+    J = -xs.*yr + xr.*ys
+    rxJ =  ys;  sxJ = -yr
+    ryJ = -xs;  syJ =  xr
 
     return rxJ, sxJ, ryJ, syJ, J
 end
 
-" geometric_factors(x, y, z, Dr, Ds, Dt, Filters=(I,I,I))
-    Computes 3D geometric factors given nodal coordinates (x,y,z) and differentiation matrices (Dr,Ds,Dt)
-    Formulas from 'Metric identities and the DG-SEM on curvilinear meshes' (Kopriva 2006)
-"
-# 3D version. Filters = tuple of filtering matrices.
 function geometric_factors(x, y, z, Dr, Ds, Dt, Filters=(I,I,I))
 
     xr = Dr*x;  xs = Ds*x;  xt = Dt*x

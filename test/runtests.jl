@@ -2,28 +2,21 @@ using StartUpDG
 using Test
 using LinearAlgebra
 
-@testset "Other utils" begin
+@testset "Timestep and mesh utils" begin
     tol = 5e2*eps()
-    
+
     EToV,VX,VY = readGmsh2D("squareCylinder2D.msh")
     @test size(EToV)==(3031,3)
 
-    using StartUpDG.ExplicitTimestepUtils
-    a = ntuple(x->randn(2,3),3)
-    b = ntuple(x->randn(2,3),3)
-    bcopy!.(a,b)
-    @test a==b
-
-    # feed zero rhs to PI controller = max timestep, errEst = 0
+    # # feed zero rhs to PI controller = max timestep, errEst = 0
     rka,rkE,rkc = dp56()
-    PI = init_PI_controller(5)
-    Q = (randn(2,4),randn(2,4))
-    rhsQrk = ntuple(x->zero.(Q),length(rkE))
-    accept_step, dt_new, errEst =
-        compute_adaptive_dt(Q,rhsQrk,1.0,rkE,PI)
+    PI = PIparams(order=5)
+    errEst = 1e-10
+    dt = 1e8
+    accept_step,dt_new,prevErrEst = compute_adaptive_dt(errEst,dt,PI)
     @test accept_step == true
     @test dt_new == PI.dtmax
-    @test abs(errEst) < tol
+    @test errEst ≈ prevErrEst
 end
 
 # some code not tested to avoid redundancy from tests in NodesAndModes.
@@ -35,7 +28,7 @@ end
     #####
     ##### interval
     #####
-    rd = init_reference_elem(Line(),N)
+    rd = RefElemData(Line(),N)
     @test abs(sum(rd.rq.*rd.wq)) < tol
     @test rd.nrJ ≈ [-1,1]
     @test rd.Pq*rd.Vq ≈ I
@@ -43,7 +36,7 @@ end
     #####
     ##### triangles
     #####
-    rd = init_reference_elem(Tri(),N)
+    rd = RefElemData(Tri(),N)
     @test abs(sum(rd.wq)) ≈ 2
     @test abs(sum(rd.wf)) ≈ 6
     @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
@@ -52,7 +45,7 @@ end
     #####
     ##### quads
     #####
-    rd = init_reference_elem(Quad(),N)
+    rd = RefElemData(Quad(),N)
     @test abs(sum(rd.wq)) ≈ 4
     @test abs(sum(rd.wf)) ≈ 8
     @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
@@ -61,7 +54,7 @@ end
     #####
     ##### hexes
     #####
-    rd = init_reference_elem(Hex(),N)
+    rd = RefElemData(Hex(),N)
     @test abs(sum(rd.wq)) ≈ 8
     @test abs(sum(rd.wf)) ≈ 6*4
     @test abs(sum(rd.wf .* rd.nrJ)) < tol
@@ -75,9 +68,9 @@ end
 
     N = 3
     K1D = 2
-    rd = init_reference_elem(Line(),N)
+    rd = RefElemData(Line(),N)
     VX,EToV = uniform_mesh(Line(),K1D)
-    md = init_DG_mesh(VX,EToV,rd)
+    md = MeshData(VX,EToV,rd)
     @unpack wq,Dr,Vq,Vf,wf = rd
     @unpack Nfaces = rd
     @unpack x,xq,xf,K = md
@@ -110,8 +103,7 @@ end
     @test norm(uf[mapB]) < tol
 
     # check periodic node connectivity maps
-    LX = 2
-    build_periodic_boundary_maps!(md,rd,LX)
+    md = make_periodic(md,rd)
     @unpack mapP = md
     u = @. sin(pi*(.5+x))
     uf = Vf*u
@@ -123,9 +115,9 @@ end
 
     N = 3
     K1D = 2
-    rd = init_reference_elem(Tri(),N)
+    rd = RefElemData(Tri(),N)
     VX,VY,EToV = uniform_mesh(Tri(),K1D)
-    md = init_DG_mesh(VX,VY,EToV,rd)
+    md = MeshData(VX,VY,EToV,rd)
     @unpack wq,Dr,Ds,Vq,Vf,wf = rd
     Nfaces = length(rd.fv)
     @unpack x,y,xq,yq,xf,yf,K = md
@@ -167,14 +159,18 @@ end
     @test norm(uf[mapB]) < tol
 
     # check periodic node connectivity maps
-    LX,LY = 2,2
-    build_periodic_boundary_maps!(md,rd,LX,LY)
+    md = make_periodic(md,rd,(true,true))
     @unpack mapP = md
-    #mapPB = build_periodic_boundary_maps(xf,yf,LX,LY,Nfaces*K,mapM,mapP,mapB)
-    #mapP[mapB] = mapPB
     u = @. sin(pi*(.5+x))*sin(pi*(.5+y))
     uf = Vf*u
     @test uf ≈ uf[mapP]
+
+    # check MeshData struct copying
+    xyz = (x->x .+ 1).(md.xyz) # affine shift
+    md2 = MeshData(md,rd,xyz...)
+    @test sum(norm.(md2.rstxyzJ .- md.rstxyzJ)) < 1e-13
+    @test sum(norm.(md2.nxyzJ .- md.nxyzJ)) < 1e-13
+    @test all(md2.xyzf .≈ (x->x .+ 1).(md.xyzf))
 end
 
 @testset "2D quad mesh initialization" begin
@@ -182,9 +178,9 @@ end
 
     N = 3
     K1D = 2
-    rd = init_reference_elem(Quad(),N)
+    rd = RefElemData(Quad(),N)
     VX,VY,EToV = uniform_mesh(Quad(),K1D)
-    md = init_DG_mesh(VX,VY,EToV,rd)
+    md = MeshData(VX,VY,EToV,rd)
     @unpack wq,Dr,Ds,Vq,Vf,wf = rd
     Nfaces = length(rd.fv)
     @unpack x,y,xq,yq,xf,yf,K = md
@@ -225,8 +221,7 @@ end
     @test norm(uf[mapB]) < tol
 
     # check periodic node connectivity maps
-    LX,LY = 2,2
-    build_periodic_boundary_maps!(md,rd,LX,LY)
+    md = make_periodic(md,rd,(true,true))
     @unpack mapP = md
     u = @. sin(pi*(.5+x))*sin(pi*(.5+y))
     uf = Vf*u
@@ -238,9 +233,9 @@ end
 
     N = 2
     K1D = 2
-    rd = init_reference_elem(Hex(),N)
+    rd = RefElemData(Hex(),N)
     VX,VY,VZ,EToV = uniform_mesh(Hex(),K1D)
-    md = init_DG_mesh(VX,VY,VZ,EToV,rd)
+    md = MeshData(VX,VY,VZ,EToV,rd)
     @unpack wq,Dr,Ds,Dt,Vq,Vf,wf = rd
     Nfaces = length(rd.fv)
     @unpack x,y,z,xq,yq,zq,wJq,xf,yf,zf,K = md
@@ -289,8 +284,7 @@ end
     @test norm(uf[mapB]) < tol
 
     # check periodic node connectivity maps
-    LX,LY,LZ = 2,2,2
-    build_periodic_boundary_maps!(md,rd,LX,LY,LZ)
+    md = make_periodic(md,rd,(true,true,true))
     @unpack mapP = md
     u = @. sin(pi*(.5+x))*sin(pi*(.5+y))*sin(pi*(.5+z))
     uf = Vf*u

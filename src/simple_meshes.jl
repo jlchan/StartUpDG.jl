@@ -1,13 +1,12 @@
 """
     function readGmsh2D(filename)
 
-reads GMSH 2D file format 2.2 0 8
-returns EToV,VX,VY
+reads triangular GMSH 2D file format 2.2 0 8. returns EToV,VX,VY
 
 # Examples
-
+```julia
 EToV,VX,VY = readGmsh2D("eulerSquareCylinder2D.msh")
-
+```
 """
 function readGmsh2D(filename)
     f = open(filename)
@@ -54,6 +53,15 @@ function readGmsh2D(filename)
     return EToV,VX,VY
 end
 
+"""
+        uniform_mesh(elem::Line,Kx)
+        uniform_mesh(elem::Tri,Kx,Ky)
+        uniform_mesh(elem::Quad,Kx,Ky)
+        uniform_mesh(elem::Hex,Kx,Ky,Kz)
+
+Uniform Kx (by Ky by Kz) mesh on ``[-1,1]^d``, where `d` is the spatial dimension.
+"""
+
 ###########################
 #####     1D mesh     #####
 ###########################
@@ -69,15 +77,6 @@ end
 ### Triangular meshes #####
 ###########################
 
-"""
-uniform_mesh(elem::Tri,Kx::Int,Ky::Int)
-
-Matlab uniform triangular mesh.
-
-# Examples
-```jldoctest
-```
-"""
 function uniform_mesh(elem::Tri,Kx,Ky)
 
         (VY, VX) = meshgrid(LinRange(-1,1,Ky+1),LinRange(-1,1,Kx+1))
@@ -98,26 +97,12 @@ function uniform_mesh(elem::Tri,Kx,Ky)
         return (VX[:],VY[:],EToV)
 end
 
-function uniform_mesh(elem::Union{Tri,Quad},Kx)
-        return uniform_mesh(elem,Kx,Kx)
-end
-function uniform_mesh(elem::Hex,Kx)
-        return uniform_mesh(elem,Kx,Kx,Kx)
-end
+uniform_mesh(elem::Union{Tri,Quad},Kx) = uniform_mesh(elem,Kx,Kx)
+uniform_mesh(elem::Hex,Kx) = uniform_mesh(elem,Kx,Kx,Kx)
 
 ##############################
 ### Quadrilateral meshes #####
 ##############################
-
-"""
-uniform_mesh(Quad(),Kx,Ky)
-
-Matlab uniform triangular mesh.
-
-# Examples
-```jldoctest
-```
-"""
 
 function uniform_mesh(elem::Quad,Nx,Ny)
 
@@ -149,16 +134,6 @@ end
 #############################
 ##### Hexahedral meshes #####
 #############################
-
-"""
-uniform_hex_mesh(Kx::Int,Ky::Int)
-
-Matlab uniform hexahedral mesh.
-
-# Examples
-```jldoctest
-```
-"""
 
 function uniform_mesh(elem::Hex,Nx,Ny,Nz)
         Nxp = Nx+1
@@ -200,14 +175,6 @@ function uniform_mesh(elem::Hex,Nx,Ny,Nz)
                 j = div(em - k*Nx*Ny,Nx)
                 i = em % Nx
 
-                # EToV[e,1] = i     + Nxp*j     + Nxp*Nyp*k
-                # EToV[e,2] = (i+1) + Nxp*j     + Nxp*Nyp*k
-                # EToV[e,3] = i     + Nxp*(j+1) + Nxp*Nyp*k
-                # EToV[e,4] = (i+1) + Nxp*(j+1) + Nxp*Nyp*k
-                # EToV[e,5] = i     + Nxp*j     + Nxp*Nyp*(k+1)
-                # EToV[e,6] = (i+1) + Nxp*j     + Nxp*Nyp*(k+1)
-                # EToV[e,7] = i     + Nxp*(j+1) + Nxp*Nyp*(k+1)
-                # EToV[e,8] = (i+1) + Nxp*(j+1) + Nxp*Nyp*(k+1)
                 EToV[e,1] = i     + Nxp*j     + Nxp*Nyp*k
                 EToV[e,2] = i     + Nxp*(j+1) + Nxp*Nyp*k
                 EToV[e,3] = (i+1) + Nxp*j     + Nxp*Nyp*k
@@ -224,3 +191,17 @@ function uniform_mesh(elem::Hex,Nx,Ny,Nz)
         VZ = z[:];
         return VX[:],VY[:],VZ[:],EToV
 end
+
+# # WARNING: may not work in 3D. Should loop over faces then
+# function plotMesh(EToV,xyz...)
+#         plotobj = plot()
+#         plotTriMesh!(h,EToV,xyz...)
+# end
+#
+# function plotMesh!(plotobj,EToV,xyz...)
+#     for vertex_ids in eachrow(EToV)
+#         ids = vcat(vertex_ids, first(vertex_ids))
+#         plot!(getindex.(xyz,ids)...,linecolor=:black)
+#     end
+#     display(plot!(legend=false,ratio=1))
+# end

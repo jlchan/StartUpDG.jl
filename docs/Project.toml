@@ -1,0 +1,9 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterTools = "35a29f4d-8980-5a13-9543-d66fff28ecb8"
+StartUpDG = "472ebc20-7c99-4d4b-9470-8fde4e9faa0f"
+
+[compat]
+Documenter = "0.25"
+DocumenterTools = "0.1"
+StartUpDG = "0.2.1"
