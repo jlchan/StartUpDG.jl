@@ -2,7 +2,9 @@
 
 This package contains routines to initialize reference element operators, physical mesh arrays, and connectivities for nodal DG methods. Codes roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007).
 
-Data is contained within structs `rd::RefElemData` and `md::MeshData`, which contain fields similar to those in `Globals1D, Globals2D, Globals3D` in the NDG book codes.
+`StartUpDG.jl` exports structs `RefElemData{Dim,ElemShape,...}` and `MeshData{Dim}` which contain data useful for evaluating DG formulations in a matrix-free fashion. These structs contain fields similar to those in `Globals1D, Globals2D, Globals3D` in the NDG book codes.
+
+Fields can be unpacked from using [`@unpack`](https://github.com/mauro3/UnPack.jl).
 
 ## A short example
 

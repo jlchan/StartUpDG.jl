@@ -1,4 +1,4 @@
-# Example: computing DG derivatives
+# Example: approximating derivatives using DG
 
 `MeshData` can be used to compute DG derivatives. Suppose ``f`` is a differentiable function and the domain ``\Omega`` can be decomposed into non-overlapping elements ``D^k``. The approximation of ``\frac{\partial f}{\partial x}`` can be approximated using the following formulation: find piecewise polynomial ``u`` such that for all piecewise polynomials ``v``
 ```math
@@ -19,7 +19,7 @@ rd = RefElemData(Tri(),N)
 VX,VY,EToV = uniform_mesh(Tri(),K1D)
 md = MeshData(VX,VY,EToV,rd)
 ```
-We can approximate a function using interpolation
+We can approximate a function ``f(x,y)`` using interpolation
 ```julia
 f(x,y) = exp(-5*(x^2+y^2))*sin(1+pi*x)*sin(2+pi*y)
 @unpack x,y = md
@@ -31,13 +31,13 @@ or using quadrature-based projection
 @unpack x,y,xq,yq = md
 u = Pq*f.(xq,yq)
 ```
-To visualize the resulting approximation, we can use using `scatter` in Plots.jl. There are also more efficient approaches, such as outputting the result to VTK or using `Triplot.jl`.
+We can use `scatter` in Plots.jl to quickly visualize the approximation. This is not intended to create a high quality image (see other libraries, e.g., `Makie.jl`,`VTK.jl`, or `Triplot.jl` for publication-quality images).
 ```julia
 @unpack Vp = rd
 xp,yp,up = Vp*x,Vp*y,Vp*u # interp to plotting points
 scatter(xp,yp,uxp,zcolor=uxp,msw=0,leg=false,ratio=1,cam=(0,90))
 ```
-Given the nodal values `u` of the polynomial approximation, we can compute its DG derivative as follows
+Both interpolation and projection create a matrix `u` of size ``N_p \times K`` which contains coefficients (nodal values) of the DG polynomial approximation to ``f(x,y)``. We can approximate the derivative of ``f(x,y)`` using the DG derivative formulation
 ```julia
 function dg_deriv_x(u,md::MeshData,rd::RefElemData)
   @unpack Vf,Dr,Ds,LIFT = rd
@@ -58,7 +58,7 @@ dudx = dg_deriv_x(u,md,rd)
 uxp = Vp*dudx
 scatter(xp,yp,uxp,zcolor=uxp,msw=0,leg=false,ratio=1,cam=(0,90))
 ```
-The approximation ``u`` and the DG approximation of ``\frac{\partial u}{\partial x}`` are
+Plots of the polynomial approximation ``u(x,y)`` and the DG approximation of ``\frac{\partial u}{\partial x}`` are given below
 
 ![u](assets/u.png)
 ![dudx](assets/dudx.png)
