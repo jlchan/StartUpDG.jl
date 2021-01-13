@@ -26,14 +26,14 @@ VX,VY,EToV = uniform_mesh(Tri(),Kx,Ky)
 VX,VY,EToV = uniform_mesh(Quad(),Kx,Ky)
 VX,VY,VZ,EToV = uniform_mesh(Hex(),Kx,Ky,Kz)
 ```
-The triangular mesh is constructed by creating a uniform quadrilateral mesh then bisecting each quad into two triangles.
+The uniform triangular mesh is constructed by creating a uniform quadrilateral mesh then bisecting each quad into two triangles.
 
 Unstructured meshes for more complex geometries can be generated using external packages. For example, `TriangleMesh.jl` can be used as follows:
 ```julia
 using TriangleMesh
 
 poly = polygon_Lshape()
-mesh = create_mesh(poly, set_area_max=true) # asks for maximum element size
+mesh = create_mesh(poly, set_area_max=true) # will ask for max elem size in the REPL
 VX,VY = mesh.point[1,:],mesh.point[2,:]
 EToV = permutedims(mesh.cell)
 ```
@@ -63,6 +63,6 @@ md = MeshData(VX,VY,EToV,rd)
 # <-- code to modify high order nodes (x,y)
 md_curved = MeshData(md,rd,x,y)
 ```
-This is not currently implemented in 1D.
+`MeshData(md,rd,x,y)` and `MeshData(md,rd,x,y,z)` are implemented for 2D and 3D, though this is not currently implemented in 1D.
 
-More generally, one can copy `MeshData` with certain fields modified by using `@set` or `setproperties` from `Setfield.jl`.
+More generally, one can create a copy of a `MeshData` with certain fields modified by using `@set` or `setproperties` from `Setfield.jl`.
