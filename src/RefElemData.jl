@@ -106,7 +106,8 @@ function Base.getproperty(x::RefElemData, s::Symbol)
 end
 
 """
-    RefElemData(elem::Line, N; Nq=N+1)
+    RefElemData(elem::Line, N;
+                quad_rule_vol = quad_nodes(elem,N+1))
     RefElemData(elem::Union{Tri,Quad}, N;
                  quad_rule_vol = quad_nodes(elem,N),
                  quad_rule_face = gauss_quad(0,0,N))
