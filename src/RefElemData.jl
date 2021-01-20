@@ -1,5 +1,5 @@
 """
-    struct RefElemData{Dim,ElemShape <: ElementShape,
+    struct RefElemData{Dim,ElemShape <: AbstractElementShape,
                        IvMat,IfMat,MMat,PMat,DMat,LMat}
 
 RefElemData: contains info (interpolation points, volume/face quadrature, operators)
@@ -12,7 +12,7 @@ rd = RefElemData(Tri(),N)
 @unpack r,s = rd
 ```
 """
-struct RefElemData{Dim,ElemShape <: ElementShape,
+struct RefElemData{Dim,ElemShape <: AbstractElementShape,
                    IvMat,IfMat,MMat,PMat,DMat,LMat}
 
     elemShape::ElemShape
@@ -48,12 +48,12 @@ struct RefElemData{Dim,ElemShape <: ElementShape,
 end
 
 # type alias for just dim/shape
-const RefElemData{Dim,ElemShape<:ElementShape} =
+const RefElemData{Dim,ElemShape<:AbstractElementShape} =
     RefElemData{Dim,ElemShape,IvMat,IfMat,MMat,PMat,DMat,LMat} where {IvMat,IfMat,MMat,PMat,DMat,LMat}
 
 # type alias for just dim
 const RefElemData{Dim} = RefElemData{Dim,ElemShape,IvMat,IfMat,MMat,PMat,DMat,LMat} where
-                        {ElemShape <: ElementShape, IvMat,IfMat,MMat,PMat,DMat,LMat}
+                        {ElemShape <: AbstractElementShape, IvMat,IfMat,MMat,PMat,DMat,LMat}
 
 
 # convenience unpacking routines
