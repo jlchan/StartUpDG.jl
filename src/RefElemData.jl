@@ -59,46 +59,46 @@ const RefElemData{Dim} = RefElemData{Dim,ElemShape,IvMat,IfMat,MMat,PMat,DMat,LM
 # convenience unpacking routines
 function Base.getproperty(x::RefElemData, s::Symbol)
     if s==:r
-        return getproperty(x,:rst)[1]
+        return getfield(x,:rst)[1]
     elseif s==:s
-        return getproperty(x,:rst)[2]
+        return getfield(x,:rst)[2]
     elseif s==:t
-        return getproperty(x,:rst)[3]
+        return getfield(x,:rst)[3]
 
     elseif s==:rq
-        return getproperty(x,:rstq)[1]
+        return getfield(x,:rstq)[1]
     elseif s==:sq
-        return getproperty(x,:rstq)[2]
+        return getfield(x,:rstq)[2]
     elseif s==:tq
-        return getproperty(x,:rstq)[3]
+        return getfield(x,:rstq)[3]
 
     elseif s==:rf
-        return getproperty(x,:rstf)[1]
+        return getfield(x,:rstf)[1]
     elseif s==:sf
-        return getproperty(x,:rstf)[2]
+        return getfield(x,:rstf)[2]
     elseif s==:tf
-        return getproperty(x,:rstf)[3]
+        return getfield(x,:rstf)[3]
 
     elseif s==:rp
-        return getproperty(x,:rstp)[1]
+        return getfield(x,:rstp)[1]
     elseif s==:sp
-        return getproperty(x,:rstp)[2]
+        return getfield(x,:rstp)[2]
     elseif s==:tp
-        return getproperty(x,:rstp)[3]
+        return getfield(x,:rstp)[3]
 
     elseif s==:nrJ
-        return getproperty(x,:nrstJ)[1]
+        return getfield(x,:nrstJ)[1]
     elseif s==:nsJ
-        return getproperty(x,:nrstJ)[2]
+        return getfield(x,:nrstJ)[2]
     elseif s==:ntJ
-        return getproperty(x,:nrstJ)[3]
+        return getfield(x,:nrstJ)[3]
 
     elseif s==:Dr
-        return getproperty(x,:Drst)[1]
+        return getfield(x,:Drst)[1]
     elseif s==:Ds
-        return getproperty(x,:Drst)[2]
+        return getfield(x,:Drst)[2]
     elseif s==:Dt
-        return getproperty(x,:Drst)[3]
+        return getfield(x,:Drst)[3]
 
     else
         return getfield(x,s)

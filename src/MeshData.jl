@@ -13,9 +13,9 @@ md = MeshElemData(VX,VY,EToV,rd)
 @unpack x,y = md
 ```
 """
-struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
+struct MeshData{Dim, VertexType, GeoType, IndexType, BdryIndexType}
 
-    VXYZ::NTuple{Dim,T} where{T}  # vertex coordinates
+    VXYZ::NTuple{Dim,VertexType}  # vertex coordinates
     K::Int                       # num elems
     EToV                         # mesh vertex array
     FToF::IndexType                # face connectivity
@@ -43,64 +43,65 @@ end
 ConstructionBase.constructorof(::Type{MeshData{A,B,C,D}}) where {A,B,C,D} = MeshData{A,B,C,D}
 
 # type alias for just Dim
-const MeshData{Dim} = MeshData{Dim,GeoType,IndexType,BdryIndexType} where {GeoType,IndexType,BdryIndexType}
+const MeshData{Dim} = MeshData{Dim,VertexType,GeoType,IndexType,BdryIndexType} where
+                        {VertexType,GeoType,IndexType,BdryIndexType}
 
 # convenience routines for unpacking individual tuple entries
 function Base.getproperty(x::MeshData,s::Symbol)
 
     if s==:VX
-        return getproperty(x, :VXYZ)[1]
+        return getfield(x, :VXYZ)[1]
     elseif s==:VY
-        return getproperty(x, :VXYZ)[2]
+        return getfield(x, :VXYZ)[2]
     elseif s==:VZ
-        return getproperty(x, :VXYZ)[3]
+        return getfield(x, :VXYZ)[3]
 
     elseif s==:x
-        return getproperty(x, :xyz)[1]
+        return getfield(x, :xyz)[1]
     elseif s==:y
-        return getproperty(x, :xyz)[2]
+        return getfield(x, :xyz)[2]
     elseif s==:z
-        return getproperty(x, :xyz)[3]
+        return getfield(x, :xyz)[3]
 
     elseif s==:xq
-        return getproperty(x, :xyzq)[1]
+        return getfield(x, :xyzq)[1]
     elseif s==:yq
-        return getproperty(x, :xyzq)[2]
+        return getfield(x, :xyzq)[2]
     elseif s==:zq
-        return getproperty(x, :xyzq)[3]
+        return getfield(x, :xyzq)[3]
 
     elseif s==:xf
-        return getproperty(x, :xyzf)[1]
+        return getfield(x, :xyzf)[1]
     elseif s==:yf
-        return getproperty(x, :xyzf)[2]
+        return getfield(x, :xyzf)[2]
     elseif s==:zf
-        return getproperty(x, :xyzf)[3]
+        return getfield(x, :xyzf)[3]
 
     elseif s==:nxJ
-        return getproperty(x, :nxyzJ)[1]
+        return getfield(x, :nxyzJ)[1]
     elseif s==:nyJ
-        return getproperty(x, :nxyzJ)[2]
+        return getfield(x, :nxyzJ)[2]
     elseif s==:nzJ
-        return getproperty(x, :nxyzJ)[3]
+        return getfield(x, :nxyzJ)[3]
 
     elseif s==:rxJ
-        return getproperty(x, :rstxyzJ)[1,1]
+        return getfield(x, :rstxyzJ)[1,1]
     elseif s==:sxJ
-        return getproperty(x, :rstxyzJ)[1,2]
+        return getfield(x, :rstxyzJ)[1,2]
     elseif s==:txJ
-        return getproperty(x, :rstxyzJ)[1,3]
+        return getfield(x, :rstxyzJ)[1,3]
     elseif s==:ryJ
-        return getproperty(x, :rstxyzJ)[2,1]
+        return getfield(x, :rstxyzJ)[2,1]
     elseif s==:syJ
-        return getproperty(x, :rstxyzJ)[2,2]
+        return getfield(x, :rstxyzJ)[2,2]
     elseif s==:tyJ
-        return getproperty(x, :rstxyzJ)[2,3]
+        return getfield(x, :rstxyzJ)[2,3]
     elseif s==:rzJ
-        return getproperty(x, :rstxyzJ)[3,1]
+        return getfield(x, :rstxyzJ)[3,1]
     elseif s==:szJ
-        return getproperty(x, :rstxyzJ)[3,2]
+        return getfield(x, :rstxyzJ)[3,2]
     elseif s==:tzJ
-        return getproperty(x, :rstxyzJ)[3,3]
+        return getfield(x, :rstxyzJ)[3,3]
 
     else
         return getfield(x,s)
