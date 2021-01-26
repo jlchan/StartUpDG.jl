@@ -8,6 +8,8 @@
 
 Routines to initialize reference element operators, physical mesh arrays, and connectivity for nodal discontinuous Galerkin (DG) methods. Codes roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007). Original port from Matlab to Julia by [Yimin Lin](https://github.com/yiminllin).
 
+This is not yet a registered package.
+
 # Usage overview
 
 Variables are contained within structs `rd::RefElemData` and `md::MeshData`. These structs contain variables from `Globals1D, Globals2D, Globals3D` in the Nodal DG book codes. Variables can be unpacked using [`@unpack`](https://github.com/mauro3/UnPack.jl).
