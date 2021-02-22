@@ -17,6 +17,7 @@ struct RefElemData{Dim,ElemShape <: AbstractElemShape,
 
     elemShape::ElemShape
 
+    N::Int      # degree
     Nfaces::Int # num faces
     fv          # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
     V1          # low order interpolation matrix
@@ -144,8 +145,11 @@ function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1))
     rp = equi_nodes(elem,10)
     Vp = vandermonde(elem,N,rp)/VDM
 
-    return RefElemData(elem,Nfaces,fv,V1,tuple(r),VDM,tuple(rp),Vp,
-                       tuple(rq),wq,Vq,tuple(rf),wf,Vf,tuple(nrJ),
+    return RefElemData(elem,N,Nfaces,fv,V1,
+                       tuple(r),VDM,
+                       tuple(rp),Vp,
+                       tuple(rq),wq,Vq,
+                       tuple(rf),wf,Vf,tuple(nrJ),
                        M,Pq,tuple(Dr),LIFT)
 end
 
@@ -186,8 +190,11 @@ function RefElemData(elem::Union{Tri,Quad}, N;
     # Vf = typeof(elem)==Quad ? droptol!(sparse(Vf),tol) : Vf
     # LIFT = typeof(elem)==Quad ? droptol!(sparse(LIFT),tol) : LIFT
 
-    return RefElemData(elem,Nfaces,fv,V1,tuple(r,s),VDM,tuple(rp,sp),Vp,
-                       tuple(rq,sq),wq,Vq,tuple(rf,sf),wf,Vf,tuple(nrJ,nsJ),
+    return RefElemData(elem,N,Nfaces,fv,V1,
+                       tuple(r,s),VDM,
+                       tuple(rp,sp),Vp,
+                       tuple(rq,sq),wq,Vq,
+                       tuple(rf,sf),wf,Vf,tuple(nrJ,nsJ),
                        M,Pq,Drs,LIFT)
 end
 
@@ -226,7 +233,9 @@ function RefElemData(elem::Hex,N;
     Drst = sparse.((Dr,Ds,Dt))
     Vf = sparse(Vf)
 
-    return RefElemData(elem,Nfaces,fv,V1,tuple(r,s,t),VDM,tuple(rp,sp,tp),Vp,
+    return RefElemData(elem,N,Nfaces,fv,V1,
+                       tuple(r,s,t),VDM,
+                       tuple(rp,sp,tp),Vp,
                        tuple(rq,sq,tq),wq,Vq,
                        tuple(rf,sf,tf),wf,Vf,tuple(nrJ,nsJ,ntJ),
                        M,Pq,Drst,LIFT)
