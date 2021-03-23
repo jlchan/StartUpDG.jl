@@ -1,7 +1,7 @@
 name = "StartUpDG"
 uuid = "472ebc20-7c99-4d4b-9470-8fde4e9faa0f"
 authors = ["Jesse Chan", "Yimin Lin"]
-version = "0.3.1"
+version = "0.3.2"
 
 [deps]
 ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
@@ -13,7 +13,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
-NodesAndModes = "0.4.1"
+NodesAndModes = "0.5.0"
 Setfield = "0.7"
 StaticArrays = "1.0"
 UnPack = "1.0"
