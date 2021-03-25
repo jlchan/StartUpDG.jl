@@ -13,7 +13,7 @@ rd = RefElemData(Tri(),N)
 ```
 """
 struct RefElemData{Dim,ElemShape <: AbstractElemShape,
-                   IvMat,IfMat,MMat,PMat,DMat,LMat}
+                   Tv,IvMat,IfMat,PMat,DMat,LMat}
 
     elemShape::ElemShape
 
@@ -23,24 +23,24 @@ struct RefElemData{Dim,ElemShape <: AbstractElemShape,
     V1          # low order interpolation matrix
 
     rst::NTuple{Dim,T} where {T}
-    VDM     # generalized Vandermonde matrix
+    VDM::Matrix{Tv}     # generalized Vandermonde matrix
 
     # interp/quad nodes
     rstp::NTuple{Dim,T} where {T}
-    Vp      # interpolation matrix to plotting nodes
+    Vp::Matrix{Tv}      # interpolation matrix to plotting nodes
 
     rstq::NTuple{Dim,T} where {T}
-    wq
+    wq::Vector{Tv}
     Vq::IvMat         # quad interp mat
 
     rstf::NTuple{Dim,T} where {T}
-    wf # quad weights
+    wf::Vector{Tv} # quad weights
     Vf::IfMat         # face quad interp mat
 
     # reference normals, quad weights
     nrstJ::NTuple{Dim,T} where {T}
 
-    M::MMat          # mass matrix
+    M::Matrix{Tv}          # mass matrix
     Pq::PMat         # L2 projection matrix
 
     # specialize diff and lift (dense, sparse, Bern, etc)
@@ -50,11 +50,11 @@ end
 
 # type alias for just dim/shape
 const RefElemData{Dim,ElemShape<:AbstractElemShape} =
-    RefElemData{Dim,ElemShape,IvMat,IfMat,MMat,PMat,DMat,LMat} where {IvMat,IfMat,MMat,PMat,DMat,LMat}
+    RefElemData{Dim,ElemShape,Tv,IvMat,IfMat,PMat,DMat,LMat} where {Tv,IvMat,IfMat,MMat,PMat,DMat,LMat}
 
 # type alias for just dim
-const RefElemData{Dim} = RefElemData{Dim,ElemShape,IvMat,IfMat,MMat,PMat,DMat,LMat} where
-                        {ElemShape <: AbstractElemShape, IvMat,IfMat,MMat,PMat,DMat,LMat}
+const RefElemData{Dim} = RefElemData{Dim,ElemShape,Tv,IvMat,IfMat,PMat,DMat,LMat} where
+                        {ElemShape <: AbstractElemShape,Tv,IvMat,IfMat,PMat,DMat,LMat}
 
 
 # convenience unpacking routines
