@@ -5,7 +5,7 @@ using LinearAlgebra
 @testset "Timestep and mesh utils" begin
     tol = 5e2*eps()
 
-    EToV,VX,VY = readGmsh2D("squareCylinder2D.msh")
+    VX,VY,EToV = readGmsh2D("squareCylinder2D.msh")
     @test size(EToV)==(3031,3)
 
     # # feed zero rhs to PI controller = max timestep, errEst = 0

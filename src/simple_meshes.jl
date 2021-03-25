@@ -1,11 +1,11 @@
 """
     function readGmsh2D(filename)
 
-reads triangular GMSH 2D file format 2.2 0 8. returns EToV,VX,VY
+reads triangular GMSH 2D file format 2.2 0 8. returns VX,VY,EToV
 
 # Examples
 ```julia
-EToV,VX,VY = readGmsh2D("eulerSquareCylinder2D.msh")
+VXY,EToV = readGmsh2D("eulerSquareCylinder2D.msh")
 ```
 """
 function readGmsh2D(filename)
@@ -50,7 +50,7 @@ function readGmsh2D(filename)
 
     EToV = EToV[:,vec([1 3 2])] # permute for Gmsh ordering
 
-    return EToV,VX,VY
+    return VX,VY,EToV
 end
 
 """
@@ -60,6 +60,7 @@ end
         uniform_mesh(elem::Hex,Kx,Ky,Kz)
 
 Uniform Kx (by Ky by Kz) mesh on ``[-1,1]^d``, where `d` is the spatial dimension.
+Returns VX,VY,VZ,EToV
 """
 
 ###########################
@@ -94,7 +95,7 @@ function uniform_mesh(elem::Tri,Kx,Ky)
                         sk += 1
                 end
         end
-        return (VX[:],VY[:],EToV)
+        return VX[:],VY[:],EToV
 end
 
 uniform_mesh(elem::Union{Tri,Quad},Kx) = uniform_mesh(elem,Kx,Kx)
