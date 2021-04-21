@@ -39,6 +39,11 @@ struct MeshData{Dim, VertexType, GeoType, IndexType, BdryIndexType}
     sJ::GeoType
 end
 
+function Base.show(io::IO, md::MeshData)
+    @nospecialize md
+    println("MeshData with $(md.K) elements")
+end
+
 # enable use of @set and setproperties(...) for MeshData
 ConstructionBase.constructorof(::Type{MeshData{A,B,C,D}}) where {A,B,C,D} = MeshData{A,B,C,D}
 

@@ -48,6 +48,11 @@ struct RefElemData{Dim,ElemShape <: AbstractElemShape,
     LIFT::LMat             # lift matrix
 end
 
+function Base.show(io::IO, rd::RefElemData)
+    @nospecialize rd
+    println("Degree $(rd.N) RefElemData on $(rd.elemShape) element.")
+end
+
 # type alias for just dim/shape
 const RefElemData{Dim,ElemShape<:AbstractElemShape} =
     RefElemData{Dim,ElemShape,Tv,IvMat,IfMat,PMat,DMat,LMat} where {Tv,IvMat,IfMat,MMat,PMat,DMat,LMat}
