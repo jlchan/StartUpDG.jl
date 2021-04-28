@@ -70,7 +70,7 @@ Returns VX,VY,VZ,EToV
 function uniform_mesh(elem::Line,K1D)
         VX = collect(LinRange(-1,1,K1D+1))
         EToV = transpose(reshape(sort([1:K1D; 2:K1D+1]),2,K1D))
-        return VX,EToV
+        return VX,Matrix(EToV)
 end
 
 
