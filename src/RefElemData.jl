@@ -34,14 +34,14 @@ struct RefElemData{Dim,ElemShape <: AbstractElemShape,
     Vq::IvMat         # quad interp mat
 
     rstf::NTuple{Dim,T} where {T}
-    wf::Vector{Tv} # quad weights
+    wf::Vector{Tv}    # quad weights
     Vf::IfMat         # face quad interp mat
 
     # reference normals, quad weights
     nrstJ::NTuple{Dim,T} where {T}
 
     M::Matrix{Tv}          # mass matrix
-    Pq::PMat         # L2 projection matrix
+    Pq::PMat               # L2 projection matrix
 
     # specialize diff and lift (dense, sparse, Bern, etc)
     Drst::NTuple{Dim,DMat} # differentiation operators
@@ -52,15 +52,6 @@ function Base.show(io::IO, rd::RefElemData)
     @nospecialize rd
     println("Degree $(rd.N) RefElemData on $(rd.elemShape) element.")
 end
-
-# type alias for just dim/shape
-const RefElemData{Dim,ElemShape<:AbstractElemShape} =
-    RefElemData{Dim,ElemShape,Tv,IvMat,IfMat,PMat,DMat,LMat} where {Tv,IvMat,IfMat,MMat,PMat,DMat,LMat}
-
-# type alias for just dim
-const RefElemData{Dim} = RefElemData{Dim,ElemShape,Tv,IvMat,IfMat,PMat,DMat,LMat} where
-                        {ElemShape <: AbstractElemShape,Tv,IvMat,IfMat,PMat,DMat,LMat}
-
 
 # convenience unpacking routines
 function Base.getproperty(x::RefElemData, s::Symbol)
