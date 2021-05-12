@@ -22,23 +22,23 @@ struct RefElemData{Dim,ElemShape <: AbstractElemShape,
     fv          # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
     V1          # low order interpolation matrix
 
-    rst::NTuple{Dim,T} where {T}
+    rst::NTuple{Dim}
     VDM::Matrix{Tv}     # generalized Vandermonde matrix
 
     # interp/quad nodes
-    rstp::NTuple{Dim,T} where {T}
+    rstp::NTuple{Dim}
     Vp::Matrix{Tv}      # interpolation matrix to plotting nodes
 
-    rstq::NTuple{Dim,T} where {T}
+    rstq::NTuple{Dim}
     wq::Vector{Tv}
     Vq::IvMat         # quad interp mat
 
-    rstf::NTuple{Dim,T} where {T}
+    rstf::NTuple{Dim}
     wf::Vector{Tv}    # quad weights
     Vf::IfMat         # face quad interp mat
 
     # reference normals, quad weights
-    nrstJ::NTuple{Dim,T} where {T}
+    nrstJ::NTuple{Dim}
 
     M::Matrix{Tv}          # mass matrix
     Pq::PMat               # L2 projection matrix
