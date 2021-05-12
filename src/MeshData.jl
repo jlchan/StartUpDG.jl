@@ -31,7 +31,7 @@ struct MeshData{Dim, VertexType, GeoType, IndexType, BdryIndexType}
     mapB::BdryIndexType
 
     # volume geofacs Gij = dx_i/dxhat_j
-    rstxyzJ::SMatrix{Dim,Dim,GeoType,L} where {L}
+    rstxyzJ::SMatrix{Dim,Dim,GeoType}
     J::GeoType
 
     # surface geofacs
@@ -46,10 +46,6 @@ end
 
 # enable use of @set and setproperties(...) for MeshData
 ConstructionBase.constructorof(::Type{MeshData{A,B,C,D}}) where {A,B,C,D} = MeshData{A,B,C,D}
-
-# type alias for just Dim
-const MeshData{Dim} = MeshData{Dim,VertexType,GeoType,IndexType,BdryIndexType} where
-                        {VertexType,GeoType,IndexType,BdryIndexType}
 
 # convenience routines for unpacking individual tuple entries
 function Base.getproperty(x::MeshData,s::Symbol)
