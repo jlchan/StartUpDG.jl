@@ -98,11 +98,13 @@ function make_periodic(md::MeshData{Dim},rd::RefElemData,
                        is_periodic::NTuple{Dim,T}=ntuple(_->true,Dim)) where {Dim,T}
     @unpack mapM,mapP,mapB,xyzf,FToF = md
     NfacesTotal = prod(size(FToF))
+    FToF_periodic = copy(FToF)
     mapPB = build_periodic_boundary_maps!(xyzf...,is_periodic...,NfacesTotal,
-                                          mapM, mapP, mapB, FToF)
-    mapP[mapB] = mapPB
-    mapB = mapB[mapPB .== mapP[mapB]] # keep only non-periodic boundary nodes
-    return setproperties(md,(mapP=mapP,FToF=FToF,is_periodic=is_periodic)) # from Setfield.jl    
+                                          mapM, mapP, mapB, FToF_periodic)
+    mapP_periodic = copy(mapP)
+    mapP_periodic[mapB] = mapPB
+    mapB_periodic = mapB[mapPB .== mapP[mapB]] # keep only non-periodic boundary nodes
+    return setproperties(md,(mapB=mapB_periodic,mapP=mapP_periodic,FToF=FToF_periodic,is_periodic=is_periodic)) # from Setfield.jl    
 end
 
 # specializes to 1D - periodic = find min/max indices of xf and reverse their order
@@ -110,10 +112,12 @@ function make_periodic(md::MeshData{1},rd::RefElemData,is_periodic=true)
     if is_periodic == true
         @unpack mapP,mapB,xf,FToF = md
         mapPB = argmax(vec(xf)),argmin(vec(xf))
-        mapP[mapB] .= mapPB
-        FToF[[1,length(FToF)]] .= mapPB
-        mapB = [] 
-        return setproperties(md,(mapB=mapB,mapP=mapP,FToF=FToF,is_periodic=(true,))) # from Setfield.jl
+        mapP_periodic = copy(mapP)
+        mapP_periodic[mapB] .= mapPB
+        FToF_periodic = copy(FToF)
+        FToF_periodic[[1,length(FToF)]] .= mapPB
+        mapB_periodic = [] 
+        return setproperties(md,(mapB=mapB_periodic,mapP=mapP_periodic,FToF=FToF_periodic,is_periodic=(true,))) # from Setfield.jl
     end
 end
 
