@@ -47,11 +47,16 @@ md = MeshData(VXYZ...,EToV,rd)
 
 ## Enforcing periodic boundary conditions
 
-Periodic boundary conditions can be enforced by calling `make_periodic`, which returns another `MeshData` struct with modified `mapP` and `FToF` indexing arrays which account for periodicity.
+Periodic boundary conditions can be enforced by calling `make_periodic`, which returns another `MeshData` struct with modified `mapP`,`mapB`, and `FToF` indexing arrays which account for periodicity.
 ```julia
 md = MeshData(VX,VY,EToV,rd)
 md_periodic = make_periodic(md,rd) # periodic in both x and y coordinates
 md_periodic_x = make_periodic(md,rd,true,false) # periodic in x direction, but not y
+```
+One can check which dimensions are periodic via the `is_periodic` field of `MeshData`. For example, the `md_periodic_x` example above gives
+```julia
+julia> md_periodic_x.is_periodic
+(true, false)
 ```
 
 ## Creating curved meshes

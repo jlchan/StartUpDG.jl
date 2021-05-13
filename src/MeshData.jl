@@ -13,7 +13,7 @@ md = MeshElemData(VX,VY,EToV,rd)
 @unpack x,y = md
 ```
 """
-struct MeshData{Dim, VertexType, GeoType, IndexType, BdryIndexType}
+Base.@kwdef struct MeshData{Dim, VertexType, GeoType, IndexType, BdryIndexType}
 
     VXYZ::NTuple{Dim,VertexType}  # vertex coordinates
     K::Int                       # num elems
@@ -37,6 +37,8 @@ struct MeshData{Dim, VertexType, GeoType, IndexType, BdryIndexType}
     # surface geofacs
     nxyzJ::NTuple{Dim,GeoType}
     sJ::GeoType
+
+    is_periodic::NTuple{Dim,Bool}
 end
 
 function Base.show(io::IO, md::MeshData)
@@ -124,7 +126,7 @@ and outputs a new MeshData struct. Only fields modified are the coordinate-depen
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
 
-function MeshData(VX,EToV,rd::RefElemData)
+function MeshData(VX,EToV,rd::RefElemData{1})
 
     # Construct global coordinates
     @unpack V1 = rd
@@ -162,15 +164,17 @@ function MeshData(VX,EToV,rd::RefElemData)
     xq = Vq*x
     wJq = diagm(wq)*(Vq*J)
 
+    is_periodic = (false,)
     return MeshData(tuple(VX),K,EToV,FToF,
                      tuple(x),tuple(xf),tuple(xq),wJq,
                      collect(mapM),mapP,mapB,
                      SMatrix{1,1}(tuple(rxJ)),J,
-                     tuple(nxJ),sJ)
+                     tuple(nxJ),sJ,
+                     is_periodic)
 
 end
 
-function MeshData(VX,VY,EToV,rd::RefElemData)
+function MeshData(VX,VY,EToV,rd::RefElemData{2})
 
     @unpack fv = rd
     FToF = connect_mesh(EToV,fv)
@@ -201,11 +205,13 @@ function MeshData(VX,VY,EToV,rd::RefElemData)
 
     nxJ,nyJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
 
+    is_periodic = (false,false)
     return MeshData(tuple(VX,VY),K,EToV,FToF,
                      tuple(x,y),tuple(xf,yf),tuple(xq,yq),wJq,
                      mapM,mapP,mapB,
                      SMatrix{2,2}(tuple(rxJ,ryJ,sxJ,syJ)),J,
-                     tuple(nxJ,nyJ),sJ)
+                     tuple(nxJ,nyJ),sJ,
+                     is_periodic)
 
 end
 
@@ -238,10 +244,12 @@ function MeshData(VX,VY,VZ,EToV,rd::RefElemData)
 
     nxJ,nyJ,nzJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
 
+    is_periodic = (false,false,false)
     return MeshData(tuple(VX,VY,VZ),K,EToV,FToF,
                      tuple(x,y,z),tuple(xf,yf,zf),tuple(xq,yq,zq),wJq,
                      mapM,mapP,mapB,
-                     rstxyzJ,J,tuple(nxJ,nyJ,nzJ),sJ)
+                     rstxyzJ,J,tuple(nxJ,nyJ,nzJ),sJ,
+                     is_periodic)
 end
 
 function MeshData(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
