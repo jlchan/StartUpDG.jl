@@ -13,7 +13,7 @@ rd = RefElemData(Tri(),N)
 ```
 """
 struct RefElemData{Dim,ElemShape <: AbstractElemShape,
-                   Tv,IvMat,IfMat,PMat,DMat,LMat}
+                   Tv,IvMat,IfMat,PMat,DMat,LMat} # todo - remove specialization in the future?
 
     elemShape::ElemShape
 
@@ -31,11 +31,11 @@ struct RefElemData{Dim,ElemShape <: AbstractElemShape,
 
     rstq::NTuple{Dim}
     wq::Vector{Tv}
-    Vq::IvMat         # quad interp mat
+    Vq::IvMat           # quad interp mat
 
     rstf::NTuple{Dim}
-    wf::Vector{Tv}    # quad weights
-    Vf::IfMat         # face quad interp mat
+    wf::Vector{Tv}      # quad weights
+    Vf::IfMat           # face quad interp mat
 
     # reference normals, quad weights
     nrstJ::NTuple{Dim}
@@ -182,7 +182,8 @@ function RefElemData(elem::Union{Tri,Quad}, N;
 
     # sparsify for Quad
     tol = 1e-13
-    Drs = typeof(elem)==Quad ? droptol!.(sparse.((Dr,Ds)),tol) : (Dr,Ds)
+    Drs = (Dr,Ds)
+    # Drs = typeof(elem)==Quad ? droptol!.(sparse.((Dr,Ds)),tol) : (Dr,Ds)
     # Vf = typeof(elem)==Quad ? droptol!(sparse(Vf),tol) : Vf
     # LIFT = typeof(elem)==Quad ? droptol!(sparse(LIFT),tol) : LIFT
 
@@ -226,8 +227,9 @@ function RefElemData(elem::Hex,N;
     rp,sp,tp = equi_nodes(elem,15)
     Vp = vandermonde(elem,N,rp,sp,tp)/VDM
 
-    Drst = sparse.((Dr,Ds,Dt))
-    Vf = sparse(Vf)
+    # Drst = sparse.((Dr,Ds,Dt))
+    Drst = (Dr,Ds,Dt)
+    # Vf = sparse(Vf)
 
     return RefElemData(elem,N,Nfaces,fv,V1,
                        tuple(r,s,t),VDM,
