@@ -41,9 +41,9 @@ Base.@kwdef struct MeshData{Dim, VertexType, GeoType, IndexType, BdryIndexType}
     is_periodic::NTuple{Dim,Bool}
 end
 
-function Base.show(io::IO, md::MeshData)
+function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
     @nospecialize md
-    println("MeshData with $(md.K) elements")
+    println("MeshData of dimension $DIM with $(md.K) elements")
 end
 
 # enable use of @set and setproperties(...) for MeshData
