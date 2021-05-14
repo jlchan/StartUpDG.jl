@@ -12,7 +12,7 @@ import SparseArrays: sparse, droptol!
 import UnPack: @unpack
 
 # element types from NodesAndModes
-export Line, Tri, Quad, Hex
+export AbstractElemShape, Line, Tri, Quad, Hex
 export @unpack
 
 # reference element utility functions
