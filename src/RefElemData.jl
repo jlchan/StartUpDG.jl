@@ -111,9 +111,12 @@ end
     RefElemData(elem::Hex,N;
                  quad_rule_vol = quad_nodes(elem,N),
                  quad_rule_face = quad_nodes(Quad(),N))
+    RefElemData(elem; N, kwargs...) # version with keyword arg
 
 Constructor for RefElemData for different element types.
 """
+RefElemData(elem; N, kwargs...) = RefElemData(elem, N; kwargs...)
+
 function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1))
 
     fv = face_vertices(elem)
