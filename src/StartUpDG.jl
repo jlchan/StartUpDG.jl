@@ -2,18 +2,15 @@ module StartUpDG
 
 using ConstructionBase  # for constructorof(...)
 using LinearAlgebra     # for diagm, identity matrix I
-using NodesAndModes     # for basis functions
-using StaticArrays
-using Setfield          # for "modifying" structs to modify node mappings
-using UnPack            # for getting values in RefElemData and MeshData
+using StaticArrays      # for SMatrix
+using Setfield          # for "modifying" structs to modify node mappings (setproperties)
 
-import NodesAndModes: meshgrid
-import SparseArrays: sparse, droptol!
-import UnPack: @unpack
+using Reexport 
+@reexport using UnPack            # for getting values in RefElemData and MeshData
+@reexport using NodesAndModes     # for basis functions
 
-# element types from NodesAndModes
-export AbstractElemShape, Line, Tri, Quad, Hex
-export @unpack
+using NodesAndModes: meshgrid
+using SparseArrays: sparse, droptol!
 
 # reference element utility functions
 export RefElemData
