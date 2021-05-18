@@ -6,7 +6,7 @@
 
 Routines to initialize reference element operators, physical mesh arrays, and connectivity for nodal discontinuous Galerkin (DG) methods. Codes roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007). Original port from Matlab to Julia by [Yimin Lin](https://github.com/yiminllin).
 
-This is not yet a registered package; please add it instead via `] https://github.com/jlchan/StartUpDG.jl`.
+This package is registered, so you can install it via `] add StartUpDG`.
 
 # Usage overview
 
