@@ -57,10 +57,10 @@ end
         uniform_mesh(elem::Line,Kx)
         uniform_mesh(elem::Tri,Kx,Ky)
         uniform_mesh(elem::Quad,Kx,Ky)
-        uniform_mesh(elem::Hex,Kx,Ky,Kz)
+        uniform_mesh(elem::Hex,Kx,Ky,Kz)        
 
 Uniform Kx (by Ky by Kz) mesh on ``[-1,1]^d``, where `d` is the spatial dimension.
-Returns VX,VY,VZ,EToV
+Returns VX,VY,VZ,EToV. Can also use kwargs via `uniform_mesh(elem; K1D=16) `
 """
 
 ###########################
@@ -192,6 +192,9 @@ function uniform_mesh(elem::Hex,Nx,Ny,Nz)
         VZ = z[:];
         return VX[:],VY[:],VZ[:],EToV
 end
+
+# keyword argument version
+uniform_mesh(elem::T; K1D) where {T <: AbstractElemShape} = uniform_mesh(elem,K1D)
 
 # # WARNING: may not work in 3D. Should loop over faces then
 # function plotMesh(EToV,xyz...)
