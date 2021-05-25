@@ -25,7 +25,8 @@ struct RefElemData{Dim,ElemShape <: AbstractElemShape,
     rst::NTuple{Dim}
     VDM::Matrix{Tv}     # generalized Vandermonde matrix
 
-    # interp/quad nodes
+    # plotting nodes
+    Nplot::Int
     rstp::NTuple{Dim}
     Vp::Matrix{Tv}      # interpolation matrix to plotting nodes
 
@@ -117,7 +118,7 @@ Constructor for RefElemData for different element types.
 """
 RefElemData(elem; N, kwargs...) = RefElemData(elem, N; kwargs...)
 
-function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1))
+function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1), Nplot=10)
 
     fv = face_vertices(elem)
     Nfaces = length(fv)
@@ -141,12 +142,12 @@ function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1))
     LIFT = M\(Vf') # lift matrix
 
     # plotting nodes
-    rp = equi_nodes(elem,10)
+    rp = equi_nodes(elem,Nplot)
     Vp = vandermonde(elem,N,rp)/VDM
 
     return RefElemData(elem,N,Nfaces,fv,V1,
                        tuple(r),VDM,
-                       tuple(rp),Vp,
+                       Nplot,tuple(rp),Vp,
                        tuple(rq),wq,Vq,
                        tuple(rf),wf,Vf,tuple(nrJ),
                        M,Pq,tuple(Dr),LIFT)
@@ -154,7 +155,8 @@ end
 
 function RefElemData(elem::Union{Tri,Quad}, N;
                      quad_rule_vol = quad_nodes(elem,N),
-                     quad_rule_face = gauss_quad(0,0,N))
+                     quad_rule_face = gauss_quad(0,0,N),
+                     Nplot=10)
 
     fv = face_vertices(elem) # set faces for triangle
     Nfaces = length(fv)
@@ -180,19 +182,20 @@ function RefElemData(elem::Union{Tri,Quad}, N;
     LIFT = M\(Vf'*diagm(wf)) # lift matrix used in rhs evaluation
 
     # plotting nodes
-    rp, sp = equi_nodes(elem,10)
+    rp, sp = equi_nodes(elem,Nplot)
     Vp = vandermonde(elem,N,rp,sp)/VDM
 
-    # sparsify for Quad
-    tol = 1e-13
     Drs = (Dr,Ds)
+
+    # sparsify for Quad
+    # tol = 1e-13
     # Drs = typeof(elem)==Quad ? droptol!.(sparse.((Dr,Ds)),tol) : (Dr,Ds)
     # Vf = typeof(elem)==Quad ? droptol!(sparse(Vf),tol) : Vf
     # LIFT = typeof(elem)==Quad ? droptol!(sparse(LIFT),tol) : LIFT
 
     return RefElemData(elem,N,Nfaces,fv,V1,
                        tuple(r,s),VDM,
-                       tuple(rp,sp),Vp,
+                       Nplot,tuple(rp,sp),Vp,
                        tuple(rq,sq),wq,Vq,
                        tuple(rf,sf),wf,Vf,tuple(nrJ,nsJ),
                        M,Pq,Drs,LIFT)
@@ -200,7 +203,8 @@ end
 
 function RefElemData(elem::Hex,N;
                      quad_rule_vol = quad_nodes(elem,N),
-                     quad_rule_face = quad_nodes(Quad(),N))
+                     quad_rule_face = quad_nodes(Quad(),N),
+                     Nplot=10)
 
     fv = face_vertices(elem) # set faces for triangle
     Nfaces = length(fv)
@@ -227,7 +231,7 @@ function RefElemData(elem::Hex,N;
     LIFT = M\(Vf'*diagm(wf))
 
     # plotting nodes
-    rp,sp,tp = equi_nodes(elem,15)
+    rp,sp,tp = equi_nodes(elem,Nplot)
     Vp = vandermonde(elem,N,rp,sp,tp)/VDM
 
     # Drst = sparse.((Dr,Ds,Dt))
@@ -236,7 +240,7 @@ function RefElemData(elem::Hex,N;
 
     return RefElemData(elem,N,Nfaces,fv,V1,
                        tuple(r,s,t),VDM,
-                       tuple(rp,sp,tp),Vp,
+                       Nplot,tuple(rp,sp,tp),Vp,
                        tuple(rq,sq,tq),wq,Vq,
                        tuple(rf,sf,tf),wf,Vf,tuple(nrJ,nsJ,ntJ),
                        M,Pq,Drst,LIFT)
