@@ -6,7 +6,8 @@
 * `fv`: list of vertices defining faces, e.g., `[1,2],[2,3],[3,1]` for a triangle
 * `rst::NTuple{Dim,...}`: tuple of vectors of length `N_p`, each of which contains coordinates of degree ``N`` optimized polynomial interpolation points.
 * `rstq::NTuple{Dim,...}`,`wq`,`Vq`: tuple of volume quadrature points, vector of weights, and quadrature interpolation matrix. Each element of `rstq` and `wq` are vectors of length ``N_q``, and `Vq` is a matrix of size ``N_q \times N_p``.
-* `rstp::NTuple{Dim,...}`, `Vp`: tuple of plotting points and plotting interpolation matrix. Each element of `rstp` is a vector of length ``N_{\rm plot}``, and `Vp` is a matrix of size ``N_{\rm plot} \times N_p``.
+* `N_{\rm plot}`: the degree which determines the number of plotting points `N_{p,{\rm plot}}`.
+* `rstp::NTuple{Dim,...}`, `Vp`: tuple of plotting points and plotting interpolation matrix. Each element of `rstp` is a vector of length ``N_{p,{\rm plot}}``, and `Vp` is a matrix of size ``N_{p,{\rm plot}} \times N_p``.
 * `rstf::NTuple{Dim,...}`,`wf`,`Vf`: tuple of face quadrature points, weights, and face interpolation matrix. Each element of `rstf` and `wf` are vectors of length ``N_f``, and `Vf` is a matrix of size ``N_f \times N_p``.
 * `nrstJ::NTuple{Dim,...}`: tuple of outward reference normals, scaled by face Jacobian. Each element is a vector of length ``N_f``.
 * `M`: mass matrix computed using quadrature. Size ``N_p \times N_p``
