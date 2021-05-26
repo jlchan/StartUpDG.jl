@@ -6,8 +6,6 @@ function face_vertices(elem::Line)
 end
 
 function face_vertices(elem::Tri)
-        #return [1,2],[2,3],[3,1]
-        # return [1,3],[3,2],[2,1]
         tol = 5e2*eps()
         r,s = nodes(Tri(),1)
         e1 = findall(@. abs(s+1)<tol)
@@ -17,7 +15,6 @@ function face_vertices(elem::Tri)
 end
 
 function face_vertices(elem::Quad)
-        #return [1,2],[2,4],[3,4],[1,3] # ordering matters
         tol = 5e2*eps()
         r,s = nodes(Quad(),1)
         e1 = findall(@. abs(s+1)<tol)
