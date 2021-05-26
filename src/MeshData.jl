@@ -1,8 +1,8 @@
 """
-    struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
+    struct MeshData{Dim, Tv}
 
 MeshData: contains info for a high order piecewise polynomial discretization on an
-unstructured mesh.
+unstructured mesh. 
 
 Use `@unpack` to extract fields. Example:
 ```julia
@@ -13,30 +13,30 @@ md = MeshElemData(VX,VY,EToV,rd)
 @unpack x,y = md
 ```
 """
-Base.@kwdef struct MeshData{Dim, VertexType, GeoType, IndexType, BdryIndexType}
+Base.@kwdef struct MeshData{Dim, Tv}
 
-    VXYZ::NTuple{Dim,VertexType}  # vertex coordinates
+    VXYZ::NTuple{Dim,Vector{Tv}}  # vertex coordinates
     K::Int                       # num elems
-    EToV                         # mesh vertex array
-    FToF::IndexType                # face connectivity
+    EToV::Matrix{Int}                         # mesh vertex array
+    FToF::Matrix{Int}                # face connectivity
 
-    xyz::NTuple{Dim,GeoType}   # physical points
-    xyzf::NTuple{Dim,GeoType}  # face nodes
-    xyzq::NTuple{Dim,GeoType}  # phys quad points, Jacobian-scaled weights
-    wJq::GeoType
+    xyz::NTuple{Dim,Matrix{Tv}}   # physical points
+    xyzf::NTuple{Dim,Matrix{Tv}}  # face nodes
+    xyzq::NTuple{Dim,Matrix{Tv}}  # phys quad points, Jacobian-scaled weights
+    wJq::Matrix{Tv}
 
     # arrays of connectivity indices between face nodes
-    mapM::IndexType
-    mapP::IndexType
-    mapB::BdryIndexType
+    mapM::Matrix{Int}
+    mapP::Matrix{Int}
+    mapB::Vector{Int}
 
     # volume geofacs Gij = dx_i/dxhat_j
-    rstxyzJ::SMatrix{Dim,Dim,GeoType}
-    J::GeoType
+    rstxyzJ::SMatrix{Dim,Dim,Matrix{Tv}}
+    J::Matrix{Tv}
 
     # surface geofacs
-    nxyzJ::NTuple{Dim,GeoType}
-    sJ::GeoType
+    nxyzJ::NTuple{Dim,Matrix{Tv}}
+    sJ::Matrix{Tv}
 
     is_periodic::NTuple{Dim,Bool}
 end
@@ -47,7 +47,7 @@ function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
 end
 
 # enable use of @set and setproperties(...) for MeshData
-ConstructionBase.constructorof(::Type{MeshData{A,B,C,D}}) where {A,B,C,D} = MeshData{A,B,C,D}
+ConstructionBase.constructorof(::Type{MeshData{A,B}}) where {A,B} = MeshData{A,B}
 
 # convenience routines for unpacking individual tuple entries
 function Base.getproperty(x::MeshData,s::Symbol)
@@ -126,7 +126,7 @@ and outputs a new MeshData struct. Only fields modified are the coordinate-depen
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
 
-function MeshData(VX,EToV,rd::RefElemData{1})
+function MeshData(VX,EToV,rd::RefElemData{1}) 
 
     # Construct global coordinates
     @unpack V1 = rd
@@ -166,11 +166,11 @@ function MeshData(VX,EToV,rd::RefElemData{1})
 
     is_periodic = (false,)
     return MeshData(tuple(VX),K,EToV,FToF,
-                     tuple(x),tuple(xf),tuple(xq),wJq,
-                     collect(mapM),mapP,mapB,
-                     SMatrix{1,1}(tuple(rxJ)),J,
-                     tuple(nxJ),sJ,
-                     is_periodic)
+                    tuple(x),tuple(xf),tuple(xq),wJq,
+                    collect(mapM),mapP,mapB,
+                    SMatrix{1,1}(tuple(rxJ)),J,
+                    tuple(nxJ),sJ,
+                    is_periodic)
 
 end
 
@@ -186,11 +186,11 @@ function MeshData(VX,VY,EToV,rd::RefElemData{2})
     y = V1*VY[transpose(EToV)]
 
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
-    @unpack r,s,Vf = rd
+    @unpack Vf = rd
     xf = Vf*x
     yf = Vf*y
     mapM,mapP,mapB = build_node_maps(FToF,xf,yf)
-    Nfp = convert(Int,size(Vf,1)/Nfaces)
+    Nfp = size(Vf,1) ÷ Nfaces
     mapM = reshape(mapM,Nfp*Nfaces,K)
     mapP = reshape(mapP,Nfp*Nfaces,K)
 
@@ -215,7 +215,7 @@ function MeshData(VX,VY,EToV,rd::RefElemData{2})
 
 end
 
-function MeshData(VX,VY,VZ,EToV,rd::RefElemData)
+function MeshData(VX,VY,VZ,EToV,rd::RefElemData{3})
 
     @unpack fv = rd
     FToF = connect_mesh(EToV,fv)

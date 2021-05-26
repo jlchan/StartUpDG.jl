@@ -16,7 +16,7 @@ function connect_mesh(EToV,fv)
     K = size(EToV,1)
 
     # sort and find matches
-    fnodes = [[sort(EToV[e,ids]) for ids = fv, e = 1:K]...]
+    fnodes = [[sort(EToV[e,ids]) for ids in fv, e = 1:K]...]
     p = sortperm(fnodes) # sorts by lexicographic ordering by default
     fnodes = fnodes[p,:]
 

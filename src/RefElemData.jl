@@ -1,6 +1,5 @@
 """
-    struct RefElemData{Dim,ElemShape <: AbstractElemShape,
-                       IvMat,IfMat,MMat,PMat,DMat,LMat}
+    struct RefElemData{Dim, ElemShape <: AbstractElemShape, Tv, Nfaces} 
 
 RefElemData: contains info (interpolation points, volume/face quadrature, operators)
 for a high order nodal polynomial basis on a given reference element.
@@ -12,42 +11,44 @@ rd = RefElemData(Tri(),N)
 @unpack r,s = rd
 ```
 """
-struct RefElemData{Dim,ElemShape <: AbstractElemShape,
-                   Tv,IvMat,IfMat,PMat,DMat,LMat} # todo - remove specialization in the future?
+struct RefElemData{Dim, ElemShape <: AbstractElemShape, Tv, Nfaces} 
 
     elemShape::ElemShape
 
-    N::Int      # degree
-    Nfaces::Int # num faces
-    fv          # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
-    V1          # low order interpolation matrix
+    N::Int         # degree
+    Nfaces::Int    # num faces - redundant, remove later (breaking change)
+                   # replace with "nfaces(rd::RefElemData{DIM,ElemShape,Tv,Nfaces}) = Nfaces"
+    fv::Union{NTuple{Nfaces,Int},NTuple{Nfaces,Vector{Int}}} # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
+    V1::Matrix{Tv} # low order interpolation matrix
 
-    rst::NTuple{Dim}
+    rst::NTuple{Dim,Vector{Tv}}
     VDM::Matrix{Tv}     # generalized Vandermonde matrix
 
     # plotting nodes
     Nplot::Int
-    rstp::NTuple{Dim}
+    rstp::NTuple{Dim,Vector{Tv}}
     Vp::Matrix{Tv}      # interpolation matrix to plotting nodes
 
-    rstq::NTuple{Dim}
+    rstq::NTuple{Dim,Vector{Tv}}
     wq::Vector{Tv}
-    Vq::IvMat           # quad interp mat
+    Vq::Matrix{Tv}           # quad interp mat
 
     rstf::NTuple{Dim}
     wf::Vector{Tv}      # quad weights
-    Vf::IfMat           # face quad interp mat
+    Vf::Matrix{Tv}           # face quad interp mat
 
     # reference normals, quad weights
-    nrstJ::NTuple{Dim}
+    nrstJ::NTuple{Dim,Vector{Tv}}
 
     M::Matrix{Tv}          # mass matrix
-    Pq::PMat               # L2 projection matrix
+    Pq::Matrix{Tv}               # L2 projection matrix
 
     # specialize diff and lift (dense, sparse, Bern, etc)
-    Drst::NTuple{Dim,DMat} # differentiation operators
-    LIFT::LMat             # lift matrix
+    Drst::NTuple{Dim,Matrix{Tv}} # differentiation operators
+    LIFT::Matrix{Tv}             # lift matrix
 end
+
+
 
 function Base.show(io::IO, rd::RefElemData)
     @nospecialize rd
