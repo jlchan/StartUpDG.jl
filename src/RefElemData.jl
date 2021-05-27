@@ -11,12 +11,12 @@ rd = RefElemData(Tri(),N)
 @unpack r,s = rd
 ```
 """
-struct RefElemData{Dim, ElemShape <: AbstractElemShape, Tv, Nfaces} 
+struct RefElemData{Dim, ElemShape <: AbstractElemShape, Nfaces, Tv} 
 
     elemShape::ElemShape
 
     N::Int         # degree
-    Nfaces::Int    # num faces - redundant, remove later (breaking change)
+    # Nfaces::Int    # num faces - redundant, remove later (breaking change)
                    # replace with "nfaces(rd::RefElemData{DIM,ElemShape,Tv,Nfaces}) = Nfaces"
     fv::Union{NTuple{Nfaces,Int},NTuple{Nfaces,Vector{Int}}} # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
     V1::Matrix{Tv} # low order interpolation matrix
@@ -56,7 +56,7 @@ function Base.show(io::IO, rd::RefElemData)
 end
 
 # convenience unpacking routines
-function Base.getproperty(x::RefElemData, s::Symbol)
+function Base.getproperty(x::RefElemData{Dim,ElemShape,Nfaces}, s::Symbol) where {Dim,ElemShape,Nfaces}
     if s==:r
         return getfield(x,:rst)[1]
     elseif s==:s
@@ -98,6 +98,9 @@ function Base.getproperty(x::RefElemData, s::Symbol)
         return getfield(x,:Drst)[2]
     elseif s==:Dt
         return getfield(x,:Drst)[3]
+
+    elseif s==:Nfaces
+        return Nfaces
 
     else
         return getfield(x,s)
@@ -146,7 +149,7 @@ function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1), Nplot=
     rp = equi_nodes(elem,Nplot)
     Vp = vandermonde(elem,N,rp)/VDM
 
-    return RefElemData(elem,N,Nfaces,fv,V1,
+    return RefElemData(elem,N,fv,V1,
                        tuple(r),VDM,
                        Nplot,tuple(rp),Vp,
                        tuple(rq),wq,Vq,
@@ -194,7 +197,7 @@ function RefElemData(elem::Union{Tri,Quad}, N;
     # Vf = typeof(elem)==Quad ? droptol!(sparse(Vf),tol) : Vf
     # LIFT = typeof(elem)==Quad ? droptol!(sparse(LIFT),tol) : LIFT
 
-    return RefElemData(elem,N,Nfaces,fv,V1,
+    return RefElemData(elem,N,fv,V1,
                        tuple(r,s),VDM,
                        Nplot,tuple(rp,sp),Vp,
                        tuple(rq,sq),wq,Vq,
@@ -239,7 +242,7 @@ function RefElemData(elem::Hex,N;
     Drst = (Dr,Ds,Dt)
     # Vf = sparse(Vf)
 
-    return RefElemData(elem,N,Nfaces,fv,V1,
+    return RefElemData(elem,N,fv,V1,
                        tuple(r,s,t),VDM,
                        Nplot,tuple(rp,sp,tp),Vp,
                        tuple(rq,sq,tq),wq,Vq,
