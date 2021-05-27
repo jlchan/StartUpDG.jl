@@ -2,8 +2,8 @@ using StartUpDG
 using Test
 using LinearAlgebra
 
-@testset "Timestep and mesh utils" begin
-    tol = 5e2*eps()
+@testset "Mesh, timestep utils" begin
+    tol = 50*eps()
 
     VX,VY,EToV = readGmsh2D("squareCylinder2D.msh")
     @test size(EToV)==(3031,3)
@@ -17,6 +17,34 @@ using LinearAlgebra
     @test accept_step == true
     @test dt_new == PI.dtmax
     @test errEst ≈ prevErrEst
+end
+
+@testset "Geometric terms for elem $elem" for elem in [Tri() Quad() Hex()]
+    tol = 5e2*eps()
+    N = 3
+    rd = RefElemData(elem,N)
+    geofacs = geometric_factors(rd.rst...,rd.Drst...)
+    if elem != Hex()
+        rxJ,sxJ,ryJ,syJ,J = geofacs    
+        @test all(rxJ .≈ 1)
+        @test norm(sxJ) < tol
+        @test norm(ryJ) < tol
+        @test all(syJ .≈ 1)
+        @test all(J .≈ 1)
+    else
+        rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J = geofacs
+        @test all(rxJ .≈ 1)
+        @test norm(sxJ) < tol
+        @test norm(txJ) < tol
+        @test norm(ryJ) < tol
+        @test all(syJ .≈ 1)
+        @test norm(tyJ) < tol
+        @test norm(rzJ) < tol
+        @test norm(szJ) < tol
+        @test all(tzJ .≈ 1)
+        @test all(J .≈ 1)
+    end
+
 end
 
 # some code not tested to avoid redundancy from tests in NodesAndModes.
