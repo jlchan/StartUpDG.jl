@@ -16,7 +16,7 @@ md = MeshElemData(VX,VY,EToV,rd)
 Base.@kwdef struct MeshData{Dim, Tv}
 
     VXYZ::NTuple{Dim,Vector{Tv}}  # vertex coordinates
-    K::Int                       # num elems
+    num_elements::Int                       # num elems
     EToV::Matrix{Int}                         # mesh vertex array
     FToF::Matrix{Int}                # face connectivity
 
@@ -106,6 +106,8 @@ function Base.getproperty(x::MeshData,s::Symbol)
     elseif s==:tzJ
         return getfield(x, :rstxyzJ)[3,3]
 
+    elseif s==:K # old behavior where K = num_elements
+        return getfield(x, :num_elements)
     else
         return getfield(x,s)
     end
