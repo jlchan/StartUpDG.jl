@@ -23,6 +23,7 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, Nfaces, Tv}
 
     rst::NTuple{Dim,Vector{Tv}}
     VDM::Matrix{Tv}     # generalized Vandermonde matrix
+    Fmask::Matrix{Int}  # indices of face nodes
 
     # plotting nodes
     Nplot::Int
@@ -125,10 +126,10 @@ RefElemData(elem; N, kwargs...) = RefElemData(elem, N; kwargs...)
 function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1), Nplot=10)
 
     fv = face_vertices(elem)
-    Nfaces = length(fv)
 
     # Construct matrices on reference elements
     r = nodes(elem,N)
+    Fmask = [1 N+1]
     VDM = vandermonde(elem, N, r)
     Dr = grad_vandermonde(elem, N, r)/VDM
 
@@ -150,7 +151,7 @@ function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1), Nplot=
     Vp = vandermonde(elem,N,rp)/VDM
 
     return RefElemData(elem,N,fv,V1,
-                       tuple(r),VDM,
+                       tuple(r),VDM,Fmask,
                        Nplot,tuple(rp),Vp,
                        tuple(rq),wq,Vq,
                        tuple(rf),wf,Vf,tuple(nrJ),
@@ -163,10 +164,11 @@ function RefElemData(elem::Union{Tri,Quad}, N;
                      Nplot=10)
 
     fv = face_vertices(elem) # set faces for triangle
-    Nfaces = length(fv)
 
     # Construct matrices on reference elements
     r,s = nodes(elem,N)
+    Fmask = hcat(find_face_nodes(elem,r,s)...)
+
     VDM,Vr,Vs = basis(elem,N,r,s)
     Dr = Vr/VDM
     Ds = Vs/VDM
@@ -198,7 +200,7 @@ function RefElemData(elem::Union{Tri,Quad}, N;
     # LIFT = typeof(elem)==Quad ? droptol!(sparse(LIFT),tol) : LIFT
 
     return RefElemData(elem,N,fv,V1,
-                       tuple(r,s),VDM,
+                       tuple(r,s),VDM,Fmask,
                        Nplot,tuple(rp,sp),Vp,
                        tuple(rq,sq),wq,Vq,
                        tuple(rf,sf),wf,Vf,tuple(nrJ,nsJ),
@@ -211,10 +213,10 @@ function RefElemData(elem::Hex,N;
                      Nplot=10)
 
     fv = face_vertices(elem) # set faces for triangle
-    Nfaces = length(fv)
 
     # Construct matrices on reference elements
     r,s,t = nodes(elem,N)
+    Fmask = hcat(find_face_nodes(elem,r,s,t)...)
     VDM,Vr,Vs,Vt = basis(elem,N,r,s,t)
     Dr,Ds,Dt = (A->A/VDM).((Vr,Vs,Vt))
 
@@ -243,7 +245,7 @@ function RefElemData(elem::Hex,N;
     # Vf = sparse(Vf)
 
     return RefElemData(elem,N,fv,V1,
-                       tuple(r,s,t),VDM,
+                       tuple(r,s,t),VDM,Fmask,
                        Nplot,tuple(rp,sp,tp),Vp,
                        tuple(rq,sq,tq),wq,Vq,
                        tuple(rf,sf,tf),wf,Vf,tuple(nrJ,nsJ,ntJ),
