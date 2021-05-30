@@ -52,31 +52,32 @@ julia> mapM,mapP,mapB = build_node_maps((xf,yf),FToF)
 function build_node_maps(FToF,Xf...)
 
     NfacesK = length(FToF)
-    NODETOL = 1e-10;
+    NODETOL = 1e-12;
     dims = length(Xf)
 
     # number nodes consecutively
-    Nfp  = convert(Int,length(Xf[1]) / NfacesK)
+    Nfp  = length(Xf[1]) ÷ NfacesK
     mapM = reshape(collect(1:length(Xf[1])), Nfp, NfacesK);
     mapP = copy(mapM);
 
-    ids = collect(1:Nfp)
+    D = zeros(Nfp,Nfp)
+    idM,idP = zeros(Int,Nfp),zeros(Int,Nfp)
     for (f1,f2) in enumerate(FToF)
 
+        fill!(D,zero(eltype(D)))
+
         # find find volume node numbers of left and right nodes
-        D = zeros(Nfp,Nfp)
         for i = 1:dims
             Xfi = reshape(Xf[i],Nfp,NfacesK)
-            X1i = repeat(Xfi[ids,f1],1,Nfp)
-            X2i = repeat(Xfi[ids,f2],1,Nfp)
-            # Compute distance matrix
-            D += abs.(X1i - transpose(X2i))
+            for j = 1:Nfp, k = 1:Nfp
+                D[j,k] += abs(Xfi[j,f1]-Xfi[k,f2])
+            end
         end
 
         refd = maximum(D[:])
-        idM = map(id->id[1], findall(@. D < NODETOL*refd))
-        idP = map(id->id[2], findall(@. D < NODETOL*refd))
-        mapP[idM,f1] = @. idP + (f2-1)*Nfp
+        map!(id->id[1], idM, findall(@. D < NODETOL*refd))
+        map!(id->id[2], idP, findall(@. D < NODETOL*refd))        
+        @. mapP[idM,f1] = idP + (f2-1)*Nfp
     end
 
     mapB = map(x->x[1],findall(@. mapM[:]==mapP[:]))
