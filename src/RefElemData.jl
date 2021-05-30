@@ -102,6 +102,14 @@ function Base.getproperty(x::RefElemData{Dim,ElemShape,Nfaces}, s::Symbol) where
 
     elseif s==:Nfaces
         return Nfaces
+    elseif s==:Np
+        return length(x.r)
+    # elseif s==:Nfp
+    #     return length(x.rf)
+    elseif s==:Nq
+        return length(x.rq)
+    elseif s==:Nfq
+        return length(x.rf)
 
     else
         return getfield(x,s)

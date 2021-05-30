@@ -16,7 +16,6 @@ md = MeshElemData(VX,VY,EToV,rd)
 Base.@kwdef struct MeshData{Dim, Tv}
 
     VXYZ::NTuple{Dim,Vector{Tv}}  # vertex coordinates
-    num_elements::Int                       # num elems
     EToV::Matrix{Int}                         # mesh vertex array
     FToF::Matrix{Int}                # face connectivity
 
@@ -106,8 +105,8 @@ function Base.getproperty(x::MeshData,s::Symbol)
     elseif s==:tzJ
         return getfield(x, :rstxyzJ)[3,3]
 
-    elseif s==:K # old behavior where K = num_elements
-        return getfield(x, :num_elements)
+    elseif s==:K || s==:num_elements # old behavior where K = num_elements
+        return size(x.EToV,1) # num rows in EToV = num elements
     else
         return getfield(x,s)
     end
@@ -167,7 +166,7 @@ function MeshData(VX,EToV,rd::RefElemData{1})
     wJq = diagm(wq)*(Vq*J)
 
     is_periodic = (false,)
-    return MeshData(tuple(VX),K,EToV,FToF,
+    return MeshData(tuple(VX),EToV,FToF,
                     tuple(x),tuple(xf),tuple(xq),wJq,
                     collect(mapM),mapP,mapB,
                     SMatrix{1,1}(tuple(rxJ)),J,
@@ -208,7 +207,7 @@ function MeshData(VX,VY,EToV,rd::RefElemData{2})
     nxJ,nyJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
 
     is_periodic = (false,false)
-    return MeshData(tuple(VX,VY),K,EToV,FToF,
+    return MeshData(tuple(VX,VY),EToV,FToF,
                      tuple(x,y),tuple(xf,yf),tuple(xq,yq),wJq,
                      mapM,mapP,mapB,
                      SMatrix{2,2}(tuple(rxJ,ryJ,sxJ,syJ)),J,
@@ -247,7 +246,7 @@ function MeshData(VX,VY,VZ,EToV,rd::RefElemData{3})
     nxJ,nyJ,nzJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
 
     is_periodic = (false,false,false)
-    return MeshData(tuple(VX,VY,VZ),K,EToV,FToF,
+    return MeshData(tuple(VX,VY,VZ),EToV,FToF,
                      tuple(x,y,z),tuple(xf,yf,zf),tuple(xq,yq,zq),wJq,
                      mapM,mapP,mapB,
                      rstxyzJ,J,tuple(nxJ,nyJ,nzJ),sJ,

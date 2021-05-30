@@ -8,6 +8,7 @@ The aliases for `RefElemData` are below:
 3. `rf` for `rstf[1]` (similarly for `sf` and `tf`)
 4. `rp` for `rstp[1]` (similarly for `sp` and `tp`)
 5. `Dr` for `Drst[1]` (similarly for `Ds` and `Dt`)
+6. `Nfaces, Np, Nq, Nfq` for number of faces, volume nodes, quadrature points, and face quadrature points. 
 
 The aliases for `MeshData` are below:
 1. `VX` for `VXYZ[1]` (similarly for `VY`, `VZ`)
