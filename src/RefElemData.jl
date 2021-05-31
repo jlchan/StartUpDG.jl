@@ -13,11 +13,9 @@ rd = RefElemData(Tri(),N)
 """
 struct RefElemData{Dim, ElemShape <: AbstractElemShape, Nfaces, Tv} 
 
-    elemShape::ElemShape
+    elementType::ElemShape
 
     N::Int         # degree
-    # Nfaces::Int    # num faces - redundant, remove later (breaking change)
-                   # replace with "nfaces(rd::RefElemData{DIM,ElemShape,Tv,Nfaces}) = Nfaces"
     fv::Union{NTuple{Nfaces,Int},NTuple{Nfaces,Vector{Int}}} # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
     V1::Matrix{Tv} # low order interpolation matrix
 
@@ -99,17 +97,17 @@ function Base.getproperty(x::RefElemData{Dim,ElemShape,Nfaces}, s::Symbol) where
         return getfield(x,:Drst)[2]
     elseif s==:Dt
         return getfield(x,:Drst)[3]
-
+        
     elseif s==:Nfaces
         return Nfaces
     elseif s==:Np
         return length(x.r)
-    # elseif s==:Nfp
-    #     return length(x.rf)
     elseif s==:Nq
         return length(x.rq)
     elseif s==:Nfq
         return length(x.rf)
+    elseif s==:elemShape # old version
+        return x.elementType
 
     else
         return getfield(x,s)
