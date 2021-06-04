@@ -47,15 +47,27 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, Nfaces, Tv}
     LIFT::Matrix{Tv}             # lift matrix
 end
 
-
-
 function Base.show(io::IO, rd::RefElemData)
     @nospecialize rd
-    println("Degree $(rd.N) RefElemData on $(rd.elemShape) element.")
+    println("Degree $(rd.N) RefElemData on $(rd.elementType) element.")
+end
+
+Base.propertynames(::Type{RefElemData},private::Bool=false) = (:Nfaces, :Np, :Nq, :Nfq)
+function Base.propertynames(x::RefElemData{1,ElementType,Nfaces},private::Bool=false) where {ElementType,Nfaces}
+    return (fieldnames(RefElemData)...,propertynames(RefElemData)...,
+            :r,:rq,:rf,:rp,:nrJ,:Dr)
+end
+function Base.propertynames(x::RefElemData{2,ElementType,Nfaces},private::Bool=false) where {ElementType,Nfaces}
+    return (fieldnames(RefElemData)...,propertynames(RefElemData)...,
+            :r,:s,:rq,:sq,:rf,:sf,:rp,:sp,:nrJ,:nsJ,:Dr,:Ds)
+end
+function Base.propertynames(x::RefElemData{3,ElementType,Nfaces},private::Bool=false) where {ElementType,Nfaces}
+    return (fieldnames(RefElemData)...,propertynames(RefElemData)...,
+            :r,:s,:t,:rq,:sq,:tq,:rf,:sf,:tf,:rp,:sp,:tp,:nrJ,:nsJ,:ntJ,:Dr,:Ds,:Dt)
 end
 
 # convenience unpacking routines
-function Base.getproperty(x::RefElemData{Dim,ElemShape,Nfaces}, s::Symbol) where {Dim,ElemShape,Nfaces}
+function Base.getproperty(x::RefElemData{Dim,ElementType,Nfaces}, s::Symbol) where {Dim,ElementType,Nfaces}
     if s==:r
         return getfield(x,:rst)[1]
     elseif s==:s
@@ -106,7 +118,7 @@ function Base.getproperty(x::RefElemData{Dim,ElemShape,Nfaces}, s::Symbol) where
         return length(x.rq)
     elseif s==:Nfq
         return length(x.rf)
-    elseif s==:elemShape # old version
+    elseif s==:elemShape # for compatibility with old names
         return x.elementType
 
     else
