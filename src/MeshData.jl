@@ -49,7 +49,8 @@ end
 ConstructionBase.constructorof(::Type{MeshData{A,B}}) where {A,B} = MeshData{A,B}
 
 function Base.propertynames(x::MeshData{1},private::Bool=false)
-    return (fieldnames(MeshData)...,:VX,:x,:xq,:xf,:nxJ,:rxJ)
+    return (fieldnames(MeshData)...,
+            :VX,:x,:xq,:xf,:nxJ,:rxJ)
 end
 function Base.propertynames(x::MeshData{2},private::Bool=false) 
     return (fieldnames(MeshData)...,
@@ -60,7 +61,6 @@ function Base.propertynames(x::MeshData{3},private::Bool=false)
             :VX,:VY,:VZ,:x,:y,:z,:xq,:yq,:zq,:xf,:yf,:zf,:nxJ,:nyJ,:nzJ,
             :rxJ,:sxJ,:txJ,:ryJ,:syJ,:tyJ,:rzJ,:szJ,:tzJ)
 end
-
 
 # convenience routines for unpacking individual tuple entries
 function Base.getproperty(x::MeshData,s::Symbol)
