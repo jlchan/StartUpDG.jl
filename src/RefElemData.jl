@@ -1,5 +1,5 @@
 """
-    struct RefElemData{Dim, ElemShape <: AbstractElemShape, Tv, Nfaces} 
+    struct RefElemData{Dim, ElemShape <: AbstractElemShape, Nfaces, Tv} 
 
 RefElemData: contains info (interpolation points, volume/face quadrature, operators)
 for a high order nodal polynomial basis on a given reference element.
