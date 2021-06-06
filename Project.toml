@@ -16,6 +16,7 @@ UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
 ConstructionBase = "1.0"
+MAT = "0.10"
 NodesAndModes = "0.4,0.5"
 Reexport = "1.0"
 Setfield = "0.7"
