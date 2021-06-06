@@ -14,7 +14,7 @@ using SparseArrays: sparse, droptol!
 using MAT # read in .mat files
 
 # reference element utility functions
-export RefElemData, PolynomialRefElemData, Polynomial, SBP
+export RefElemData, PolynomialRefElemData, Polynomial, SBP, hybridized_SBP_operators
 include("RefElemData.jl")
 include("RefElemData_polynomial.jl")
 include("RefElemData_SBP.jl")
