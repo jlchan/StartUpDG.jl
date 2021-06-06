@@ -11,11 +11,13 @@ using Reexport
 
 using NodesAndModes: meshgrid
 using SparseArrays: sparse, droptol!
+using MAT # read in .mat files
 
 # reference element utility functions
 export RefElemData, PolynomialRefElemData, Polynomial, SBP
 include("RefElemData.jl")
 include("RefElemData_polynomial.jl")
+include("RefElemData_SBP.jl")
 include("ref_elem_utils.jl")
 
 export MeshData
