@@ -49,3 +49,17 @@ rd = RefElemData(Quad(),N; quad_rule_vol =(rq,sq,wq),
 This results in a DG spectral element method (DG-SEM) discretization, with a diagonal lumped mass matrix and differentiation matrices which satisfy a summation-by-parts property.
 
 By default, `RefElemData` is constructed for a nodal basis (in order to facilitate curved meshes, connectivity, etc). There is not functionality to change interpolation nodes, since these transformations can be performed as algebraic changes of basis after setting up a `RefElemData`. 
+
+## RefElemData based on SBP finite differences
+
+It is also possible to construct a `RefElemData` based on [multi-dimensional SBP finite difference operators](https://doi.org/10.1137/15M1038360). These utilize nodes constructed by [Tianheng Chen and Chi-Wang Shu](https://doi.org/10.1016/j.jcp.2017.05.025), [Ethan Kubatko](https://sites.google.com/site/chilatosu/ethan-bio), and [Jason Hicken](https://doi.org/10.1007/s10915-020-01154-8).
+
+Some examples:
+```julia
+rd = RefElemData(Tri(), SBP(), 2)
+rd = RefElemData(Quad(), SBP(), 2)
+rd = RefElemData(Tri(), SBP(), 2; quadrature_strength=4, quad_rule_face=:Legendre) 
+```
+Quadrature rules of both degree `2*N-1` (up to `N=6`) and `2*N` (up to `N=4`) are supported on triangles. For `Line`, `Quad`, and `Hex` elements, `RefElemData(...,SBP(),N)` is the same as the `RefElemData` for a DG-SEM discretization, though some fields are specialized for the SBP type. 
+
+These SBP-based `RefElemData` objects can also be used to initialize a mesh (for example, `md = MeshData(uniform_mesh(rd.elementType,4)...,rd)`). 
