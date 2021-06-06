@@ -171,7 +171,7 @@ function RefElemData(elementType::Tri, approxType::SBP, N; kwargs...)
     rd = @set rd.V1 = vandermonde(elementType,N,rd.rst...)/rd.VDM * rd.V1
 
     # Vp operator = projects SBP nodal vector onto degree N polynomial, then interpolate
-    rd = @set rd.Vp = vandermonde(elementType,N,rd.rst...)/rd.VDM * rd.Pq
+    rd = @set rd.Vp = vandermonde(elementType,N,rd.rstp...)/rd.VDM * rd.Pq
 
     return _convert_RefElemData_fields_to_SBP(rd)
 end
