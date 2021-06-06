@@ -10,8 +10,8 @@ N = 3
 rd = RefElemData(Tri(),N)
 @unpack r,s = rd
 ```
-"""
-struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nfaces, Tv, VQ, VF, M, P, D, L} 
+""" 
+struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nfaces, Tv, VQ, VF, MM, P, D, L} 
 
     elementType::ElemShape
     approximationType::ApproximationType # Polynomial / SBP for now
@@ -40,14 +40,12 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nface
     Vf::VF              # face quad interp mat
     nrstJ::NTuple{Dim,Vector{Tv}}    # reference normals, quad weights
 
-    M::M                # mass matrix
+    M::MM                # mass matrix
     Pq::P               # L2 projection matrix
 
     # specialize diff and lift (dense, sparse, Bern, etc)
     Drst::NTuple{Dim,D} # differentiation operators
     LIFT::L             # lift matrix
-
-    # cache::NamedTuple = (;)   # for extra spatial discretization stuff
 end
 
 function Base.show(io::IO, rd::RefElemData)
