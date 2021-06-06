@@ -68,9 +68,6 @@ function _convert_RefElemData_fields_to_SBP(rd)
     rd = @set rd.M = Diagonal(rd.wq)
     rd = @set rd.Pq = I
     rd = @set rd.Vq = I
-    # rd = @set rd.Vf = LinearMap(let Fmask=rd.Fmask 
-    #                                 @inline x->get_face_nodes(x,Fmask)
-    #                             end,rd.Nfq,rd.Np)
     rd = @set rd.approximationType = SBP()
     return rd
 end
@@ -172,6 +169,9 @@ function RefElemData(elementType::Tri, approxType::SBP, N; kwargs...)
 
     # make V1 the interpolation matrix from triangle vertices to SBP nodal points
     rd = @set rd.V1 = vandermonde(elementType,N,rd.rst...)/rd.VDM * rd.V1
+
+    # Vp operator = projects SBP nodal vector onto degree N polynomial, then interpolate
+    rd = @set rd.Vp = vandermonde(elementType,N,rd.rst...)/rd.VDM * rd.Pq
 
     return _convert_RefElemData_fields_to_SBP(rd)
 end
