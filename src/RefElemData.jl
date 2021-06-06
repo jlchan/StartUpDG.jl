@@ -14,17 +14,17 @@ rd = RefElemData(Tri(),N)
 struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nfaces, Tv, VQ, VF, M, P, D, L} 
 
     elementType::ElemShape
-    approximationType::ApproximationType 
+    approximationType::ApproximationType # Polynomial / SBP for now
 
-    N::Int               # degree
+    N::Int               # polynomial degree of accuracy
     fv::Union{NTuple{Nfaces,Int},NTuple{Nfaces,Vector{Int}}} # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
-    V1::Matrix{Tv}      # low order interpolation matrix
+    V1::Matrix{Tv}       # low order interpolation matrix
 
     rst::NTuple{Dim,Vector{Tv}}
     VDM::Matrix{Tv}      # generalized Vandermonde matrix
-    Fmask::VecOrMat{Int} # indices of face nodes
+    Fmask::Vector{Int}   # indices of face nodes
 
-    # plotting nodes
+    # plotting nodes: TODO - remove? Probably doesn't need to be in RefElemData
     Nplot::Int
     rstp::NTuple{Dim,Vector{Tv}}
     Vp::Matrix{Tv}      # interpolation matrix to plotting nodes
@@ -38,9 +38,7 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nface
     rstf::NTuple{Dim}
     wf::Vector{Tv}      # quad weights
     Vf::VF              # face quad interp mat
-
-    # reference normals, quad weights
-    nrstJ::NTuple{Dim,Vector{Tv}}
+    nrstJ::NTuple{Dim,Vector{Tv}}    # reference normals, quad weights
 
     M::M                # mass matrix
     Pq::P               # L2 projection matrix
@@ -48,6 +46,8 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nface
     # specialize diff and lift (dense, sparse, Bern, etc)
     Drst::NTuple{Dim,D} # differentiation operators
     LIFT::L             # lift matrix
+
+    # cache::NamedTuple = (;)   # for extra spatial discretization stuff
 end
 
 function Base.show(io::IO, rd::RefElemData)
@@ -136,3 +136,5 @@ Keyword argument constructor for RefElemData (to "label" `N` via `rd = RefElemDa
 """
 RefElemData(elem; N, kwargs...) = RefElemData(elem, N; kwargs...)
 
+# default to Polynomial-type RefElemData
+RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs...)

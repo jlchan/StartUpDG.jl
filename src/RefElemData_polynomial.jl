@@ -54,7 +54,7 @@ end
 
 Constructor for RefElemData for different element types.
 """
-function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1), Nplot=10)
+function RefElemData(elem::Line, approxType::Polynomial, N; quad_rule_vol = quad_nodes(elem,N+1), Nplot=10)
 
     fv = face_vertices(elem)
 
@@ -81,7 +81,7 @@ function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1), Nplot=
     rp = equi_nodes(elem,Nplot)
     Vp = vandermonde(elem,N,rp)/VDM
 
-    return RefElemData(elem,Polynomial(),N,fv,V1,
+    return RefElemData(elem,approxType,N,fv,V1,
                        tuple(r),VDM,vec(Fmask),
                        Nplot,tuple(rp),Vp,
                        tuple(rq),wq,Vq,
@@ -89,7 +89,7 @@ function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1), Nplot=
                        M,Pq,tuple(Dr),LIFT)
 end
 
-function RefElemData(elem::Union{Tri,Quad}, N;
+function RefElemData(elem::Union{Tri,Quad},  approxType::Polynomial, N;
                      quad_rule_vol = quad_nodes(elem,N),
                      quad_rule_face = gauss_quad(0,0,N),
                      Nplot=10)
@@ -130,7 +130,7 @@ function RefElemData(elem::Union{Tri,Quad}, N;
     # Vf = typeof(elem)==Quad ? droptol!(sparse(Vf),tol) : Vf
     # LIFT = typeof(elem)==Quad ? droptol!(sparse(LIFT),tol) : LIFT
 
-    return RefElemData(elem,Polynomial(),N,fv,V1,
+    return RefElemData(elem,approxType,N,fv,V1,
                        tuple(r,s),VDM,vec(Fmask),
                        Nplot,tuple(rp,sp),Vp,
                        tuple(rq,sq),wq,Vq,
@@ -138,7 +138,7 @@ function RefElemData(elem::Union{Tri,Quad}, N;
                        M,Pq,Drs,LIFT)
 end
 
-function RefElemData(elem::Hex,N;
+function RefElemData(elem::Hex, approxType::Polynomial, N;
                      quad_rule_vol = quad_nodes(elem,N),
                      quad_rule_face = quad_nodes(Quad(),N),
                      Nplot=10)
@@ -175,7 +175,7 @@ function RefElemData(elem::Hex,N;
     Drst = (Dr,Ds,Dt)
     # Vf = sparse(Vf)
 
-    return RefElemData(elem,Polynomial(),N,fv,V1,
+    return RefElemData(elem,approxType,N,fv,V1,
                        tuple(r,s,t),VDM,vec(Fmask),
                        Nplot,tuple(rp,sp,tp),Vp,
                        tuple(rq,sq,tq),wq,Vq,
