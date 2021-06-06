@@ -33,13 +33,6 @@ end
 # face vertices = face nodes of degree 1
 face_vertices(elem) = find_face_nodes(elem,nodes(elem,1)...)
 
-# function face_vertices(elem::Hex)
-#     x1D = LinRange(-1,1,2)
-#     r, s, t = vec.(meshgrid(x1D,x1D,x1D))
-#     return find_face_nodes(elem,r,s,t)
-#     # return fv3,fv4,fv1,fv2,fv5,fv6
-# end
-
 #####
 ##### face data for diff elements
 #####
@@ -67,38 +60,3 @@ function map_face_nodes(elem::Hex, face_nodes...)
     return rf,sf,tf
 end
 
-function init_face_data(elem::Tri, N; quad_nodes_face=gauss_quad(0,0,N))
-    #Nodes on faces, and face node coordinate
-    r1D, w1D = quad_nodes_face
-    e = ones(size(r1D)) # vector of all ones
-    z = zeros(size(r1D)) # vector of all zeros
-    rf,sf = map_face_nodes(elem,r1D)
-    wf = vec(repeat(w1D,3,1));
-    nrJ = [z; e; -e]
-    nsJ = [-e; e; z]
-    return rf,sf,wf,nrJ,nsJ
-end
-
-function init_face_data(elem::Quad,N; quad_nodes_face=gauss_quad(0,0,N))
-    r1D,w1D = quad_nodes_face
-    e = ones(size(r1D))
-    z = zeros(size(r1D))
-    rf,sf = map_face_nodes(elem,r1D)
-    wf = vec(repeat(w1D,4,1)); # 4 faces
-    nrJ = [z; e; z; -e]
-    nsJ = [-e; z; e; z]
-    return rf,sf,wf,nrJ,nsJ
-end
-
-function init_face_data(elem::Hex, N)
-    rquad,squad,wquad = quad_nodes(Quad(),N)
-    e = ones(size(rquad))
-    zz = zeros(size(rquad))
-    rf,sf,tf = map_face_nodes(elem,rquad,squad)
-    Nfaces = 6
-    wf = vec(repeat(wquad,Nfaces,1));
-    nrJ = [-e; e; zz;zz; zz;zz]
-    nsJ = [zz;zz; -e; e; zz;zz]
-    ntJ = [zz;zz; zz;zz; -e; e]
-    return rf,sf,tf,wf,nrJ,nsJ,ntJ
-end

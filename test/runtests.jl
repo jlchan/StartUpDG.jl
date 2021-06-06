@@ -71,7 +71,7 @@ end
     @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
     @test rd.Pq*rd.Vq ≈ I
     Vfp = vandermonde(Line(),N,quad_nodes(Line(),N)[1])/vandermonde(Line(),N,nodes(Line(),N))
-    rstf = (x->Vfp*x[rd.Fmask]).(rd.rst)
+    rstf = (x->Vfp*x[reshape(rd.Fmask,rd.Nfq÷rd.Nfaces,rd.Nfaces)]).(rd.rst)
     @test all(vec.(rstf) .≈ rd.rstf)
 
     #####
@@ -83,7 +83,7 @@ end
     @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
     @test rd.Pq*rd.Vq ≈ I
     Vfp = vandermonde(Line(),N,quad_nodes(Line(),N)[1])/vandermonde(Line(),N,nodes(Line(),N))
-    rstf = (x->Vfp*x[rd.Fmask]).(rd.rst)
+    rstf = (x->Vfp*x[reshape(rd.Fmask,rd.Nfq÷rd.Nfaces,rd.Nfaces)]).(rd.rst)
     @test all(vec.(rstf) .≈ rd.rstf)
 
     #####

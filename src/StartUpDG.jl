@@ -13,8 +13,9 @@ using NodesAndModes: meshgrid
 using SparseArrays: sparse, droptol!
 
 # reference element utility functions
-export RefElemData
+export RefElemData, PolynomialRefElemData, Polynomial, SBP
 include("RefElemData.jl")
+include("RefElemData_polynomial.jl")
 include("ref_elem_utils.jl")
 
 export MeshData
