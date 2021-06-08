@@ -61,6 +61,7 @@ end
     @test rd.nrJ ≈ [-1,1]
     @test rd.Pq*rd.Vq ≈ I
     @test rd.r[rd.Fmask[:]] ≈ rd.rf
+    @test invoke(inverse_trace_constant,Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
 
     #####
     ##### triangles
@@ -73,6 +74,7 @@ end
     Vfp = vandermonde(Line(),N,quad_nodes(Line(),N)[1])/vandermonde(Line(),N,nodes(Line(),N))
     rstf = (x->Vfp*x[reshape(rd.Fmask,rd.Nfq÷rd.Nfaces,rd.Nfaces)]).(rd.rst)
     @test all(vec.(rstf) .≈ rd.rstf)
+    @test invoke(inverse_trace_constant,Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
 
     #####
     ##### quads
@@ -85,6 +87,7 @@ end
     Vfp = vandermonde(Line(),N,quad_nodes(Line(),N)[1])/vandermonde(Line(),N,nodes(Line(),N))
     rstf = (x->Vfp*x[reshape(rd.Fmask,rd.Nfq÷rd.Nfaces,rd.Nfaces)]).(rd.rst)
     @test all(vec.(rstf) .≈ rd.rstf)
+    @test invoke(inverse_trace_constant,Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
 
     #####
     ##### hexes
@@ -96,6 +99,7 @@ end
     @test abs(sum(rd.wf .* rd.nsJ)) < tol
     @test abs(sum(rd.wf .* rd.ntJ)) < tol
     @test rd.Pq*rd.Vq ≈ I
+    @test invoke(inverse_trace_constant,Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
     # TODO: test interpolation of Fmask matches rd.rstf.
 end
 
@@ -116,6 +120,8 @@ end
 
         # check positivity of Jacobian
         @test all(J .> 0)
+        h = estimate_h(rd,md)
+        @test h ≈ 2/K1D 
 
         # check differentiation
         u = @. x^2 + 2*x
@@ -164,6 +170,9 @@ end
         # check positivity of Jacobian
         # @show J[1,:]
         @test all(J .> 0)
+        h = estimate_h(rd,md)
+        @test h ≈ 2/K1D
+
 
         # check differentiation
         u = @. x^2 + 2*x*y - y^2
@@ -226,6 +235,8 @@ end
 
         # check positivity of Jacobian
         @test all(J .> 0)
+        h = estimate_h(rd,md)
+        @test h ≈ 2/K1D 
 
         # check differentiation
         u = @. x^2 + 2*x*y - y^2
@@ -283,6 +294,9 @@ end
         # check positivity of Jacobian
         # @show J[1,:]
         @test all(J .> 0)
+        h = estimate_h(rd,md)
+        @test h ≈ 2/K1D 
+
 
         # check differentiation
         u = @. x^2 + 2*x*y - y^2 + x*y*z

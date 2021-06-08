@@ -14,18 +14,18 @@ using SparseArrays: sparse, droptol!
 using MAT # read in .mat files
 
 # reference element utility functions
-export RefElemData, PolynomialRefElemData, Polynomial, SBP, hybridized_SBP_operators
+export RefElemData, PolynomialRefElemData, Polynomial, SBP
+export hybridized_SBP_operators, inverse_trace_constant
 include("RefElemData.jl")
 include("RefElemData_polynomial.jl")
 include("RefElemData_SBP.jl")
 include("ref_elem_utils.jl")
 
-export MeshData
+export MeshData 
 include("MeshData.jl")
 
-# ref-to-physical geometric terms
-export geometric_factors
-include("geometric_mappings.jl")
+export geometric_factors, estimate_h
+include("geometric_functions.jl")
 
 # spatial connectivity routines
 export make_periodic
