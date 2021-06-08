@@ -16,6 +16,10 @@ function diagE_sbp_nodes(elem::Tri, N; quadrature_strength=2*N-1, quad_rule_face
         w = vec(vars["Q_GaussLobatto"][N]["Weights"])
         quad_rule_face = gauss_lobatto_quad(0,0,N+1) 
 
+        if N==6
+            @warn "N=6 SBP operators with quadrature strength 2N-1 and Lobatto face nodes may require very small timesteps."
+        end
+
     elseif quadrature_strength==2*N-1 && quad_rule_face == :Legendre
 
         vars = matread((@__DIR__)*"/data/sbp_nodes/KubatkoQuadratureRules.mat"); 
@@ -136,7 +140,7 @@ end
 
 kwargs = quadrature_strength=2*N-1 (or 2*N), quad_rule_face=:Lobatto (or :Legendre)
 """
-function RefElemData(elementType::Tri, approxType::SBP, N; kwargs...)
+function RefElemData(elementType::Tri, approxType::SBP, N; kwargs...)    
     
     quad_rule_vol, quad_rule_face = diagE_sbp_nodes(elementType, N; kwargs...)
 
