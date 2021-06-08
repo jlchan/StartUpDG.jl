@@ -58,3 +58,26 @@ function geometric_factors(x, y, z, Dr, Ds, Dt, Filters=(I,I,I))
 
     return rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J
 end
+
+"""
+    estimate_h(rd::RefElemData,md::MeshData)
+
+Estimates the mesh size via min size_of_domain * |J|/|sJ|, since |J| = O(hᵈ) and |sJ| = O(hᵈ⁻¹). 
+"""
+function estimate_h(rd::RefElemData{DIM},md::MeshData{DIM}) where {DIM}
+    hmin = Inf
+    for e in 1:md.num_elements
+        sJ_e = reshape(view(md.sJ,:,e),rd.Nfq÷rd.Nfaces,rd.Nfaces)
+        sJ_face = 0.
+        for f in 1:rd.Nfaces
+            sJ_face = max(sJ_face,minimum(view(sJ_e,:,f)) / face_scaling(rd,f))
+        end
+        h_e = minimum(view(md.J,:,e)) / sJ_face
+        hmin = min(hmin,h_e)
+    end
+    return hmin * compute_domain_size(rd,md)^(1/DIM)
+end
+face_scaling(rd,f) = 1.0
+face_scaling(rd::RefElemData{2,Tri},f) = f==3 ? sqrt(2) : 1.0 # sJ incorporates length of long triangle edge
+compute_domain_size(rd::RefElemData,md::MeshData) = sum(rd.M*md.J)
+
