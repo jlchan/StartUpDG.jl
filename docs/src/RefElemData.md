@@ -14,9 +14,9 @@
 * `Pq`: quadrature-based ``L^2`` projection matrix. Size ``N_p \times N_q``.
 * `Drst::NTuple{Dim,...}`, `LIFT`: differentiation and lifting matrices. Differentiation matrices are size ``N_p \times N_p``, while lift matrices are size ``N_p\times N_f``.
 
-This list is incomplete; other fields are stored but currently only used for internal computations.
+This list is incomplete; other fields are stored or accessible but currently only used for internal computations.
 
-Mass, differentiation, lifting, and interpolation matrices specialize on the type of matrix. For example, these matrices are dense `Matrix{T}` type for lines and triangles, but are stored as sparse matrices for quadrilaterals and hexahedra.
+Mass, differentiation, lifting, and interpolation matrices specialize on the type of matrix. For example, these matrices are dense `Matrix{T}` type for lines and triangles, but might be stored as sparse matrices for quadrilaterals and hexahedra.
 
 # Setting up `rd::RefElemData`
 

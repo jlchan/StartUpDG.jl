@@ -11,7 +11,6 @@ makedocs(
         "Home" => "index.md",        
         "`RefElemData`" => "RefElemData.md",
         "`MeshData`" => "MeshData.md",
-        "Fieldname aliases" => "fieldaliases.md",
         "Example: computing DG derivatives" => "ex_dg_deriv.md",
         "Timestepping" => "tstep_usage.md",
         "Reference" => "index_refs.md",
