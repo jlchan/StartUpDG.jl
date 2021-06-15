@@ -65,7 +65,3 @@ More generally, one can create a copy of a `MeshData` with certain fields modifi
 ## Unstructured triangular meshes using Triangulate
 
 If `Triangulate` is also loaded, then StartUpDG will includes a few additional utilities for creating and visualizing meshes. 
-
-!!! note
-
-    It is recommended to load `using Triangulate: Triangulate` to avoid importing `Triangulate.plot`.
