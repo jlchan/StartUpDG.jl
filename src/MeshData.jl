@@ -46,7 +46,7 @@ function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
 end
 
 # enable use of @set and setproperties(...) for MeshData
-ConstructionBase.constructorof(::Type{MeshData{A,B}}) where {A,B} = MeshData{A,B}
+ConstructionBase.constructorof(::Type{MeshData{A,B,C}}) where {A,B,C} = MeshData{A,B,C}
 
 function Base.propertynames(x::MeshData{1},private::Bool=false)
     return (fieldnames(MeshData)...,
