@@ -1,5 +1,5 @@
 """
-    struct MeshData{Dim, Tv}
+    struct MeshData{Dim, Tv, Ti}
 
 MeshData: contains info for a high order piecewise polynomial discretization on an
 unstructured mesh. 
@@ -13,10 +13,10 @@ md = MeshElemData(VX,VY,EToV,rd)
 @unpack x,y = md
 ```
 """
-Base.@kwdef struct MeshData{Dim, Tv}
+Base.@kwdef struct MeshData{Dim, Tv, Ti}
 
     VXYZ::NTuple{Dim,Vector{Tv}}  # vertex coordinates
-    EToV::Matrix{Int}                         # mesh vertex array
+    EToV::Matrix{Ti}                         # mesh vertex array
     FToF::Matrix{Int}                # face connectivity
 
     xyz::NTuple{Dim,Matrix{Tv}}   # physical points

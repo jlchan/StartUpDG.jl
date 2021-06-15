@@ -1,6 +1,8 @@
+using Test: testset_beginend
 using StartUpDG
 using Test
 using LinearAlgebra
+using Triangulate
 
 @testset "Mesh, timestep utils" begin
     tol = 5e2*eps()
@@ -17,6 +19,16 @@ using LinearAlgebra
     @test accept_step == true
     @test dt_new == PI.dtmax
     @test errEst ≈ prevErrEst
+end
+
+@testset "Triangulate tests" begin
+    meshIO = scramjet()
+    VX,VY,EToV = triangulateIO_to_VXYEToV(meshIO)
+    rd = RefElemData(Tri(),2)
+    md = MeshData(VX,VY,EToV,rd)
+    @test size(EToV,1)==md.num_elements==1550
+    @test length(VX)==length(VY)==871
+    @test sort(unique(get_node_boundary_tags(meshIO,rd,md)))==[0,1,2,3]
 end
 
 @testset "Geometric terms for $elem elements" for elem in [Tri() Quad() Hex()]
