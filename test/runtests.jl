@@ -173,7 +173,6 @@ end
         h = estimate_h(rd,md)
         @test h ≈ 2/K1D
 
-
         # check differentiation
         u = @. x^2 + 2*x*y - y^2
         dudx_exact = @. 2*x + 2*y
