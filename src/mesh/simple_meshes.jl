@@ -62,21 +62,11 @@ end
 Uniform Kx (by Ky by Kz) mesh on ``[-1,1]^d``, where `d` is the spatial dimension.
 Returns VX,VY,VZ,EToV. Can also use kwargs via `uniform_mesh(elem; K1D=16) `
 """
-
-###########################
-#####     1D mesh     #####
-###########################
-
 function uniform_mesh(elem::Line,K1D)
         VX = collect(LinRange(-1,1,K1D+1))
         EToV = transpose(reshape(sort([1:K1D; 2:K1D+1]),2,K1D))
         return VX,Matrix(EToV)
 end
-
-
-###########################
-### Triangular meshes #####
-###########################
 
 function uniform_mesh(elem::Tri,Kx,Ky)
 
@@ -100,10 +90,6 @@ end
 
 uniform_mesh(elem::Union{Tri,Quad},Kx) = uniform_mesh(elem,Kx,Kx)
 uniform_mesh(elem::Hex,Kx) = uniform_mesh(elem,Kx,Kx,Kx)
-
-##############################
-### Quadrilateral meshes #####
-##############################
 
 function uniform_mesh(elem::Quad,Nx,Ny)
 
@@ -131,10 +117,6 @@ function uniform_mesh(elem::Quad,Nx,Ny)
 
         return VX[:],VY[:],EToV
 end
-
-#############################
-##### Hexahedral meshes #####
-#############################
 
 function uniform_mesh(elem::Hex,Nx,Ny,Nz)
         Nxp = Nx+1
