@@ -1,6 +1,6 @@
 # `MeshData` type
 
-`MeshData` contains the following fields
+[`MeshData`](@ref) contains the following fields
 * `K`: number of elements ``K`` in the mesh.
 * `FToF`: indexing vector for face-to-face connectivity (length of the vector is the total number of faces, e.g., ``N_{\rm faces} K``)
 * `xyz::NTuple{Dim,...}`: nodal interpolation points mapped to physical elements. All elements of `xyz` are ``N_p \times K`` matrices, where ``N_p`` are the number of nodal points on each element.
@@ -13,11 +13,11 @@
 
 # Setting up `md::MeshData`
 
-The `MeshData` struct contains data for high order DG methods useful for evaluating DG formulations in a matrix-free fashion.
+The [`MeshData`](@ref) struct contains data for high order DG methods useful for evaluating DG formulations in a matrix-free fashion.
 
 ## Generating unstructured meshes
 
-For convenience, simple uniform meshes are included in with `StartUpDG.jl`.
+For convenience, simple uniform meshes are included in with `StartUpDG.jl` via [`uniform_mesh`](@ref)
 ```julia
 using StartUpDG
 Kx,Ky,Kz = 4,2,8
@@ -28,16 +28,6 @@ VX,VY,VZ,EToV = uniform_mesh(Hex(),Kx,Ky,Kz)
 ```
 The uniform triangular mesh is constructed by creating a uniform quadrilateral mesh then bisecting each quad into two triangles.
 
-Unstructured meshes for more complex geometries can be generated using external packages. For example, `TriangleMesh.jl` can be used as follows:
-```julia
-using TriangleMesh
-
-poly = polygon_Lshape()
-mesh = create_mesh(poly, set_area_max=true) # will ask for max elem size in the REPL
-VX,VY = mesh.point[1,:],mesh.point[2,:]
-EToV = permutedims(mesh.cell)
-```
-
 ## Initializing high order DG mesh data
 
 Given unstructured mesh information (tuple of vertex coordinates `VXYZ` and index array `EToV`) high order DG mesh data can be constructed as follows:
@@ -47,7 +37,7 @@ md = MeshData(VXYZ...,EToV,rd)
 
 ## Enforcing periodic boundary conditions
 
-Periodic boundary conditions can be enforced by calling `make_periodic`, which returns another `MeshData` struct with modified `mapP`,`mapB`, and `FToF` indexing arrays which account for periodicity.
+Periodic boundary conditions can be enforced by calling [`make_periodic`](@ref), which returns another `MeshData` struct with modified `mapP`,`mapB`, and `FToF` indexing arrays which account for periodicity.
 ```julia
 md = MeshData(VX,VY,EToV,rd)
 md_periodic = make_periodic(md,rd) # periodic in both x and y coordinates
@@ -61,7 +51,7 @@ julia> md_periodic_x.is_periodic
 
 ## Creating curved meshes
 
-It's common to generate curved meshes by first generating a linear mesh, then moving high order nodes on the linear mesh. This can be done by calling `MeshData` again with new `x,y` coordinates:
+It's common to generate curved meshes by first generating a linear mesh, then moving high order nodes on the linear mesh. This can be done by calling [`MeshData`](@ref) again with new `x,y` coordinates:
 ```julia
 md = MeshData(VX,VY,EToV,rd)
 @unpack x,y = md
@@ -71,3 +61,11 @@ md_curved = MeshData(md,rd,x,y)
 `MeshData(md,rd,x,y)` and `MeshData(md,rd,x,y,z)` are implemented for 2D and 3D, though this is not currently implemented in 1D.
 
 More generally, one can create a copy of a `MeshData` with certain fields modified by using `@set` or `setproperties` from `Setfield.jl`.
+
+## Unstructured triangular meshes using Triangulate
+
+If `Triangulate` is also loaded, then StartUpDG will includes a few additional utilities for creating and visualizing meshes. 
+
+!!! note
+
+    It is recommended to load `using Triangulate: Triangulate` to avoid importing `Triangulate.plot`.

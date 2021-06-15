@@ -1,7 +1,8 @@
 # `RefElemData` type
 
-`RefElemData` contains the following fields
+[`RefElemData`](@ref) contains the following fields
 * `elemShape::ElemShape`: element shape. `Line, Tri, Quad, Hex` currently supported.
+* `approxType`: approximation type. Defaults to `Polynomial()`, but `SBP()` is also supported (see [RefElemData based on SBP finite differences](@ref)).
 * `Nfaces`: number of faces on a given type of reference element.
 * `fv`: list of vertices defining faces, e.g., `[1,2],[2,3],[3,1]` for a triangle
 * `rst::NTuple{Dim,...}`: tuple of vectors of length `N_p`, each of which contains coordinates of degree ``N`` optimized polynomial interpolation points.
@@ -33,7 +34,7 @@ rd = RefElemData(Hex(),N)
 
 ## Specifying different quadrature rules.
 
-By default, `RefElemData` initializes volume and surface quadrature rules to be the minimum rules which exactly integrate the unweighted volume and surface mass matrices. If different quadrature rules are desired, they can be specified as follows:
+By default, [`RefElemData`](@ref) initializes volume and surface quadrature rules to be the minimum rules which exactly integrate the unweighted volume and surface mass matrices. If different quadrature rules are desired, they can be specified as follows:
 ```julia
 N = 3
 
@@ -52,7 +53,7 @@ By default, `RefElemData` is constructed for a nodal basis (in order to facilita
 
 ## RefElemData based on SBP finite differences
 
-It is also possible to construct a `RefElemData` based on [multi-dimensional SBP finite difference operators](https://doi.org/10.1137/15M1038360). These utilize nodes constructed by [Tianheng Chen and Chi-Wang Shu](https://doi.org/10.1016/j.jcp.2017.05.025), [Ethan Kubatko](https://sites.google.com/site/chilatosu/ethan-bio), and [Jason Hicken](https://doi.org/10.1007/s10915-020-01154-8).
+It is also possible to construct a [`RefElemData`](@ref) based on [multi-dimensional SBP finite difference operators](https://doi.org/10.1137/15M1038360). These utilize nodes constructed by [Tianheng Chen and Chi-Wang Shu](https://doi.org/10.1016/j.jcp.2017.05.025), [Ethan Kubatko](https://sites.google.com/site/chilatosu/ethan-bio), and [Jason Hicken](https://doi.org/10.1007/s10915-020-01154-8).
 
 Some examples:
 ```julia
