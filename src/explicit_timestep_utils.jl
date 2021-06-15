@@ -1,11 +1,4 @@
 """
-    bcopy!(x,y) = x .= y
-
-Convenience routine for operations on tuples of arrays.
-"""
-bcopy!(x,y) = x .= y
-
-"""
     ck45()
 
 Returns coefficients rka,rkb,rkc for the 4th order 5-stage low storage Carpenter/Kennedy
