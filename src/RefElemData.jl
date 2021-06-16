@@ -53,17 +53,10 @@ function Base.show(io::IO, ::MIME"text/plain", rd::RefElemData)
     print(io,"RefElemData for a degree $(rd.N) $(rd.approximationType) approximation on $(rd.elementType) element.")
 end
 
-
 function Base.show(io::IO, rd::RefElemData)
-  @nospecialize basis # reduce precompilation time
-  print(io,"RefElemData{polydeg=$(rd.N),$(rd.approximationType),$(rd.elementType)}.")
+    @nospecialize basis # reduce precompilation time
+    print(io,"RefElemData{N=$(rd.N),$(rd.approximationType),$(rd.elementType)}.")
 end
-function Base.show(io::IO, ::MIME"text/plain", basis::LobattoLegendreBasis)
-  @nospecialize basis # reduce precompilation time
-
-  print(io, "LobattoLegendreBasis{", real(basis), "} with polynomials of degree ", polydeg(basis))
-end
-
 
 _propertynames(::Type{RefElemData},private::Bool=false) = (:Nfaces, :Np, :Nq, :Nfq)
 function Base.propertynames(x::RefElemData{1},private::Bool=false) 
