@@ -53,7 +53,7 @@ function __init__()
 end
 
 # simple explicit time-stepping included for conveniencea
-export ck45, dp56, PIparams, compute_adaptive_dt, bcopy! # LSERK 45 + Dormand-Prince 56
+export ck45 # LSERK 45 
 include("explicit_timestep_utils.jl")
 
 end
