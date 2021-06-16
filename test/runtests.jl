@@ -4,8 +4,13 @@ using Test
 using LinearAlgebra
 using Triangulate
 
-@testset "Mesh and Triangulate utils" begin
+@testset "Mesh, timestep, and Triangulate utils" begin
     tol = 5e2*eps()
+
+    rk4a,rk4b,rk4c = ck45()
+    @test rk4c[1] ≈ 0.0 && rk4c[end] ≈ 1.0
+    @test rk4a[1] ≈ 0.0
+    @test all(rk4b .> 0)
 
     VX,VY,EToV = readGmsh2D("squareCylinder2D.msh")
     @test size(EToV)==(3031,3)
