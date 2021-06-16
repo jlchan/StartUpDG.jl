@@ -11,6 +11,17 @@ using Triangulate
     @test size(EToV)==(3031,3)
 
     # test triangulate
+    h = .1
+    meshIO = square_hole_domain(h)
+    VX,VY,EToV = triangulateIO_to_VXYEToV(meshIO)
+    rd = RefElemData(Tri(),2)
+    md = MeshData(VX,VY,EToV,rd)
+    @test size(EToV,1)==md.num_elements==598
+    @test length(VX)==length(VY)==327
+    @test sort(unique(get_node_boundary_tags(meshIO,rd,md)))==[0,1,2]
+    meshIO2 = refine(meshIO,h)
+    @test sort(unique(get_node_boundary_tags(meshIO2,rd,MeshData(triangulateIO_to_VXYEToV(meshIO2)...,rd))))==[0,1,2]
+
     meshIO = scramjet()
     VX,VY,EToV = triangulateIO_to_VXYEToV(meshIO)
     rd = RefElemData(Tri(),2)
