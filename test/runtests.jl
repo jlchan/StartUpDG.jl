@@ -4,24 +4,13 @@ using Test
 using LinearAlgebra
 using Triangulate
 
-@testset "Mesh, timestep utils" begin
+@testset "Mesh and Triangulate utils" begin
     tol = 5e2*eps()
 
     VX,VY,EToV = readGmsh2D("squareCylinder2D.msh")
     @test size(EToV)==(3031,3)
 
-    # # feed zero rhs to PI controller = max timestep, errEst = 0
-    rka,rkE,rkc = dp56()
-    PI = PIparams(order=5)
-    errEst = 1e-10
-    dt = 1e8
-    accept_step,dt_new,prevErrEst = compute_adaptive_dt(errEst,dt,PI)
-    @test accept_step == true
-    @test dt_new == PI.dtmax
-    @test errEst ≈ prevErrEst
-end
-
-@testset "Triangulate tests" begin
+    # test triangulate
     meshIO = scramjet()
     VX,VY,EToV = triangulateIO_to_VXYEToV(meshIO)
     rd = RefElemData(Tri(),2)
