@@ -50,15 +50,15 @@ ConstructionBase.constructorof(::Type{MeshData{A,B,C}}) where {A,B,C} = MeshData
 
 function Base.propertynames(x::MeshData{1},private::Bool=false)
     return (fieldnames(MeshData)...,
-            :VX,:x,:xq,:xf,:nxJ,:rxJ)
+            :num_elements,:VX,:x,:xq,:xf,:nxJ,:rxJ)
 end
 function Base.propertynames(x::MeshData{2},private::Bool=false) 
     return (fieldnames(MeshData)...,
-            :VX,:VY,:x,:y,:xq,:yq,:xf,:yf,:nxJ,:nyJ,:rxJ,:sxJ,:ryJ,:syJ)
+            :num_elements,:VX,:VY,:x,:y,:xq,:yq,:xf,:yf,:nxJ,:nyJ,:rxJ,:sxJ,:ryJ,:syJ)
 end
 function Base.propertynames(x::MeshData{3},private::Bool=false) 
     return (fieldnames(MeshData)...,
-            :VX,:VY,:VZ,:x,:y,:z,:xq,:yq,:zq,:xf,:yf,:zf,:nxJ,:nyJ,:nzJ,
+            :num_elements,:VX,:VY,:VZ,:x,:y,:z,:xq,:yq,:zq,:xf,:yf,:zf,:nxJ,:nyJ,:nzJ,
             :rxJ,:sxJ,:txJ,:ryJ,:syJ,:tyJ,:rzJ,:szJ,:tzJ)
 end
 
