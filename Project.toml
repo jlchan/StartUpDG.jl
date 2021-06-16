@@ -19,9 +19,11 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
+Colors = "0.12"
 ConstructionBase = "1.0"
 MAT = "0.10"
 NodesAndModes = "0.4,0.5"
+RecipesBase = "1.1"
 Reexport = "1.0"
 Requires = "1.0"
 Setfield = "0.7"
