@@ -50,7 +50,7 @@ end
 
 function Base.show(io::IO, rd::RefElemData)
     @nospecialize rd
-    println("RefElemData for a degree $(rd.N) $(rd.approximationType) approximation on $(rd.elementType) element.")
+    print(io,"RefElemData for a degree $(rd.N) $(rd.approximationType) approximation on $(rd.elementType) element.")
 end
 
 _propertynames(::Type{RefElemData},private::Bool=false) = (:Nfaces, :Np, :Nq, :Nfq)

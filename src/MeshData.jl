@@ -42,7 +42,7 @@ end
 
 function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
     @nospecialize md
-    println("MeshData of dimension $DIM with $(md.K) elements")
+    print(io,"MeshData of dimension $DIM with $(md.K) elements")
 end
 
 # enable use of @set and setproperties(...) for MeshData
