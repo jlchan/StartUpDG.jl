@@ -65,14 +65,17 @@ end
 """
     function inverse_trace_constant(rd::RefElemData)
 
-Returns inverse trace constant as reported in ["GPU-accelerated dG methods on hybrid meshes"](https://doi.org/10.1016/j.jcp.2016.04.003)
-by Chan, Wang, Modave, Remacle, Warburton 2016. 
+Returns the degree-dependent constant in the inverse trace equality over the reference element (as 
+reported in ["GPU-accelerated dG methods on hybrid meshes"](https://doi.org/10.1016/j.jcp.2016.04.003)
+by Chan, Wang, Modave, Remacle, Warburton 2016). 
+
+Can be used to estimate dependence of maximum stable timestep on degree of approximation. 
 """
 inverse_trace_constant(rd::RefElemData{1}) = (rd.N+1)*(rd.N+2)/2
-inverse_trace_constant(rd::RefElemData{1,Line,SBP}) = rd.N*(rd.N+1)/2 # assumes SBP <=> DGSEM
 inverse_trace_constant(rd::RefElemData{2,Quad}) = (rd.N+1)*(rd.N+2)
-inverse_trace_constant(rd::RefElemData{2,Quad,SBP}) = rd.N*(rd.N+1) # assumes SBP <=> DGSEM
 inverse_trace_constant(rd::RefElemData{3,Hex}) = 3*(rd.N+1)*(rd.N+2)/2
+inverse_trace_constant(rd::RefElemData{1,Line,SBP}) = rd.N*(rd.N+1)/2 # assumes SBP <=> DGSEM
+inverse_trace_constant(rd::RefElemData{2,Quad,SBP}) = rd.N*(rd.N+1) # assumes SBP <=> DGSEM
 inverse_trace_constant(rd::RefElemData{3,Hex,SBP}) = 3*rd.N*(rd.N+1)/2 # assumes SBP <=> DGSEM
 
 # precomputed
