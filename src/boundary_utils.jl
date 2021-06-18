@@ -1,0 +1,46 @@
+# get face centroids for a single coordinate array
+function coordinate_face_centroids(xf,md)
+    Nfaces = size(md.FToF,1)
+    Nfp = size(md.xf,1)÷Nfaces
+    xc = reshape(xf,Nfp,Nfaces*md.K)
+    return vec(typeof(xf)(sum(xc,dims=1)/size(xc,1)))
+end
+
+"""
+    function boundary_face_centroids(md)
+
+Returns face centroids and `boundary_face_ids` on the boundaries of the domain given by md::MeshData.
+"""
+function boundary_face_centroids(md)
+    compute_face_centroids(md) = map(x->coordinate_face_centroids(x,md),md.xyzf)
+    xyzc = compute_face_centroids(md)
+    boundary_face_ids = findall(vec(md.FToF) .== 1:length(md.FToF))
+
+    # compute coordinates of face centroids on the boundary
+    xyzb = map(x->x[boundary_face_ids],xyzc) 
+    return xyzb, boundary_face_ids
+end
+
+"""
+    function determine_boundary_faces(boundary_list::Dict,md)
+
+Example usage: 
+```julia
+julia> rd = RefElemData(Tri(),N=1)
+julia> md = MeshData(uniform_mesh(Tri(),2)...,rd)
+julia> on_bottom_boundary(x,y,tol=1e-13) = abs(y+1) < tol
+julia> on_top_boundary(x,y,tol=1e-13) = abs(y-1) < tol
+julia> determine_boundary_faces(Dict(:bottom => on_bottom_boundary,
+                                     :top    => on_top_boundary), md)
+```
+"""
+function determine_boundary_faces(boundary_list::Dict,md)
+    xyzb,boundary_face_ids = boundary_face_centroids(md)
+    boundary_face_ids_list = Vector{Int}[]
+    for boundary_face_flag in values(boundary_list)
+        push!(boundary_face_ids_list,boundary_face_ids[boundary_face_flag.(xyzb...)])
+    end
+    return Dict(Pair.(keys(boundary_list),boundary_face_ids_list))
+end
+
+

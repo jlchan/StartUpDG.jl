@@ -32,6 +32,10 @@ export geometric_factors, estimate_h
 include("connectivity_functions.jl")
 export make_periodic
 
+# for tagging faces on boundaries
+include("boundary_utils.jl")
+export boundary_face_centroids, determine_boundary_faces
+
 # uniform meshes + face vertex orderings are included
 include("mesh/simple_meshes.jl")
 export readGmsh2D, uniform_mesh

@@ -366,3 +366,12 @@ end
         @test uf ≈ uf[mapP]
     end
 end
+
+@testset "Boundary condition utils" begin
+    rd = RefElemData(Tri(),N=3)
+    md = MeshData(uniform_mesh(Tri(),1)...,rd)
+    on_bottom_boundary(x,y,tol=1e-13) = abs(y+1) < tol
+    on_top_boundary(x,y,tol=1e-13) = abs(y-1) < tol
+    boundary_dict = determine_boundary_faces(Dict(:bottom=>on_bottom_boundary,:top=>on_top_boundary),md)
+    @test boundary_dict == Dict(:bottom=>[1],:top=>[4])
+end
