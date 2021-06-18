@@ -178,16 +178,3 @@ end
 # keyword argument version
 uniform_mesh(elem::T; K1D) where {T <: AbstractElemShape} = uniform_mesh(elem,K1D)
 
-# # WARNING: may not work in 3D. Should loop over faces then
-# function plotMesh(EToV,xyz...)
-#         plotobj = plot()
-#         plotTriMesh!(h,EToV,xyz...)
-# end
-#
-# function plotMesh!(plotobj,EToV,xyz...)
-#     for vertex_ids in eachrow(EToV)
-#         ids = vcat(vertex_ids, first(vertex_ids))
-#         plot!(getindex.(xyz,ids)...,linecolor=:black)
-#     end
-#     display(plot!(legend=false,ratio=1))
-# end
