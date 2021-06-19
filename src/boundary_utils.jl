@@ -38,9 +38,11 @@ julia> determine_boundary_faces(Dict(:bottom => on_bottom_boundary,
 ```
 """
 tag_boundary_faces(md,::Nothing) = tag_boundary_faces(md)
+
 function tag_boundary_faces(md,boundary_name::Symbol=:entire_boundary)
     return Dict(boundary_name => findall(vec(md.FToF) .== 1:length(md.FToF)))
 end
+
 function tag_boundary_faces(md,boundary_list::Dict{Symbol,<:Function})
     xyzb,boundary_face_ids = boundary_face_centroids(md)
     boundary_face_ids_list = Vector{Int}[]
