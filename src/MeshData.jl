@@ -42,6 +42,10 @@ end
 
 function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
     @nospecialize md
+    print(io,"MeshData{$DIM}")
+end
+function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM}) where {DIM}
+    @nospecialize md
     print(io,"MeshData of dimension $DIM with $(md.K) elements")
 end
 
