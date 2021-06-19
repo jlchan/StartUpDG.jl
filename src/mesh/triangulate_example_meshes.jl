@@ -1,16 +1,3 @@
-# domain with a protruding corner
-function triangulate_demo_domain(h = .05)    
-    pointlist = [0.0 0.0 ; 1.0 0.0 ; 1.0  1.0 ; 0.6 0.6; 0.0 1.0]'
-    segmentlist = [1 2 ; 2 3 ; 3 4 ; 4 5 ; 5 1 ]'
-    segmentmarkerlist = [1, 2, 3, 4, 5]
-    triin = Triangulate.TriangulateIO()
-    triin.pointlist = Matrix{Cdouble}(pointlist)
-    triin.segmentlist = Matrix{Cint}(segmentlist)
-    triin.segmentmarkerlist = Vector{Int32}(segmentmarkerlist)
-    triout = Triangulate.triangulate(triin,h^2)
-    return triout
-end
-
 """
     function rectangular_domain(h = .1; xlims = [-1,1],ylims = [-1,1], segment_markers=[1,2,3,4])
 
