@@ -1,8 +1,8 @@
 # define ApproximationType
 struct Polynomial end 
 
-# Type alias where all operators are just Matrix{Tv}
-const PolynomialRefElemData{Dim,ElemShape,Nfaces,Tv} = RefElemData{Dim,ElemShape,Polynomial,Nfaces,Tv,Matrix{Tv},Matrix{Tv},Matrix{Tv},Matrix{Tv},Matrix{Tv},Matrix{Tv}}
+# # Type alias where all operators are just Matrix{Tv}
+# const PolynomialRefElemData{Dim,ElemShape,Nfaces,Tv} = RefElemData{Dim,ElemShape,Polynomial,Nfaces,Tv,Matrix{Tv},Matrix{Tv},Matrix{Tv},Matrix{Tv},Matrix{Tv},Matrix{Tv}}
 
 function init_face_data(elem::Tri, N; quad_nodes_face=gauss_quad(0,0,N))
     #Nodes on faces, and face node coordinate

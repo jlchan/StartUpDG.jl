@@ -19,7 +19,7 @@ include("RefElemData.jl")
 include("RefElemData_polynomial.jl")
 include("RefElemData_SBP.jl")
 include("ref_elem_utils.jl")
-export RefElemData, PolynomialRefElemData, Polynomial, SBP
+export RefElemData, Polynomial, SBP
 export hybridized_SBP_operators, inverse_trace_constant
 
 include("MeshData.jl")
