@@ -171,7 +171,7 @@ end
         @test norm(uf[mapB]) < tol
 
         # check periodic node connectivity maps
-        md = make_periodic(md,rd)
+        md = make_periodic(md)
         @unpack mapP = md
         u = @. sin(pi*(.5+x))
         uf = Vf*u
@@ -229,7 +229,7 @@ end
         @test norm(uf[mapB]) < tol
 
         # check periodic node connectivity maps
-        md = make_periodic(md,rd,(true,true))
+        md = make_periodic(md,(true,true))
         @unpack mapP = md
         u = @. sin(pi*(.5+x))*sin(pi*(.5+y))
         uf = Vf*u
@@ -293,7 +293,7 @@ end
         @test norm(uf[mapB]) < tol
 
         # check periodic node connectivity maps
-        md = make_periodic(md,rd,(true,true))
+        md = make_periodic(md,(true,true))
         @unpack mapP = md
         u = @. sin(pi*(.5+x))*sin(pi*(.5+y))
         uf = Vf*u
@@ -359,7 +359,7 @@ end
         @test norm(uf[mapB]) < tol
 
         # check periodic node connectivity maps
-        md = make_periodic(md,rd,(true,true,true))
+        md = make_periodic(md,(true,true,true))
         @unpack mapP = md
         u = @. sin(pi*(.5+x))*sin(pi*(.5+y))*sin(pi*(.5+z))
         uf = Vf*u
@@ -372,6 +372,6 @@ end
     md = MeshData(uniform_mesh(Tri(),1)...,rd)
     on_bottom_boundary(x,y,tol=1e-13) = abs(y+1) < tol
     on_top_boundary(x,y,tol=1e-13) = abs(y-1) < tol
-    boundary_dict = determine_boundary_faces(Dict(:bottom=>on_bottom_boundary,:top=>on_top_boundary),md)
+    boundary_dict = tag_boundary_faces(md,Dict(:bottom=>on_bottom_boundary,:top=>on_top_boundary))
     @test boundary_dict == Dict(:bottom=>[1],:top=>[4])
 end
