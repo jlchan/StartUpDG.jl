@@ -21,7 +21,7 @@ function triangulateIO_to_VXYEToV(triout::TriangulateIO)
     VX,VY = (triout.pointlist[i,:] for i = 1:size(triout.pointlist,1))
     EToV = permutedims(triout.trianglelist)
     Base.swapcols!(EToV,2,3) # to match MeshData ordering
-    return VX,VY,EToV
+    return VX,VY,Matrix{Int}(EToV)
 end
 
 """

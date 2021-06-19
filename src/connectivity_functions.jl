@@ -118,7 +118,7 @@ end
 
 
 # specializes to 1D - periodic = find min/max indices of xf and reverse their order
-function make_periodic(md::MeshData{1},is_periodic::Bool=true)
+function make_periodic(md::MeshData{1,Tv,Ti},is_periodic::Bool=true) where {Tv,Ti}
     if is_periodic == true
         @unpack mapP,mapB,xf,FToF = md
         mapPB = argmax(vec(xf)),argmin(vec(xf))
@@ -126,7 +126,7 @@ function make_periodic(md::MeshData{1},is_periodic::Bool=true)
         mapP_periodic[mapB] .= mapPB
         FToF_periodic = copy(FToF)
         FToF_periodic[[1,length(FToF)]] .= mapPB
-        mapB_periodic = [] 
+        mapB_periodic = Ti[] 
         return setproperties(md,(mapB=mapB_periodic,mapP=mapP_periodic,FToF=FToF_periodic,is_periodic=(true,))) # from Setfield.jl
     end
 end
