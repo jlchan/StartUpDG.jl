@@ -34,7 +34,7 @@ export make_periodic
 
 # for tagging faces on boundaries
 include("boundary_utils.jl")
-export boundary_face_centroids, determine_boundary_faces
+export boundary_face_centroids, tag_boundary_faces
 
 # uniform meshes + face vertex orderings are included
 include("mesh/simple_meshes.jl")

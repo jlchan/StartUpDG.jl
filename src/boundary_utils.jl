@@ -22,8 +22,11 @@ function boundary_face_centroids(md)
 end
 
 """
-    function determine_boundary_faces(boundary_list::Dict,md)
+    function tag_boundary_faces(md,boundary_name::Symbol=:entire_boundary)
+    function tag_boundary_faces(md,boundary_list::Dict{Symbol,<:Function})
 
+When called without arguments, just returns Dict(:entire_boundary=>boundary_faces).
+    
 Example usage: 
 ```julia
 julia> rd = RefElemData(Tri(),N=1)
@@ -34,7 +37,11 @@ julia> determine_boundary_faces(Dict(:bottom => on_bottom_boundary,
                                      :top    => on_top_boundary), md)
 ```
 """
-function determine_boundary_faces(boundary_list::Dict,md)
+tag_boundary_faces(md,::Nothing) = tag_boundary_faces(md)
+function tag_boundary_faces(md,boundary_name::Symbol=:entire_boundary)
+    return Dict(boundary_name => findall(vec(md.FToF) .== 1:length(md.FToF)))
+end
+function tag_boundary_faces(md,boundary_list::Dict{Symbol,<:Function})
     xyzb,boundary_face_ids = boundary_face_centroids(md)
     boundary_face_ids_list = Vector{Int}[]
     for boundary_face_flag in values(boundary_list)
