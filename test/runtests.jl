@@ -3,6 +3,7 @@ using Suppressor
 using StartUpDG
 using Test
 using LinearAlgebra
+using RecipesBase
 using Triangulate
 
 @testset "Mesh, timestep, and Triangulate utils" begin
@@ -43,6 +44,17 @@ using Triangulate
     @test size(EToV,1)==md.num_elements==1550
     @test length(VX)==length(VY)==871
     @test sort(unique(get_node_boundary_tags(meshIO,rd,md)))==[0,1,2,3]
+
+    # see https://discourse.julialang.org/t/how-to-test-plot-recipes/2648/6?u=jlchan
+    recipe = RecipesBase.apply_recipe(Dict{Symbol, Any}(),BoundaryTagPlotter(meshIO));
+    @test getfield(recipe[1],1)[:label]=="1"
+    @test any(isnan.(getfield(recipe[1],2)[1]))
+
+    recipe = RecipesBase.apply_recipe(Dict{Symbol,Any}(),MeshPlotter(meshIO))
+    @test getfield(recipe[1],1)[:legend] == false
+    @test getfield(recipe[1],1)[:aspect_ratio] == 1
+    @test getfield(recipe[1],1)[:linecolor] == :black
+    @test any(isnan.(getfield(recipe[1],2)[1]))
 end
 
 @testset "Geometric terms for $elem elements" for elem in [Tri() Quad() Hex()]
