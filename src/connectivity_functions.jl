@@ -100,10 +100,11 @@ BCs in the `x`,`y`, or `z` coordinate.
 make_periodic(rd::RefElemData,md::MeshData,args...) = make_periodic(md,args...) 
 make_periodic(md::MeshData,rd::RefElemData,is_periodic...) = make_periodic(md,is_periodic)
 
-make_periodic(md::MeshData,is_periodic...) = make_periodic(md,is_periodic)
-make_periodic(md::MeshData{Dim},is_periodic=true) where {Dim} = make_periodic(md,ntuple(_->is_periodic,Dim))
+function make_periodic(md::MeshData{Dim},is_periodic::Bool=true) where {Dim} 
+    return make_periodic(md,ntuple(_->is_periodic,Dim)) 
+end
 
-function make_periodic(md::MeshData{Dim},is_periodic::NTuple{Dim,T}=ntuple(_->true,Dim)) where {Dim,T}
+function make_periodic(md::MeshData{Dim},is_periodic::NTuple{Dim,Bool}=ntuple(_->true,Dim)) where {Dim,Bool}
     @unpack mapM,mapP,mapB,xyzf,FToF = md
     NfacesTotal = prod(size(FToF))
     FToF_periodic = copy(FToF)
@@ -115,8 +116,9 @@ function make_periodic(md::MeshData{Dim},is_periodic::NTuple{Dim,T}=ntuple(_->tr
     return setproperties(md,(mapB=mapB_periodic,mapP=mapP_periodic,FToF=FToF_periodic,is_periodic=is_periodic)) # from Setfield.jl    
 end
 
+
 # specializes to 1D - periodic = find min/max indices of xf and reverse their order
-function make_periodic(md::MeshData{1},is_periodic=true)
+function make_periodic(md::MeshData{1},is_periodic::Bool=true)
     if is_periodic == true
         @unpack mapP,mapB,xf,FToF = md
         mapPB = argmax(vec(xf)),argmin(vec(xf))
