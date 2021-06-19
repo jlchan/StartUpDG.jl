@@ -1,4 +1,5 @@
 using Test: testset_beginend
+using Suppressor
 using StartUpDG
 using Test
 using LinearAlgebra
@@ -82,6 +83,7 @@ end
     ##### interval
     #####
     rd = RefElemData(Line(),N)
+    @test rd.r == rd.rst[1]
     @test abs(sum(rd.rq.*rd.wq)) < tol
     @test rd.nrJ ≈ [-1,1]
     @test rd.Pq*rd.Vq ≈ I
@@ -92,6 +94,7 @@ end
     ##### triangles
     #####
     rd = RefElemData(Tri(),N)
+    @test rd.r == rd.rst[1]
     @test abs(sum(rd.wq)) ≈ 2
     @test abs(sum(rd.wf)) ≈ 6
     @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
@@ -105,6 +108,7 @@ end
     ##### quads
     #####
     rd = RefElemData(Quad(),N)
+    @test rd.r == rd.rst[1]
     @test abs(sum(rd.wq)) ≈ 4
     @test abs(sum(rd.wf)) ≈ 8
     @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
@@ -118,6 +122,7 @@ end
     ##### hexes
     #####
     rd = RefElemData(Hex(),N)
+    @test rd.r == rd.rst[1]
     @test abs(sum(rd.wq)) ≈ 8
     @test abs(sum(rd.wf)) ≈ 6*4
     @test abs(sum(rd.wf .* rd.nrJ)) < tol
@@ -142,6 +147,8 @@ end
         @unpack x,xq,xf,K = md
         @unpack rxJ,J,nxJ,wJq = md
         @unpack mapM,mapP,mapB = md
+
+        @test md.x == md.xyz[1]
 
         # check positivity of Jacobian
         @test all(J .> 0)
@@ -191,6 +198,8 @@ end
         @unpack x,y,xq,yq,xf,yf,K = md
         @unpack rxJ,sxJ,ryJ,syJ,J,nxJ,nyJ,sJ,wJq = md
         @unpack FToF,mapM,mapP,mapB = md
+
+        @test md.x == md.xyz[1]
 
         # check positivity of Jacobian
         # @show J[1,:]
@@ -257,6 +266,8 @@ end
         @unpack rxJ,sxJ,ryJ,syJ,J,nxJ,nyJ,sJ,wJq = md
         @unpack FToF,mapM,mapP,mapB = md
 
+        @test md.x == md.xyz[1]
+
         # check positivity of Jacobian
         @test all(J .> 0)
         h = estimate_h(rd,md)
@@ -314,6 +325,8 @@ end
         @unpack rxJ,sxJ,txJ,ryJ,syJ,tyJ,rzJ,szJ,tzJ,J = md
         @unpack nxJ,nyJ,nzJ,sJ = md
         @unpack FToF,mapM,mapP,mapB = md
+
+        @test md.x == md.xyz[1]
 
         # check positivity of Jacobian
         # @show J[1,:]
@@ -374,4 +387,15 @@ end
     on_top_boundary(x,y,tol=1e-13) = abs(y-1) < tol
     boundary_dict = tag_boundary_faces(md,Dict(:bottom=>on_bottom_boundary,:top=>on_top_boundary))
     @test boundary_dict == Dict(:bottom=>[1],:top=>[4])
+    boundary_dict = tag_boundary_faces(md,nothing)
+    @test boundary_dict == Dict(:entire_boundary=>[1,2,4,5])
+end
+
+@testset "Base.show tests" begin
+    rd = RefElemData(Tri(),N=3)
+    md = MeshData(uniform_mesh(Tri(),1)...,rd)
+    @test (@capture_out Base.show(stdout,MIME"text/plain"(),rd)) == "RefElemData for a degree 3 Polynomial() approximation on Tri() element."
+    @test (@capture_out Base.show(stdout,rd)) == "RefElemData{N=3,Polynomial(),Tri()}."
+    @test (@capture_out Base.show(stdout,MIME"text/plain"(),md)) == "MeshData of dimension 2 with 2 elements"
+    @test (@capture_out Base.show(stdout,md)) == "MeshData{2}"
 end
