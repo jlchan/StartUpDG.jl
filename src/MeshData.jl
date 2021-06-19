@@ -15,9 +15,10 @@ md = MeshElemData(VX,VY,EToV,rd)
 """
 Base.@kwdef struct MeshData{Dim, Tv, Ti}
 
+    # num_elements::Ti            # number of elements
     VXYZ::NTuple{Dim,Vector{Tv}}  # vertex coordinates
-    EToV::Matrix{Ti}                         # mesh vertex array
-    FToF::Matrix{Int}                # face connectivity
+    EToV::Matrix{Ti}              # mesh vertex array 
+    FToF::Matrix{Ti}              # face connectivity
 
     xyz::NTuple{Dim,Matrix{Tv}}   # physical points
     xyzf::NTuple{Dim,Matrix{Tv}}  # face nodes
@@ -25,9 +26,9 @@ Base.@kwdef struct MeshData{Dim, Tv, Ti}
     wJq::Matrix{Tv}
 
     # arrays of connectivity indices between face nodes
-    mapM::Matrix{Int}
-    mapP::Matrix{Int}
-    mapB::Vector{Int}
+    mapM::Matrix{Ti}
+    mapP::Matrix{Ti}
+    mapB::Vector{Ti}
 
     # volume geofacs Gij = dx_i/dxhat_j
     rstxyzJ::SMatrix{Dim,Dim,Matrix{Tv}}
@@ -122,9 +123,10 @@ function Base.getproperty(x::MeshData,s::Symbol)
         return getfield(x, :rstxyzJ)[3,2]
     elseif s==:tzJ
         return getfield(x, :rstxyzJ)[3,3]
-
     elseif s==:K || s==:num_elements # old behavior where K = num_elements
-        return size(x.EToV,1) # num rows in EToV = num elements
+        return size(getfield(x,:EToV),1)
+
+    # return getfield(x,:num_elements) # num rows in EToV = num elements
     else
         return getfield(x,s)
     end
@@ -226,11 +228,11 @@ function MeshData(VX,VY,EToV,rd::RefElemData{2})
 
     is_periodic = (false,false)
     return MeshData(tuple(VX,VY),EToV,FToF,
-                     tuple(x,y),tuple(xf,yf),tuple(xq,yq),wJq,
-                     mapM,mapP,mapB,
-                     SMatrix{2,2}(tuple(rxJ,ryJ,sxJ,syJ)),J,
-                     tuple(nxJ,nyJ),sJ,
-                     is_periodic)
+                    tuple(x,y),tuple(xf,yf),tuple(xq,yq),wJq,
+                    mapM,mapP,mapB,
+                    SMatrix{2,2}(tuple(rxJ,ryJ,sxJ,syJ)),J,
+                    tuple(nxJ,nyJ),sJ,
+                    is_periodic)
 
 end
 
@@ -265,10 +267,10 @@ function MeshData(VX,VY,VZ,EToV,rd::RefElemData{3})
 
     is_periodic = (false,false,false)
     return MeshData(tuple(VX,VY,VZ),EToV,FToF,
-                     tuple(x,y,z),tuple(xf,yf,zf),tuple(xq,yq,zq),wJq,
-                     mapM,mapP,mapB,
-                     rstxyzJ,J,tuple(nxJ,nyJ,nzJ),sJ,
-                     is_periodic)
+                    tuple(x,y,z),tuple(xf,yf,zf),tuple(xq,yq,zq),wJq,
+                    mapM,mapP,mapB,
+                    rstxyzJ,J,tuple(nxJ,nyJ,nzJ),sJ,
+                    is_periodic)
 end
 
 function MeshData(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
