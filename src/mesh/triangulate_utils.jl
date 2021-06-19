@@ -38,8 +38,8 @@ function get_boundary_face_labels(triout::TriangulateIO,rd::RefElemData{2,Tri},m
     for (f,boundary_face) in enumerate(boundary_faces)
         element = (boundary_face - 1) ÷ rd.Nfaces + 1
         face    = (boundary_face - 1) % rd.Nfaces + 1
-        vertex_ids = sort(md.EToV[element,rd.fv[face]])
-        tag_id = findfirst(c->view(segmentlist,:,c)==vertex_ids,axes(segmentlist,2))
+        vertices_on_face = sort(md.EToV[element,rd.fv[face]])
+        tag_id = findfirst(c->view(segmentlist,:,c)==vertices_on_face,axes(segmentlist,2))
         boundary_face_tags[f] = triout.segmentmarkerlist[tag_id]
     end
     return boundary_face_tags, boundary_faces
@@ -99,7 +99,7 @@ RecipesBase.@recipe function f(m::BoundaryTagPlotter)
     for i = 1:num_colors
         color_ids = findall(triout.segmentmarkerlist .== tags[i])
 
-        # hack to get around issues with multiple legend labels appearing when plotting multiple series
+        # NaN separators for distinct lines
         x_i = vec([xseg[:,color_ids]; fill(NaN,length(color_ids))']) 
         y_i = vec([yseg[:,color_ids]; fill(NaN,length(color_ids))']) 
 
