@@ -407,6 +407,16 @@ end
     end
 end
 
+@testset "SBP methods" begin
+    N = 3
+    rd = RefElemData(Tri(),SBP(),N,quadrature_strength=2*N)
+    @unpack rq,sq,wq = rd
+    rq2,sq2,wq2 = quad_nodes(Tri(),2*N)
+    @test sum(wq.*(rq.^N + sq.^N)) ≈ sum(wq2.*(rq2.^N + sq2.^N))
+    @test_logs (:warn,"N=6 SBP operators with quadrature strength 2N-1 and Lobatto face nodes may require very small timesteps.") RefElemData(Tri(),SBP(),6,quadrature_strength=11)
+    @test_throws SystemError RefElemData(Tri(),SBP(),7,quadrature_strength=14)
+end
+
 @testset "Boundary condition utils" begin
     rd = RefElemData(Tri(),N=3)
     md = MeshData(uniform_mesh(Tri(),1)...,rd)
