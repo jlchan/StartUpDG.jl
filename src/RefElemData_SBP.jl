@@ -28,7 +28,7 @@ function diagE_sbp_nodes(elem::Tri, N; quadrature_strength=2*N-1, quad_rule_face
         w = vec(vars["Q_GaussLegendre"][N]["Weights"])
         quad_rule_face = gauss_quad(0,0,N)
 
-    elseif quadrature_strength==2*N
+    elseif quadrature_strength==2*N && quad_rule_face == :Lobatto
 
         # from Jason Hicken https://github.com/OptimalDesignLab/SummationByParts.jl/tree/work
         lines = readlines((@__DIR__)*"/data/sbp_nodes/tri_diage_p$N.dat") 
@@ -43,7 +43,7 @@ function diagE_sbp_nodes(elem::Tri, N; quadrature_strength=2*N-1, quad_rule_face
 
         quad_rule_face = gauss_lobatto_quad(0,0,N+1) 
     else
-        error("No nodes found for N=$N with quadrature_strength = $quadrature_strength")
+        error("No nodes found for N=$N with quadrature_strength = $quadrature_strength and quad_rule_face=$quad_rule_face")
     end
 
     return (r,s,w),quad_rule_face 

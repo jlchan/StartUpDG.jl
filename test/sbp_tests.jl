@@ -16,7 +16,7 @@
     @test_logs (:warn,"N=6 SBP operators with quadrature strength 2N-1 and Lobatto face nodes may require very small timesteps.") RefElemData(Tri(),SBP(),6,quadrature_strength=11)
     @test_throws SystemError RefElemData(Tri(),SBP(),7,quadrature_strength=14)
 
-    rd = RefElemData(Tri(),SBP(), N, quadrature_strength=2*N, quad_rule_face=:Legendre)
+    rd = RefElemData(Tri(), SBP(), N, quadrature_strength=2*N-1, quad_rule_face=:Legendre)
     @unpack rq,sq,wq = rd
     rq2,sq2,wq2 = quad_nodes(Tri(),2*N-1)
     @test sum(wq.*f.(2*N-1,rq,sq)) ≈ sum(wq2.*f.(2*N-1,rq2,sq2))
