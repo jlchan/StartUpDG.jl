@@ -100,11 +100,8 @@ BCs in the `x`,`y`, or `z` coordinate.
 make_periodic(rd::RefElemData,md::MeshData,args...) = make_periodic(md,args...) 
 make_periodic(md::MeshData,rd::RefElemData,is_periodic...) = make_periodic(md,is_periodic)
 
-function make_periodic(md::MeshData{Dim},is_periodic::Bool=true) where {Dim} 
-    return make_periodic(md,ntuple(_->is_periodic,Dim)) 
-end
-
-function make_periodic(md::MeshData{Dim},is_periodic::NTuple{Dim,Bool}=ntuple(_->true,Dim)) where {Dim,Bool}
+make_periodic(md::MeshData{Dim},is_periodic::Bool=true) where {Dim} = make_periodic(md,ntuple(_->is_periodic,Dim)) 
+function make_periodic(md::MeshData{Dim},is_periodic::NTuple{Dim,Bool}) where {Dim,Bool}
     @unpack mapM,mapP,mapB,xyzf,FToF = md
     NfacesTotal = prod(size(FToF))
     FToF_periodic = copy(FToF)
