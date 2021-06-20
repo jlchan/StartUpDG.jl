@@ -35,7 +35,7 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nface
     Vq::VQ              # quad interp mat
 
     # face quadrature 
-    rstf::NTuple{Dim}
+    rstf::NTuple{Dim,Vector{Tv}}
     wf::Vector{Tv}      # quad weights
     Vf::VF              # face quad interp mat
     nrstJ::NTuple{Dim,Vector{Tv}}    # reference normals, quad weights
@@ -119,13 +119,13 @@ function Base.getproperty(x::RefElemData{Dim,ElementType,ApproxType,Nfaces}, s::
     elseif s==:Nfaces
         return Nfaces
     elseif s==:Np
-        return length(x.r)
+        return length(getfield(x,:rst)[1])
     elseif s==:Nq
-        return length(x.rq)
+        return length(getfield(x,:rstq)[1])
     elseif s==:Nfq
-        return length(x.rf)
+        return length(getfield(x,:rstf)[1])
     elseif s==:elemShape # for compatibility with old names
-        return x.elementType
+        return getfield(x,:elementType)
 
     else
         return getfield(x,s)
