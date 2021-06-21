@@ -134,10 +134,13 @@ end
 
 """
     function RefElemData(elem; N, kwargs...)
+    function RefElemData(elem, approxType; N, kwargs...)
 
 Keyword argument constructor for RefElemData (to "label" `N` via `rd = RefElemData(Line(),N=3)`)
 """
 RefElemData(elem; N, kwargs...) = RefElemData(elem, N; kwargs...)
+RefElemData(elem, approxType; N, kwargs...) = RefElemData(elem, approxType, N; kwargs...)
 
 # default to Polynomial-type RefElemData
 RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs...)
+

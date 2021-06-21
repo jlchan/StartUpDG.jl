@@ -134,9 +134,6 @@ function RefElemData(elementType::Hex, approxType::SBP, N)
     return _convert_RefElemData_fields_to_SBP(rd)
 end
 
-# enable N as a kwarg
-RefElemData(elementType::Tri, approxType::SBP; N, kwargs...) = RefElemData(elementType, approxType, N; kwargs...)
-
 """
     function RefElemData(elementType::Tri, approxType::SBP, N; kwargs...)
 
