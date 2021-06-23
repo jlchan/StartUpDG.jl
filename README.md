@@ -10,7 +10,7 @@ This package is registered, so you can install it via `] add StartUpDG`.
 
 # Usage overview
 
-Variables are contained within structs `rd::RefElemData` and `md::MeshData`. These structs contain variables from `Globals1D, Globals2D, Globals3D` in the Nodal DG book codes. Variables can be unpacked using [`@unpack`](https://github.com/mauro3/UnPack.jl).
+Variables are contained within structs `rd::RefElemData` and `md::MeshData`, which contain quantities from `Globals1D, Globals2D, Globals3D` in the Nodal DG book codes. These can be used to compute DG derivatives, and are useful for matrix-free implementations of DG methods using explicit time-stepping.
 
 ```julia
 using StartUpDG
@@ -20,16 +20,16 @@ N = 3
 K1D = 8
 
 # init ref element and mesh
-rd = RefElemData(Tri(),N)
-VX,VY,EToV = uniform_mesh(Tri(),K1D)
-md = MeshData(VX,VY,EToV,rd)
+rd = RefElemData(Tri(), N)
+VX, VY, EToV = uniform_mesh(Tri(), K1D)
+md = MeshData(VX, VY, EToV, rd)
 
 # Define a function by interpolation
-@unpack x,y = md
-u = @. 2 + .5*exp(-100*(x^2+y^2))
+@unpack x, y = md
+u = @. 2 + .5*exp(-100*(x^2 + y^2))
 
 # Compute derivatives using geometric mapping + chain rule
-@unpack Dr,Ds = rd
-@unpack rxJ,sxJ,J = md
-dudx = (rxJ.*(Dr*u) + sxJ.*(Ds*u))./J
+@unpack Dr, Ds = rd
+@unpack rxJ, sxJ, J = md
+dudx = (rxJ .* (Dr*u) + sxJ .* (Ds*u)) ./ J
 ```
