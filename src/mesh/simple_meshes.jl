@@ -63,9 +63,9 @@ Uniform Kx (by Ky by Kz) mesh on ``[-1,1]^d``, where `d` is the spatial dimensio
 Returns VX,VY,VZ,EToV. Can also use kwargs via `uniform_mesh(elem; K1D=16) `
 """
 function uniform_mesh(elem::Line,K1D)
-        VX = collect(LinRange(-1,1,K1D+1))
-        EToV = transpose(reshape(sort([1:K1D; 2:K1D+1]),2,K1D))
-        return VX,Matrix(EToV)
+    VX = collect(LinRange(-1,1,K1D+1))
+    EToV = transpose(reshape(sort([1:K1D; 2:K1D+1]),2,K1D))
+    return VX,Matrix(EToV)
 end
 
 function uniform_mesh(elem::Tri,Kx,Ky)
