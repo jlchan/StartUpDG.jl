@@ -111,7 +111,7 @@
 
         # check MeshData struct copying
         xyz = (x->x .+ 1).(md.xyz) # affine shift
-        md2 = MeshData(md,rd,xyz...)
+        md2 = MeshData(rd,md,xyz...)
         @test sum(norm.(md2.rstxyzJ .- md.rstxyzJ)) < tol
         @test sum(norm.(md2.nxyzJ .- md.nxyzJ)) < tol
         @test all(md2.xyzf .≈ (x->x .+ 1).(md.xyzf))

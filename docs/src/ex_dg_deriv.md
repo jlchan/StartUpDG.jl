@@ -39,7 +39,7 @@ scatter(xp,yp,uxp,zcolor=uxp,msw=0,leg=false,ratio=1,cam=(0,90))
 ```
 Both interpolation and projection create a matrix `u` of size ``N_p \times K`` which contains coefficients (nodal values) of the DG polynomial approximation to ``f(x,y)``. We can approximate the derivative of ``f(x,y)`` using the DG derivative formulation
 ```julia
-function dg_deriv_x(u,md::MeshData,rd::RefElemData)
+function dg_deriv_x(u,rd::RefElemData,md::MeshData)
   @unpack Vf,Dr,Ds,LIFT = rd
   @unpack rxJ,sxJ,J,nxJ,mapP = md
   uf = Vf*u
@@ -54,7 +54,7 @@ end
 ```
 We can visualize the result as follows:
 ```julia
-dudx = dg_deriv_x(u,md,rd)
+dudx = dg_deriv_x(u,rd,md)
 uxp = Vp*dudx
 scatter(xp,yp,uxp,zcolor=uxp,msw=0,leg=false,ratio=1,cam=(0,90))
 ```

@@ -40,8 +40,8 @@ md = MeshData(VXYZ...,EToV,rd)
 Periodic boundary conditions can be enforced by calling [`make_periodic`](@ref), which returns another `MeshData` struct with modified `mapP`,`mapB`, and `FToF` indexing arrays which account for periodicity.
 ```julia
 md = MeshData(VX,VY,EToV,rd)
-md_periodic = make_periodic(md,rd) # periodic in both x and y coordinates
-md_periodic_x = make_periodic(md,rd,true,false) # periodic in x direction, but not y
+md_periodic = make_periodic(md) # periodic in both x and y coordinates
+md_periodic_x = make_periodic(md,true,false) # periodic in x direction, but not y
 ```
 One can check which dimensions are periodic via the `is_periodic` field of `MeshData`. For example, the `md_periodic_x` example above gives
 ```julia
@@ -56,9 +56,9 @@ It's common to generate curved meshes by first generating a linear mesh, then mo
 md = MeshData(VX,VY,EToV,rd)
 @unpack x,y = md
 # <-- code to modify high order nodes (x,y)
-md_curved = MeshData(md,rd,x,y)
+md_curved = MeshData(rd,md,x,y)
 ```
-`MeshData(md,rd,x,y)` and `MeshData(md,rd,x,y,z)` are implemented for 2D and 3D, though this is not currently implemented in 1D.
+`MeshData(rd,md,x,y)` and `MeshData(rd,md,x,y,z)` are implemented for 2D and 3D, though this is not currently implemented in 1D.
 
 More generally, one can create a copy of a `MeshData` with certain fields modified by using `@set` or `setproperties` from `Setfield.jl`.
 

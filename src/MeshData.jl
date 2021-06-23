@@ -273,7 +273,9 @@ function MeshData(VX,VY,VZ,EToV,rd::RefElemData{3})
                     is_periodic)
 end
 
-function MeshData(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
+MeshData(md::MeshData,rd::RefElemData,xyz...) = MeshData(rd,md,xyz...)
+
+function MeshData(rd::RefElemData,md::MeshData{Dim},xyz...) where {Dim}
 
     # compute new quad and plotting points
     xyzf = map(x->rd.Vf*x,xyz)
