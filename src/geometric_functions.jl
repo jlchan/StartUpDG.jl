@@ -14,47 +14,41 @@ meshes' (Kopriva 2006).
 """
 
 function geometric_factors(x, y, Dr, Ds)
-    xr = Dr*x;   xs = Ds*x
-    yr = Dr*y;   ys = Ds*y
+    xr, xs = Dr*x, Ds*x
+    yr, ys = Dr*y, Ds*y
 
-    J = -xs.*yr + xr.*ys
-    rxJ =  ys;  sxJ = -yr
-    ryJ = -xs;  syJ =  xr
+    J = @. -xs * yr + xr * ys
+    rxJ, sxJ =  ys, -yr
+    ryJ, syJ = -xs,  xr
 
     return rxJ, sxJ, ryJ, syJ, J
 end
 
 function geometric_factors(x, y, z, Dr, Ds, Dt, Filters=(I,I,I))
 
-    xr = Dr*x;  xs = Ds*x;  xt = Dt*x
-    yr = Dr*y;  ys = Ds*y;  yt = Dt*y
-    zr = Dr*z;  zs = Ds*z;  zt = Dt*z
+    xr, xs, xt = Dr*x, Ds*x, Dt*x
+    yr, ys, yt = Dr*y, Ds*y, Dt*y
+    zr, zs, zt = Dr*z, Ds*z, Dt*z
 
-    Fr = (Dr*y).*z
-    Fs = (Ds*y).*z
-    Ft = (Dt*y).*z
+    Fr, Fs, Ft = (Dr*y).*z, (Ds*y).*z, (Dt*y).*z
     Fr,Fs,Ft = ((A,x)->A*x).(Filters,(Fr,Fs,Ft))
     rxJ = Dt*(Fs) - Ds*(Ft)
     sxJ = Dr*(Ft) - Dt*(Fr)
     txJ = Ds*(Fr) - Dr*(Fs)
 
-    Fr = (Dr*x).*z
-    Fs = (Ds*x).*z
-    Ft = (Dt*x).*z
+    Fr, Fs, Ft = (Dr*x).*z, (Ds*x).*z, (Dt*x).*z
     Fr,Fs,Ft = ((A,x)->A*x).(Filters,(Fr,Fs,Ft))
     ryJ = -(Dt*(Fs) - Ds*(Ft))
     syJ = -(Dr*(Ft) - Dt*(Fr))
     tyJ = -(Ds*(Fr) - Dr*(Fs))
 
-    Fr = (Dr*y).*x
-    Fs = (Ds*y).*x
-    Ft = (Dt*y).*x
+    Fr, Fs, Ft = (Dr*y).*x, (Ds*y).*x, (Dt*y).*x
     Fr,Fs,Ft = ((A,x)->A*x).(Filters,(Fr,Fs,Ft))
     rzJ = -(Dt*(Fs) - Ds*(Ft))
     szJ = -(Dr*(Ft) - Dt*(Fr))
     tzJ = -(Ds*(Fr) - Dr*(Fs))
 
-    J = @. xr*(ys*zt-zs*yt) - yr*(xs*zt-zs*xt) + zr*(xs*yt-ys*xt)
+    J = @. xr * (ys * zt - zs * yt) - yr * (xs * zt - zs * xt) + zr * (xs * yt - ys * xt)
 
     return rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J
 end
