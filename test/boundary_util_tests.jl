@@ -9,4 +9,11 @@
 
     boundary_dict = tag_boundary_faces(md,nothing)
     @test boundary_dict == Dict(:entire_boundary=>[1,2,4,5])
+
+    # test named tuple version
+    boundary_dict = tag_boundary_faces(md,(; :bottom=>on_bottom_boundary,:top=>on_top_boundary))
+    @test boundary_dict == (; :bottom=>[1],:top=>[4])
+
+    # boundary_dict = tag_boundary_faces(md,nothing)
+    # @test boundary_dict == (; :entire_boundary=>[1,2,4,5])
 end

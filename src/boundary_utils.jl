@@ -37,19 +37,31 @@ julia> determine_boundary_faces(Dict(:bottom => on_bottom_boundary,
                                      :top    => on_top_boundary), md)
 ```
 """
-tag_boundary_faces(md,::Nothing) = tag_boundary_faces(md)
+tag_boundary_faces(md, ::Nothing) = tag_boundary_faces(md)
 
-function tag_boundary_faces(md,boundary_name::Symbol=:entire_boundary)
+function tag_boundary_faces(md, boundary_name::Symbol = :entire_boundary)
     return Dict(boundary_name => findall(vec(md.FToF) .== 1:length(md.FToF)))
 end
 
-function tag_boundary_faces(md,boundary_list::Dict{Symbol,<:Function})
-    xyzb,boundary_face_ids = boundary_face_centroids(md)
+function tag_boundary_faces(md, boundary_list::Dict{Symbol,<:Function})
+    xyzb, boundary_face_ids = boundary_face_centroids(md)
+    boundary_face_ids_list = _tag_boundary_faces(boundary_face_ids, boundary_list, xyzb)
+    return Dict(Pair.(keys(boundary_list),boundary_face_ids_list))
+end
+
+function _tag_boundary_faces(boundary_face_ids, boundary_list, xyzb)
     boundary_face_ids_list = Vector{Int}[]
     for boundary_face_flag in values(boundary_list)
-        push!(boundary_face_ids_list,boundary_face_ids[boundary_face_flag.(xyzb...)])
+        push!(boundary_face_ids_list, boundary_face_ids[boundary_face_flag.(xyzb...)])
     end
-    return Dict(Pair.(keys(boundary_list),boundary_face_ids_list))
+    return boundary_face_ids_list
+end
+
+# todo: should I make this the default?
+function tag_boundary_faces(md, boundary_list::NamedTuple)
+    xyzb, boundary_face_ids = boundary_face_centroids(md)
+    boundary_face_ids_list = _tag_boundary_faces(boundary_face_ids, boundary_list, xyzb)
+    return NamedTuple(Pair.(keys(boundary_list),boundary_face_ids_list))
 end
 
 
