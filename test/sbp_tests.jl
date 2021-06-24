@@ -1,12 +1,12 @@
-@testset "Non-default SBP elements" begin
+@testset "SBP elements" begin
 
     tol = 200*eps()
 
     N = 3
-    f(N,r,s) = r^N + s^N # function for testing 
+    f(N,r,s) = r^N + s^N # function for testing differentiation
     
     @testset "Hicken's 2N triangular SBP operators" begin
-        rd = RefElemData(Tri(),SBP(), N, quadrature_strength=2*N)
+        rd = RefElemData(Tri(), SBP{Hicken}(), N)
         @unpack rq,sq,wq = rd
         rq2,sq2,wq2 = quad_nodes(Tri(),2*N)        
         @test sum(wq.*f.(2*N,rq,sq)) ≈ sum(wq2.*f.(2*N,rq2,sq2))
@@ -16,7 +16,7 @@
     end
 
     @testset "Kubatko's Legendre face node triangular SBP operators" begin
-        rd = RefElemData(Tri(), SBP(), N, quadrature_strength=2*N-1, quad_rule_face=:Legendre)
+        rd = RefElemData(Tri(), SBP{Kubatko{LegendreFaceNodes}}(), N)
         @unpack rq,sq,wq = rd
         rq2,sq2,wq2 = quad_nodes(Tri(),2*N-1)
         @test sum(wq.*f.(2*N-1,rq,sq)) ≈ sum(wq2.*f.(2*N-1,rq2,sq2))
@@ -26,8 +26,41 @@
     end
     
     @testset "Warning for N=6 Kubatko Lobatto SBP nodes" begin
-        @test_logs (:warn,"N=6 SBP operators with quadrature strength 2N-1 and Lobatto face nodes may require very small timesteps.") RefElemData(Tri(),SBP(),6,quadrature_strength=11)
-        @test_throws SystemError RefElemData(Tri(), SBP(), 7,quadrature_strength=14)
+        @test_logs (:warn,"N=6 SBP operators with quadrature strength 2N-1 and Lobatto face nodes may require very small timesteps.") RefElemData(Tri(),SBP{Kubatko{LobattoFaceNodes}}(),6)
     end 
+
+    @testset "DGSEM quad" begin
+        rd = RefElemData(Quad(),SBP(),N)
+        @test rd.r == rd.rst[1]
+        @test rd.Np == length(rd.r)  
+        @test rd.Nq == length(rd.rq)    
+        @test abs(sum(rd.wq)) ≈ 4
+        @test abs(sum(rd.wf)) ≈ 8
+        @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
+        @test rd.Pq*rd.Vq ≈ I
+        @test all(vec.(rd.rstf) .≈ (x->getindex(x,rd.Fmask)).(rd.rst))
+        @test invoke(inverse_trace_constant,Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)    
+    end
+    
+    @testset "DGSEM Hex" begin
+        rd = RefElemData(Hex(),SBP(),N)
+        @test propertynames(rd)[1] == :elementType
+        @test rd.t == rd.rst[3]
+        @test rd.tf == rd.rstf[3]    
+        @test rd.tq == rd.rstq[3]
+        @test rd.rp == rd.rstp[1]    
+        @test rd.sp == rd.rstp[2]
+        @test rd.tp == rd.rstp[3]    
+        @test rd.Np == length(rd.r)  
+        @test rd.Nq == length(rd.rq)    
+        @test abs(sum(rd.wq)) ≈ 8
+        @test abs(sum(rd.wf)) ≈ 6*4
+        @test abs(sum(rd.wf .* rd.nrJ)) < tol
+        @test abs(sum(rd.wf .* rd.nsJ)) < tol
+        @test abs(sum(rd.wf .* rd.ntJ)) < tol
+        @test rd.Pq*rd.Vq ≈ I
+        @test invoke(inverse_trace_constant,Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
+    end
+
 
 end
