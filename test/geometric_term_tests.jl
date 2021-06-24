@@ -1,9 +1,9 @@
-@testset "Geometric terms for $elem elements" for elem in [Tri() Quad() Hex()]
+@testset "Geometric terms for $elem elements" for elem in [Tri() Quad() Hex() Tet()]
     tol = 5e2*eps()
     N = 3
     rd = RefElemData(elem,N)
     geofacs = geometric_factors(rd.rst...,rd.Drst...)
-    if elem != Hex()
+    if ndims(elem)==2
         rxJ,sxJ,ryJ,syJ,J = geofacs    
         @test all(rxJ .≈ 1)
         @test norm(sxJ) < tol

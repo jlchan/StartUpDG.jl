@@ -262,7 +262,7 @@ end
     @test md.x == md.xyz[1]
 
     # check positivity of Jacobian
-    # @show J[1,:]
+
     @test all(J .> 0)
     # h = estimate_h(rd,md)
     # @test h ≈ 2/K1D 
