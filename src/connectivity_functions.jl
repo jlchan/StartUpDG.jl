@@ -84,6 +84,10 @@ function build_node_maps(FToF,Xf...; tol = 1e-12)
     return mapM, mapP, mapB
 end
 
+# old deprecated interface
+@deprecate make_periodic(rd::RefElemData,md) make_periodic(md)
+@deprecate make_periodic(rd::RefElemData,md,args...) make_periodic(md,args...)
+@deprecate make_periodic(md,rd::RefElemData,args...) make_periodic(md,args...)
 """
     make_periodic(md::MeshData{Dim},is_periodic...) where {Dim}
     make_periodic(md::MeshData{Dim},is_periodic=ntuple(x->true,Dim)) where {Dim}
@@ -93,10 +97,6 @@ Returns new MeshData such that the node maps `mapP` and face maps `FToF` are no
 Here, `is_periodic` is a tuple of `Bool` indicating whether or not to impose periodic
 BCs in the `x`,`y`, or `z` coordinate.
 """
-# old deprecated interface
-@deprecate make_periodic(rd::RefElemData,md) make_periodic(md)
-@deprecate make_periodic(rd::RefElemData,md,args...) make_periodic(md,args...)
-@deprecate make_periodic(md,rd::RefElemData,args...) make_periodic(md,args...)
 make_periodic(rd::RefElemData,md::MeshData,args...) = make_periodic(md,args...) 
 make_periodic(md::MeshData,rd::RefElemData,is_periodic...) = make_periodic(md,is_periodic)
 
