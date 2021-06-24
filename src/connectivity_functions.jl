@@ -49,10 +49,10 @@ julia> mapM,mapP,mapB = build_node_maps((xf,yf),FToF)
 ```
 """
 
-function build_node_maps(FToF,Xf...)
+function build_node_maps(FToF,Xf...; tol = 1e-12)
 
-    NfacesK = length(FToF)
-    NODETOL = 1e-12;
+    NODETOL = tol
+    NfacesK = length(FToF)    
     dims = length(Xf)
 
     # number nodes consecutively
@@ -66,7 +66,7 @@ function build_node_maps(FToF,Xf...)
 
         fill!(D,zero(eltype(D)))
 
-        # find find volume node numbers of left and right nodes
+        # find volume node numbers of left and right nodes
         for i = 1:dims
             Xfi = reshape(Xf[i],Nfp,NfacesK)
             for j = 1:Nfp, k = 1:Nfp
@@ -81,7 +81,7 @@ function build_node_maps(FToF,Xf...)
     end
 
     mapB = map(x->x[1],findall(@. mapM[:]==mapP[:]))
-    return mapM,mapP,mapB
+    return mapM, mapP, mapB
 end
 
 """
@@ -101,9 +101,10 @@ make_periodic(rd::RefElemData,md::MeshData,args...) = make_periodic(md,args...)
 make_periodic(md::MeshData,rd::RefElemData,is_periodic...) = make_periodic(md,is_periodic)
 
 make_periodic(md::MeshData{Dim},is_periodic::Bool=true) where {Dim} = make_periodic(md,ntuple(_->is_periodic,Dim)) 
+
 function make_periodic(md::MeshData{Dim},is_periodic::NTuple{Dim,Bool}) where {Dim,Bool}
     @unpack mapM, mapP, mapB, xyzf, FToF = md
-    NfacesTotal = prod(size(FToF))
+    NfacesTotal = length(FToF)
     FToF_periodic = copy(FToF)
     mapPB = build_periodic_boundary_maps!(xyzf...,is_periodic...,NfacesTotal,
                                           mapM, mapP, mapB, FToF_periodic)
@@ -212,8 +213,8 @@ function build_periodic_boundary_maps!(xf,yf,zf,
     Bfaces = findall(vec(FToF) .== Flist)
 
     xb,yb,zb = xf[mapB],yf[mapB],zf[mapB]
-    Nfp = convert(Int,length(xf)/NfacesTotal)
-    Nbfaces = convert(Int,length(xb)/Nfp)
+    Nfp = length(xf) ÷ NfacesTotal
+    Nbfaces = length(xb) ÷ Nfp
     xb, yb, zb = (x->reshape(x, Nfp, Nbfaces)).((xb, yb, zb))
 
     # compute centroids of faces
