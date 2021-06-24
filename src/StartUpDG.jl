@@ -21,6 +21,8 @@ include("RefElemData_SBP.jl")
 include("ref_elem_utils.jl")
 include("element_type_utils.jl")
 export RefElemData, Polynomial, SBP
+export DefaultSBPType, DGSEM, Hicken, Kubatko  # types for SBP node dispatch
+export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
 export hybridized_SBP_operators, inverse_trace_constant
 
 include("MeshData.jl")
