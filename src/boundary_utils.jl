@@ -33,8 +33,8 @@ julia> rd = RefElemData(Tri(),N=1)
 julia> md = MeshData(uniform_mesh(Tri(),2)...,rd)
 julia> on_bottom_boundary(x,y,tol=1e-13) = abs(y+1) < tol
 julia> on_top_boundary(x,y,tol=1e-13) = abs(y-1) < tol
-julia> determine_boundary_faces(Dict(:bottom => on_bottom_boundary,
-                                     :top    => on_top_boundary), md)
+julia> tag_boundary_faces(Dict(:bottom => on_bottom_boundary,
+                               :top    => on_top_boundary), md)
 ```
 """
 tag_boundary_faces(md, ::Nothing) = tag_boundary_faces(md)

@@ -36,4 +36,9 @@
     @test size(EToV,1)==md.num_elements==1550
     @test length(VX)==length(VY)==871
     @test sort(unique(get_node_boundary_tags(meshIO,rd,md)))==[0,1,2,3]
+
+    boundary_faces = tag_boundary_faces(meshIO, rd, md, Dict(:wall=>1, :inflow=>2, :outflow=>3))
+    @test length(boundary_faces[:wall])==173
+    @test length(boundary_faces[:inflow])==14
+    @test length(boundary_faces[:outflow])==5
 end

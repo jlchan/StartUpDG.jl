@@ -25,13 +25,13 @@ function triangulateIO_to_VXYEToV(triout::TriangulateIO)
 end
 
 """
-    function get_boundary_face_labels(triout::TriangulateIO,md::MeshData{2})
+    function get_boundary_face_labels(triout::TriangulateIO, md::MeshData{2})
 
 Find Triangle segment labels of boundary faces. Returns two arguments:
 - boundary_face_tags: tags of faces on the boundary
 - boundary_faces: list of faces on the boundary of the domain
 """
-function get_boundary_face_labels(triout::TriangulateIO,rd::RefElemData{2,Tri},md::MeshData{2})
+function get_boundary_face_labels(triout::TriangulateIO, rd::RefElemData{2,Tri}, md::MeshData{2})
     segmentlist = sort(triout.segmentlist,dims=1)
     boundary_faces = findall(vec(md.FToF) .== 1:length(md.FToF))
     boundary_face_tags = zeros(Int,length(boundary_faces))
@@ -59,6 +59,53 @@ function get_node_boundary_tags(triout::TriangulateIO,rd::RefElemData{2,Tri},md:
     node_tags = reshape(node_tags,size(md.xf)...)
 end
 
+
+function tag_boundary_faces(triout::TriangulateIO, 
+                            rd::RefElemData{2,Tri}, md::MeshData{2}, 
+                            boundary_list::Dict{Symbol,Int})
+
+    boundary_face_ids_list = _tag_boundary_faces(triout,rd,md,boundary_list)
+    return Dict(Pair.(keys(boundary_list), boundary_face_ids_list))
+end
+
+"""
+    function tag_boundary_faces(triout::TriangulateIO, 
+                                rd::RefElemData{2,Tri}, md::MeshData{2}, 
+                                boundary_list::Union{NamedTuple,Dict{Symbol,Int}})
+
+Here, boundary_list is a Dict (or NamedTuple) whose values are the boundary tags for a 
+TriangulateIO mesh format. The output is a Dict or NamedTuple with keys given by 
+boundary_list and values equal to vectors of faces on that given boundary.
+
+Example usage: 
+```julia
+julia> using Triangulate, StartUpDG
+julia> triout = scramjet()
+julia> rd = RefElemData(Tri(),N=1)
+julia> md = MeshData(triangulateIO_to_VXYEToV(triout)...,rd)
+julia> tag_boundary_faces(triout,rd,md, Dict(:wall=>1, :inflow=>2, :outflow=>3))
+```
+"""
+function tag_boundary_faces(triout::TriangulateIO, 
+                            rd::RefElemData{2,Tri}, md::MeshData{2}, 
+                            boundary_list::NamedTuple)
+
+    boundary_face_ids_list = _tag_boundary_faces(triout,rd,md,boundary_list)
+    return NamedTuple(Pair.(keys(boundary_list), boundary_face_ids_list))
+end
+
+# this version works for both boundary_list::Union{NamedTuple, Dict{Symbol,Int}}
+function _tag_boundary_faces(triout::TriangulateIO, 
+                            rd::RefElemData{2,Tri}, md::MeshData{2}, 
+                            boundary_list)
+    boundary_face_tags, boundary_faces = get_boundary_face_labels(triout, rd, md)
+    boundary_face_ids_list = Vector{Int}[]
+    for boundary_face_flag in values(boundary_list)        
+        push!(boundary_face_ids_list, boundary_faces[findall(@. boundary_face_tags == boundary_face_flag)])
+    end
+    return boundary_face_ids_list
+end
+
 """
     function refine(triout, h, href = h/2)
 
@@ -70,7 +117,6 @@ function refine(triout, h, href = h/2)
     triout2,_ = triangulate("rpa$(area)q$(angle)Q", triout)
     return triout2
 end
-
 
 MeshPlotter(triout::TriangulateIO) = MeshPlotter(triangulateIO_to_VXYEToV(triout)..., StartUpDG.face_vertices(Tri()))
 
