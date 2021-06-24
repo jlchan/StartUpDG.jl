@@ -119,11 +119,14 @@ function RefElemData(elementType::Hex, approxType::SBP, N)
 
     # make 2D SBP nodes/weights
     r1D,w1D = gauss_lobatto_quad(0,0,N)
+    rf,sf = vec.(NodesAndModes.meshgrid(r1D,r1D))
+    wr,ws = vec.(NodesAndModes.meshgrid(r1D,r1D))
+    wf = wr.*ws
     sq,rq,tq = vec.(NodesAndModes.meshgrid(r1D,r1D,r1D)) # this is to match ordering of nrstJ
     wr,ws,wt = vec.(NodesAndModes.meshgrid(w1D,w1D,w1D)) 
     wq = wr.*ws.*wt
     quad_rule_vol = (rq,sq,tq,wq)
-    quad_rule_face = (r1D,w1D)
+    quad_rule_face = (rf,sf,wf)
 
     rd = RefElemData(elementType, N, quad_rule_vol=quad_rule_vol, quad_rule_face=quad_rule_face)
 
