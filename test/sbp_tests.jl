@@ -29,7 +29,7 @@
         @test_logs (:warn,"N=6 SBP operators with quadrature strength 2N-1 and Lobatto face nodes may require very small timesteps.") RefElemData(Tri(),SBP{Kubatko{LobattoFaceNodes}}(),6)
     end 
 
-    @testset "DGSEM quad" begin
+    @testset "TensorProductLobatto quad" begin
         rd = RefElemData(Quad(),SBP(),N)
         @test rd.r == rd.rst[1]
         @test rd.Np == length(rd.r)  
@@ -42,7 +42,7 @@
         @test invoke(inverse_trace_constant,Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)    
     end
     
-    @testset "DGSEM Hex" begin
+    @testset "TensorProductLobatto Hex" begin
         rd = RefElemData(Hex(),SBP(),N)
         @test propertynames(rd)[1] == :elementType
         @test rd.t == rd.rst[3]

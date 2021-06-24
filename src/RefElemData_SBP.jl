@@ -2,7 +2,7 @@
 struct DefaultSBPType end
 
 # quad/hex nodes
-struct DGSEM end
+struct TensorProductLobatto end
 
 # triangle node types
 struct Hicken end 
@@ -18,8 +18,8 @@ struct SBP{Type}
     SBP{T}() where {T} = new{T}()  # default constructor
 end 
 
-# sets default to DGSEM on Quads and Kubatko{LobattoFaceNodes} on Tris
-RefElemData(elem::Union{Line,Quad,Hex}, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{DGSEM}(), N)
+# sets default to TensorProductLobatto on Quads and Kubatko{LobattoFaceNodes} on Tris
+RefElemData(elem::Union{Line,Quad,Hex}, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{TensorProductLobatto}(), N)
 RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
 
 """
@@ -30,11 +30,11 @@ RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{
     
 SBP reference element data for Quads, Hexes, and Triangles. 
 
-For Quads/Hexes, `approxType` is `SBP{DGSEM,LobattoFaceNodes}`.
+For Quads/Hexes, `approxType` is `SBP{TensorProductLobatto,LobattoFaceNodes}`.
 
 For Tri, approxType can be `SBP{Kubatko, LobattoFaceNodes}`, `SBP{Kubatko, LegendreFaceNodes}`, or `SBP{Kubatko, LobattoFaceNodes}`
 """
-function RefElemData(elementType::Line, approxType::SBP{DGSEM}, N)    
+function RefElemData(elementType::Line, approxType::SBP{TensorProductLobatto}, N)    
     rd = RefElemData(elementType, N, quad_rule_vol = gauss_lobatto_quad(0,0,N))        
 
     tol = 100*eps()
@@ -44,7 +44,7 @@ function RefElemData(elementType::Line, approxType::SBP{DGSEM}, N)
     return _convert_RefElemData_fields_to_SBP(rd, approxType)
 end
 
-function RefElemData(elementType::Quad, approxType::SBP{DGSEM}, N)
+function RefElemData(elementType::Quad, approxType::SBP{TensorProductLobatto}, N)
 
     # make 2D SBP nodes/weights
     r1D,w1D = gauss_lobatto_quad(0,0,N)
@@ -63,7 +63,7 @@ function RefElemData(elementType::Quad, approxType::SBP{DGSEM}, N)
     return _convert_RefElemData_fields_to_SBP(rd, approxType)
 end
 
-function RefElemData(elementType::Hex, approxType::SBP{DGSEM}, N)
+function RefElemData(elementType::Hex, approxType::SBP{TensorProductLobatto}, N)
 
     # make 2D SBP nodes/weights
     r1D,w1D = gauss_lobatto_quad(0,0,N)

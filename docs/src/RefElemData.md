@@ -59,9 +59,9 @@ It is also possible to construct a [`RefElemData`](@ref) based on [multi-dimensi
 Some examples:
 ```julia
 N = 3
-rd = RefElemData(Quad(), SBP(), N) # defaults to SBP{DGSEM}
-rd = RefElemData(Quad(), SBP{DGSEM}(), N) 
-rd = RefElemData(Hex(),  SBP{DGSEM}(), N) 
+rd = RefElemData(Quad(), SBP(), N) # defaults to SBP{TensorProductLobatto}
+rd = RefElemData(Quad(), SBP{TensorProductLobatto}(), N) 
+rd = RefElemData(Hex(),  SBP{TensorProductLobatto}(), N) 
 rd = RefElemData(Tri(),  SBP(), N) # defaults to SBP{Kubatko{LobattoFaceNodes}}
 rd = RefElemData(Tri(),  SBP{Hicken}(), N) 
 rd = RefElemData(Tri(),  SBP{Kubatko{LobattoFaceNodes}}(), N) 
