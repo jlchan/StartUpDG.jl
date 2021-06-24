@@ -118,7 +118,7 @@ function refine(triout, h, href = h/2)
     return triout2
 end
 
-MeshPlotter(triout::TriangulateIO) = MeshPlotter(triangulateIO_to_VXYEToV(triout)..., StartUpDG.face_vertices(Tri()))
+VertexMeshPlotter(triout::TriangulateIO) = VertexMeshPlotter(triangulateIO_to_VXYEToV(triout)..., StartUpDG.face_vertices(Tri()))
 
 """
     BoundaryTagPlotter(triout::TriangulateIO)    

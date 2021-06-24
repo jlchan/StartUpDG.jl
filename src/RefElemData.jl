@@ -116,7 +116,7 @@ function Base.getproperty(x::RefElemData{Dim,ElementType,ApproxType,Nfaces}, s::
     elseif s==:Dt
         return getfield(x,:Drst)[3]
         
-    elseif s==:Nfaces
+    elseif s==:Nfaces || s==:num_faces
         return Nfaces
     elseif s==:Np
         return length(getfield(x,:rst)[1])

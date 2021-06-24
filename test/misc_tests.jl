@@ -15,7 +15,15 @@
     @test getfield(recipe[1],1)[:label]=="1"
     @test any(isnan.(getfield(recipe[1],2)[1]))
 
-    recipe = RecipesBase.apply_recipe(Dict{Symbol,Any}(),MeshPlotter(meshIO))
+    recipe = RecipesBase.apply_recipe(Dict{Symbol,Any}(),VertexMeshPlotter(meshIO))
+    @test getfield(recipe[1],1)[:legend] == false
+    @test getfield(recipe[1],1)[:aspect_ratio] == 1
+    @test getfield(recipe[1],1)[:linecolor] == :black
+    @test any(isnan.(getfield(recipe[1],2)[1]))
+
+    rd = RefElemData(Tri(),2)
+    md = MeshData(triangulateIO_to_VXYEToV(meshIO)...,rd)
+    recipe = RecipesBase.apply_recipe(Dict{Symbol,Any}(),MeshPlotter(rd,md))
     @test getfield(recipe[1],1)[:legend] == false
     @test getfield(recipe[1],1)[:aspect_ratio] == 1
     @test getfield(recipe[1],1)[:linecolor] == :black

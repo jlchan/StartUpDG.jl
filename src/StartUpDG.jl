@@ -41,7 +41,7 @@ include("mesh/simple_meshes.jl")
 export readGmsh2D, uniform_mesh
 
 include("mesh/mesh_visualization.jl")
-export MeshPlotter, MeshPlotter
+export VertexMeshPlotter, MeshPlotter
 
 using Requires
 using Printf
