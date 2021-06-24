@@ -76,11 +76,6 @@ function map_face_nodes(elem::Tet, face_nodes...)
     return rf,sf,tf
 end
 
-# for dispatching 
-face_type(::Union{Tri,Quad}) = Line()
-face_type(::Hex) = Quad()
-face_type(::Tet) = Tri()
-
 """
     function inverse_trace_constant(rd::RefElemData)
 
