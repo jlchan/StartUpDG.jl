@@ -21,7 +21,7 @@ Mass, differentiation, lifting, and interpolation matrices specialize on the typ
 
 # Setting up `rd::RefElemData`
 
-The struct `rd::RefElemData` contains data for a given element type. Currently, four types of reference elements are supported: `Line`, `Tri`, `Quad`, and `Hex`.
+The struct `rd::RefElemData` contains data for a given element type. Currently, five types of reference elements are supported: `Line`, `Tri`, `Quad`, `Tet`, and `Hex`.
 
 To initalize a `RefElemData`, just specify the element type and polynomial degree.
 ```julia
@@ -29,6 +29,7 @@ N = 3
 rd = RefElemData(Line(),N)
 rd = RefElemData(Tri(),N)
 rd = RefElemData(Quad(),N)
+rd = RefElemData(Tet(),N)
 rd = RefElemData(Hex(),N)
 ```
 
