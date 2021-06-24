@@ -70,6 +70,10 @@ rd = RefElemData(Tri(),  SBP{Kubatko{LegendreFaceNodes}}(), N)
 Quadrature rules of both degree `2*N-1` (up to `N=6`) and `2*N` (up to `N=4`) are supported on triangles. For `Line`, `Quad`, and `Hex` elements, `RefElemData(...,SBP(),N)` is the same as the `RefElemData` for a DG-SEM discretization, though some fields are specialized for the SBP type. These SBP-based `RefElemData` objects can also be used to initialize a mesh (for example, `md = MeshData(uniform_mesh(rd.elementType,4)...,rd)`). 
 
 On triangles, we have the following SBP types with the following properties:
-* `SBP{Kubatko{LobattoFaceNodes}}`: degree `2N-1` accurate quadrature rules with `N+2` Lobatto nodes on each face.
-* `SBP{Kubatko{LegendreFaceNodes}}`: degree `2N-1` accurate quadrature rules with `N+1` Legendre nodes on each face. For `N = 1,...,4`, these are the same as the nodes constructed by Chen and Shu. 
-* `SBP{Hicken}`: degree `2N` accurate quadrature rules with `N+2` Lobatto nodes on each face. 
+* `SBP{Kubatko{LobattoFaceNodes}}`: degree `2N-1` accurate quadrature rules with `N+2` Lobatto nodes on each face. Nodes for `N=4`: 
+![klobatto4](assets/kubatko_lobatto_N4.png)
+* `SBP{Kubatko{LegendreFaceNodes}}`: degree `2N-1` accurate quadrature rules with `N+1` Legendre nodes on each face. For `N = 1,...,4`, these are the same as the nodes constructed by Chen and Shu. Nodes for `N=4`:
+![klegendre4](assets/kubatko_legendre_N4.png)
+* `SBP{Hicken}`: degree `2N` accurate quadrature rules with `N+2` Lobatto nodes on each face. Nodes for `N=4`:
+![hicken4](assets/hicken_N4.png)
+
