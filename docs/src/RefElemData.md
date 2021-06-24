@@ -58,10 +58,18 @@ It is also possible to construct a [`RefElemData`](@ref) based on [multi-dimensi
 
 Some examples:
 ```julia
-rd = RefElemData(Tri(), SBP(), 2)
-rd = RefElemData(Quad(), SBP(), 2)
-rd = RefElemData(Tri(), SBP(), 2; quadrature_strength=4, quad_rule_face=:Legendre) 
+N = 3
+rd = RefElemData(Quad(), SBP(), N) # defaults to SBP{DGSEM}
+rd = RefElemData(Quad(), SBP{DGSEM}(), N) 
+rd = RefElemData(Hex(),  SBP{DGSEM}(), N) 
+rd = RefElemData(Tri(),  SBP(), N) # defaults to SBP{Kubatko{LobattoFaceNodes}}
+rd = RefElemData(Tri(),  SBP{Hicken}(), N) 
+rd = RefElemData(Tri(),  SBP{Kubatko{LobattoFaceNodes}}(), N) 
+rd = RefElemData(Tri(),  SBP{Kubatko{LegendreFaceNodes}}(), N) 
 ```
-Quadrature rules of both degree `2*N-1` (up to `N=6`) and `2*N` (up to `N=4`) are supported on triangles. For `Line`, `Quad`, and `Hex` elements, `RefElemData(...,SBP(),N)` is the same as the `RefElemData` for a DG-SEM discretization, though some fields are specialized for the SBP type. 
+Quadrature rules of both degree `2*N-1` (up to `N=6`) and `2*N` (up to `N=4`) are supported on triangles. For `Line`, `Quad`, and `Hex` elements, `RefElemData(...,SBP(),N)` is the same as the `RefElemData` for a DG-SEM discretization, though some fields are specialized for the SBP type. These SBP-based `RefElemData` objects can also be used to initialize a mesh (for example, `md = MeshData(uniform_mesh(rd.elementType,4)...,rd)`). 
 
-These SBP-based `RefElemData` objects can also be used to initialize a mesh (for example, `md = MeshData(uniform_mesh(rd.elementType,4)...,rd)`). 
+On triangles, we have the following SBP types with the following properties:
+* `SBP{Kubatko{LobattoFaceNodes}}`: degree `2N-1` accurate quadrature rules with `N+2` Lobatto nodes on each face.
+* `SBP{Kubatko{LegendreFaceNodes}}`: degree `2N-1` accurate quadrature rules with `N+1` Legendre nodes on each face. For `N = 1,...,4`, these are the same as the nodes constructed by Chen and Shu. 
+* `SBP{Hicken}`: degree `2N` accurate quadrature rules with `N+2` Lobatto nodes on each face. 
