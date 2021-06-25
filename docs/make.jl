@@ -9,6 +9,7 @@ makedocs(
     modules=[StartUpDG],
     pages = [
         "Home" => "index.md",        
+        "Background and conventions" => "conventions.md",        
         "`RefElemData`" => "RefElemData.md",
         "`MeshData`" => "MeshData.md",
         "Example: computing DG derivatives" => "ex_dg_deriv.md",

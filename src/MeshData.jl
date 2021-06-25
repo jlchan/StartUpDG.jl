@@ -4,13 +4,13 @@
 MeshData: contains info for a high order piecewise polynomial discretization on an
 unstructured mesh. 
 
-Use `@unpack` to extract fields. Example:
+Example:
 ```julia
-N,K1D = 3,2
-rd = RefElemData(Tri(),N)
-VX,VY,EToV = uniform_mesh(Tri(),K1D)
-md = MeshElemData(VX,VY,EToV,rd)
-@unpack x,y = md
+N, K1D = 3, 2
+rd = RefElemData(Tri(), N)
+VX, VY, EToV = uniform_mesh(Tri(), K1D)
+md = MeshElemData(VX, VY, EToV, rd)
+@unpack x, y = md
 ```
 """
 Base.@kwdef struct MeshData{Dim, Tv, Ti}

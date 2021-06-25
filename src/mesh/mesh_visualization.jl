@@ -1,3 +1,8 @@
+"""
+    MeshPlotter(rd::RefElemData, md::RefElemData)
+
+Plot recipe to plot a (possibly curved) quadrilateral or triangular mesh. Usage: `plot(MeshPlotter(...))`
+"""
 struct MeshPlotter{Dim, RD<:RefElemData{Dim}, MD<:MeshData{Dim}}
     rd::RD
     md::MD
@@ -33,7 +38,7 @@ end
     VertexMeshPlotter(VX, VY, EToV, fv)
     VertexMeshPlotter(triout::TriangulateIO)    
 
-Plot recipe to plot a quadrilateral or triangular mesh. Usage: `plot(MeshPlotter(...))`
+Plot recipe to plot a quadrilateral or triangular mesh. Usage: `plot(VertexMeshPlotter(...))`
 """
 struct VertexMeshPlotter{Tv, Ti, Nfaces}
     VX::Vector{Tv}

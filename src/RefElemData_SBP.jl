@@ -205,7 +205,7 @@ end
 """
     function hybridized_SBP_operators(rd::RefElemData{DIMS}) 
 
-Constructs hybridized SBP operators given a RefElemData. Returns operators Qrsth...,VhP,Ph.
+Constructs hybridized SBP operators given a `RefElemData`. Returns operators `Qrsth..., VhP, Ph`.
 """
 function hybridized_SBP_operators(rd)
     @unpack M, Vq, Pq, Vf, wf, Drst, nrstJ = rd

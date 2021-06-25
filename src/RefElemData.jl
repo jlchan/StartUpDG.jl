@@ -1,14 +1,14 @@
 """
-    struct RefElemData{Dim, ElemShape <: AbstractElemShape, Nfaces, Tv} 
+    struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nfaces, Tv, VQ, VF, MM, P, D, L} 
 
 RefElemData: contains info (interpolation points, volume/face quadrature, operators)
 for a high order nodal basis on a given reference element. 
 
-Use `@unpack` to extract fields. Example:
+Example:
 ```julia
 N = 3
-rd = RefElemData(Tri(),N)
-@unpack r,s = rd
+rd = RefElemData(Tri(), N)
+@unpack r, s = rd
 ```
 """ 
 struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nfaces, Tv, VQ, VF, MM, P, D, L} 
