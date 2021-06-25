@@ -22,7 +22,7 @@ include("ref_elem_utils.jl")
 export RefElemData, Polynomial, SBP
 export DefaultSBPType, TensorProductLobatto, Hicken, Kubatko  # types for SBP node dispatch
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
-export hybridized_SBP_operators, inverse_trace_constant
+export hybridized_SBP_operators, inverse_trace_constant, face_type
 
 include("MeshData.jl")
 export MeshData 
