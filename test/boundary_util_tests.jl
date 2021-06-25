@@ -13,5 +13,4 @@
     # test named tuple version
     boundary_dict = tag_boundary_faces(md,(; :bottom => on_bottom_boundary, :top => on_top_boundary))
     @test boundary_dict == (; :bottom=>[1],:top=>[4])
-
 end
