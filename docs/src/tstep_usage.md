@@ -1,6 +1,6 @@
 # Time-stepping
 
-For convenience, we include utilities for two explicit Runge-Kutta schemes. For more advanced time-stepping functionality, we recommend [`OrdinaryDiffEq.jl`](https://github.com/SciML/OrdinaryDiffEq.jl).
+For convenience, we include a commonly used explicit Runge-Kutta scheme. For more advanced time-stepping functionality, we recommend [`OrdinaryDiffEq.jl`](https://github.com/SciML/OrdinaryDiffEq.jl). 
 
 ## Carpenter and Kennedy's (4,5) method
 
