@@ -16,7 +16,7 @@ RecipesBase.@recipe function f(m::MeshPlotter{2})
     get_face_nodes(u, e, f) = view(u, view(Fmask, :, f), e)    
 
     VDM = vandermonde(Line(), rd.N, nodes(Line(), rd.N))
-    Vp1D = vandermonde(Line(), rd.N, LinRange(-1,1,25)) / VDM
+    Vp1D = vandermonde(Line(), rd.N, LinRange(-1, 1, 15)) / VDM
     
     xmesh, ymesh = eltype(x)[], eltype(y)[]    
     for e in 1:md.num_elements

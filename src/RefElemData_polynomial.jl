@@ -1,7 +1,7 @@
 # define ApproximationType
 struct Polynomial end 
 
-# for dispatching 
+# for dispatch
 @inline Base.ndims(::Line) = 1
 @inline Base.ndims(::Union{Tri,Quad}) = 2
 @inline Base.ndims(::Union{Tet,Hex}) = 3
@@ -10,11 +10,8 @@ struct Polynomial end
 @inline face_type(::Hex) = Quad()
 @inline face_type(::Tet) = Tri()
 
-# # Type alias where all operators are just Matrix{Tv}
-# const PolynomialRefElemData{Dim,ElemShape,Nfaces,Tv} = RefElemData{Dim,ElemShape,Polynomial,Nfaces,Tv,Matrix{Tv},Matrix{Tv},Matrix{Tv},Matrix{Tv},Matrix{Tv},Matrix{Tv}}
-
 function init_face_data(elem::Tri, N; quad_rule_face=gauss_quad(0,0,N))
-    #Nodes on faces, and face node coordinate
+    # Nodes on faces, and face node coordinate
     r1D, w1D = quad_rule_face
     e = ones(size(r1D)) # vector of all ones
     z = zeros(size(r1D)) # vector of all zeros
@@ -65,19 +62,20 @@ end
 
 """
     RefElemData(elem::Line, N;
-                quad_rule_vol = quad_nodes(elem,N+1))
-    RefElemData(elem::Union{Tri,Quad}, N;
-                 quad_rule_vol = quad_nodes(elem,N),
-                 quad_rule_face = gauss_quad(0,0,N))
-    RefElemData(elem::Hex,N;
-                 quad_rule_vol = quad_nodes(elem,N),
-                 quad_rule_face = quad_nodes(Quad(),N))
-    RefElemData(elem; N, kwargs...) # version with keyword arg
+                quad_rule_vol = quad_nodes(elem, N+1))
+    RefElemData(elem::Union{Tri, Quad}, N;
+                 quad_rule_vol = quad_nodes(elem, N),
+                 quad_rule_face = gauss_quad(0, 0, N))
+    RefElemData(elem::Union{Hex, Tet}, N;
+                 quad_rule_vol = quad_nodes(elem, N),
+                 quad_rule_face = quad_nodes(Quad(), N))
+    RefElemData(elem; N, kwargs...) # version with keyword args
 
-Constructor for RefElemData for different element types.
+Constructor for `RefElemData` for different element types.
 """
 function RefElemData(elem::Line, approxType::Polynomial, N; 
-                     quad_rule_vol = quad_nodes(elem,N+1), Nplot=10)
+                     quad_rule_vol = quad_nodes(elem, N+1), 
+                     Nplot = 10)
 
     fv = face_vertices(elem)
 
@@ -112,10 +110,10 @@ function RefElemData(elem::Line, approxType::Polynomial, N;
                        M,Pq,tuple(Dr),LIFT)
 end
 
-function RefElemData(elem::Union{Tri,Quad},  approxType::Polynomial, N;
-                     quad_rule_vol = quad_nodes(elem,N),
-                     quad_rule_face = quad_nodes(face_type(elem),N),
-                     Nplot=10)
+function RefElemData(elem::Union{Tri, Quad},  approxType::Polynomial, N;
+                     quad_rule_vol = quad_nodes(elem, N),
+                     quad_rule_face = quad_nodes(face_type(elem), N),
+                     Nplot = 10)
 
     fv = face_vertices(elem) # set faces for triangle
 
@@ -147,24 +145,18 @@ function RefElemData(elem::Union{Tri,Quad},  approxType::Polynomial, N;
 
     Drs = (Dr,Ds)
 
-    # sparsify for Quad
-    # tol = 1e-13
-    # Drs = typeof(elem)==Quad ? droptol!.(sparse.((Dr,Ds)),tol) : (Dr,Ds)
-    # Vf = typeof(elem)==Quad ? droptol!(sparse(Vf),tol) : Vf
-    # LIFT = typeof(elem)==Quad ? droptol!(sparse(LIFT),tol) : LIFT
-
-    return RefElemData(elem,approxType,N,fv,V1,
-                       tuple(r,s),VDM,vec(Fmask),
-                       Nplot,tuple(rp,sp),Vp,
-                       tuple(rq,sq),wq,Vq,
-                       tuple(rf,sf),wf,Vf,tuple(nrJ,nsJ),
-                       M,Pq,Drs,LIFT)
+    return RefElemData(elem, approxType, N, fv, V1,
+                       tuple(r, s), VDM, vec(Fmask),
+                       Nplot, tuple(rp, sp), Vp,
+                       tuple(rq, sq), wq, Vq,
+                       tuple(rf, sf), wf, Vf, tuple(nrJ, nsJ),
+                       M, Pq, Drs, LIFT)
 end
 
-function RefElemData(elem::Union{Hex,Tet}, approxType::Polynomial, N;
-                     quad_rule_vol = quad_nodes(elem,N),
-                     quad_rule_face = quad_nodes(face_type(elem),N),
-                     Nplot=10)
+function RefElemData(elem::Union{Hex, Tet}, approxType::Polynomial, N;
+                     quad_rule_vol = quad_nodes(elem, N),
+                     quad_rule_face = quad_nodes(face_type(elem), N),
+                     Nplot = 10)
 
     fv = face_vertices(elem) # set faces for triangle
 
@@ -178,7 +170,7 @@ function RefElemData(elem::Union{Hex,Tet}, approxType::Polynomial, N;
     r1,s1,t1 = nodes(elem,1)
     V1 = vandermonde(elem,1,r,s,t)/vandermonde(elem,1,r1,s1,t1)
 
-    #Nodes on faces, and face node coordinate
+    # Nodes on faces, and face node coordinate
     rf,sf,tf,wf,nrJ,nsJ,ntJ = init_face_data(elem, N, quad_rule_face = quad_rule_face)
 
     # quadrature nodes - build from 1D nodes.
@@ -194,15 +186,13 @@ function RefElemData(elem::Union{Hex,Tet}, approxType::Polynomial, N;
     rp,sp,tp = equi_nodes(elem,Nplot)
     Vp = vandermonde(elem,N,rp,sp,tp)/VDM
 
-    # Drst = sparse.((Dr,Ds,Dt))
     Drst = (Dr,Ds,Dt)
-    # Vf = sparse(Vf)
 
-    return RefElemData(elem,approxType,N,fv,V1,
-                       tuple(r,s,t),VDM,vec(Fmask),
-                       Nplot,tuple(rp,sp,tp),Vp,
-                       tuple(rq,sq,tq),wq,Vq,
-                       tuple(rf,sf,tf),wf,Vf,tuple(nrJ,nsJ,ntJ),
-                       M,Pq,Drst,LIFT)
+    return RefElemData(elem, approxType, N, fv, V1,
+                       tuple(r, s, t), VDM, vec(Fmask),
+                       Nplot, tuple(rp, sp, tp), Vp,
+                       tuple(rq, sq, tq), wq, Vq,
+                       tuple(rf, sf, tf), wf, Vf, tuple(nrJ, nsJ, ntJ),
+                       M, Pq, Drst, LIFT)
 end
 

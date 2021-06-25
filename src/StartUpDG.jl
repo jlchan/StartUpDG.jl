@@ -3,7 +3,7 @@ module StartUpDG
 using ConstructionBase  # for constructorof(...)
 using LinearAlgebra     # for diagm, identity matrix I
 using StaticArrays      # for SMatrix
-using Setfield          # for "modifying" structs to modify node mappings (setproperties)
+using Setfield          # for "modifying" structs (setproperties)
 
 using Reexport 
 @reexport using UnPack            # for getting values in RefElemData and MeshData
@@ -42,6 +42,7 @@ export boundary_face_centroids, tag_boundary_faces
 include("mesh/simple_meshes.jl")
 export readGmsh2D, uniform_mesh
 
+# Plots.jl recipes for meshes
 include("mesh/mesh_visualization.jl")
 export VertexMeshPlotter, MeshPlotter
 
