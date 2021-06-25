@@ -11,7 +11,7 @@ which make up an element.
 
 Output: `FToF`, `length(fv)` by `K` index array containing face-to-face connectivity.
 """
-function connect_mesh(EToV,fv)
+function connect_mesh(EToV, fv)
     Nfaces = length(fv)
     K = size(EToV,1)
 
@@ -34,22 +34,22 @@ end
 
 
 """
-    build_node_maps(Xf,FToF)
+    build_node_maps(Xf, FToF)
 
 Intialize the connectivity table along all edges and boundary node tables of all
-elements. mapM - map minus (interior). mapP - map plus (exterior).
+elements. `mapM` - map minus (interior). `mapP` - map plus (exterior).
 
-Xf = (xf,yf,zf) and FToF is size (Nfaces*K) and FToF[face] = face neighbor
+`Xf = (xf, yf, zf)` and `FToF` is size `(Nfaces * K)` and `FToF[face]` = face neighbor
 
-mapM,mapP are size Nfp x (Nfaces*K)
+`mapM`, `mapP` are size `Nfp` x `(Nfaces*K)`
 
 # Examples
 ```julia
-julia> mapM,mapP,mapB = build_node_maps((xf,yf),FToF)
+julia> mapM, mapP, mapB = build_node_maps((xf, yf), FToF)
 ```
 """
 
-function build_node_maps(FToF,Xf...; tol = 1e-12)
+function build_node_maps(FToF, Xf...; tol = 1e-12)
 
     NODETOL = tol
     NfacesK = length(FToF)    
@@ -85,24 +85,26 @@ function build_node_maps(FToF,Xf...; tol = 1e-12)
 end
 
 # old deprecated interface
-@deprecate make_periodic(rd::RefElemData,md) make_periodic(md)
-@deprecate make_periodic(rd::RefElemData,md,args...) make_periodic(md,args...)
-@deprecate make_periodic(md,rd::RefElemData,args...) make_periodic(md,args...)
+@deprecate make_periodic(rd::RefElemData, md) make_periodic(md)
+@deprecate make_periodic(rd::RefElemData, md, args...) make_periodic(md,args...)
+@deprecate make_periodic(md, rd::RefElemData, args...) make_periodic(md,args...)
+
 """
-    make_periodic(md::MeshData{Dim},is_periodic...) where {Dim}
-    make_periodic(md::MeshData{Dim},is_periodic=ntuple(x->true,Dim)) where {Dim}
-    make_periodic(md::MeshData,is_periodic=true)
+    make_periodic(md::MeshData{Dim}, is_periodic...) where {Dim}
+    make_periodic(md::MeshData{Dim}, is_periodic = ntuple(x->true,Dim)) where {Dim}
+    make_periodic(md::MeshData, is_periodic = true)
 
 Returns new MeshData such that the node maps `mapP` and face maps `FToF` are now periodic.
 Here, `is_periodic` is a tuple of `Bool` indicating whether or not to impose periodic
 BCs in the `x`,`y`, or `z` coordinate.
 """
-make_periodic(rd::RefElemData,md::MeshData,args...) = make_periodic(md,args...) 
-make_periodic(md::MeshData,rd::RefElemData,is_periodic...) = make_periodic(md,is_periodic)
+make_periodic(rd::RefElemData, md::MeshData,args...) = make_periodic(md, args...) 
+make_periodic(md::MeshData, rd::RefElemData, is_periodic...) = make_periodic(md, is_periodic)
 
-make_periodic(md::MeshData{Dim},is_periodic::Bool=true) where {Dim} = make_periodic(md,ntuple(_->is_periodic,Dim)) 
+make_periodic(md::MeshData{Dim}, is_periodic::Bool = true) where {Dim} = make_periodic(md, ntuple(_->is_periodic, Dim)) 
 
-function make_periodic(md::MeshData{Dim},is_periodic::NTuple{Dim,Bool}) where {Dim,Bool}
+function make_periodic(md::MeshData{Dim}, is_periodic::NTuple{Dim, Bool}) where {Dim, Bool}
+
     @unpack mapM, mapP, mapB, xyzf, FToF = md
     NfacesTotal = length(FToF)
     FToF_periodic = copy(FToF)
@@ -117,7 +119,8 @@ end
 
 
 # specializes to 1D - periodic = find min/max indices of xf and reverse their order
-function make_periodic(md::MeshData{1,Tv,Ti},is_periodic::Bool=true) where {Tv,Ti}
+function make_periodic(md::MeshData{1, Tv, Ti}, is_periodic::Bool = true) where {Tv, Ti}
+
     if is_periodic == true
         @unpack mapP, mapB, xf, FToF = md
         mapPB = argmax(vec(xf)),argmin(vec(xf))
@@ -132,8 +135,8 @@ function make_periodic(md::MeshData{1,Tv,Ti},is_periodic::Bool=true) where {Tv,T
 end
 
 # Helper functions for `make_nodemaps_periodic!`, 2D version which modifies FToF.
-function build_periodic_boundary_maps!(xf,yf,is_periodic_x, is_periodic_y,
-                                       NfacesTotal,mapM,mapP,mapB,FToF)
+function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
+                                       NfacesTotal, mapM, mapP, mapB, FToF)
 
         # find boundary faces (e.g., when FToF[f] = f)
         Flist = 1:length(FToF)
@@ -204,9 +207,9 @@ function build_periodic_boundary_maps!(xf,yf,is_periodic_x, is_periodic_y,
 end
 
 # 3D version of build_periodic_boundary_maps, modifies FToF
-function build_periodic_boundary_maps!(xf,yf,zf,
-                                       is_periodic_x,is_periodic_y,is_periodic_z,
-                                       NfacesTotal,mapM,mapP,mapB,FToF)
+function build_periodic_boundary_maps!(xf, yf, zf,
+                                       is_periodic_x, is_periodic_y, is_periodic_z,
+                                       NfacesTotal, mapM, mapP, mapB, FToF)
 
     # find boundary faces (e.g., when FToF[f] = f)
     Flist = 1:length(FToF)

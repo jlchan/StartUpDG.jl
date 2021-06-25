@@ -14,37 +14,37 @@ rd = RefElemData(Tri(),N)
 struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nfaces, Tv, VQ, VF, MM, P, D, L} 
 
     elementType::ElemShape
-    approximationType::ApproximationType # Polynomial / SBP for now
+    approximationType::ApproximationType # Polynomial / SBP{...}
 
     N::Int               # polynomial degree of accuracy
-    fv::Union{NTuple{Nfaces,Int},NTuple{Nfaces,Vector{Int}}} # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
+    fv::Union{NTuple{Nfaces, Int}, NTuple{Nfaces, Vector{Int}}} # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
     V1::Matrix{Tv}       # low order interpolation matrix
 
-    rst::NTuple{Dim,Vector{Tv}}
+    rst::NTuple{Dim, Vector{Tv}}
     VDM::Matrix{Tv}      # generalized Vandermonde matrix
     Fmask::Vector{Int}   # indices of face nodes
 
     # plotting nodes: TODO - remove? Probably doesn't need to be in RefElemData
     Nplot::Int
-    rstp::NTuple{Dim,Vector{Tv}}
+    rstp::NTuple{Dim, Vector{Tv}}
     Vp::Matrix{Tv}      # interpolation matrix to plotting nodes
 
     # quadrature 
-    rstq::NTuple{Dim,Vector{Tv}}
+    rstq::NTuple{Dim, Vector{Tv}}
     wq::Vector{Tv}
     Vq::VQ              # quad interp mat
 
     # face quadrature 
-    rstf::NTuple{Dim,Vector{Tv}}
+    rstf::NTuple{Dim, Vector{Tv}}
     wf::Vector{Tv}      # quad weights
     Vf::VF              # face quad interp mat
-    nrstJ::NTuple{Dim,Vector{Tv}}    # reference normals, quad weights
+    nrstJ::NTuple{Dim, Vector{Tv}}    # reference normals, quad weights
 
     M::MM                # mass matrix
     Pq::P               # L2 projection matrix
 
     # specialize diff and lift (dense, sparse, Bern, etc)
-    Drst::NTuple{Dim,D} # differentiation operators
+    Drst::NTuple{Dim, D} # differentiation operators
     LIFT::L             # lift matrix
 end
 
@@ -58,77 +58,78 @@ function Base.show(io::IO, rd::RefElemData)
     print(io,"RefElemData{N=$(rd.N),$(rd.approximationType),$(rd.elementType)}.")
 end
 
-_propertynames(::Type{RefElemData},private::Bool=false) = (:Nfaces, :Np, :Nq, :Nfq)
-function Base.propertynames(x::RefElemData{1},private::Bool=false) 
-    return (fieldnames(RefElemData)...,_propertynames(RefElemData)...,
-            :r,:rq,:rf,:rp,:nrJ,:Dr)
+_propertynames(::Type{RefElemData}, private::Bool = false) = (:Nfaces, :Np, :Nq, :Nfq)
+function Base.propertynames(x::RefElemData{1}, private::Bool=false) 
+    return (fieldnames(RefElemData)..., _propertynames(RefElemData)...,
+            :r, :rq, :rf, :rp, :nrJ, :Dr)
 end
-function Base.propertynames(x::RefElemData{2},private::Bool=false)
-    return (fieldnames(RefElemData)...,_propertynames(RefElemData)...,
-            :r,:s,:rq,:sq,:rf,:sf,:rp,:sp,:nrJ,:nsJ,:Dr,:Ds)
+function Base.propertynames(x::RefElemData{2}, private::Bool = false)
+    return (fieldnames(RefElemData)..., _propertynames(RefElemData)...,
+            :r, :s, :rq, :sq, :rf, :sf, :rp, :sp, :nrJ, :nsJ, :Dr, :Ds)
 end
-function Base.propertynames(x::RefElemData{3},private::Bool=false)
-    return (fieldnames(RefElemData)...,_propertynames(RefElemData)...,
-            :r,:s,:t,:rq,:sq,:tq,:rf,:sf,:tf,:rp,:sp,:tp,:nrJ,:nsJ,:ntJ,:Dr,:Ds,:Dt)
+function Base.propertynames(x::RefElemData{3}, private::Bool = false)
+    return (fieldnames(RefElemData)..., _propertynames(RefElemData)...,
+            :r, :s, :t, :rq, :sq, :tq, :rf, :sf, :tf, 
+            :rp, :sp, :tp, :nrJ, :nsJ, :ntJ, :Dr, :Ds, :Dt)
 end
 
 # convenience unpacking routines
-function Base.getproperty(x::RefElemData{Dim,ElementType,ApproxType,Nfaces}, s::Symbol) where {Dim,ElementType,ApproxType,Nfaces}
+function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType, Nfaces}, s::Symbol) where {Dim, ElementType, ApproxType, Nfaces}
     if s==:r
-        return getfield(x,:rst)[1]
+        return getfield(x, :rst)[1]
     elseif s==:s
-        return getfield(x,:rst)[2]
+        return getfield(x, :rst)[2]
     elseif s==:t
-        return getfield(x,:rst)[3]
+        return getfield(x, :rst)[3]
 
     elseif s==:rq
-        return getfield(x,:rstq)[1]
+        return getfield(x, :rstq)[1]
     elseif s==:sq
-        return getfield(x,:rstq)[2]
+        return getfield(x, :rstq)[2]
     elseif s==:tq
-        return getfield(x,:rstq)[3]
+        return getfield(x, :rstq)[3]
 
     elseif s==:rf
-        return getfield(x,:rstf)[1]
+        return getfield(x, :rstf)[1]
     elseif s==:sf
-        return getfield(x,:rstf)[2]
+        return getfield(x, :rstf)[2]
     elseif s==:tf
-        return getfield(x,:rstf)[3]
+        return getfield(x, :rstf)[3]
 
     elseif s==:rp
-        return getfield(x,:rstp)[1]
+        return getfield(x, :rstp)[1]
     elseif s==:sp
-        return getfield(x,:rstp)[2]
+        return getfield(x, :rstp)[2]
     elseif s==:tp
-        return getfield(x,:rstp)[3]
+        return getfield(x, :rstp)[3]
 
     elseif s==:nrJ
-        return getfield(x,:nrstJ)[1]
+        return getfield(x, :nrstJ)[1]
     elseif s==:nsJ
-        return getfield(x,:nrstJ)[2]
+        return getfield(x, :nrstJ)[2]
     elseif s==:ntJ
-        return getfield(x,:nrstJ)[3]
+        return getfield(x, :nrstJ)[3]
 
     elseif s==:Dr
-        return getfield(x,:Drst)[1]
+        return getfield(x, :Drst)[1]
     elseif s==:Ds
-        return getfield(x,:Drst)[2]
+        return getfield(x, :Drst)[2]
     elseif s==:Dt
-        return getfield(x,:Drst)[3]
+        return getfield(x, :Drst)[3]
         
     elseif s==:Nfaces || s==:num_faces
         return Nfaces
     elseif s==:Np
-        return length(getfield(x,:rst)[1])
+        return length(getfield(x, :rst)[1])
     elseif s==:Nq
-        return length(getfield(x,:rstq)[1])
+        return length(getfield(x, :rstq)[1])
     elseif s==:Nfq
-        return length(getfield(x,:rstf)[1])
+        return length(getfield(x, :rstf)[1])
     elseif s==:elemShape # for compatibility with old names
-        return getfield(x,:elementType)
+        return getfield(x, :elementType)
 
     else
-        return getfield(x,s)
+        return getfield(x, s)
     end
 end
 

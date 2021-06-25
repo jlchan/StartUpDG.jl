@@ -58,21 +58,21 @@ end
 
 Estimates the mesh size via min size_of_domain * |J|/|sJ|, since |J| = O(hᵈ) and |sJ| = O(hᵈ⁻¹). 
 """
-function estimate_h(rd::RefElemData{DIM},md::MeshData{DIM}) where {DIM}
+function estimate_h(rd::RefElemData{DIM}, md::MeshData{DIM}) where {DIM}
     hmin = Inf
     for e in 1:md.num_elements
-        sJ_e = reshape(view(md.sJ,:,e),rd.Nfq÷rd.Nfaces,rd.Nfaces)
-        sJ_face = 0.
+        sJ_e = reshape(view(md.sJ, :, e), rd.Nfq ÷ rd.Nfaces, rd.Nfaces)
+        sJ_face = zero(eltype(md.sJ))
         for f in 1:rd.Nfaces
-            sJ_face = max(sJ_face,minimum(view(sJ_e,:,f)) / face_scaling(rd,f))
+            sJ_face = max(sJ_face, minimum(view(sJ_e, :, f)) / face_scaling(rd, f))
         end
-        h_e = minimum(view(md.J,:,e)) / sJ_face
-        hmin = min(hmin,h_e)
+        h_e = minimum(view(md.J, :, e)) / sJ_face
+        hmin = min(hmin, h_e)
     end
-    return hmin * compute_domain_size(rd,md)^(1/DIM)
+    return hmin * compute_domain_size(rd, md)^(1/DIM)
 end
-face_scaling(rd,f) = 1.0
-face_scaling(rd::RefElemData{2,Tri},f) = f==3 ? sqrt(2) : 1.0 # sJ incorporates length of long triangle edge
-face_scaling(rd::RefElemData{3,Tet},f) = f==2 ? sqrt(3) : 1.0 # sJ incorporates area of larger triangle face
-compute_domain_size(rd::RefElemData,md::MeshData) = sum(rd.M*md.J)
+face_scaling(rd, f) = 1.0
+face_scaling(rd::RefElemData{2, Tri}, f) = f == 3 ? sqrt(2) : 1.0 # sJ incorporates length of long triangle edge
+face_scaling(rd::RefElemData{3, Tet}, f) = f == 2 ? sqrt(3) : 1.0 # sJ incorporates area of larger triangle face
+compute_domain_size(rd::RefElemData, md::MeshData) = sum(rd.M * md.J)
 

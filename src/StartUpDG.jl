@@ -19,7 +19,6 @@ include("RefElemData.jl")
 include("RefElemData_polynomial.jl")
 include("RefElemData_SBP.jl")
 include("ref_elem_utils.jl")
-include("element_type_utils.jl")
 export RefElemData, Polynomial, SBP
 export DefaultSBPType, TensorProductLobatto, Hicken, Kubatko  # types for SBP node dispatch
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
@@ -47,9 +46,9 @@ include("mesh/mesh_visualization.jl")
 export VertexMeshPlotter, MeshPlotter
 
 using Requires
-using Printf
 function __init__()                 
     @require Triangulate="f7e6ffb2-c36d-4f8f-a77e-16e897189344" begin
+        using Printf
         using .Triangulate: TriangulateIO, triangulate
         include("mesh/triangulate_utils.jl")      
         export refine, triangulateIO_to_VXYEToV, get_node_boundary_tags

@@ -175,7 +175,9 @@ function uniform_mesh(elem::Hex, Nx, Ny, Nz)
 end
 
 uniform_mesh(elem::Tet, N) = uniform_mesh(elem, N, N, N)
+
 function uniform_mesh(elem::Tet, Nx, Ny, Nz)
+
     Nxp = Nx + 1
     Nyp = Ny + 1
     Nzp = Nz + 1
@@ -199,35 +201,35 @@ function uniform_mesh(elem::Tet, Nx, Ny, Nz)
         j = div(em - k * Nx * Ny, Nx)
         i = em % Nx
 
-        EToV[ee, 1] = id(i,j,k)
-        EToV[ee, 2] = id(i+1,j,k)
-        EToV[ee, 3] = id(i+1,j+1,k)
-        EToV[ee, 4] = id(i,j,k+1)
+        EToV[ee, 1] = id(i,   j,   k)
+        EToV[ee, 2] = id(i+1, j,   k)
+        EToV[ee, 3] = id(i+1, j+1, k)
+        EToV[ee, 4] = id(i,   j,   k+1)
         
-        EToV[ee+1, 1] = id(i+1,j,k)
-        EToV[ee+1, 2] = id(i+1,j,k+1)
-        EToV[ee+1, 3] = id(i+1,j+1,k)
-        EToV[ee+1, 4] = id(i,j,k+1)
+        EToV[ee+1, 1] = id(i+1, j,   k)
+        EToV[ee+1, 2] = id(i+1, j,   k+1)
+        EToV[ee+1, 3] = id(i+1, j+1, k)
+        EToV[ee+1, 4] = id(i,   j,   k+1)
 
-        EToV[ee+2, 1] = id(i,j,k+1)
-        EToV[ee+2, 2] = id(i+1,j+1,k+1)
-        EToV[ee+2, 3] = id(i+1,j,k+1)
-        EToV[ee+2, 4] = id(i+1,j+1,k)
+        EToV[ee+2, 1] = id(i,   j,   k+1)
+        EToV[ee+2, 2] = id(i+1, j+1, k+1)
+        EToV[ee+2, 3] = id(i+1, j,   k+1)
+        EToV[ee+2, 4] = id(i+1, j+1, k)
 
-        EToV[ee+3, 1] = id(i,j+1,k+1)
-        EToV[ee+3, 2] = id(i+1,j+1,k+1)
-        EToV[ee+3, 3] = id(i,j,k+1)
-        EToV[ee+3, 4] = id(i+1,j+1,k)
+        EToV[ee+3, 1] = id(i,   j+1, k+1)
+        EToV[ee+3, 2] = id(i+1, j+1, k+1)
+        EToV[ee+3, 3] = id(i,   j,   k+1)
+        EToV[ee+3, 4] = id(i+1, j+1, k)
 
-        EToV[ee+4, 1] = id(i,j+1,k)
-        EToV[ee+4, 2] = id(i,j+1,k+1)
-        EToV[ee+4, 3] = id(i,j,k+1)
-        EToV[ee+4, 4] = id(i+1,j+1,k)
+        EToV[ee+4, 1] = id(i,   j+1, k  )
+        EToV[ee+4, 2] = id(i,   j+1, k+1)
+        EToV[ee+4, 3] = id(i,   j,   k+1)
+        EToV[ee+4, 4] = id(i+1, j+1, k  )
 
-        EToV[ee+5, 1] = id(i,j,k)
-        EToV[ee+5, 2] = id(i+1,j+1,k)
-        EToV[ee+5, 3] = id(i,j+1,k)
-        EToV[ee+5, 4] = id(i,j,k+1)
+        EToV[ee+5, 1] = id(i,   j,   k  )
+        EToV[ee+5, 2] = id(i+1, j+1, k  )
+        EToV[ee+5, 3] = id(i,   j+1, k  )
+        EToV[ee+5, 4] = id(i,   j,   k+1)
 
         ee += 6
     end

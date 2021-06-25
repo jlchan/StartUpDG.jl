@@ -37,9 +37,9 @@ function square_hole_domain(h = .1)
                                     0.1 0.1;
                                     -0.1 0.1;
                                     ]')
-    triin.segmentlist=Matrix{Cint}([1 2; 2 3; 3 4; 4 1; 5 6; 6 7; 7 8; 8 5; ]')
-    triin.segmentmarkerlist=Vector{Int32}([1, 1,1,1, 2,2,2,2])
-    triin.holelist=[0.0 0.0]'
+    triin.segmentlist = Matrix{Cint}([1 2; 2 3; 3 4; 4 1; 5 6; 6 7; 7 8; 8 5; ]')
+    triin.segmentmarkerlist = Vector{Int32}([1, 1, 1, 1, 2, 2, 2, 2])
+    triin.holelist = [0.0 0.0]'
     triout = triangulate(triin,h^2)
     return triout
 end
@@ -63,11 +63,11 @@ function scramjet(h = .1)
     # 1 = wall, 2 = inflow, 3 = outflow 
     triin.segmentmarkerlist=Vector{Int32}([1, 3, 1, 2, 1, 1, 1, 1])
 
-    hole_x = sum(triin.pointlist[1,5:8])/length(triin.pointlist[1,5:8])
-    hole_y = sum(triin.pointlist[2,5:8])/length(triin.pointlist[2,5:8])
+    hole_x = sum(triin.pointlist[1,5:8]) / length(triin.pointlist[1,5:8])
+    hole_y = sum(triin.pointlist[2,5:8]) / length(triin.pointlist[2,5:8])
     triin.holelist=[hole_x hole_y]'
 
-    triout = triangulate(triin,h^2)
+    triout = triangulate(triin, h^2)
     return triout
 end
 

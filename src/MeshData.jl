@@ -16,13 +16,13 @@ md = MeshElemData(VX,VY,EToV,rd)
 Base.@kwdef struct MeshData{Dim, Tv, Ti}
 
     # num_elements::Ti            # number of elements
-    VXYZ::NTuple{Dim,Vector{Tv}}  # vertex coordinates
+    VXYZ::NTuple{Dim, Vector{Tv}}  # vertex coordinates
     EToV::Matrix{Ti}              # mesh vertex array 
     FToF::Matrix{Ti}              # face connectivity
 
-    xyz::NTuple{Dim,Matrix{Tv}}   # physical points
-    xyzf::NTuple{Dim,Matrix{Tv}}  # face nodes
-    xyzq::NTuple{Dim,Matrix{Tv}}  # phys quad points, Jacobian-scaled weights
+    xyz::NTuple{Dim, Matrix{Tv}}   # physical points
+    xyzf::NTuple{Dim, Matrix{Tv}}  # face nodes
+    xyzq::NTuple{Dim, Matrix{Tv}}  # phys quad points, Jacobian-scaled weights
     wJq::Matrix{Tv}
 
     # arrays of connectivity indices between face nodes
@@ -31,14 +31,14 @@ Base.@kwdef struct MeshData{Dim, Tv, Ti}
     mapB::Vector{Ti}
 
     # volume geofacs Gij = dx_i/dxhat_j
-    rstxyzJ::SMatrix{Dim,Dim,Matrix{Tv}}
+    rstxyzJ::SMatrix{Dim, Dim, Matrix{Tv}}
     J::Matrix{Tv}
 
     # surface geofacs
-    nxyzJ::NTuple{Dim,Matrix{Tv}}
+    nxyzJ::NTuple{Dim, Matrix{Tv}}
     sJ::Matrix{Tv}
 
-    is_periodic::NTuple{Dim,Bool}
+    is_periodic::NTuple{Dim, Bool}
 end
 
 function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
@@ -51,24 +51,25 @@ function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM}) where {DIM}
 end
 
 # enable use of @set and setproperties(...) for MeshData
-ConstructionBase.constructorof(::Type{MeshData{A,B,C}}) where {A,B,C} = MeshData{A,B,C}
+ConstructionBase.constructorof(::Type{MeshData{A, B, C}}) where {A, B, C} = MeshData{A, B, C}
 
-function Base.propertynames(x::MeshData{1},private::Bool=false)
+function Base.propertynames(x::MeshData{1}, private::Bool = false)
     return (fieldnames(MeshData)...,
-            :num_elements,:VX,:x,:xq,:xf,:nxJ,:rxJ)
+            :num_elements, :VX, :x, :xq, :xf, :nxJ, :rxJ)
 end
-function Base.propertynames(x::MeshData{2},private::Bool=false) 
+function Base.propertynames(x::MeshData{2}, private::Bool = false) 
     return (fieldnames(MeshData)...,
-            :num_elements,:VX,:VY,:x,:y,:xq,:yq,:xf,:yf,:nxJ,:nyJ,:rxJ,:sxJ,:ryJ,:syJ)
+            :num_elements, :VX, :VY, :x, :y, :xq, :yq, :xf, :yf, 
+            :nxJ, :nyJ, :rxJ, :sxJ, :ryJ, :syJ)
 end
-function Base.propertynames(x::MeshData{3},private::Bool=false) 
+function Base.propertynames(x::MeshData{3}, private::Bool = false) 
     return (fieldnames(MeshData)...,
-            :num_elements,:VX,:VY,:VZ,:x,:y,:z,:xq,:yq,:zq,:xf,:yf,:zf,:nxJ,:nyJ,:nzJ,
-            :rxJ,:sxJ,:txJ,:ryJ,:syJ,:tyJ,:rzJ,:szJ,:tzJ)
+            :num_elements, :VX, :VY, :VZ, :x, :y, :z, :xq, :yq, :zq, :xf, :yf, :zf, 
+            :nxJ, :nyJ, :nzJ, :rxJ, :sxJ, :txJ, :ryJ, :syJ, :tyJ, :rzJ, :szJ, :tzJ)
 end
 
 # convenience routines for unpacking individual tuple entries
-function Base.getproperty(x::MeshData,s::Symbol)
+function Base.getproperty(x::MeshData, s::Symbol)
 
     if s==:VX
         return getfield(x, :VXYZ)[1]
@@ -124,30 +125,30 @@ function Base.getproperty(x::MeshData,s::Symbol)
     elseif s==:tzJ
         return getfield(x, :rstxyzJ)[3,3]
     elseif s==:K || s==:num_elements # old behavior where K = num_elements
-        return size(getfield(x,:EToV),1)
+        return size(getfield(x, :EToV), 1)
 
     # return getfield(x,:num_elements) # num rows in EToV = num elements
     else
-        return getfield(x,s)
+        return getfield(x, s)
     end
 end
 
 """
-    MeshData(VX,EToV,rd::RefElemData)
-    MeshData(VX,VY,EToV,rd::RefElemData)
-    MeshData(VX,VY,VZ,EToV,rd::RefElemData)
+    MeshData(VX, EToV, rd::RefElemData)
+    MeshData(VX, VY, EToV, rd::RefElemData)
+    MeshData(VX, VY, VZ, EToV, rd::RefElemData)
 
 Returns a MeshData struct with high order DG mesh information from the unstructured
-mesh information (VXYZ...,EToV).
+mesh information (VXYZ..., EToV).
 
-    MeshData(md::MeshData,rd::RefElemData,xyz...)
+    MeshData(md::MeshData, rd::RefElemData, xyz...)
 
 Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
 
-function MeshData(VX,EToV,rd::RefElemData{1}) 
+function MeshData(VX, EToV, rd::RefElemData{1}) 
 
     # Construct global coordinates
     @unpack V1 = rd
@@ -195,7 +196,7 @@ function MeshData(VX,EToV,rd::RefElemData{1})
 
 end
 
-function MeshData(VX,VY,EToV,rd::RefElemData{2})
+function MeshData(VX, VY, EToV, rd::RefElemData{2})
 
     @unpack fv = rd
     FToF = connect_mesh(EToV,fv)
@@ -236,7 +237,7 @@ function MeshData(VX,VY,EToV,rd::RefElemData{2})
 
 end
 
-function MeshData(VX,VY,VZ,EToV,rd::RefElemData{3})
+function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
 
     @unpack fv = rd
     FToF = connect_mesh(EToV,fv)
@@ -273,9 +274,9 @@ function MeshData(VX,VY,VZ,EToV,rd::RefElemData{3})
                     is_periodic)
 end
 
-MeshData(md::MeshData,rd::RefElemData,xyz...) = MeshData(rd,md,xyz...)
+MeshData(md::MeshData, rd::RefElemData, xyz...) = MeshData(rd, md, xyz...)
 
-function MeshData(rd::RefElemData,md::MeshData{Dim},xyz...) where {Dim}
+function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
 
     # compute new quad and plotting points
     xyzf = map(x->rd.Vf*x,xyz)
@@ -302,7 +303,7 @@ end
 
 
 # physical normals are computed via G*nhatJ, G = matrix of geometric terms
-function compute_normals(geo::SMatrix{Dim,Dim},Vf,nrstJ...) where {Dim}
+function compute_normals(geo::SMatrix{Dim, Dim}, Vf, nrstJ...) where {Dim}
     nxyzJ = ntuple(x->zeros(size(Vf,1),size(first(geo),2)),Dim)
     for i = 1:Dim, j = 1:Dim
         nxyzJ[i] .+= (Vf*geo[i,j]).*nrstJ[j]

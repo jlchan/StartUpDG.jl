@@ -30,20 +30,21 @@ RecipesBase.@recipe function f(m::MeshPlotter{2})
 end
 
 """
-    VertexMeshPlotter(VX,VY,EToV,fv)
+    VertexMeshPlotter(VX, VY, EToV, fv)
     VertexMeshPlotter(triout::TriangulateIO)    
 
-Plot recipe to plot a quadrilateral or triangular mesh. Usage: plot(MeshPlotter(...))
+Plot recipe to plot a quadrilateral or triangular mesh. Usage: `plot(MeshPlotter(...))`
 """
-struct VertexMeshPlotter{Tv,Ti,Nfaces}
+struct VertexMeshPlotter{Tv, Ti, Nfaces}
     VX::Vector{Tv}
     VY::Vector{Tv}
     EToV::Matrix{Ti}
-    fv::NTuple{Nfaces,Vector{Int}}
+    fv::NTuple{Nfaces, Vector{Int}}
 end
 
 RecipesBase.@recipe function f(m::VertexMeshPlotter)
-    @unpack VX,VY,EToV,fv = m
+
+    @unpack VX, VY, EToV, fv = m
 
     linecolor --> :black
     legend --> false
