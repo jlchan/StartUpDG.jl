@@ -6,4 +6,4 @@ StartUpDG = "472ebc20-7c99-4d4b-9470-8fde4e9faa0f"
 [compat]
 Documenter = "0.25,0.26"
 DocumenterTools = "0.1"
-StartUpDG = "0.8,0.9"
+StartUpDG = "0.8,0.9,0.10"
