@@ -126,10 +126,6 @@ end
 ##### Utilities for SBP 
 #####
 
-parsevec(type, str) = str |>
-  (x -> split(x, ", ")) |>
-  (x -> map(y -> parse(type, y), x))
-
 function diagE_sbp_nodes(elem::Tri, approxType::SBP{Kubatko{LobattoFaceNodes}}, N)    
     
     if N==6
@@ -157,6 +153,10 @@ function diagE_sbp_nodes(elem::Tri, approxType::SBP{Kubatko{LegendreFaceNodes}},
     return (r,s,w), quad_rule_face 
 end
 
+parsevec(type, str) = str |>
+  (x -> split(x, ", ")) |>
+  (x -> map(y -> parse(type, y), x))
+  
 function diagE_sbp_nodes(elem::Tri, approxType::SBP{Hicken}, N)    
     
     # from Jason Hicken https://github.com/OptimalDesignLab/SummationByParts.jl/tree/work
