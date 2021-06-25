@@ -1,6 +1,6 @@
 @testset "Boundary utilities" begin
     rd = RefElemData(Tri(), N=3)
-    md = MeshData(uniform_mesh(Tri(), 2)..., rd)
+    md = MeshData(uniform_mesh(Tri(), 1)..., rd)
     on_bottom_boundary(x, y, tol = 1e-13) = abs(y+1) < tol
     on_top_boundary(x, y, tol = 1e-13) = abs(y-1) < tol
 
