@@ -36,7 +36,7 @@ Base.@kwdef struct MeshData{Dim, Tv, Ti}
 
     # surface geofacs
     nxyzJ::NTuple{Dim, Matrix{Tv}}
-    sJ::Matrix{Tv}
+    Jf::Matrix{Tv}
 
     is_periodic::NTuple{Dim, Bool}
 end
@@ -126,6 +126,9 @@ function Base.getproperty(x::MeshData, s::Symbol)
         return getfield(x, :rstxyzJ)[3,3]
     elseif s==:K || s==:num_elements # old behavior where K = num_elements
         return size(getfield(x, :EToV), 1)
+
+    elseif s==:sJ 
+        return getfield(x, :Jf)
 
     # return getfield(x,:num_elements) # num rows in EToV = num elements
     else
@@ -298,7 +301,7 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
 
     setproperties(md,(xyz=xyz,xyzq=xyzq,xyzf=xyzf,
                   rstxyzJ=rstxyzJ,J=last(geo),
-                  nxyzJ=geof[1:Dim],sJ=last(geof)))
+                  nxyzJ=geof[1:Dim],Jf=last(geof)))
 end
 
 
