@@ -1,16 +1,7 @@
 # define ApproximationType
 struct Polynomial end 
 
-# for dispatch
-@inline Base.ndims(::Line) = 1
-@inline Base.ndims(::Union{Tri,Quad}) = 2
-@inline Base.ndims(::Union{Tet,Hex}) = 3
-
-@inline face_type(::Union{Tri,Quad}) = Line()
-@inline face_type(::Hex) = Quad()
-@inline face_type(::Tet) = Tri()
-
-function init_face_data(elem::Tri, N; quad_rule_face=gauss_quad(0,0,N))
+function init_face_data(elem::Tri, N; quad_rule_face = gauss_quad(0,0,N))
     # Nodes on faces, and face node coordinate
     r1D, w1D = quad_rule_face
     e = ones(size(r1D)) # vector of all ones
@@ -22,7 +13,7 @@ function init_face_data(elem::Tri, N; quad_rule_face=gauss_quad(0,0,N))
     return rf,sf,wf,nrJ,nsJ
 end
 
-function init_face_data(elem::Quad,N; quad_rule_face=gauss_quad(0,0,N))
+function init_face_data(elem::Quad, N; quad_rule_face = gauss_quad(0,0,N))
     r1D,w1D = quad_rule_face
     e = ones(size(r1D))
     z = zeros(size(r1D))
@@ -33,7 +24,7 @@ function init_face_data(elem::Quad,N; quad_rule_face=gauss_quad(0,0,N))
     return rf,sf,wf,nrJ,nsJ
 end
 
-function init_face_data(elem::Hex, N; quad_rule_face = quad_nodes(Quad(),N))
+function init_face_data(elem::Hex, N; quad_rule_face = quad_nodes(Quad(), N))
     rquad, squad, wquad = quad_rule_face
     e = ones(size(rquad))
     zz = zeros(size(rquad))
@@ -46,7 +37,7 @@ function init_face_data(elem::Hex, N; quad_rule_face = quad_nodes(Quad(),N))
     return rf,sf,tf,wf,nrJ,nsJ,ntJ
 end
 
-function init_face_data(elem::Tet, N; quad_rule_face=quad_nodes(Tri(),N))
+function init_face_data(elem::Tet, N; quad_rule_face = quad_nodes(Tri(), N))
     rquad,squad,wquad = quad_rule_face
     e = ones(size(rquad))
     zz = zeros(size(rquad))

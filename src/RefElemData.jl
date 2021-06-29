@@ -137,11 +137,21 @@ end
     function RefElemData(elem; N, kwargs...)
     function RefElemData(elem, approxType; N, kwargs...)
 
-Keyword argument constructor for RefElemData (to "label" `N` via `rd = RefElemData(Line(),N=3)`)
+Keyword argument constructor for RefElemData (to "label" `N` via `rd = RefElemData(Line(), N=3)`)
 """
 RefElemData(elem; N, kwargs...) = RefElemData(elem, N; kwargs...)
 RefElemData(elem, approxType; N, kwargs...) = RefElemData(elem, approxType, N; kwargs...)
 
 # default to Polynomial-type RefElemData
 RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs...)
+
+
+
+@inline Base.ndims(::Line) = 1
+@inline Base.ndims(::Union{Tri,Quad}) = 2
+@inline Base.ndims(::Union{Tet,Hex}) = 3
+
+@inline face_type(::Union{Tri,Quad}) = Line()
+@inline face_type(::Hex) = Quad()
+@inline face_type(::Tet) = Tri()
 

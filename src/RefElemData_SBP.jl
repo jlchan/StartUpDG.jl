@@ -18,8 +18,10 @@ struct SBP{Type}
     SBP{T}() where {T} = new{T}()  # default constructor
 end 
 
-# sets default to TensorProductLobatto on Quads and Kubatko{LobattoFaceNodes} on Tris
+# sets default to TensorProductLobatto on Quads 
 RefElemData(elem::Union{Line,Quad,Hex}, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{TensorProductLobatto}(), N)
+
+# sets default to Kubatko{LobattoFaceNodes} on Tris
 RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
 
 """
