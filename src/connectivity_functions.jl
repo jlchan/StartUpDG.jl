@@ -85,9 +85,9 @@ function build_node_maps(FToF, Xf...; tol = 1e-12)
 end
 
 # old deprecated interface
-@deprecate make_periodic(rd::RefElemData, md) make_periodic(md)
-@deprecate make_periodic(rd::RefElemData, md, args...) make_periodic(md,args...)
-@deprecate make_periodic(md, rd::RefElemData, args...) make_periodic(md,args...)
+@deprecate make_periodic(rd::RefElemData, md::MeshData) make_periodic(md)
+@deprecate make_periodic(rd::RefElemData, md::MeshData, args...) make_periodic(md,args...)
+@deprecate make_periodic(md::MeshData, rd::RefElemData, args...) make_periodic(md,args...)
 
 """
     make_periodic(md::MeshData{Dim}, is_periodic...) where {Dim}
@@ -98,9 +98,6 @@ Returns new MeshData such that the node maps `mapP` and face maps `FToF` are no
 Here, `is_periodic` is a tuple of `Bool` indicating whether or not to impose periodic
 BCs in the `x`,`y`, or `z` coordinate.
 """
-make_periodic(rd::RefElemData, md::MeshData,args...) = make_periodic(md, args...) 
-make_periodic(md::MeshData, rd::RefElemData, is_periodic...) = make_periodic(md, is_periodic)
-
 make_periodic(md::MeshData{Dim}, is_periodic::Bool = true) where {Dim} = make_periodic(md, ntuple(_->is_periodic, Dim)) 
 
 function make_periodic(md::MeshData{Dim}, is_periodic::NTuple{Dim, Bool}) where {Dim, Bool}
@@ -116,7 +113,6 @@ function make_periodic(md::MeshData{Dim}, is_periodic::NTuple{Dim, Bool}) where 
     return setproperties(md,(mapB=mapB_periodic, mapP = mapP_periodic, 
                              FToF = FToF_periodic, is_periodic = is_periodic)) # from Setfield.jl    
 end
-
 
 # specializes to 1D - periodic = find min/max indices of xf and reverse their order
 function make_periodic(md::MeshData{1, Tv, Ti}, is_periodic::Bool = true) where {Tv, Ti}
