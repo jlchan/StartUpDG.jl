@@ -1,4 +1,3 @@
-import Triangulate:triangulate
 
 """
     function Triangulate.triangulate(triin::TriangulateIO, maxarea, minangle=20)
@@ -60,8 +59,8 @@ function get_node_boundary_tags(triout::TriangulateIO, rd::RefElemData{2, Tri}, 
 end
 
 
-function tag_boundary_faces(triout::TriangulateIO, 
-                            rd::RefElemData{2, Tri}, md::MeshData{2}, 
+function tag_boundary_faces(triout::TriangulateIO,
+                            rd::RefElemData{2, Tri}, md::MeshData{2},
                             boundary_list::Dict{Symbol, Int})
 
     boundary_face_ids_list = _tag_boundary_faces(triout,rd,md,boundary_list)
@@ -69,15 +68,15 @@ function tag_boundary_faces(triout::TriangulateIO,
 end
 
 """
-    function tag_boundary_faces(triout::TriangulateIO, 
-                                rd::RefElemData{2,Tri}, md::MeshData{2}, 
+    function tag_boundary_faces(triout::TriangulateIO,
+                                rd::RefElemData{2,Tri}, md::MeshData{2},
                                 boundary_list::Union{NamedTuple,Dict{Symbol,Int}})
 
-Here, `boundary_list` is a `Dict` (or `NamedTuple`) whose values are the boundary tags for a 
-`TriangulateIO` mesh format. The output is a `Dict` or `NamedTuple` with keys given by 
+Here, `boundary_list` is a `Dict` (or `NamedTuple`) whose values are the boundary tags for a
+`TriangulateIO` mesh format. The output is a `Dict` or `NamedTuple` with keys given by
 `boundary_list` and `values` equal to vectors of faces on that given boundary.
 
-Example usage: 
+Example usage:
 ```julia
 julia> using Triangulate, StartUpDG
 julia> triout = scramjet()
@@ -86,8 +85,8 @@ julia> md = MeshData(triangulateIO_to_VXYEToV(triout)...,rd)
 julia> tag_boundary_faces(triout,rd,md, Dict(:wall=>1, :inflow=>2, :outflow=>3))
 ```
 """
-function tag_boundary_faces(triout::TriangulateIO, 
-                            rd::RefElemData{2, Tri}, md::MeshData{2}, 
+function tag_boundary_faces(triout::TriangulateIO,
+                            rd::RefElemData{2, Tri}, md::MeshData{2},
                             boundary_list::NamedTuple)
 
     boundary_face_ids_list = _tag_boundary_faces(triout,rd,md,boundary_list)
@@ -95,12 +94,12 @@ function tag_boundary_faces(triout::TriangulateIO,
 end
 
 # this version works for both boundary_list::Union{NamedTuple, Dict{Symbol,Int}}
-function _tag_boundary_faces(triout::TriangulateIO, 
-                            rd::RefElemData{2, Tri}, md::MeshData{2}, 
+function _tag_boundary_faces(triout::TriangulateIO,
+                            rd::RefElemData{2, Tri}, md::MeshData{2},
                             boundary_list)
     boundary_face_tags, boundary_faces = get_boundary_face_labels(triout, rd, md)
     boundary_face_ids_list = Vector{Int}[]
-    for boundary_face_flag in values(boundary_list)        
+    for boundary_face_flag in values(boundary_list)
         push!(boundary_face_ids_list, boundary_faces[findall(@. boundary_face_tags == boundary_face_flag)])
     end
     return boundary_face_ids_list
@@ -121,7 +120,7 @@ end
 VertexMeshPlotter(triout::TriangulateIO) = VertexMeshPlotter(triangulateIO_to_VXYEToV(triout)..., face_vertices(Tri()))
 
 """
-    BoundaryTagPlotter(triout::TriangulateIO)    
+    BoundaryTagPlotter(triout::TriangulateIO)
 
 Plot recipe to visualize boundary tags by color. Usage: `plot(BoundaryTagPlotter(triout))`
 """
@@ -146,8 +145,8 @@ RecipesBase.@recipe function f(m::BoundaryTagPlotter)
         color_ids = findall(triout.segmentmarkerlist .== tags[i])
 
         # NaN separators for distinct lines
-        x_i = vec([xseg[:, color_ids]; fill(NaN, length(color_ids))']) 
-        y_i = vec([yseg[:, color_ids]; fill(NaN, length(color_ids))']) 
+        x_i = vec([xseg[:, color_ids]; fill(NaN, length(color_ids))'])
+        y_i = vec([yseg[:, color_ids]; fill(NaN, length(color_ids))'])
 
         @series begin
             marker --> :circle
