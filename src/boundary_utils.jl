@@ -49,6 +49,7 @@ function tag_boundary_faces(md, boundary_list::Dict{Symbol, <:Function})
     return Dict(Pair.(keys(boundary_list),boundary_face_ids_list))
 end
 
+# todo: should this take in boundary_face_flag((x,y,z)) instead of boundary_face_flag(x,y,z)?
 function _tag_boundary_faces(boundary_face_ids, boundary_list, xyzb)
     boundary_face_ids_list = Vector{Int}[]
     for boundary_face_flag in values(boundary_list)
@@ -57,7 +58,7 @@ function _tag_boundary_faces(boundary_face_ids, boundary_list, xyzb)
     return boundary_face_ids_list
 end
 
-# todo: should I make this the default?
+# todo: should I make this version with NamedTuples the default?
 function tag_boundary_faces(md, boundary_list::NamedTuple)
     xyzb, boundary_face_ids = boundary_face_centroids(md)
     boundary_face_ids_list = _tag_boundary_faces(boundary_face_ids, boundary_list, xyzb)

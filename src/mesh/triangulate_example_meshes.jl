@@ -1,3 +1,6 @@
+# TODO: switch to keyword argument h = ...
+# TODO: switch API to dispatch, e.g., `example_mesh(Scramjet(), h = .1)`
+
 """
     function rectangular_domain(h = .1; xlims = [-1,1],ylims = [-1,1], segment_markers=[1,2,3,4])
 
