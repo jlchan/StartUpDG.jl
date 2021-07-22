@@ -137,9 +137,7 @@ function Base.getproperty(x::MeshData, s::Symbol)
 end
 
 """
-    MeshData(VX, EToV, rd::RefElemData)
-    MeshData(VX, VY, EToV, rd::RefElemData)
-    MeshData(VX, VY, VZ, EToV, rd::RefElemData)
+    MeshData(VXYZ, EToV, rd::RefElemData)
 
 Returns a MeshData struct with high order DG mesh information from the unstructured
 mesh information (VXYZ..., EToV).
@@ -151,7 +149,11 @@ and outputs a new MeshData struct. Only fields modified are the coordinate-depen
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
 
-function MeshData(VX, EToV, rd::RefElemData{1}) 
+# splats VXYZ 
+MeshData(VXYZ::T, EToV, rd::RefElemData{NDIMS}) where {NDIMS, T <: NTuple{NDIMS}} = 
+    MeshData(VXYZ..., EToV, rd)
+
+function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
     # Construct global coordinates
     @unpack V1 = rd
