@@ -14,8 +14,8 @@ K1D = 8
 
 # init ref element and mesh
 rd = RefElemData(Tri(),N)
-VX,VY,EToV = uniform_mesh(Tri(),K1D)
-md = MeshData(VX,VY,EToV,rd)
+VXY,EToV = uniform_mesh(Tri(),K1D)
+md = MeshData(VXY,EToV,rd)
 
 # Define a function by interpolation
 @unpack x,y = md

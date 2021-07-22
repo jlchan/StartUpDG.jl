@@ -21,10 +21,10 @@ For convenience, simple uniform meshes are included in with `StartUpDG.jl` via [
 ```julia
 using StartUpDG
 Kx,Ky,Kz = 4,2,8
-VX,EToV = uniform_mesh(Line(),Kx)
-VX,VY,EToV = uniform_mesh(Tri(),Kx,Ky)
-VX,VY,EToV = uniform_mesh(Quad(),Kx,Ky)
-VX,VY,VZ,EToV = uniform_mesh(Hex(),Kx,Ky,Kz)
+(VX,), EToV = uniform_mesh(Line(),Kx)
+(VX,VY),EToV = uniform_mesh(Tri(),Kx,Ky)
+(VX,VY),EToV = uniform_mesh(Quad(),Kx,Ky)
+(VX,VY,VZ),EToV = uniform_mesh(Hex(),Kx,Ky,Kz)
 ```
 The uniform triangular mesh is constructed by creating a uniform quadrilateral mesh then bisecting each quad into two triangles.
 
@@ -32,16 +32,16 @@ The uniform triangular mesh is constructed by creating a uniform quadrilateral m
 
 Given unstructured mesh information (tuple of vertex coordinates `VXYZ` and index array `EToV`) high order DG mesh data can be constructed as follows:
 ```julia
-md = MeshData(VXYZ...,EToV,rd)
+md = MeshData(VXYZ, EToV, rd)
 ```
 
 ## Enforcing periodic boundary conditions
 
 Periodic boundary conditions can be enforced by calling [`make_periodic`](@ref), which returns another `MeshData` struct with modified `mapP`,`mapB`, and `FToF` indexing arrays which account for periodicity.
 ```julia
-md = MeshData(VX,VY,EToV,rd)
+md = MeshData((VX, VY), EToV, rd)
 md_periodic = make_periodic(md) # periodic in both x and y coordinates
-md_periodic_x = make_periodic(md,true,false) # periodic in x direction, but not y
+md_periodic_x = make_periodic(md, true, false) # periodic in x direction, but not y
 ```
 One can check which dimensions are periodic via the `is_periodic` field of `MeshData`. For example, the `md_periodic_x` example above gives
 ```julia
@@ -53,12 +53,12 @@ julia> md_periodic_x.is_periodic
 
 It's common to generate curved meshes by first generating a linear mesh, then moving high order nodes on the linear mesh. This can be done by calling [`MeshData`](@ref) again with new `x,y` coordinates:
 ```julia
-md = MeshData(VX,VY,EToV,rd)
-@unpack x,y = md
+md = MeshData((VX, VY), EToV, rd)
+@unpack x, y = md
 # <-- code to modify high order nodes (x,y)
-md_curved = MeshData(rd,md,x,y)
+md_curved = MeshData(rd, md, x, y)
 ```
-`MeshData(rd,md,x,y)` and `MeshData(rd,md,x,y,z)` are implemented for 2D and 3D, though this is not currently implemented in 1D.
+`MeshData(rd, md, x, y)` and `MeshData(rd, md, x, y, z)` are implemented for 2D and 3D, though this is not currently implemented in 1D.
 
 More generally, one can create a copy of a `MeshData` with certain fields modified by using `@set` or `setproperties` from `Setfield.jl`.
 
@@ -72,13 +72,13 @@ One can "tag" boundary faces by specifying boolean functions which evaluate to `
 ```julia
 using Test
 
-rd = RefElemData(Tri(),N=3)
-md = MeshData(uniform_mesh(Tri(),1)...,rd)
-on_bottom_boundary(x,y,tol=1e-13) = abs(y+1) < tol
-on_top_boundary(x,y,tol=1e-13) = abs(y-1) < tol
+rd = RefElemData(Tri(), N=3)
+md = MeshData(uniform_mesh(Tri(), 1)..., rd)
+on_bottom_boundary(x, y, tol=1e-13) = abs(y+1) < tol
+on_top_boundary(x, y, tol=1e-13) = abs(y-1) < tol
 
-boundary_dict = tag_boundary_faces(md, Dict(:bottom=>on_bottom_boundary,:top=>on_top_boundary))
-@test boundary_dict == Dict(:bottom=>[1],:top=>[4])
+boundary_dict = tag_boundary_faces(md, Dict(:bottom => on_bottom_boundary, :top => on_top_boundary))
+@test boundary_dict == Dict(:bottom => [1], :top => [4])
 ```
 
 You can also specify a list of boundaries using NamedTuples 
