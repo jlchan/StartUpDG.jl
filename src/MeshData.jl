@@ -8,8 +8,8 @@ Example:
 ```julia
 N, K1D = 3, 2
 rd = RefElemData(Tri(), N)
-VX, VY, EToV = uniform_mesh(Tri(), K1D)
-md = MeshElemData(VX, VY, EToV, rd)
+VXY, EToV = uniform_mesh(Tri(), K1D)
+md = MeshElemData(VXY, EToV, rd)
 @unpack x, y = md
 ```
 """
