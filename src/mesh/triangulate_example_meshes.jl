@@ -39,6 +39,7 @@ function triangulate_domain(domain::RectangularDomain; h = .1)
     return triout
 end
 
+# Todo: allow for general polygon with polygonal hole (using counterclockwise ordering)
 function triangulate_domain(domain::RectangularDomainWithHole; h = .1)
     @unpack xlims, ylims, hole_xlims, hole_ylims, segment_markers  = domain    
     triin=Triangulate.TriangulateIO()
