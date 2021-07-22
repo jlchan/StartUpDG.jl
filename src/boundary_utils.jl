@@ -53,7 +53,7 @@ end
 function _tag_boundary_faces(boundary_face_ids, boundary_list, xyzb)
     boundary_face_ids_list = Vector{Int}[]
     for boundary_face_flag in values(boundary_list)
-        push!(boundary_face_ids_list, boundary_face_ids[boundary_face_flag.(xyzb...)])
+        push!(boundary_face_ids_list, boundary_face_ids[boundary_face_flag.(zip(xyzb...))])
     end
     return boundary_face_ids_list
 end
