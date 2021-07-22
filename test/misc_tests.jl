@@ -10,7 +10,7 @@
 
     # test recipes
     # see https://discourse.julialang.org/t/how-to-test-plot-recipes/2648/6?u=jlchan
-    meshIO = scramjet()
+    meshIO = triangulate_domain(Scramjet())
     recipe = RecipesBase.apply_recipe(Dict{Symbol, Any}(),BoundaryTagPlotter(meshIO));
     @test getfield(recipe[1],1)[:label]=="1"
     @test any(isnan.(getfield(recipe[1],2)[1]))

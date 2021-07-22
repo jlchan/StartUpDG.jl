@@ -14,7 +14,7 @@
 
     @testset "Triangulate utils/example meshes" begin
         # test triangulate
-        meshIO = square_domain()
+        meshIO = triangulate_domain(SquareDomain())
         VX,VY,EToV = triangulateIO_to_VXYEToV(meshIO)
         rd = RefElemData(Tri(),2)
         md = MeshData(VX,VY,EToV,rd)
@@ -23,7 +23,7 @@
         @test sort(unique(get_node_boundary_tags(meshIO,rd,md)))==[0,1,2,3,4]
 
         h = .1
-        meshIO = square_hole_domain(h)
+        meshIO = triangulate_domain(RectangularDomainWithHole()) # square_hole_domain(h)
         VX,VY,EToV = triangulateIO_to_VXYEToV(meshIO)
         rd = RefElemData(Tri(),2)
         md = MeshData(VX,VY,EToV,rd)
@@ -33,7 +33,7 @@
         meshIO2 = refine(meshIO,h)
         @test sort(unique(get_node_boundary_tags(meshIO2,rd,MeshData(triangulateIO_to_VXYEToV(meshIO2)...,rd))))==[0,1,2]
 
-        meshIO = scramjet()
+        meshIO = triangulate_domain(Scramjet())
         VX,VY,EToV = triangulateIO_to_VXYEToV(meshIO)
         rd = RefElemData(Tri(),2)
         md = MeshData(VX,VY,EToV,rd)

@@ -55,7 +55,8 @@ function __init__()
         export refine, triangulateIO_to_VXYEToV, get_node_boundary_tags
         export BoundaryTagPlotter
         include("mesh/triangulate_example_meshes.jl")
-        export square_domain, rectangular_domain, square_hole_domain, scramjet
+        export triangulate_domain
+        export Scramjet, SquareDomain, RectangularDomain, RectangularDomainWithHole 
     end
 end
 
