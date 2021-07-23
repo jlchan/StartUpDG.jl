@@ -54,13 +54,17 @@ function readGmsh2D(filename)
 end
 
 """
-        uniform_mesh(elem::Line,Kx)
-        uniform_mesh(elem::Tri,Kx,Ky)
-        uniform_mesh(elem::Quad,Kx,Ky)
-        uniform_mesh(elem::Hex,Kx,Ky,Kz)        
+    uniform_mesh(elem::Line,Kx)
+    uniform_mesh(elem::Tri,Kx,Ky)
+    uniform_mesh(elem::Quad,Kx,Ky)
+    uniform_mesh(elem::Hex,Kx,Ky,Kz)  
+    uniform_mesh(elem, K)
+        
+Uniform `Kx` (by `Ky` by `Kz`) mesh on ``[-1,1]^d``, where `d` is the spatial dimension.
+Returns `(VX,VY,VZ)`, `EToV`. When only one `K` is specified, it assumes a uniform mesh with 
+`K` elements in each coordinate direction. 
 
-Uniform Kx (by Ky by Kz) mesh on ``[-1,1]^d``, where `d` is the spatial dimension.
-Returns (VX,VY,VZ), EToV. Can also use kwargs via `uniform_mesh(elem; K1D=16) `
+`K` can also be specified using a keyword argument `K1D`, e.g., `uniform_mesh(elem; K1D = 16)`.
 """
 function uniform_mesh(elem::Line, K1D)
     VX = collect(LinRange(-1, 1, K1D + 1))
