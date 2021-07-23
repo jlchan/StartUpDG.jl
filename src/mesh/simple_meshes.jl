@@ -5,7 +5,7 @@ reads triangular GMSH 2D file format 2.2 0 8. returns VX,VY,EToV
 
 # Examples
 ```julia
-VXY,EToV = readGmsh2D("eulerSquareCylinder2D.msh")
+VXY, EToV = readGmsh2D("eulerSquareCylinder2D.msh")
 ```
 """
 function readGmsh2D(filename)
@@ -50,7 +50,7 @@ function readGmsh2D(filename)
 
     EToV = EToV[:, vec([1 3 2])] # permute for Gmsh ordering
 
-    return VX, VY, EToV
+    return (VX, VY), EToV
 end
 
 """
@@ -69,7 +69,7 @@ Returns `(VX,VY,VZ)`, `EToV`. When only one `K` is specified, it assumes a unifo
 function uniform_mesh(elem::Line, K1D)
     VX = collect(LinRange(-1, 1, K1D + 1))
     EToV = transpose(reshape(sort([1:K1D; 2:K1D+1]), 2, K1D))
-    return VX, Matrix(EToV)
+    return (VX,), Matrix(EToV)
 end
 
 function uniform_mesh(elem::Tri, Kx, Ky)
@@ -89,7 +89,7 @@ function uniform_mesh(elem::Tri, Kx, Ky)
             sk += 1
         end
     end
-    return VX[:], VY[:], EToV
+    return (VX[:], VY[:]), EToV
 end
 
 uniform_mesh(elem::Union{Tri,Quad}, Kx) = uniform_mesh(elem, Kx, Kx)
@@ -119,7 +119,7 @@ function uniform_mesh(elem::Quad, Nx, Ny)
     VX = x[:]
     VY = y[:]
 
-    return VX[:], VY[:], EToV
+    return (VX[:], VY[:]), EToV
 end
 
 
@@ -175,7 +175,7 @@ function uniform_mesh(elem::Hex, Nx, Ny, Nz)
     end
     EToV = @. EToV + 1 # re-index to 1 index
 
-    return x[:], y[:], z[:], EToV
+    return (x[:], y[:], z[:]), EToV
 end
 
 uniform_mesh(elem::Tet, N) = uniform_mesh(elem, N, N, N)
@@ -239,7 +239,7 @@ function uniform_mesh(elem::Tet, Nx, Ny, Nz)
     end
 
     EToV = @. EToV + 1 # re-index to 1 index
-    return x[:], y[:], z[:], EToV
+    return (x[:], y[:], z[:]), EToV
 end
 
 # keyword argument version

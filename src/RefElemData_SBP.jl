@@ -98,7 +98,7 @@ function RefElemData(elementType::Tri, approxType::SBP, N; tol = 100*eps())
     # Build traditional SBP operators from hybridized operators. See Section 3.2 of 
     # [High-order entropy stable dG methods for the SWE](https://arxiv.org/pdf/2005.02516.pdf)
     # by Wu and Chan 2021. [DOI](https://doi.org/10.1016/j.camwa.2020.11.006)
-    Qrh, Qsh, _ = hybridized_SBP_operators(rd)
+    (Qrh, Qsh), _ = hybridized_SBP_operators(rd)
     Nq = length(rd.wq)
     Vh_sbp = [I(Nq); Ef]
     Qr = Vh_sbp'*Qrh*Vh_sbp
@@ -218,5 +218,5 @@ function hybridized_SBP_operators(rd)
     Vh = [Vq; Vf]
     Ph = M \ transpose(Vh)
     VhP = Vh * Pq
-    return Qrsth..., VhP, Ph, Vh
+    return Qrsth, VhP, Ph, Vh
 end

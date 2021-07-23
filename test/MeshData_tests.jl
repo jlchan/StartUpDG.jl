@@ -4,9 +4,8 @@
 
         N = 3
         K1D = 2
-        rd = RefElemData(Line(),approxType,N)
-        VX,EToV = uniform_mesh(Line(),K1D)
-        md = MeshData(VX,EToV,rd)
+        rd = RefElemData(Line(),approxType,N)        
+        md = MeshData(uniform_mesh(Line(),K1D)...,rd)
         @unpack wq,Dr,Vq,Vf,wf = rd
         @unpack Nfaces = rd
         @unpack x,xq,xf,K = md
@@ -55,9 +54,8 @@
 
         N = 3
         K1D = 2
-        rd = RefElemData(Tri(),approxType,N)
-        VX,VY,EToV = uniform_mesh(Tri(),K1D)
-        md = MeshData(VX,VY,EToV,rd)
+        rd = RefElemData(Tri(),approxType,N)        
+        md = MeshData(uniform_mesh(Tri(),K1D)...,rd)
         @unpack wq,Dr,Ds,Vq,Vf,wf = rd
         Nfaces = length(rd.fv)
         @unpack x,y,xq,yq,xf,yf,K = md
@@ -122,9 +120,8 @@
 
         N = 3
         K1D = 2
-        rd = RefElemData(Quad(),approxType,N)
-        VX,VY,EToV = uniform_mesh(Quad(),K1D)
-        md = MeshData(VX,VY,EToV,rd)
+        rd = RefElemData(Quad(),approxType,N)        
+        md = MeshData(uniform_mesh(Quad(),K1D)...,rd)
         @unpack wq,Dr,Ds,Vq,Vf,wf = rd
         Nfaces = length(rd.fv)
         @unpack x,y,xq,yq,xf,yf,K = md
@@ -181,9 +178,8 @@
 
         N = 2
         K1D = 2
-        rd = RefElemData(Hex(),approxType,N)
-        VX,VY,VZ,EToV = uniform_mesh(Hex(),K1D)
-        md = MeshData(VX,VY,VZ,EToV,rd)
+        rd = RefElemData(Hex(),approxType,N)        
+        md = MeshData(uniform_mesh(Hex(),K1D)...,rd)
         @unpack wq,Dr,Ds,Dt,Vq,Vf,wf = rd
         Nfaces = length(rd.fv)
         @unpack x,y,z,xq,yq,zq,wJq,xf,yf,zf,K = md
@@ -250,8 +246,7 @@ end
     N = 3
     K1D = 2
     rd = RefElemData(Tet(),Polynomial(),N)
-    VX,VY,VZ,EToV = uniform_mesh(Tet(),K1D)
-    md = MeshData(VX,VY,VZ,EToV,rd)
+    md = MeshData(uniform_mesh(Tet(),K1D)...,rd)
     @unpack wq,Dr,Ds,Dt,Vq,Vf,wf = rd
     Nfaces = length(rd.fv)
     @unpack x,y,z,xq,yq,zq,wJq,xf,yf,zf,K = md

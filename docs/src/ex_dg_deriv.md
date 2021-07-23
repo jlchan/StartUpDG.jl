@@ -16,8 +16,8 @@ using Plots
 N = 3
 K1D = 8
 rd = RefElemData(Tri(),N)
-VX,VY,EToV = uniform_mesh(Tri(),K1D)
-md = MeshData(VX,VY,EToV,rd)
+VXY,EToV = uniform_mesh(Tri(),K1D)
+md = MeshData(VXY,EToV,rd)
 ```
 We can approximate a function ``f(x,y)`` using interpolation
 ```julia
