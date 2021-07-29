@@ -32,7 +32,7 @@ RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{
     
 SBP reference element data for `Quad()`, `Hex()`, and `Tri()` elements. 
 
-For `Line()`, `Quad()`, and `Hex()`, `approxType` is `SBP{TensorProductLobatto,LobattoFaceNodes}`.
+For `Line()`, `Quad()`, and `Hex()`, `approxType` is `SBP{TensorProductLobatto}`.
 
 For `Tri()`, `approxType` can be `SBP{Kubatko{LobattoFaceNodes}}`, `SBP{Kubatko{LegendreFaceNodes}}`, or `SBP{Hicken}`. 
 """
