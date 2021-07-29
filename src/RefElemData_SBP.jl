@@ -1,29 +1,3 @@
-# type options for different sets of SBP nodes
-struct DefaultSBPType end
-
-# line/quad/hex nodes
-struct TensorProductLobatto end
-
-# triangle node types
-struct Hicken end 
-struct Kubatko{FaceNodeType} end
-
-# face node types for Kubatko
-struct LegendreFaceNodes end
-struct LobattoFaceNodes end
-
-# SBP ApproximationType: the more common diagonal E diagonal-norm SBP operators on tri/quads.
-struct SBP{Type}
-    SBP() = new{DefaultSBPType}() # no-parameter default
-    SBP{T}() where {T} = new{T}()  # default constructor
-end 
-
-# sets default to TensorProductLobatto on Quads 
-RefElemData(elem::Union{Line,Quad,Hex}, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{TensorProductLobatto}(), N)
-
-# sets default to Kubatko{LobattoFaceNodes} on Tris
-RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
-
 """
     function RefElemData(elementType::Line, approxType::SBP, N)
     function RefElemData(elementType::Quad, approxType::SBP, N)

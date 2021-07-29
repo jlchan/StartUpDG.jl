@@ -146,7 +146,6 @@ RefElemData(elem, approxType; N, kwargs...) = RefElemData(elem, approxType, N; k
 RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs...)
 
 
-
 @inline Base.ndims(::Line) = 1
 @inline Base.ndims(::Union{Tri,Quad}) = 2
 @inline Base.ndims(::Union{Tet,Hex}) = 3
@@ -154,4 +153,37 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 @inline face_type(::Union{Tri,Quad}) = Line()
 @inline face_type(::Hex) = Quad()
 @inline face_type(::Tet) = Tri()
+
+# ====================================================
+#          RefElemData approximation types
+# ====================================================
+
+struct Polynomial end 
+
+# ========= SBP approximation types ============
+
+struct DefaultSBPType end
+
+# line/quad/hex nodes
+struct TensorProductLobatto end
+
+# triangle node types
+struct Hicken end 
+struct Kubatko{FaceNodeType} end
+
+# face node types for Kubatko
+struct LegendreFaceNodes end
+struct LobattoFaceNodes end
+
+# SBP ApproximationType: the more common diagonal E diagonal-norm SBP operators on tri/quads.
+struct SBP{Type}
+    SBP() = new{DefaultSBPType}() # no-parameter default
+    SBP{T}() where {T} = new{T}()  # default constructor
+end 
+
+# sets default to TensorProductLobatto on Quads 
+RefElemData(elem::Union{Line,Quad,Hex}, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{TensorProductLobatto}(), N)
+
+# sets default to Kubatko{LobattoFaceNodes} on Tris
+RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
 
