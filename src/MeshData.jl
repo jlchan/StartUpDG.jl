@@ -13,7 +13,7 @@ md = MeshElemData(VXY, EToV, rd)
 @unpack x, y = md
 ```
 """
-Base.@kwdef struct MeshData{Dim, Tv, Ti}
+Base.@kwdef struct MeshData{Dim, Tv, Ti, DimTimesDim}
 
     # num_elements::Ti            # number of elements
     VXYZ::NTuple{Dim, Vector{Tv}}  # vertex coordinates
@@ -31,7 +31,7 @@ Base.@kwdef struct MeshData{Dim, Tv, Ti}
     mapB::Vector{Ti}
 
     # volume geofacs Gij = dx_i/dxhat_j
-    rstxyzJ::SMatrix{Dim, Dim, Matrix{Tv}}
+    rstxyzJ::SMatrix{Dim, Dim, Matrix{Tv}, DimTimesDim}
     J::Matrix{Tv}
 
     # surface geofacs
