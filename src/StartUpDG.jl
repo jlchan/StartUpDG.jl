@@ -1,9 +1,10 @@
 module StartUpDG
 
-using ConstructionBase  # for constructorof(...)
-using LinearAlgebra     # for diagm, identity matrix I
-using StaticArrays      # for SMatrix
-using Setfield          # for "modifying" structs (setproperties)
+using ConstructionBase: ConstructionBase
+using LinearAlgebra: diagm, eigvals, Diagonal, I
+using StaticArrays: SVector, SMatrix
+using Setfield: setproperties, @set    # for "modifying" structs (setproperties)
+using Kronecker: kronecker # for Hex element matrix manipulations
 
 using Reexport 
 @reexport using UnPack            # for getting values in RefElemData and MeshData
