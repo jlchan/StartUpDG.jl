@@ -11,7 +11,7 @@ rd = RefElemData(Tri(), N)
 @unpack r, s = rd
 ```
 """ 
-struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nfaces, Tv, VQ, VF, MM, P, D, L} 
+struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nfaces, Tv, Tvdm, VQ, VF, MM, P, D, L, VP} 
 
     elementType::ElemShape
     approximationType::ApproximationType # Polynomial / SBP{...}
@@ -21,13 +21,13 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nface
     V1::Matrix{Tv}       # low order interpolation matrix
 
     rst::NTuple{Dim, Vector{Tv}}
-    VDM::Matrix{Tv}      # generalized Vandermonde matrix
+    VDM::Tvdm      # generalized Vandermonde matrix
     Fmask::Vector{Int}   # indices of face nodes
 
     # plotting nodes: TODO - remove? Probably doesn't need to be in RefElemData
     Nplot::Int
     rstp::NTuple{Dim, Vector{Tv}}
-    Vp::Matrix{Tv}      # interpolation matrix to plotting nodes
+    Vp::VP      # interpolation matrix to plotting nodes
 
     # quadrature 
     rstq::NTuple{Dim, Vector{Tv}}
