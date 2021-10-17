@@ -141,12 +141,12 @@ function RefElemData(elem::Union{Tri, Quad},  approxType::Polynomial, N;
                        M, Pq, Drs, LIFT)
 end
 
-function RefElemData(elem::Union{Hex, Tet}, approxType::Polynomial, N;
+function RefElemData(elem::Tet, approxType::Polynomial, N;
                      quad_rule_vol = quad_nodes(elem, N),
                      quad_rule_face = quad_nodes(face_type(elem), N),
                      Nplot = 10)
 
-    fv = face_vertices(elem) # set faces for triangle
+    fv = face_vertices(elem) 
 
     # Construct matrices on reference elements
     r,s,t = nodes(elem,N)
@@ -183,4 +183,68 @@ function RefElemData(elem::Union{Hex, Tet}, approxType::Polynomial, N;
                        tuple(rf, sf, tf), wf, Vf, tuple(nrJ, nsJ, ntJ),
                        M, Pq, Drst, LIFT)
 end
+
+# specialize constructor for `Hex` to allow for higher polynomial degrees `N`
+function RefElemData(elem::Hex, approxType::Polynomial, N;
+                     quad_rule_vol = quad_nodes(elem, N),
+                     quad_rule_face = quad_nodes(face_type(elem), N),
+                     Nplot = 10)
+
+    fv = face_vertices(elem) 
+
+    # Construct matrices on reference elements
+    r, s, t = nodes(elem, N)
+    Fmask = hcat(find_face_nodes(elem, r, s, t)...)
+
+    # construct 1D operator for faster Kronecker solves
+    r1D = nodes(Line(), N)
+    rq1D, wq1D = quad_nodes(Line(), N)
+    VDM_1D = vandermonde(Line(), N, r1D)
+    Vq1D = vandermonde(Line(), N, rq1D) / VDM_1D
+    invVDM_1D = inv(VDM_1D)
+    invM_1D = VDM_1D * VDM_1D'
+    M1D = Vq1D' * diagm(wq1D) * Vq1D
+
+    # form kronecker products of multidimensional matrices to invert/multiply
+    M = kronecker(M1D, M1D, M1D)
+    VDM = kronecker(VDM_1D, VDM_1D, VDM_1D)
+    invVDM = kronecker(invVDM_1D, invVDM_1D, invVDM_1D)
+    invM = kronecker(invM_1D, invM_1D, invM_1D)
+
+    _, Vr, Vs, Vt = basis(elem, N, r, s, t)
+    Dr, Ds, Dt = (A -> A * invVDM).((Vr, Vs, Vt))
+
+    # low order interpolation nodes
+    r1, s1, t1 = nodes(elem, 1)
+    V1 = vandermonde(elem, 1, r, s, t) / vandermonde(elem, 1, r1, s1, t1)
+
+    # Nodes on faces, and face node coordinate
+    rf, sf, tf, wf, nrJ, nsJ, ntJ = init_face_data(elem, N, quad_rule_face=quad_rule_face)
+
+    # quadrature nodes - build from 1D nodes.
+    rq, sq, tq, wq = quad_rule_vol
+    Vq = vandermonde(elem, N, rq, sq, tq) * invVDM
+    # M = Vq' * diagm(wq) * Vq
+    Pq = invM * (Vq' * diagm(wq))
+
+    Vf = vandermonde(elem, N, rf, sf, tf) * invVDM
+    LIFT = invM * (Vf' * diagm(wf))
+
+    # plotting nodes
+    rp, sp, tp = equi_nodes(elem, Nplot)
+    # Vp = vandermonde(elem, N, rp, sp, tp) * invVDM 
+    rp1D = LinRange(-1, 1, Nplot + 1)
+    Vp1D = vandermonde(Line(), N, rp1D) / VDM_1D
+    Vp = kronecker(Vp1D, Vp1D, Vp1D)
+
+    Drst = (Dr, Ds, Dt)
+
+    return RefElemData(elem, approxType, N, fv, V1,
+                       tuple(r, s, t), VDM, vec(Fmask),
+                       Nplot, tuple(rp, sp, tp), Vp, 
+                       tuple(rq, sq, tq), wq, Vq,
+                       tuple(rf, sf, tf), wf, Vf, tuple(nrJ, nsJ, ntJ),
+                       M, Pq, Drst, LIFT)
+end
+
 
