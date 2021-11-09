@@ -19,8 +19,8 @@ function init_face_data(elem::Quad, N; quad_rule_face=gauss_quad(0, 0, N))
     nrJ = [-e; e; z; z]
     nsJ = [z; z; -e; e]
 
-    return rf, sf, wf, nrJ, nsJ
-    # return map(x -> reorder_face_nodes_face_to_tensor_product(elem, x), (rf, sf, wf, nrJ, nsJ))
+    # return rf, sf, wf, nrJ, nsJ
+    return map(x -> reorder_face_nodes_face_to_tensor_product(elem, x), (rf, sf, wf, nrJ, nsJ))
 end
 
 function init_face_data(elem::Hex, N; quad_rule_face=quad_nodes(Quad(), N))
@@ -33,7 +33,9 @@ function init_face_data(elem::Hex, N; quad_rule_face=quad_nodes(Quad(), N))
     nrJ = [-e;  e; zz; zz; zz; zz]
     nsJ = [zz; zz; -e;  e; zz; zz]
     ntJ = [zz; zz; zz; zz; -e;  e]
-    return rf, sf, tf, wf, nrJ, nsJ, ntJ
+
+    return map(x -> reorder_face_nodes_face_to_tensor_product(elem, x), (rf, sf, tf, wf, nrJ, nsJ, ntJ))
+    # return rf, sf, tf, wf, nrJ, nsJ, ntJ
 end
 
 function init_face_data(elem::Tet, N; quad_rule_face=quad_nodes(Tri(), N))

@@ -80,6 +80,87 @@ function map_face_nodes(elem::Tet, face_nodes...)
     return rf, sf, tf
 end
 
+
+"""
+    function reorder_face_nodes_tensor_product(elem::Quad, N, x_face)
+
+Reorders an input vector `x_face` so that it is more amenable to tensor product operations on 
+quadrilateral or hexahedral elements. Assumes that the face nodes are ordered face-by-face, where 
+the faces are ordered via 
+    
+    `x_1 = -1, x_1 = 1, x_2 = -1, x_2 = 1` (quadrilateral) 
+    `x_1 = -1, x_1 = 1, x_2 = -1, x_2 = 1, x_3 = -1, x_3 = 1` (hexahedron)
+"""
+function reorder_face_nodes_face_to_tensor_product(elem::Quad, x_face)
+    Nfaces = 4
+    num_pts_per_face = length(x_face) ÷ Nfaces
+
+    # reorder face nodes to fit a tensor product structure better
+    x_face = reshape(x_face, num_pts_per_face, Nfaces)
+
+    # collect nodes corresponding to vertical faces (`r = ±1`)
+    x_face_1 = vcat((x_face[i, 1:2] for i = 1:num_pts_per_face)...)
+
+    # collect nodes corresponding to horizontal faces (`s = ±1`)
+    x_face_2 = vcat((x_face[i, 3:4] for i = 1:num_pts_per_face)...)
+
+    return vec(vcat(x_face_1, x_face_2))
+end
+
+function reorder_face_nodes_face_to_tensor_product(elem::Hex, x_face)
+    Nfaces = 6
+    num_pts_per_face = length(x_face) ÷ Nfaces
+
+    # reorder face nodes to fit a tensor product structure better
+    x_face = reshape(x_face, num_pts_per_face, Nfaces)
+
+    # collect nodes corresponding to faces (`r = ±1`)
+    x_face_1 = vcat((x_face[i, 1:2] for i = 1:num_pts_per_face)...)
+
+    # collect nodes corresponding to horizontal faces (`s = ±1`)
+    x_face_2 = vcat((x_face[i, 3:4] for i = 1:num_pts_per_face)...)
+
+    # collect nodes corresponding to horizontal faces (`t = ±1`)
+    x_face_3 = vcat((x_face[i, 5:6] for i = 1:num_pts_per_face)...)
+
+    return vec(vcat(x_face_1, x_face_2, x_face_3))
+end
+
+"""
+    function reorder_face_nodes_tensor_product_to_face(elem::Quad, N, x_face)
+
+Inverse of `reorder_face_nodes_face_to_tensor_product`. 
+"""
+function reorder_face_nodes_tensor_product_to_face(elem::Quad, x_face)
+    Nfaces = 4
+    num_pts_per_face = length(x_face) ÷ Nfaces
+
+    # reorder face nodes to fit a tensor product structure better
+    x_reordered = zeros(eltype(x_face), num_pts_per_face, Nfaces)
+    x_reordered[:, 1] .= view(x_face, 1 : 2 : 2 * num_pts_per_face)
+    x_reordered[:, 2] .= view(x_face, 2 : 2 : 2 * num_pts_per_face)
+    x_reordered[:, 3] .= view(x_face, 2 * num_pts_per_face + 1 : 2 : 4 * num_pts_per_face)
+    x_reordered[:, 4] .= view(x_face, 2 * num_pts_per_face + 2 : 2 : 4 * num_pts_per_face)
+
+    return vec(x_reordered)
+end
+
+function reorder_face_nodes_tensor_product_to_face(elem::Hex, x_face)
+    Nfaces = 6
+    num_pts_per_face = length(x_face) ÷ Nfaces
+
+    # reorder face nodes to fit a tensor product structure better
+    x_reordered = zeros(eltype(x_face), num_pts_per_face, Nfaces)
+    x_reordered[:, 1] .= view(x_face, 1 : 2 : 2 * num_pts_per_face)
+    x_reordered[:, 2] .= view(x_face, 2 : 2 : 2 * num_pts_per_face)
+    x_reordered[:, 3] .= view(x_face, 2 * num_pts_per_face + 1 : 2 : 4 * num_pts_per_face)
+    x_reordered[:, 4] .= view(x_face, 2 * num_pts_per_face + 2 : 2 : 4 * num_pts_per_face)
+    x_reordered[:, 5] .= view(x_face, 4 * num_pts_per_face + 1 : 2 : 6 * num_pts_per_face)
+    x_reordered[:, 6] .= view(x_face, 4 * num_pts_per_face + 2 : 2 : 6 * num_pts_per_face)
+
+    return vec(x_reordered)
+end
+
 """
     function inverse_trace_constant(rd::RefElemData)
 
