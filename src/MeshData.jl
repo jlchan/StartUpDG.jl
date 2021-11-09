@@ -216,7 +216,7 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2})
     @unpack Vf = rd
     xf = Vf*x
     yf = Vf*y
-    mapM,mapP,mapB = build_node_maps(FToF,xf,yf)
+    mapM, mapP, mapB = build_node_maps(FToF,xf,yf)
     Nfp = size(Vf,1) ÷ Nfaces
     mapM = reshape(mapM,Nfp*Nfaces,K)
     mapP = reshape(mapP,Nfp*Nfaces,K)
@@ -245,37 +245,37 @@ end
 function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
 
     @unpack fv = rd
-    FToF = connect_mesh(EToV,fv)
-    Nfaces,K = size(FToF)
+    FToF = connect_mesh(EToV, fv)
+    Nfaces, K = size(FToF)
 
     #Construct global coordinates
     @unpack V1 = rd
-    x,y,z = (x->V1*x[transpose(EToV)]).((VX,VY,VZ))
+    x, y, z = (x -> V1 * x[transpose(EToV)]).((VX, VY, VZ))
 
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
-    @unpack r,s,t,Vf = rd
-    xf,yf,zf = (x->Vf*x).((x,y,z))
-    mapM,mapP,mapB = build_node_maps(FToF,xf,yf,zf)
-    Nfp = convert(Int,size(Vf,1)/Nfaces)
-    mapM = reshape(mapM,Nfp*Nfaces,K)
-    mapP = reshape(mapP,Nfp*Nfaces,K)
+    @unpack r, s, t, Vf = rd
+    xf, yf, zf = (x -> Vf * x).((x, y, z))
+    mapM, mapP, mapB = build_node_maps(FToF, xf, yf, zf)
+    Nfp = convert(Int, size(Vf, 1) / Nfaces)
+    mapM = reshape(mapM, Nfp * Nfaces, K)
+    mapP = reshape(mapP, Nfp * Nfaces, K)
 
     #Compute geometric factors and surface normals
-    @unpack Dr,Ds,Dt = rd
-    rxJ,sxJ,txJ,ryJ,syJ,tyJ,rzJ,szJ,tzJ,J = geometric_factors(x,y,z,Dr,Ds,Dt)
-    rstxyzJ = SMatrix{3,3}(rxJ,ryJ,rzJ,sxJ,syJ,szJ,txJ,tyJ,tzJ)
+    @unpack Dr, Ds, Dt = rd
+    rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J = geometric_factors(x, y, z, Dr, Ds, Dt)
+    rstxyzJ = SMatrix{3, 3}(rxJ, ryJ, rzJ, sxJ, syJ, szJ, txJ, tyJ, tzJ)
 
-    @unpack Vq,wq = rd
-    xq,yq,zq = (x->Vq*x).((x,y,z))
-    wJq = diagm(wq)*(Vq*J)
+    @unpack Vq, wq = rd
+    xq, yq, zq = (x -> Vq * x).((x, y, z))
+    wJq = diagm(wq) * (Vq * J)
 
     nxJ,nyJ,nzJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
 
-    is_periodic = (false,false,false)
-    return MeshData(tuple(VX,VY,VZ),EToV,FToF,
-                    tuple(x,y,z),tuple(xf,yf,zf),tuple(xq,yq,zq),wJq,
-                    mapM,mapP,mapB,
-                    rstxyzJ,J,tuple(nxJ,nyJ,nzJ),sJ,
+    is_periodic = (false, false, false)
+    return MeshData(tuple(VX, VY, VZ), EToV, FToF,
+                    tuple(x, y, z), tuple(xf, yf, zf), tuple(xq, yq, zq), wJq,
+                    mapM, mapP, mapB,
+                    rstxyzJ, J, tuple(nxJ, nyJ, nzJ), sJ,
                     is_periodic)
 end
 
@@ -284,35 +284,35 @@ MeshData(md::MeshData, rd::RefElemData, xyz...) = MeshData(rd, md, xyz...)
 function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
 
     # compute new quad and plotting points
-    xyzf = map(x->rd.Vf*x,xyz)
-    xyzq = map(x->rd.Vq*x,xyz)
+    xyzf = map(x -> rd.Vf * x, xyz)
+    xyzq = map(x -> rd.Vq * x, xyz)
 
     #Compute geometric factors and surface normals
-    geo = geometric_factors(xyz...,rd.Drst...)
+    geo = geometric_factors(xyz..., rd.Drst...)
     if Dim==1
-        rstxyzJ = SMatrix{Dim,Dim}(geo[1])
+        rstxyzJ = SMatrix{Dim, Dim}(geo[1])
     elseif Dim==2
-        rstxyzJ = SMatrix{Dim,Dim}(geo[1],geo[3],
-                                   geo[2],geo[4])
+        rstxyzJ = SMatrix{Dim, Dim}(geo[1], geo[3],
+                                    geo[2], geo[4])
     elseif Dim==3
-        rstxyzJ = SMatrix{Dim,Dim}(geo[1],geo[4],geo[7],
-                                   geo[2],geo[5],geo[8],
-                                   geo[3],geo[6],geo[9])
+        rstxyzJ = SMatrix{Dim, Dim}(geo[1], geo[4], geo[7],
+                                    geo[2], geo[5], geo[8],
+                                    geo[3], geo[6], geo[9])
     end
-    geof = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
+    geof = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
-    setproperties(md,(xyz=xyz,xyzq=xyzq,xyzf=xyzf,
-                  rstxyzJ=rstxyzJ,J=last(geo),
-                  nxyzJ=geof[1:Dim],Jf=last(geof)))
+    setproperties(md,(xyz=xyz, xyzq=xyzq, xyzf=xyzf,
+                  rstxyzJ=rstxyzJ, J=last(geo),
+                  nxyzJ=geof[1:Dim], Jf=last(geof)))
 end
 
 
 # physical normals are computed via G*nhatJ, G = matrix of geometric terms
 function compute_normals(geo::SMatrix{Dim, Dim}, Vf, nrstJ...) where {Dim}
-    nxyzJ = ntuple(x->zeros(size(Vf,1),size(first(geo),2)),Dim)
+    nxyzJ = ntuple(x -> zeros(size(Vf, 1), size(first(geo), 2)), Dim)
     for i = 1:Dim, j = 1:Dim
-        nxyzJ[i] .+= (Vf*geo[i,j]).*nrstJ[j]
+        nxyzJ[i] .+= (Vf * geo[i,j]) .* nrstJ[j]
     end
-    sJ = sqrt.(sum(map(x->x.^2,nxyzJ)))
-    return nxyzJ...,sJ
+    sJ = sqrt.(sum(map(x -> x.^2, nxyzJ)))
+    return nxyzJ..., sJ
 end

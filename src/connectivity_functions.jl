@@ -13,20 +13,20 @@ Output: `FToF`, `length(fv)` by `K` index array containing face-to-face connecti
 """
 function connect_mesh(EToV, fv)
     Nfaces = length(fv)
-    K = size(EToV,1)
+    K = size(EToV, 1)
 
     # sort and find matches
-    fnodes = [[sort(EToV[e,ids]) for ids in fv, e = 1:K]...]
+    fnodes = [[sort(EToV[e, ids]) for ids in fv, e in 1:K]...]
     p = sortperm(fnodes) # sorts by lexicographic ordering by default
-    fnodes = fnodes[p,:]
+    fnodes = fnodes[p, :]
 
-    FToF = reshape(collect(1:Nfaces*K),Nfaces,K)
-    for f = 1:size(fnodes,1)-1
-        if fnodes[f,:]==fnodes[f+1,:]
+    FToF = reshape(collect(1:Nfaces * K), Nfaces, K)
+    for f = 1:size(fnodes, 1) - 1
+        if fnodes[f, :]==fnodes[f + 1, :]
             f1 = FToF[p[f]]
-            f2 = FToF[p[f+1]]
+            f2 = FToF[p[f + 1]]
             FToF[p[f]] = f2
-            FToF[p[f+1]] = f1
+            FToF[p[f + 1]] = f1
         end
     end
     return FToF
@@ -60,27 +60,27 @@ function build_node_maps(FToF, Xf...; tol = 1e-12)
     mapM = reshape(collect(1:length(Xf[1])), Nfp, NfacesK);
     mapP = copy(mapM);
 
-    D = zeros(Nfp,Nfp)
-    idM,idP = zeros(Int,Nfp),zeros(Int,Nfp)
-    for (f1,f2) in enumerate(FToF)
+    D = zeros(Nfp, Nfp)
+    idM,idP = zeros(Int, Nfp), zeros(Int, Nfp)
+    for (f1, f2) in enumerate(FToF)
 
-        fill!(D,zero(eltype(D)))
+        fill!(D, zero(eltype(D)))
 
         # find volume node numbers of left and right nodes
-        for i = 1:dims
-            Xfi = reshape(Xf[i],Nfp,NfacesK)
-            for j = 1:Nfp, k = 1:Nfp
-                D[j,k] += abs(Xfi[j,f1]-Xfi[k,f2])
+        for i in 1:dims
+            Xfi = reshape(Xf[i], Nfp, NfacesK)
+            for j in 1:Nfp, k in 1:Nfp
+                D[j, k] += abs(Xfi[j, f1] - Xfi[k, f2])
             end
         end
 
         refd = maximum(D[:])
-        map!(id->id[1], idM, findall(@. D < NODETOL*refd))
-        map!(id->id[2], idP, findall(@. D < NODETOL*refd))        
-        @. mapP[idM,f1] = idP + (f2-1)*Nfp
+        map!(id -> id[1], idM, findall(@. D < NODETOL * refd))
+        map!(id -> id[2], idP, findall(@. D < NODETOL * refd))        
+        @. mapP[idM, f1] = idP + (f2 - 1) * Nfp
     end
 
-    mapB = map(x->x[1],findall(@. mapM[:]==mapP[:]))
+    mapB = map(x -> x[1], findall(@. mapM[:]==mapP[:]))
     return mapM, mapP, mapB
 end
 
@@ -155,29 +155,29 @@ function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
         ymin,ymax = extrema(yc)
 
         NODETOL = 1e-12
-        LX,LY = map((x->x[2]-x[1])∘extrema,(xf,yf))
-        if abs(abs(xmax-xmin)-LX)>NODETOL && is_periodic_x
+        LX,LY = map((x -> x[2] - x[1]) ∘ extrema, (xf, yf))
+        if abs(abs(xmax - xmin) - LX) > NODETOL && is_periodic_x
             error("periodicity requested in x, but max_dist(xf) != max_dist(xc)")
         end
-        if abs(abs(ymax-ymin)-LY)>NODETOL && is_periodic_y
+        if abs(abs(ymax - ymin) - LY) > NODETOL && is_periodic_y
             error("periodicity requested in y, but max_dist(yf) != max_dist(yc)")
         end
 
         # determine which faces lie on x and y boundaries
         Xscale, Yscale = max(1,LX), max(1,LY)        
-        yfaces = map(x->x[1],findall(@. (@. abs(yc-ymax)<NODETOL*Yscale) | (@. abs(yc-ymin)<NODETOL*Yscale)))
-        xfaces = map(x->x[1],findall(@. (@. abs(xc-xmax)<NODETOL*Xscale) | (@. abs(xc-xmin)<NODETOL*Xscale)))
+        yfaces = map(x -> x[1], findall(@. (@. abs(yc - ymax) < NODETOL * Yscale) | (@. abs(yc - ymin) < NODETOL * Yscale)))
+        xfaces = map(x -> x[1], findall(@. (@. abs(xc - xmax) < NODETOL * Xscale) | (@. abs(xc - xmin) < NODETOL * Xscale)))
 
         D = zeros(eltype(xb), size(xb,1), size(xb,1))
         ids = zeros(Int,size(xb,1))    
         if is_periodic_y # find matches in y faces
             for i in yfaces, j in yfaces
                 if i!=j
-                    if abs(xc[i]-xc[j])<NODETOL*Xscale && abs(abs(yc[i]-yc[j])-LY)<NODETOL*Yscale
+                    if abs(xc[i] - xc[j]) < NODETOL * Xscale && abs(abs(yc[i] - yc[j]) - LY) < NODETOL * Yscale
                         # create distance matrix
-                        @. D = abs(xb[:,i] - xb[:,j]')
-                        map!(x->x[1], ids, findall(@. D < NODETOL*Xscale))
-                        @. mapPB[:,i] = mapMB[ids,j]
+                        @. D = abs(xb[:, i] - xb[:, j]')
+                        map!(x -> x[1], ids, findall(@. D < NODETOL * Xscale))
+                        @. mapPB[:, i] = mapMB[ids, j]
 
                         FToF[Bfaces[i]] = Bfaces[j]
                     end
@@ -188,10 +188,10 @@ function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
         if is_periodic_x # find matches in x faces
             for i in xfaces, j in xfaces
                 if i!=j
-                    if abs(yc[i]-yc[j])<NODETOL*Yscale && abs(abs(xc[i]-xc[j])-LX)<NODETOL*Xscale
+                    if abs(yc[i] - yc[j]) < NODETOL * Yscale && abs(abs(xc[i] - xc[j]) - LX) < NODETOL * Xscale
                         @. D = abs(yb[:,i] - yb[:,j]')
-                        map!(x->x[1], ids, findall(@. D < NODETOL*Yscale))
-                        mapPB[:,i]=mapMB[ids,j]
+                        map!(x->x[1], ids, findall(@. D < NODETOL * Yscale))
+                        mapPB[:, i] = mapMB[ids, j]
 
                         FToF[Bfaces[i]] = Bfaces[j]
                     end
@@ -217,42 +217,42 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     xb, yb, zb = (x->reshape(x, Nfp, Nbfaces)).((xb, yb, zb))
 
     # compute centroids of faces
-    xc = vec(sum(xb,dims=1)/Nfp)
-    yc = vec(sum(yb,dims=1)/Nfp)
-    zc = vec(sum(zb,dims=1)/Nfp)
-    mapMB = reshape(mapM[mapB],Nfp,Nbfaces)
-    mapPB = reshape(mapP[mapB],Nfp,Nbfaces)
+    xc = vec(sum(xb, dims=1) / Nfp)
+    yc = vec(sum(yb, dims=1) / Nfp)
+    zc = vec(sum(zb, dims=1) / Nfp)
+    mapMB = reshape(mapM[mapB], Nfp, Nbfaces)
+    mapPB = reshape(mapP[mapB], Nfp, Nbfaces)
 
-    xmin,xmax = extrema(xc)
-    ymin,ymax = extrema(yc)
-    zmin,zmax = extrema(zc)
+    xmin, xmax = extrema(xc)
+    ymin, ymax = extrema(yc)
+    zmin, zmax = extrema(zc)
 
-    NODETOL = 1e-12
-    LX,LY,LZ = map((x->x[2]-x[1])∘extrema,(xf,yf,zf))
-    if abs(abs(xmax-xmin)-LX)>NODETOL && is_periodic_x
+    NODETOL = 100 * eps(eltype(xf))
+    LX, LY, LZ = map((x -> x[2] - x[1]) ∘ extrema, (xf, yf, zf))
+    if abs(abs(xmax - xmin) - LX) > NODETOL && is_periodic_x
         error("periodicity requested in x, but max_dist(xf) != max_dist(xc)")
     end
-    if abs(abs(ymax-ymin)-LY)>NODETOL && is_periodic_y
+    if abs(abs(ymax - ymin) - LY) > NODETOL && is_periodic_y
         error("periodicity requested in y, but max_dist(yf) != max_dist(yc)")
     end
-    if abs(abs(zmax-zmin)-LZ)>NODETOL && is_periodic_z
+    if abs(abs(zmax - zmin) - LZ) > NODETOL && is_periodic_z
         error("periodicity requested in z, but max_dist(zf) != max_dist(zc)")
     end
 
     # determine which faces lie on x and y boundaries
-    xfaces = map(x->x[1],findall(@. (@. abs(xc-xmax)<NODETOL*LX) | (@. abs(xc-xmin)<NODETOL*LX)))
-    yfaces = map(x->x[1],findall(@. (@. abs(yc-ymax)<NODETOL*LY) | (@. abs(yc-ymin)<NODETOL*LY)))
-    zfaces = map(x->x[1],findall(@. (@. abs(zc-zmax)<NODETOL*LZ) | (@. abs(zc-zmin)<NODETOL*LZ)))
+    xfaces = map(x -> x[1], findall(@. (@. abs(xc - xmax) < NODETOL * LX) | (@. abs(xc - xmin) < NODETOL * LX)))
+    yfaces = map(x -> x[1], findall(@. (@. abs(yc - ymax) < NODETOL * LY) | (@. abs(yc - ymin) < NODETOL * LY)))
+    zfaces = map(x -> x[1], findall(@. (@. abs(zc - zmax) < NODETOL * LZ) | (@. abs(zc - zmin) < NODETOL * LZ)))
 
     D = zeros(eltype(xb), size(xb,1), size(xb,1))
-    ids = zeros(Int,size(xb,1))
+    ids = zeros(Int, size(xb, 1))
     if is_periodic_x # find matches in x faces
         for i in xfaces, j in xfaces
             if i!=j
-                if abs(yc[i]-yc[j]) < NODETOL*LY && abs(zc[i]-zc[j]) < NODETOL*LZ && abs(abs(xc[i]-xc[j])-LX) < NODETOL*LX
+                if abs(yc[i] - yc[j]) < NODETOL * LY && abs(zc[i] - zc[j]) < NODETOL * LZ && abs(abs(xc[i] - xc[j]) - LX) < NODETOL * LX
                     # create distance matrix
                     @. D = abs(yb[:,i] - yb[:,j]') + abs(zb[:,i] - zb[:,j]')
-                    map!(x->x[1], ids, findall(@.D < NODETOL*LY))
+                    map!(x->x[1], ids, findall(@. D < NODETOL * LY))
                     @. mapPB[:,i] = mapMB[ids,j]
 
                     FToF[Bfaces[i]] = Bfaces[j]
@@ -265,9 +265,9 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     if is_periodic_y
         for i in yfaces, j = yfaces
             if i!=j
-                if abs(xc[i]-xc[j]) < NODETOL*LX && abs(zc[i]-zc[j]) < NODETOL*LZ && abs(abs(yc[i]-yc[j])-LY) < NODETOL*LY
+                if abs(xc[i] - xc[j]) < NODETOL * LX && abs(zc[i] - zc[j]) < NODETOL * LZ && abs(abs(yc[i] - yc[j]) - LY) < NODETOL * LY
                     @. D = abs(xb[:,i] - xb[:,j]') + abs(zb[:,i] - zb[:,j]')
-                    map!(x->x[1], ids, findall(@.D < NODETOL*LX))
+                    map!(x->x[1], ids, findall(@. D < NODETOL * LX))
                     @. mapPB[:,i] = mapMB[ids,j]
 
                     FToF[Bfaces[i]] = Bfaces[j]
@@ -280,9 +280,9 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     if is_periodic_z
         for i in zfaces, j in zfaces
             if i!=j
-                if abs(xc[i]-xc[j]) < NODETOL*LX && abs(yc[i]-yc[j]) < NODETOL*LY && abs(abs(zc[i]-zc[j])-LZ) < NODETOL*LZ
+                if abs(xc[i] - xc[j]) < NODETOL * LX && abs(yc[i] - yc[j]) < NODETOL * LY && abs(abs(zc[i] - zc[j]) - LZ) < NODETOL * LZ
                     @. D = abs(xb[:,i] - xb[:,j]') + abs(yb[:,i] - yb[:,j]')
-                    map!(x->x[1], ids, findall(@.D < NODETOL*LX))
+                    map!(x->x[1], ids, findall(@. D < NODETOL * LX))
                     @. mapPB[:,i] = mapMB[ids,j]
 
                     FToF[Bfaces[i]] = Bfaces[j]
