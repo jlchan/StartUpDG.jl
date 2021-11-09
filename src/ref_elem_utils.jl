@@ -1,23 +1,23 @@
-#####
-##### ordering of faces in terms of vertices
-#####
-function face_vertices(elem::Line)
-    return 1, 2
-end
+"""
+    function find_face_nodes(elem, r, s, tol=50*eps())
+    function find_face_nodes(elem, r, s, t, tol=50*eps())
 
+Given volume nodes `r`, `s`, `t`, finds face nodes. Note that this function implicitly 
+defines an ordering on the faces. 
+"""
 function find_face_nodes(elem::Tri, r, s, tol=50*eps())
     e1 = findall(@. abs(s + 1) < tol)
     e2 = findall(@. abs(r + s) < tol)
     e3 = findall(@. abs(r + 1) < tol)
-    return e1,reverse(e2),reverse(e3)
+    return e1, reverse(e2), reverse(e3)
 end
 
 function find_face_nodes(elem::Quad, r, s, tol=50*eps())
-    e1 = findall(@. abs(s + 1) < tol)
+    e1 = findall(@. abs(r + 1) < tol)
     e2 = findall(@. abs(r - 1) < tol)
-    e3 = findall(@. abs(s - 1) < tol)
-    e4 = findall(@. abs(r + 1) < tol)
-    return e1, e2, reverse(e3), reverse(e4)
+    e3 = findall(@. abs(s + 1) < tol)
+    e4 = findall(@. abs(s - 1) < tol)
+    return e1, e2, e3, e4
 end
 
 function find_face_nodes(elem::Hex, r, s, t, tol=50*eps())
@@ -39,6 +39,7 @@ function find_face_nodes(elem::Tet, r, s, t, tol=50*eps())
 end
 
 # face vertices = face nodes of degree 1
+face_vertices(elem::Line) = 1, 2
 face_vertices(elem) = find_face_nodes(elem, nodes(elem, 1)...)
 
 #####
@@ -56,8 +57,8 @@ end
 function map_face_nodes(elem::Quad, face_nodes)
     r1D = face_nodes
     e = ones(size(r1D))
-    rf = [r1D; e; -r1D; -e]
-    sf = [-e; r1D; e; -r1D]
+    rf = [-e; e; r1D; r1D]
+    sf = [r1D; r1D; -e; e]
     return rf, sf
 end
 

@@ -155,7 +155,7 @@
         @test Vf * y ≈ yf
         @test abs(sum(diagm(wf) * nxJ)) < tol
         @test abs(sum(diagm(wf) * nyJ)) < tol
-        @test sum(@. wf * nxJ * (1 + xf)/2) ≈ 2.0 # check sign of normals
+        @test sum(@. wf * nxJ * (1 + xf) / 2) ≈ 2.0 # check sign of normals
 
         # check connectivity and boundary maps
         u = @. (1-x) * (1+x) * (1-y) * (1+y)

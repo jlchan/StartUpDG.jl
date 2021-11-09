@@ -1,8 +1,7 @@
 function init_face_data(elem::Tri, N; quad_rule_face = gauss_quad(0,0,N))
-    # Nodes on faces, and face node coordinate
     r1D, w1D = quad_rule_face
-    e = ones(size(r1D)) # vector of all ones
-    z = zeros(size(r1D)) # vector of all zeros
+    e = ones(size(r1D)) 
+    z = zeros(size(r1D)) 
     rf,sf = map_face_nodes(elem,r1D)
     wf = vec(repeat(w1D,3,1));
     nrJ = [z; e; -e]
@@ -11,19 +10,18 @@ function init_face_data(elem::Tri, N; quad_rule_face = gauss_quad(0,0,N))
 end
 
 function init_face_data(elem::Quad, N; quad_rule_face=gauss_quad(0, 0, N))
-    r1D,w1D = quad_rule_face
+    Nfaces = 4
+    r1D, w1D = quad_rule_face
     e = ones(size(r1D))
     z = zeros(size(r1D))
-    rf,sf = map_face_nodes(elem, r1D)
-    wf = vec(repeat(w1D, 4, 1)); # 4 faces
-    nrJ = [z; e; z; -e]
-    nsJ = [-e; z; e; z]
-    return rf,sf,wf,nrJ,nsJ
+    rf, sf = map_face_nodes(elem, r1D)
+    wf = vec(repeat(w1D, Nfaces, 1)) 
+    nrJ = [-e; e; z; z]
+    nsJ = [z; z; -e; e]
 
     return rf, sf, wf, nrJ, nsJ
+    # return map(x -> reorder_face_nodes_face_to_tensor_product(elem, x), (rf, sf, wf, nrJ, nsJ))
 end
-
-# function counter
 
 function init_face_data(elem::Hex, N; quad_rule_face=quad_nodes(Quad(), N))
     rquad, squad, wquad = quad_rule_face

@@ -17,7 +17,7 @@ function boundary_face_centroids(md)
     boundary_face_ids = findall(vec(md.FToF) .== 1:length(md.FToF))
 
     # compute coordinates of face centroids on the boundary
-    xyzb = map(x->x[boundary_face_ids], xyzc) 
+    xyzb = map(x -> x[boundary_face_ids], xyzc) 
     return xyzb, boundary_face_ids
 end
 

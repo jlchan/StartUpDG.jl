@@ -204,40 +204,40 @@ end
 function MeshData(VX, VY, EToV, rd::RefElemData{2})
 
     @unpack fv = rd
-    FToF = connect_mesh(EToV,fv)
-    Nfaces,K = size(FToF)
+    FToF = connect_mesh(EToV, fv)
+    Nfaces, K = size(FToF)
 
     #Construct global coordinates
     @unpack V1 = rd
-    x = V1*VX[transpose(EToV)]
-    y = V1*VY[transpose(EToV)]
+    x = V1 * VX[transpose(EToV)]
+    y = V1 * VY[transpose(EToV)]
 
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
     @unpack Vf = rd
-    xf = Vf*x
-    yf = Vf*y
-    mapM, mapP, mapB = build_node_maps(FToF,xf,yf)
-    Nfp = size(Vf,1) ÷ Nfaces
-    mapM = reshape(mapM,Nfp*Nfaces,K)
-    mapP = reshape(mapP,Nfp*Nfaces,K)
+    xf = Vf * x
+    yf = Vf * y
+    mapM, mapP, mapB = build_node_maps(FToF, xf, yf)
+    Nfp = size(Vf, 1) ÷ Nfaces
+    mapM = reshape(mapM, Nfp * Nfaces, K)
+    mapP = reshape(mapP, Nfp * Nfaces, K)
 
     #Compute geometric factors and surface normals
-    @unpack Dr,Ds = rd
+    @unpack Dr, Ds = rd
     rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, Dr, Ds)
-    rstxyzJ = SMatrix{2,2}(rxJ,ryJ,sxJ,syJ)
+    rstxyzJ = SMatrix{2, 2}(rxJ, ryJ, sxJ, syJ)
 
-    @unpack Vq,wq = rd
-    xq,yq = (x->Vq*x).((x,y))
-    wJq = diagm(wq)*(Vq*J)
+    @unpack Vq, wq = rd
+    xq,yq = (x -> Vq * x).((x, y))
+    wJq = diagm(wq) * (Vq * J)
 
-    nxJ,nyJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
+    nxJ, nyJ, sJ = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
-    is_periodic = (false,false)
-    return MeshData(tuple(VX,VY),EToV,FToF,
-                    tuple(x,y),tuple(xf,yf),tuple(xq,yq),wJq,
-                    mapM,mapP,mapB,
-                    SMatrix{2,2}(tuple(rxJ,ryJ,sxJ,syJ)),J,
-                    tuple(nxJ,nyJ),sJ,
+    is_periodic = (false, false)
+    return MeshData(tuple(VX, VY), EToV, FToF,
+                    tuple(x, y), tuple(xf, yf), tuple(xq, yq), wJq,
+                    mapM, mapP, mapB,
+                    SMatrix{2, 2}(tuple(rxJ, ryJ, sxJ, syJ)), J,
+                    tuple(nxJ, nyJ), sJ,
                     is_periodic)
 
 end
