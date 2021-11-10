@@ -20,7 +20,6 @@ function init_face_data(elem::Quad, N; quad_rule_face=gauss_quad(0, 0, N))
     nsJ = [z; z; -e; e]
 
     return rf, sf, wf, nrJ, nsJ
-    # return map(x -> reorder_face_nodes_face_to_tensor_product(elem, x), (rf, sf, wf, nrJ, nsJ))
 end
 
 function init_face_data(elem::Hex, N; quad_rule_face=quad_nodes(Quad(), N))
