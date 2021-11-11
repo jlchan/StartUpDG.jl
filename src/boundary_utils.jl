@@ -57,6 +57,15 @@ function _tag_boundary_faces(boundary_face_ids, boundary_list, xyzb)
     return boundary_face_ids_list
 end
 
+# specialization to 1D
+function _tag_boundary_faces(boundary_face_ids, boundary_list, xyzb::NTuple{1,Tv}) where {Tv}        
+    boundary_face_ids_list = Vector{Int}[]
+    for boundary_face_flag in values(boundary_list)
+        push!(boundary_face_ids_list, boundary_face_ids[boundary_face_flag.(xyzb[1])])
+    end
+    return boundary_face_ids_list
+end
+
 # todo: should I make this version with NamedTuples the default?
 function tag_boundary_faces(md, boundary_list::NamedTuple)
     xyzb, boundary_face_ids = boundary_face_centroids(md)
