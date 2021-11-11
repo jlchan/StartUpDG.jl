@@ -8,7 +8,7 @@
     @test boundary_dict == Dict(:left=>[1],:right=>[4])
 end
 
-@testset "2D boundary utilities"
+@testset "2D boundary utilities" begin
     rd = RefElemData(Tri(), N=3)
     md = MeshData(uniform_mesh(Tri(), 1)..., rd)
     on_bottom_boundary(xy, tol = 1e-13) = abs(xy[2]+1) < tol
