@@ -1,4 +1,14 @@
-@testset "Boundary utilities" begin
+@testset "1D boundary utilities" begin
+    rd = RefElemData(Line(), N=3)
+    md = MeshData(uniform_mesh(Line(), 2)..., rd)
+    left(x, tol = 1e-13) = abs(x[1]+1) < tol
+    right(x, tol = 1e-13) = abs(x[1]-1) < tol
+
+    boundary_dict = tag_boundary_faces(md, Dict(:left => left, :right => right))
+    @test boundary_dict == Dict(:bottom=>[1],:top=>[4])
+end
+
+@testset "2D boundary utilities"
     rd = RefElemData(Tri(), N=3)
     md = MeshData(uniform_mesh(Tri(), 1)..., rd)
     on_bottom_boundary(xy, tol = 1e-13) = abs(xy[2]+1) < tol
