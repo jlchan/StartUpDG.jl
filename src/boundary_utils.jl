@@ -49,7 +49,6 @@ function tag_boundary_faces(md, boundary_list::Dict{Symbol, <:Function})
     return Dict(Pair.(keys(boundary_list),boundary_face_ids_list))
 end
 
-# todo: should this take in boundary_face_flag((x,y,z)) instead of boundary_face_flag(x,y,z)?
 function _tag_boundary_faces(boundary_face_ids, boundary_list, xyzb)
     boundary_face_ids_list = Vector{Int}[]
     for boundary_face_flag in values(boundary_list)
