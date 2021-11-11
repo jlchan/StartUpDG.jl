@@ -5,7 +5,7 @@
     right(x, tol = 1e-13) = abs(x[1]-1) < tol
 
     boundary_dict = tag_boundary_faces(md, Dict(:left => left, :right => right))
-    @test boundary_dict == Dict(:bottom=>[1],:top=>[4])
+    @test boundary_dict == Dict(:left=>[1],:right=>[4])
 end
 
 @testset "2D boundary utilities"
