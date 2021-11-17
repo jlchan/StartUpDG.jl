@@ -154,17 +154,17 @@ function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
     xmin, xmax = extrema(xc)
     ymin, ymax = extrema(yc)
 
-    NODETOL = 1e-12
-    LX,LY = map((x -> x[2] - x[1]) ∘ extrema, (xf, yf))
+    LX, LY = map((x -> x[2] - x[1]) ∘ extrema, (xf, yf))
+    NODETOL = 100 * max(eps.((LX, LY))...)
     if abs(abs(xmax - xmin) - LX) > NODETOL && is_periodic_x
-        error("periodicity requested in x, but max_dist(xf) != max_dist(xc)")
+        error("periodicity requested in x, but LX = $LX while abs(xmax-xmin) = $(abs(xmax-xmin))")
     end
     if abs(abs(ymax - ymin) - LY) > NODETOL && is_periodic_y
-        error("periodicity requested in y, but max_dist(yf) != max_dist(yc)")
+        error("periodicity requested in y, but LX = $LY while abs(ymax-ymin) = $(abs(ymax-ymin))")
     end
 
     # determine which faces lie on x and y boundaries
-    Xscale, Yscale = max(1,LX), max(1,LY)        
+    Xscale, Yscale = max(1, LX), max(1, LY)        
     yfaces = map(x -> x[1], findall(@. (@. abs(yc - ymax) < NODETOL * Yscale) | (@. abs(yc - ymin) < NODETOL * Yscale)))
     xfaces = map(x -> x[1], findall(@. (@. abs(xc - xmax) < NODETOL * Xscale) | (@. abs(xc - xmin) < NODETOL * Xscale)))
 
@@ -227,16 +227,16 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     ymin, ymax = extrema(yc)
     zmin, zmax = extrema(zc)
 
-    NODETOL = 100 * eps(eltype(xf))
     LX, LY, LZ = map((x -> x[2] - x[1]) ∘ extrema, (xf, yf, zf))
+    NODETOL = 100 * max(eps.((LX, LY, LZ))...)
     if abs(abs(xmax - xmin) - LX) > NODETOL && is_periodic_x
-        error("periodicity requested in x, but max_dist(xf) != max_dist(xc)")
+        error("periodicity requested in x, but LX = $LX while abs(xmax-xmin) for centroids = $(abs(xmax-xmin))")
     end
     if abs(abs(ymax - ymin) - LY) > NODETOL && is_periodic_y
-        error("periodicity requested in y, but max_dist(yf) != max_dist(yc)")
+        error("periodicity requested in y, but LY = $LY while abs(xmax-xmin) for centroids = $(abs(ymax-ymin))")
     end
     if abs(abs(zmax - zmin) - LZ) > NODETOL && is_periodic_z
-        error("periodicity requested in z, but max_dist(zf) != max_dist(zc)")
+        error("periodicity requested in z, but LZ = $LZ while abs(xmax-xmin) for centroids = $(abs(zmax-zmin))")
     end
 
     # determine which faces lie on x and y boundaries
