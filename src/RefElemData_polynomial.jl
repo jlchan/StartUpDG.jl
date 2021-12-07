@@ -1,4 +1,4 @@
-function init_face_data(elem::Tri, N; quad_rule_face = gauss_quad(0,0,N))
+function init_face_data(elem::Tri; quad_rule_face = gauss_quad(0,0,N))
     r1D, w1D = quad_rule_face
     e = ones(size(r1D)) 
     z = zeros(size(r1D)) 
@@ -9,7 +9,7 @@ function init_face_data(elem::Tri, N; quad_rule_face = gauss_quad(0,0,N))
     return rf,sf,wf,nrJ,nsJ
 end
 
-function init_face_data(elem::Quad, N; quad_rule_face=gauss_quad(0, 0, N))
+function init_face_data(elem::Quad; quad_rule_face=gauss_quad(0, 0, N))
     Nfaces = 4
     r1D, w1D = quad_rule_face
     e = ones(size(r1D))
@@ -22,7 +22,7 @@ function init_face_data(elem::Quad, N; quad_rule_face=gauss_quad(0, 0, N))
     return rf, sf, wf, nrJ, nsJ
 end
 
-function init_face_data(elem::Hex, N; quad_rule_face=quad_nodes(Quad(), N))
+function init_face_data(elem::Hex; quad_rule_face=quad_nodes(Quad(), N))
     rquad, squad, wquad = quad_rule_face
     e = ones(size(rquad))
     zz = zeros(size(rquad))
@@ -35,7 +35,7 @@ function init_face_data(elem::Hex, N; quad_rule_face=quad_nodes(Quad(), N))
     return rf, sf, tf, wf, nrJ, nsJ, ntJ
 end
 
-function init_face_data(elem::Tet, N; quad_rule_face=quad_nodes(Tri(), N))
+function init_face_data(elem::Tet; quad_rule_face=quad_nodes(Tri(), N))
     rquad, squad, wquad = quad_rule_face
     e = ones(size(rquad))
     zz = zeros(size(rquad))
@@ -118,7 +118,7 @@ function RefElemData(elem::Union{Tri, Quad},  approxType::Polynomial, N;
     r1, s1 = nodes(elem, 1)
     V1 = vandermonde(elem, 1, r, s) / vandermonde(elem, 1, r1, s1)
 
-    rf, sf, wf, nrJ, nsJ = init_face_data(elem, N, quad_rule_face = quad_rule_face)
+    rf, sf, wf, nrJ, nsJ = init_face_data(elem, quad_rule_face = quad_rule_face)
 
     rq, sq, wq = quad_rule_vol
     Vq = vandermonde(elem, N, rq, sq) / VDM
@@ -158,7 +158,7 @@ function RefElemData(elem::Tet, approxType::Polynomial, N;
     V1 = vandermonde(elem, 1, r, s, t) / vandermonde(elem, 1, r1, s1, t1)
 
     # Nodes on faces, and face node coordinate
-    rf, sf, tf, wf, nrJ, nsJ, ntJ = init_face_data(elem, N, quad_rule_face = quad_rule_face)
+    rf, sf, tf, wf, nrJ, nsJ, ntJ = init_face_data(elem, quad_rule_face = quad_rule_face)
 
     # quadrature nodes - build from 1D nodes.
     rq, sq, tq, wq = quad_rule_vol
@@ -216,7 +216,7 @@ function RefElemData(elem::Hex, approxType::Polynomial, N;
     V1 = vandermonde(elem, 1, r, s, t) / vandermonde(elem, 1, r1, s1, t1)
 
     # Nodes on faces, and face node coordinate
-    rf, sf, tf, wf, nrJ, nsJ, ntJ = init_face_data(elem, N, quad_rule_face=quad_rule_face)
+    rf, sf, tf, wf, nrJ, nsJ, ntJ = init_face_data(elem, quad_rule_face=quad_rule_face)
 
     # quadrature nodes - build from 1D nodes.
     rq, sq, tq, wq = quad_rule_vol
