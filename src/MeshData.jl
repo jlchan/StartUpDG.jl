@@ -13,30 +13,33 @@ md = MeshElemData(VXY, EToV, rd)
 @unpack x, y = md
 ```
 """
-Base.@kwdef struct MeshData{Dim, Tv, Ti, DimTimesDim}
+Base.@kwdef struct MeshData{Dim, VolumeType, FaceType,                             
+                            VertexType, EToVType, FToFType, 
+                            ConnectivityType, BoundaryMapType, 
+                            DimTimesDim}
 
     # num_elements::Ti            # number of elements
-    VXYZ::NTuple{Dim, Vector{Tv}}  # vertex coordinates
-    EToV::Matrix{Ti}              # mesh vertex array 
-    FToF::Matrix{Ti}              # face connectivity
+    VXYZ::NTuple{Dim, VertexType}  # vertex coordinates
+    EToV::EToVType              # mesh vertex array 
+    FToF::FToFType              # face connectivity
 
-    xyz::NTuple{Dim, Matrix{Tv}}   # physical points
-    xyzf::NTuple{Dim, Matrix{Tv}}  # face nodes
-    xyzq::NTuple{Dim, Matrix{Tv}}  # phys quad points, Jacobian-scaled weights
-    wJq::Matrix{Tv}
+    xyz::NTuple{Dim, VolumeType}   # physical points
+    xyzf::NTuple{Dim, FaceType}  # face nodes
+    xyzq::NTuple{Dim, VolumeType}  # phys quad points, Jacobian-scaled weights
+    wJq::VolumeType
 
     # arrays of connectivity indices between face nodes
-    mapM::Matrix{Ti}
-    mapP::Matrix{Ti}
-    mapB::Vector{Ti}
+    mapM::ConnectivityType
+    mapP::ConnectivityType
+    mapB::BoundaryMapType
 
     # volume geofacs Gij = dx_i/dxhat_j
-    rstxyzJ::SMatrix{Dim, Dim, Matrix{Tv}, DimTimesDim}
-    J::Matrix{Tv}
+    rstxyzJ::SMatrix{Dim, Dim, VolumeType, DimTimesDim}
+    J::VolumeType
 
     # surface geofacs
-    nxyzJ::NTuple{Dim, Matrix{Tv}}
-    Jf::Matrix{Tv}
+    nxyzJ::NTuple{Dim, FaceType}
+    Jf::FaceType
 
     is_periodic::NTuple{Dim, Bool}
 end
@@ -51,7 +54,7 @@ function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM}) where {DIM}
 end
 
 # enable use of @set and setproperties(...) for MeshData
-ConstructionBase.constructorof(::Type{MeshData{A, B, C}}) where {A, B, C} = MeshData{A, B, C}
+ConstructionBase.constructorof(::Type{MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}}) where {T1, T2, T3, T4, T5, T6, T7, T8, T9} = MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}
 
 function Base.propertynames(x::MeshData{1}, private::Bool = false)
     return (fieldnames(MeshData)...,
