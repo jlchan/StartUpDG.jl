@@ -109,10 +109,10 @@ function diagE_sbp_nodes(elem::Tri, approxType::SBP{Kubatko{LobattoFaceNodes}}, 
     end
 
     # from Ethan Kubatko, private communication
-    vars = load((@__DIR__) * "/data/sbp_nodes/KubatkoQuadratureRules.jld2")["vars"]
-    rs = vars["Q_GaussLobatto"][N]["Points"]
-    r,s = (rs[:, i] for i = 1:size(rs, 2))
-    w = vec(vars["Q_GaussLobatto"][N]["Weights"])
+    vars = h5open((@__DIR__) * "/data/sbp_nodes/KubatkoQuadratureRules.h5", "r")
+    rs = vars["Q_GaussLobatto"]["Points"][string(N)][]
+    r, s = (rs[:, i] for i = 1:size(rs, 2))
+    w = vec(vars["Q_GaussLobatto"]["Weights"][string(N)][])
     quad_rule_face = gauss_lobatto_quad(0, 0, N+1)     
 
     return (r, s, w), quad_rule_face 
@@ -121,10 +121,10 @@ end
 function diagE_sbp_nodes(elem::Tri, approxType::SBP{Kubatko{LegendreFaceNodes}}, N)    
 
     # from Ethan Kubatko, private communication
-    vars = load((@__DIR__) * "/data/sbp_nodes/KubatkoQuadratureRules.jld2")["vars"]
-    rs = vars["Q_GaussLegendre"][N]["Points"]
-    r,s = (rs[:, i] for i = 1:size(rs, 2))
-    w = vec(vars["Q_GaussLegendre"][N]["Weights"])
+    vars = h5open((@__DIR__) * "/data/sbp_nodes/KubatkoQuadratureRules.h5", "r")
+    rs = vars["Q_GaussLegendre"]["Points"][string(N)][]
+    r, s = (rs[:, i] for i = 1:size(rs, 2))
+    w = vec(vars["Q_GaussLegendre"]["Weights"][string(N)][])
     quad_rule_face = gauss_quad(0, 0, N)
 
     return (r, s, w), quad_rule_face 
