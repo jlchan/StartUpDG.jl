@@ -102,6 +102,20 @@ end
 ##### Utilities for SBP 
 #####
 
+# - HDF5 file created using MAT.jl and the following code:
+# vars = matread("src/data/sbp_nodes/KubatkoQuadratureRules.mat")
+# h5open("src/data/sbp_nodes/KubatkoQuadratureRules.h5", "w") do file
+#     for qtype in ("Q_GaussLobatto", "Q_GaussLegendre")
+#         group = create_group(file, qtype) # create a group
+#         for fieldname in ("Points", "Domain", "Weights")
+#             subgroup = create_group(group, fieldname)
+#             for N in 1:length(vars[qtype])
+#                 subgroup[string(N)] = vars[qtype][N][fieldname]
+#             end
+#         end
+#     end
+# end
+
 function diagE_sbp_nodes(elem::Tri, approxType::SBP{Kubatko{LobattoFaceNodes}}, N)    
     
     if N==6
