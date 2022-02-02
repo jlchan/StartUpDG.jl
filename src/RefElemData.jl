@@ -125,9 +125,10 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType, Nfaces}, 
         return length(getfield(x, :rstq)[1])
     elseif s==:Nfq
         return length(getfield(x, :rstf)[1])
-    elseif s==:elemShape # for compatibility with old names
+    elseif s==:elemShape || s==:element_type # for compatibility with Trixi formatting
         return getfield(x, :elementType)
-
+    elseif s==:approximation_type
+        return getfield(x, :approximationType)
     else
         return getfield(x, s)
     end

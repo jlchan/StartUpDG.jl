@@ -12,7 +12,7 @@ using Reexport
 
 using NodesAndModes: meshgrid
 using SparseArrays: sparse, droptol!
-using MAT # read in .mat files
+using HDF5 # read in SBP triangular node data
 using RecipesBase, Colors 
 
 # reference element utility functions

@@ -102,6 +102,20 @@ end
 ##### Utilities for SBP 
 #####
 
+# - HDF5 file created using MAT.jl and the following code:
+# vars = matread("src/data/sbp_nodes/KubatkoQuadratureRules.mat")
+# h5open("src/data/sbp_nodes/KubatkoQuadratureRules.h5", "w") do file
+#     for qtype in ("Q_GaussLobatto", "Q_GaussLegendre")
+#         group = create_group(file, qtype) # create a group
+#         for fieldname in ("Points", "Domain", "Weights")
+#             subgroup = create_group(group, fieldname)
+#             for N in 1:length(vars[qtype])
+#                 subgroup[string(N)] = vars[qtype][N][fieldname]
+#             end
+#         end
+#     end
+# end
+
 function diagE_sbp_nodes(elem::Tri, approxType::SBP{Kubatko{LobattoFaceNodes}}, N)    
     
     if N==6
@@ -109,24 +123,25 @@ function diagE_sbp_nodes(elem::Tri, approxType::SBP{Kubatko{LobattoFaceNodes}}, 
     end
 
     # from Ethan Kubatko, private communication
-    vars = matread((@__DIR__)*"/data/sbp_nodes/KubatkoQuadratureRules.mat"); 
-    rs = vars["Q_GaussLobatto"][N]["Points"]
-    r,s = (rs[:,i] for i = 1:size(rs,2))
-    w = vec(vars["Q_GaussLobatto"][N]["Weights"])
-    quad_rule_face = gauss_lobatto_quad(0,0,N+1)     
+    vars = h5open((@__DIR__) * "/data/sbp_nodes/KubatkoQuadratureRules.h5", "r")
+    rs = vars["Q_GaussLobatto"]["Points"][string(N)][]
+    r, s = (rs[:, i] for i = 1:size(rs, 2))
+    w = vec(vars["Q_GaussLobatto"]["Weights"][string(N)][])
+    quad_rule_face = gauss_lobatto_quad(0, 0, N+1)     
 
-    return (r,s,w), quad_rule_face 
+    return (r, s, w), quad_rule_face 
 end
 
 function diagE_sbp_nodes(elem::Tri, approxType::SBP{Kubatko{LegendreFaceNodes}}, N)    
 
-    vars = matread((@__DIR__)*"/data/sbp_nodes/KubatkoQuadratureRules.mat"); 
-    rs = vars["Q_GaussLegendre"][N]["Points"]
-    r,s = (rs[:,i] for i = 1:size(rs,2))
-    w = vec(vars["Q_GaussLegendre"][N]["Weights"])
-    quad_rule_face = gauss_quad(0,0,N)
+    # from Ethan Kubatko, private communication
+    vars = h5open((@__DIR__) * "/data/sbp_nodes/KubatkoQuadratureRules.h5", "r")
+    rs = vars["Q_GaussLegendre"]["Points"][string(N)][]
+    r, s = (rs[:, i] for i = 1:size(rs, 2))
+    w = vec(vars["Q_GaussLegendre"]["Weights"][string(N)][])
+    quad_rule_face = gauss_quad(0, 0, N)
 
-    return (r,s,w), quad_rule_face 
+    return (r, s, w), quad_rule_face 
 end
 
 parsevec(type, str) = str |>
