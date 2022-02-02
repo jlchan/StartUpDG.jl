@@ -35,10 +35,10 @@
     # wrap inferrability test in function 
     # https://discourse.julialang.org/t/unexpected-type-instability-with-getproperty-but-not-setproperty/26975/15?u=jlchan
     function foo(rd::RefElemData)
-        rd.Nfq,rd.Np,rd.Nq
+        rd.Nfq, rd.Np, rd.Nq
     end
     function foo(md::MeshData)
-        md.VX,md.VY,md.VZ,md.num_elements,md.K
+        md.VX, md.VY, md.VZ, md.num_elements, md.K
     end
     @inferred foo(rd)
     @inferred foo(md)
