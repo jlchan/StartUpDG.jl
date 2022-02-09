@@ -1,7 +1,7 @@
 """
     function readGmsh2D(filename)
 
-reads triangular GMSH 2D file format 2.2 0 8. returns VX,VY,EToV
+reads triangular GMSH 2D file format 2.2 0 8. returns (VX, VY), EToV
 
 # Examples
 ```julia
@@ -50,7 +50,34 @@ function readGmsh2D(filename)
 
     EToV = EToV[:, vec([1 3 2])] # permute for Gmsh ordering
 
+    EToV = correct_negative_Jacobians!((VX, VY), EToV)
+
     return (VX, VY), EToV
+end
+
+#     compute_triangle_area(tri)
+#
+# Computes the area of a triangle given `tri`, which is a tuple of three points (vectors),
+# using the [Shoelace_formula](https://en.wikipedia.org/wiki/Shoelace_formula).
+function compute_triangle_area(tri)
+    B, A, C = tri
+    return 0.5 * (A[1] * (B[2] - C[2]) + B[1] * (C[2]-A[2]) + C[1] * (A[2] - B[2]))
+end
+
+function correct_negative_Jacobians!((VX, VY), EToV)
+    # detect negative Jacobians 
+    for e in 1:size(EToV, 1)
+        v_ids = view(EToV, e, :)
+        A, B, C = ((VX[v_ids[i]], VY[v_ids[i]]) for i in 1:3)
+        tri = SVector{3}(A, B, C)
+        area = compute_triangle_area(tri)
+        # if triangle area is negative, permute the vertices 
+        # so the area is positive
+        if area < 0
+            view(EToV, e, :) .= (v_ids[2], v_ids[1], v_ids[3])
+        end
+    end
+    return EToV
 end
 
 """

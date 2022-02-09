@@ -8,8 +8,15 @@
     end
 
     @testset "Gmsh reading" begin
-        VXY,EToV = readGmsh2D("squareCylinder2D.msh")
+        VXY, EToV = readGmsh2D("squareCylinder2D.msh")
         @test size(EToV)==(3031,3)
+
+        # malpasset data taken from 
+        # https://github.com/li12242/NDG-FEM/blob/master/Application/SWE/SWE2d/Benchmark/%40Malpasset2d/mesh/triMesh/malpasset.msh
+        VXY, EToV = readGmsh2D("malpasset.msh")
+        rd = RefElemData(Tri(), 1)
+        md = MeshData(VXY, EToV, rd)
+        @test all(md.J .> 0) 
     end
 
     @testset "Triangulate utils/example meshes" begin
