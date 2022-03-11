@@ -29,10 +29,10 @@ dt = FinalTime / Nsteps
 plot() # init plot
 for i = 1:Nsteps
     global res # yes, I know...this is just for simplicty
-    for INTRK=1:5
+    for INTRK = 1:5
         rhsQ = f(Q)
-        @. res = rk4a[INTRK]*res + dt*rhsQ # i = RK stage
-        @. Q =  Q + rk4b[INTRK]*res
+        @. res = rk4a[INTRK] * res + dt * rhsQ # i = RK stage
+        @. Q =  Q + rk4b[INTRK] * res
     end
     scatter!([i*dt;i*dt],Q)
 end

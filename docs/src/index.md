@@ -13,16 +13,16 @@ N = 3
 K1D = 8
 
 # init ref element and mesh
-rd = RefElemData(Tri(),N)
-VXY,EToV = uniform_mesh(Tri(),K1D)
-md = MeshData(VXY,EToV,rd)
+rd = RefElemData(Tri(), N)
+VXY, EToV = uniform_mesh(Tri(), K1D)
+md = MeshData(VXY, EToV, rd)
 
 # Define a function by interpolation
-@unpack x,y = md
-u = @. exp(-10*(x^2+y^2))
+@unpack x, y = md
+u = @. exp(-10 * (x^2 + y^2))
 
 # Compute derivatives using geometric mapping + chain rule
-@unpack Dr,Ds = rd
-@unpack rxJ,sxJ,J = md
-dudx = (rxJ.*(Dr*u) + sxJ.*(Ds*u))./J
+@unpack Dr, Ds = rd
+@unpack rxJ, sxJ, J = md
+dudx = (rxJ .* (Dr * u) + sxJ .* (Ds * u)) ./ J
 ```

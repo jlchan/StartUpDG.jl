@@ -24,6 +24,6 @@ We use the following code conventions:
 * variables ending in `q` (e.g., `rq, sq,...` and `xq, yq,...`) correspond to values at volume quadrature points. 
 * variables ending in `f` (e.g., `rf, sf,...` and `xf, yf,...`) correspond to values at face quadrature points. 
 * variables ending in `p` (e.g., `rp, sp,...`)
-* `Dr, Ds, Dt` matrices are nodal differentiation matrices with respect to the ``r,s,t`` coordinates, e.g, `Dr*f.(r,s)` approximates the derivative of ``f(r,s)`` at nodal points. 
+* `Dr, Ds, Dt` matrices are nodal differentiation matrices with respect to the ``r, s, t`` coordinates, e.g, `Dr * f.(r, s)` approximates the derivative of ``f(r, s)`` at nodal points. 
 * `V` matrices correspond to interpolation matrices from nodal interpolation points, e.g., `Vq` interpolates to volume quadrature points, `Vf` interpolates to face quadrature points. 
 * geometric quantities in `MeshData` are stored as matrices of dimension ``\text{number of points per element } \times \text{number of elements}``.
