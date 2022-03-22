@@ -52,5 +52,28 @@
         @test length(boundary_faces[:wall])==173
         @test length(boundary_faces[:inflow])==14
         @test length(boundary_faces[:outflow])==5
+
+        domain = CircularDomain(num_segments=50, x_center=1.0, y_center = 2.0)
+        meshIO = triangulate_domain(domain)
+        (VX, VY), EToV = triangulateIO_to_VXYEToV(meshIO)
+        rd = RefElemData(Tri(), 2)
+        md = MeshData((VX, VY), EToV, rd)
+        @test size(EToV,1) == md.num_elements == 493
+        @test length(VX) == length(VY) == 272
+        mean(x) = sum(x) / length(x)
+        @test isapprox(mean(md.x), 1.0, rtol = 1/domain.num_segments)
+        @test isapprox(mean(md.y), 2.0, rtol = 1/domain.num_segments)
+        @test isapprox(sum(md.wJq), 2 * pi, rtol = 1/domain.num_segments)
+
+        domain = PartialCircularDomain(x_center=1.0, y_center = 2.0, 
+                                       angle_range = (0, 1/4))
+        meshIO = triangulate_domain(domain)
+        (VX, VY), EToV = triangulateIO_to_VXYEToV(meshIO)
+        rd = RefElemData(Tri(), 2)
+        md = MeshData((VX, VY), EToV, rd)
+        @test size(EToV,1) == md.num_elements == 129
+        @test length(VX) == length(VY) == 82
+        mean(x) = sum(x) / length(x)
+        @test isapprox(sum(md.wJq), pi/4, rtol = 1/domain.num_segments)
     end
 end

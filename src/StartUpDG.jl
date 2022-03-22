@@ -58,6 +58,7 @@ function __init__()
         include("mesh/triangulate_example_meshes.jl")
         export triangulate_domain
         export Scramjet, SquareDomain, RectangularDomain, RectangularDomainWithHole 
+        export CircularDomain, PartialCircularDomain
     end
 end
 

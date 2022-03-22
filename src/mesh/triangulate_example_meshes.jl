@@ -82,3 +82,49 @@ function triangulate_domain(domain::Scramjet; h = .1)
     return triout
 end
 
+Base.@kwdef struct CircularDomain{T}
+    num_segments::Int = 20
+    x_center::T = 0.0
+    y_center::T = 0.0
+    radius::T = 1.0
+end
+
+function triangulate_domain(domain::CircularDomain; h = .1)
+    @unpack num_segments, radius, x_center, y_center = domain
+    triin=Triangulate.TriangulateIO()
+
+    θ = LinRange(0, 1, num_segments)[1:end-1]
+    x(θ) = radius * cos(2 * pi * θ) + x_center
+    y(θ) = radius * sin(2 * pi * θ) + y_center
+
+    triin.pointlist=Matrix{Cdouble}([x.(θ) y.(θ)]')    
+    triin.segmentlist=Matrix{Cint}([1:length(θ) vcat(2:length(θ), 1)]')
+    triout = triangulate(triin, h^2)
+    return triout
+end
+
+# a partial circular domain (e.g., semi/quarter circle)
+Base.@kwdef struct PartialCircularDomain{T_angle, T}
+    num_segments::Int = 20
+    x_center::T = 0.0
+    y_center::T = 0.0
+    radius::T = 1.0
+    angle_range::T_angle = (0, 1/4)
+end
+
+function triangulate_domain(domain::PartialCircularDomain; h = .1)
+    @unpack num_segments, radius, x_center, y_center, angle_range = domain
+    triin=Triangulate.TriangulateIO()
+
+    θ = LinRange(angle_range..., num_segments)
+    x(θ) = cos(2 * pi * θ) + x_center
+    y(θ) = sin(2 * pi * θ) + y_center
+
+    # append the center of the circle as an additional point
+    x_list = [x.(θ); x_center]
+    y_list = [y.(θ); y_center]
+    triin.pointlist=Matrix{Cdouble}([x_list y_list]')    
+    triin.segmentlist=Matrix{Cint}([1:length(x_list) vcat(2:length(x_list), 1)]')
+    triout = triangulate(triin, h^2)
+    return triout
+end
