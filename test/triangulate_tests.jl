@@ -63,7 +63,7 @@
         mean(x) = sum(x) / length(x)
         @test isapprox(mean(md.x), 1.0, rtol = 1/domain.num_segments)
         @test isapprox(mean(md.y), 2.0, rtol = 1/domain.num_segments)
-        @test isapprox(sum(md.wJq), 2 * pi, rtol = 1/domain.num_segments)
+        @test isapprox(sum(md.wJq), pi, rtol = 1/domain.num_segments)
 
         domain = PartialCircularDomain(x_center=1.0, y_center = 2.0, 
                                        angle_range = (0, 1/4))
