@@ -64,7 +64,24 @@ More generally, one can create a copy of a `MeshData` with certain fields modifi
 
 ## Unstructured triangular meshes using Triangulate
 
-If `Triangulate` is also loaded, then StartUpDG will includes a few additional utilities for creating and visualizing meshes. 
+If `Triangulate` is also loaded, then StartUpDG will include additional utilities for creating and visualizing meshes. 
+
+## Pre-defined meshes
+
+Several pre-defined geometries are included in StartUpDG.jl. A few examples are `SquareDomain`, `RectangularDomainWithHole`, `Scramjet`, and `CircularDomain`. See `triangulate_example_meshes.jl` for a more complete list and field arguments. These can each be called using `triangulate_domain`, for example the following code will create a mesh of a scramjet:
+```julia
+meshIO = triangulate_domain(Scramjet())
+(VX, VY), EToV = triangulateIO_to_VXYEToV(meshIO)
+rd = RefElemData(Tri(), 7)
+md = MeshData((VX, VY), EToV, rd)
+```
+A quick plot of the face nodes via 
+```julia
+using Plots
+scatter(vec.(md.xyzf)..., msw=0, ms=1, aspect_ratio=:equal, ylims=(0,2), leg=false)
+```
+shows the following figure
+![u](assets/scramjet.png)
 
 ## Tagging boundary faces
 
