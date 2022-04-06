@@ -15,6 +15,7 @@ md = MeshElemData(VXY, EToV, rd)
 """
 Base.@kwdef struct MeshData{Dim, VolumeType, FaceType,                             
                             VertexType, EToVType, FToFType, 
+                            VolumeWeightType, VolumeGeofacsType, VolumeJType,
                             ConnectivityType, BoundaryMapType, 
                             DimTimesDim}
 
@@ -26,7 +27,7 @@ Base.@kwdef struct MeshData{Dim, VolumeType, FaceType,
     xyz::NTuple{Dim, VolumeType}   # physical points
     xyzf::NTuple{Dim, FaceType}  # face nodes
     xyzq::NTuple{Dim, VolumeType}  # phys quad points, Jacobian-scaled weights
-    wJq::VolumeType
+    wJq::VolumeWeightType
 
     # arrays of connectivity indices between face nodes
     mapM::ConnectivityType
@@ -34,8 +35,8 @@ Base.@kwdef struct MeshData{Dim, VolumeType, FaceType,
     mapB::BoundaryMapType
 
     # volume geofacs Gij = dx_i/dxhat_j
-    rstxyzJ::SMatrix{Dim, Dim, VolumeType, DimTimesDim}
-    J::VolumeType
+    rstxyzJ::SMatrix{Dim, Dim, VolumeGeofacsType, DimTimesDim}
+    J::VolumeJType
 
     # surface geofacs
     nxyzJ::NTuple{Dim, FaceType}
