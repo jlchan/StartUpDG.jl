@@ -1,5 +1,5 @@
 """
-    struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nfaces, Tv, VQ, VF, MM, P, D, L} 
+    struct RefElemData
 
 RefElemData: contains info (interpolation points, volume/face quadrature, operators)
 for a high order nodal basis on a given reference element. 
