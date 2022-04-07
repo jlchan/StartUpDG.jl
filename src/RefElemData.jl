@@ -14,33 +14,32 @@ rd = RefElemData(Tri(), N)
 struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nfaces, 
                    Tv, Tvdm, VQ, VF, MM, P, D, L, VP} 
 
-
     elementType::ElemShape
     approximationType::ApproximationType # Polynomial / SBP{...}
 
     N::Int               # polynomial degree of accuracy
-    fv::NTuple{Nfaces, FV} # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
-    V1::V1Type       # low order interpolation matrix
+    fv::Union{NTuple{Nfaces, Int}, NTuple{Nfaces, Vector{Int}}} # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
+    V1::Matrix{Tv}       # low order interpolation matrix
 
-    rst::NTuple{Dim, RST}
-    VDM::TVDM      # generalized Vandermonde matrix
-    Fmask::FmaskType   # indices of face nodes
+    rst::NTuple{Dim, Vector{Tv}}
+    VDM::Tvdm      # generalized Vandermonde matrix
+    Fmask::Vector{Int}   # indices of face nodes
 
     # plotting nodes: TODO - remove? Probably doesn't need to be in RefElemData
     Nplot::Int
-    rstp::NTuple{Dim, RSTP}
+    rstp::NTuple{Dim, Vector{Tv}}
     Vp::VP      # interpolation matrix to plotting nodes
 
     # quadrature 
-    rstq::NTuple{Dim, RSTQ}
-    wq::WQ
+    rstq::NTuple{Dim, Vector{Tv}}
+    wq::Vector{Tv}
     Vq::VQ              # quad interp mat
 
     # face quadrature 
-    rstf::NTuple{Dim, RSTF}
-    wf::WF      # quad weights
+    rstf::NTuple{Dim, Vector{Tv}}
+    wf::Vector{Tv}      # quad weights
     Vf::VF              # face quad interp mat
-    nrstJ::NTuple{Dim, NRSTJ}    # reference normals, quad weights
+    nrstJ::NTuple{Dim, Vector{Tv}}    # reference normals, quad weights
 
     M::MM                # mass matrix
     Pq::P               # L2 projection matrix
