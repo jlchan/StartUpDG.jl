@@ -11,7 +11,8 @@ rd = RefElemData(Tri(), N)
 @unpack r, s = rd
 ```
 """ 
-struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nfaces, Tv, Tvdm, VQ, VF, MM, P, D, L, VP} 
+struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, Nfaces, 
+                   Tv, Tvdm, VQ, VF, MM, P, D, L, VP} 
 
     elementType::ElemShape
     approximationType::ApproximationType # Polynomial / SBP{...}
