@@ -32,6 +32,52 @@ function connect_mesh(EToV, fv)
     return FToF
 end
 
+# in 2D 
+function element_type_from_num_vertices(dim::Val{2}, num_vertices)
+    if num_vertices == 3
+        element_type = Tri()
+    elseif num_vertices == 4
+        element_type = Quad()
+    end
+end
+
+# if EToV is an array of arrays, treat it as a "ragged" index array for a hybrid mesh.
+function connect_mesh(EToV::AbstractVector{<:AbstractArray}, 
+                      fvs::Dict{AbstractElemShape}) where {N}
+
+    # EToV = vector of index vectors
+    K = length(EToV)    
+
+    # create fnodes
+    fnodes = Vector{eltype(first(EToV))}[]
+    for e in 1:K
+        vertex_ids = EToV[e]
+        # TODO: replace Val{2}() with inferred dimension
+        element_type = element_type_from_num_vertices(Val{2}(), length(vertex_ids))
+        for ids in fvs[element_type]
+            push!(fnodes, sort(EToV[e][ids]))
+        end
+    end
+
+    Nfaces_per_elem = num_faces.(Val{2}(), element_type_from_num_vertices.(length.(EToV)))
+    NfacesTotal = sum(Nfaces_per_elem)
+
+    # sort and find matches
+    p = sortperm(fnodes) # sorts by lexicographic ordering by default
+    fnodes = fnodes[p, :]
+
+    FToF = collect(1:NfacesTotal)
+    for f = 1:size(fnodes, 1) - 1
+        if fnodes[f, :]==fnodes[f + 1, :]
+            f1 = FToF[p[f]]
+            f2 = FToF[p[f + 1]]
+            FToF[p[f]] = f2
+            FToF[p[f + 1]] = f1
+        end
+    end
+    return FToF
+end
+
 
 """
     build_node_maps(Xf, FToF)
