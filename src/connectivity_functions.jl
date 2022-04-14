@@ -42,8 +42,9 @@ function element_type_from_num_vertices(dim::Val{2}, num_vertices)
 end
 
 # if EToV is an array of arrays, treat it as a "ragged" index array for a hybrid mesh.
+
 function connect_mesh(EToV::AbstractVector{<:AbstractArray}, 
-                      fvs::Dict{AbstractElemShape}) where {N}
+                      face_vertex_indices::Dict{AbstractElemShape}) where {N}
 
     # EToV = vector of index vectors
     K = length(EToV)    
@@ -54,7 +55,7 @@ function connect_mesh(EToV::AbstractVector{<:AbstractArray},
         vertex_ids = EToV[e]
         # TODO: replace Val{2}() with inferred dimension
         element_type = element_type_from_num_vertices(Val{2}(), length(vertex_ids))
-        for ids in fvs[element_type]
+        for ids in face_vertex_indices[element_type]
             push!(fnodes, sort(EToV[e][ids]))
         end
     end
