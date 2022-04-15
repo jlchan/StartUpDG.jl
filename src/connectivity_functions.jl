@@ -32,7 +32,8 @@ function connect_mesh(EToV, fv)
     return FToF
 end
 
-
+# Given a tuple of element types, find which element type has 
+# `num_vertices_of_target` vertices. 
 function element_type_from_num_vertices(elem_types, num_vertices_of_target)
     for elem_type in elem_types
         if num_vertices(elem_type) == num_vertices_of_target
@@ -54,7 +55,6 @@ function connect_mesh(EToV::AbstractVector{<:AbstractArray},
     fnodes = Vector{eltype(first(EToV))}[]
     for e in 1:K
         vertex_ids = EToV[e]
-        # TODO: replace Val{2}() with inferred dimension
         element_type = element_type_from_num_vertices(elem_types, length(vertex_ids))
         for ids in face_vertex_indices[element_type]
             push!(fnodes, sort(EToV[e][ids]))
