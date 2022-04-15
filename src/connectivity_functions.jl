@@ -32,19 +32,20 @@ function connect_mesh(EToV, fv)
     return FToF
 end
 
-# in 2D 
-function element_type_from_num_vertices(dim::Val{2}, num_vertices)
-    if num_vertices == 3
-        element_type = Tri()
-    elseif num_vertices == 4
-        element_type = Quad()
+
+function element_type_from_num_vertices(elem_types, num_vertices_of_target)
+    for elem_type in elem_types
+        if num_vertices(elem_type) == num_vertices_of_target
+            return elem_type
+        end
     end
 end
 
 # if EToV is an array of arrays, treat it as a "ragged" index array for a hybrid mesh.
-
 function connect_mesh(EToV::AbstractVector{<:AbstractArray}, 
                       face_vertex_indices::Dict{AbstractElemShape}) where {N}
+
+    elem_types = (keys(face_vertex_indices)...,)
 
     # EToV = vector of index vectors
     K = length(EToV)    
@@ -54,13 +55,15 @@ function connect_mesh(EToV::AbstractVector{<:AbstractArray},
     for e in 1:K
         vertex_ids = EToV[e]
         # TODO: replace Val{2}() with inferred dimension
-        element_type = element_type_from_num_vertices(Val{2}(), length(vertex_ids))
+        element_type = element_type_from_num_vertices(elem_types, length(vertex_ids))
         for ids in face_vertex_indices[element_type]
             push!(fnodes, sort(EToV[e][ids]))
         end
     end
 
-    Nfaces_per_elem = num_faces.(Val{2}(), element_type_from_num_vertices.(length.(EToV)))
+    num_vertices_per_elem = length.(EToV)
+    Nfaces_per_elem = [num_faces(element_type_from_num_vertices(elem_types, nv)) 
+                       for nv in num_vertices_per_elem]
     NfacesTotal = sum(Nfaces_per_elem)
 
     # sort and find matches
