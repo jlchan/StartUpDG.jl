@@ -1,3 +1,12 @@
+import Base: *
+function (*)(A::ArrayPartition, B::ArrayPartition)
+    if all(size.(A.x, 2) .!== size.(B.x, 1))
+        throw(DimensionMismatch("size.(A, 2), $(size.(A.x, 2)), does not match size.(B, 1), $(size.(B.x, 1))"))
+    end
+    C = ArrayPartition(zeros.(eltype(A), size.(A.x, 1), size.(B.x, 2)))
+    return LinearAlgebra.mul!(C, A, B)
+end
+
 # Given a tuple of element types, find which element type has 
 # `num_vertices_of_target` vertices. 
 function element_type_from_num_vertices(elem_types, num_vertices_of_target)
@@ -47,3 +56,32 @@ function connect_mesh(EToV::AbstractVector{<:AbstractArray},
     end
     return FToF
 end
+
+# function build_node_maps(FToF, Xf...; tol = 1e-12)
+    # 
+    # NfacesK = length(FToF)
+    # dims = length(Xf)
+
+    # # number nodes consecutively
+    # Nfp  = length(Xf[1]) ÷ NfacesK
+    # mapM = reshape(collect(1:length(Xf[1])), Nfp, NfacesK)
+    # mapP = copy(mapM)
+    # D = zeros(Nfp, Nfp)
+    # idM, idP = zeros(Int, Nfp), zeros(Int, Nfp)
+    # for (f1, f2) in enumerate(FToF)
+    #     fill!(D, zero(eltype(D)))
+    #     # find volume node numbers of left and right nodes
+    #     for i in 1:dims
+    #         Xfi = reshape(Xf[i], Nfp, NfacesK)
+    #         for j in 1:Nfp, k in 1:Nfp
+    #             D[j, k] += abs(Xfi[j, f1] - Xfi[k, f2])
+    #         end
+    #     end
+    #     refd = maximum(D[:])
+    #     map!(id -> id[1], idM, findall(@. D < tol * refd))
+    #     map!(id -> id[2], idP, findall(@. D < tol * refd))        
+    #     @. mapP[idM, f1] = idP + (f2 - 1) * Nfp
+    # end
+    # mapB = map(x -> x[1], findall(@. mapM[:]==mapP[:]))
+    # return mapM, mapP, mapB
+# end
