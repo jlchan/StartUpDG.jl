@@ -14,5 +14,8 @@
     rd = Dict((elem => RefElemData(N=2, elem) for elem in (Tri(), Quad())))
     fvs = Dict(Pair.(keys(rd), getproperty.(values(rd), :fv)))
 
-    @test_nowarn_debug FToF = StartUpDG.connect_mesh(EToV, fvs)
+    FToF = StartUpDG.connect_mesh(EToV, fvs)
+
+    @test FToF == [1, 2, 3, 4, 8, 6, 7, 5, 9, 10]
+
 end
