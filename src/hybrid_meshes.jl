@@ -19,7 +19,7 @@ end
 
 # if EToV is an array of arrays, treat it as a "ragged" index array for a hybrid mesh.
 function connect_mesh(EToV::AbstractVector{<:AbstractArray}, 
-                      face_vertex_indices::Dict{AbstractElemShape}) where {N}
+                      face_vertex_indices::Dict{AbstractElemShape})
 
     elem_types = (keys(face_vertex_indices)...,)
 
@@ -43,11 +43,11 @@ function connect_mesh(EToV::AbstractVector{<:AbstractArray},
 
     # sort and find matches
     p = sortperm(fnodes) # sorts by lexicographic ordering by default
-    fnodes = fnodes[p, :]
+    fnodes = fnodes[p]
 
     FToF = collect(1:NfacesTotal)
     for f = 1:size(fnodes, 1) - 1
-        if fnodes[f, :]==fnodes[f + 1, :]
+        if fnodes[f]==fnodes[f + 1]
             f1 = FToF[p[f]]
             f2 = FToF[p[f + 1]]
             FToF[p[f]] = f2
