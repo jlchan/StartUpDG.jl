@@ -43,6 +43,8 @@ export boundary_face_centroids, tag_boundary_faces
 include("mesh/simple_meshes.jl")
 export readGmsh2D, uniform_mesh
 
+include("hybrid_meshes.jl")
+
 # Plots.jl recipes for meshes
 include("mesh/mesh_visualization.jl")
 export VertexMeshPlotter, MeshPlotter
