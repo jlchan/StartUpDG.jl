@@ -7,7 +7,7 @@
     #     -1     0     1
     VX = [-1; 0; 1; -1; 0; 1]
     VY = [0; 0; 0; 1; 1; 1]
-    EToV = [[1 2 5 4], [2 3 6], [6 5 2]]
+    EToV = [[1 2 4 5], [2 3 6], [6 5 2]]
 
     # rd = (RefElemData(N=2, Tri()), RefElemData(N=2, Quad()))
     # fvs = Dict(Pair.(getproperty.(rd, :elementType), getproperty.(rd, :fv)))
@@ -16,6 +16,6 @@
 
     FToF = StartUpDG.connect_mesh(EToV, fvs)
 
-    @test FToF == [1, 2, 3, 4, 8, 6, 7, 5, 9, 10]
+    @test FToF == [1, 9, 3, 4, 8, 6, 7, 5, 2, 10]
 
 end
