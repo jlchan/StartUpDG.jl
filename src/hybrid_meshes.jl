@@ -57,11 +57,14 @@ function connect_mesh(EToV::AbstractVector{<:AbstractArray},
     return FToF
 end
 
-# function build_node_maps(FToF, Xf...; tol = 1e-12)
-    # 
+# construct node connectivity arrays for hybrid meshes. 
+# in 2D, all faces are same size 
+function build_node_maps(element_types, FToF, Xf::NTuple{2, ArrayPartition}; tol = 1e-12)
+    # TODO: finish
+    return nothing, nothing, nothing    
+
     # NfacesK = length(FToF)
     # dims = length(Xf)
-
     # # number nodes consecutively
     # Nfp  = length(Xf[1]) ÷ NfacesK
     # mapM = reshape(collect(1:length(Xf[1])), Nfp, NfacesK)
@@ -84,4 +87,82 @@ end
     # end
     # mapB = map(x -> x[1], findall(@. mapM[:]==mapP[:]))
     # return mapM, mapP, mapB
-# end
+end
+
+# convenience struct to hold fields
+struct ComputedGeometricTerms{A, B, C, D, E, F, G}
+    xyzf::A
+    xyzq::B
+    wJq::C        
+    rstxyzJ::D
+    J::E
+    nxyzJ::F
+    Jf::G
+end
+
+# computes geometric terms from nodal coordinates
+function ComputedGeometricTerms(xyz, rd::RefElemData{2})
+    x, y = xyz
+
+    @unpack Dr, Ds = rd
+    rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, Dr, Ds)
+    rstxyzJ = SMatrix{2, 2}(rxJ, ryJ, sxJ, syJ)
+
+    @unpack Vq, Vf, wq = rd
+    xyzf = map(x -> Vf * x, (x, y))
+    xyzq = map(x -> Vq * x, (x, y))
+    wJq = Diagonal(wq) * (Vq * J)
+
+    nxJ, nyJ, Jf = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
+    return ComputedGeometricTerms(xyzf, xyzq, wJq, rstxyzJ, J, (nxJ, nyJ), Jf)
+end
+
+# constructs MeshData for a hybrid mesh given a Dict of `RefElemData` 
+# with element type keys (e.g., `Tri()` or `Quad`). 
+function MeshData(VX, VY, EToV, rds::Dict{AbstractElemShape, <:RefElemData};
+                  is_periodic = (false, false))
+
+    fvs = Dict(Pair(getproperty(rd, :element_type), getproperty(rd, :fv)) for rd in values(rds))
+    FToF = StartUpDG.connect_mesh(EToV, fvs)
+
+    # Dict between element type and element_ids of that type, e.g., element_ids[Tri()] = ...
+    element_types = keys(rds)
+    element_ids = Dict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
+    num_elements_of_type(elem) = length(element_ids[elem])
+
+    allocate_node_arrays(num_rows, element_type) = ntuple(_ -> zeros(num_rows, num_elements_of_type(element_type)), 
+                                                          ndims(element_type))
+    xyz_hybrid = Dict((rd.element_type => allocate_node_arrays(size(rd.V1, 1), rd.element_type) for rd in values(rds)))
+
+    for elem_type in element_types
+        eids = element_ids[elem_type]
+        x, y = xyz_hybrid[elem_type]
+        @unpack V1 = rds[elem_type]
+        for (e_local, e) in enumerate(eids)
+            etov = EToV[e]        
+            x[:, e_local] .= V1 * VX[etov']
+            y[:, e_local] .= V1 * VY[etov']
+        end
+    end
+
+    geo = ComputedGeometricTerms.(values(xyz_hybrid), values(rds))
+
+    # create array partitions for all geometric quantities
+    xyz = ArrayPartition.(values(xyz_hybrid)...)    
+    xyzf = ArrayPartition.(getproperty.(geo, :xyzf)...)
+    xyzq = ArrayPartition.(getproperty.(geo, :xyzq)...)
+    wJq = ArrayPartition(getproperty.(geo, :wJq)...)
+    rstxyzJ = ArrayPartition.(getproperty.(geo, :rstxyzJ)...)
+    J = ArrayPartition(getproperty.(geo, :J)...)
+    nxyzJ = ArrayPartition.(getproperty.(geo, :nxyzJ)...)
+    Jf = ArrayPartition(getproperty.(geo, :Jf)...)    
+
+    mapM, mapP, mapB = build_node_maps(keys(rds), FToF, xyzf)
+
+    return MeshData((VX, VY), EToV, FToF, 
+                    xyz, xyzf, xyzq, wJq,
+                    mapM, mapP, mapB,
+                    rstxyzJ, J, nxyzJ, Jf, 
+                    is_periodic)
+
+end
