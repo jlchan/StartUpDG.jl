@@ -58,8 +58,16 @@ function connect_mesh(EToV::AbstractVector{<:AbstractArray},
 end
 
 # construct node connectivity arrays for hybrid meshes. 
-# in 2D, all faces are same size 
-function build_node_maps(element_types, FToF, Xf::NTuple{2, ArrayPartition}; tol = 1e-12)
+# note that `rds` (the container of `RefElemData`s) must have the 
+# same ordering as the `ArrayPartition` `Xf`.
+function build_node_maps(rds::Dict{AbstractElemShape, <:RefElemData}, FToF, 
+                         Xf::NTuple{2, ArrayPartition}; tol = 1e-12)
+    xf, yf = Xf
+    for rd in values(rds)
+        Nfq = size(rd.Vf, 1)
+        
+    end
+
     # TODO: finish
     return nothing, nothing, nothing    
 
@@ -89,19 +97,8 @@ function build_node_maps(element_types, FToF, Xf::NTuple{2, ArrayPartition}; tol
     # return mapM, mapP, mapB
 end
 
-# convenience struct to hold fields
-struct ComputedGeometricTerms{A, B, C, D, E, F, G}
-    xyzf::A
-    xyzq::B
-    wJq::C        
-    rstxyzJ::D
-    J::E
-    nxyzJ::F
-    Jf::G
-end
-
 # computes geometric terms from nodal coordinates
-function ComputedGeometricTerms(xyz, rd::RefElemData{2})
+function compute_geometric_data(xyz, rd::RefElemData{2})
     x, y = xyz
 
     @unpack Dr, Ds = rd
@@ -114,7 +111,8 @@ function ComputedGeometricTerms(xyz, rd::RefElemData{2})
     wJq = Diagonal(wq) * (Vq * J)
 
     nxJ, nyJ, Jf = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
-    return ComputedGeometricTerms(xyzf, xyzq, wJq, rstxyzJ, J, (nxJ, nyJ), Jf)
+    nxyzJ = (nxJ, nyJ)
+    return (; xyzf, xyzq, wJq, rstxyzJ, J, nxyzJ, Jf)
 end
 
 # constructs MeshData for a hybrid mesh given a Dict of `RefElemData` 
@@ -130,10 +128,10 @@ function MeshData(VX, VY, EToV, rds::Dict{AbstractElemShape, <:RefElemData};
     element_ids = Dict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
     num_elements_of_type(elem) = length(element_ids[elem])
 
+    # make node arrays 
     allocate_node_arrays(num_rows, element_type) = ntuple(_ -> zeros(num_rows, num_elements_of_type(element_type)), 
                                                           ndims(element_type))
     xyz_hybrid = Dict((rd.element_type => allocate_node_arrays(size(rd.V1, 1), rd.element_type) for rd in values(rds)))
-
     for elem_type in element_types
         eids = element_ids[elem_type]
         x, y = xyz_hybrid[elem_type]
@@ -145,7 +143,8 @@ function MeshData(VX, VY, EToV, rds::Dict{AbstractElemShape, <:RefElemData};
         end
     end
 
-    geo = ComputedGeometricTerms.(values(xyz_hybrid), values(rds))
+    # returns tuple of NamedTuples containing geometric fields
+    geo = compute_geometric_data.(values(xyz_hybrid), values(rds))
 
     # create array partitions for all geometric quantities
     xyz = ArrayPartition.(values(xyz_hybrid)...)    
@@ -157,12 +156,11 @@ function MeshData(VX, VY, EToV, rds::Dict{AbstractElemShape, <:RefElemData};
     nxyzJ = ArrayPartition.(getproperty.(geo, :nxyzJ)...)
     Jf = ArrayPartition(getproperty.(geo, :Jf)...)    
 
-    mapM, mapP, mapB = build_node_maps(keys(rds), FToF, xyzf)
+    mapM, mapP, mapB = build_node_maps(rds, FToF, xyzf)
 
     return MeshData((VX, VY), EToV, FToF, 
                     xyz, xyzf, xyzq, wJq,
                     mapM, mapP, mapB,
                     rstxyzJ, J, nxyzJ, Jf, 
                     is_periodic)
-
 end
