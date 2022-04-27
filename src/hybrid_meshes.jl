@@ -96,10 +96,16 @@ end
 function MeshData(VX, VY, EToV, rds::Dict{AbstractElemShape, <:RefElemData};
                   is_periodic = (false, false))
 
+    # # sort EToV so that elements of the same type are contiguous
+    # p = sortperm(length.(EToV_unsorted))
+    # EToV = EToV_unsorted[p]
+
     fvs = Dict(Pair(getproperty(rd, :element_type), getproperty(rd, :fv)) for rd in values(rds))
     FToF = StartUpDG.connect_mesh(EToV, fvs)
 
     # Dict between element type and element_ids of that type, e.g., element_ids[Tri()] = ...
+    # We distinguish between different elements by the number of vertices. 
+    # This should work in 3D too, might have issues for 2D/3D though.
     element_types = keys(rds)
     element_ids = Dict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
     num_elements_of_type(elem) = length(element_ids[elem])
