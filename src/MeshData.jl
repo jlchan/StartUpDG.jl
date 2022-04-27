@@ -230,7 +230,7 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2})
     rstxyzJ = SMatrix{2, 2}(rxJ, ryJ, sxJ, syJ)
 
     @unpack Vq, wq = rd
-    xq,yq = (x -> Vq * x).((x, y))
+    xq, yq = (x -> Vq * x).((x, y))
     wJq = diagm(wq) * (Vq * J)
 
     nxJ, nyJ, sJ = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
