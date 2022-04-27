@@ -124,13 +124,13 @@ function MeshData(VX, VY, EToV, rds::Dict{AbstractElemShape, <:RefElemData};
 
     # create array partitions for all geometric quantities
     xyz = ArrayPartition.(values(xyz_hybrid)...)    
-    xyzf = ArrayPartition.(getproperty.(geo, :xyzf)...)
-    xyzq = ArrayPartition.(getproperty.(geo, :xyzq)...)
-    wJq = ArrayPartition(getproperty.(geo, :wJq)...)
-    rstxyzJ = ArrayPartition.(getproperty.(geo, :rstxyzJ)...)
-    J = ArrayPartition(getproperty.(geo, :J)...)
-    nxyzJ = ArrayPartition.(getproperty.(geo, :nxyzJ)...)
-    Jf = ArrayPartition(getproperty.(geo, :Jf)...)    
+    xyzf = ArrayPartition.(getfield.(geo, :xyzf)...)
+    xyzq = ArrayPartition.(getfield.(geo, :xyzq)...)
+    wJq = ArrayPartition(getfield.(geo, :wJq)...)
+    rstxyzJ = ArrayPartition.(getfield.(geo, :rstxyzJ)...)
+    J = ArrayPartition(getfield.(geo, :J)...)
+    nxyzJ = ArrayPartition.(getfield.(geo, :nxyzJ)...)
+    Jf = ArrayPartition(getfield.(geo, :Jf)...)    
 
     mapM, mapP, mapB = build_node_maps(rds, FToF, xyzf)
 
