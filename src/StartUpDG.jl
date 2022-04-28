@@ -6,7 +6,7 @@ using Colors
 using ConstructionBase: ConstructionBase
 using HDF5 # read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
-using LinearAlgebra: diagm, eigvals, Diagonal, I, mul!
+using LinearAlgebra: diagm, eigvals, Diagonal, I, mul!, norm
 using NodesAndModes: meshgrid
 @reexport using NodesAndModes # for basis functions
 using RecipesBase

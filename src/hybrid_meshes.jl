@@ -57,20 +57,74 @@ function connect_mesh(EToV::AbstractVector{<:AbstractArray},
     return FToF
 end
 
+# returns back `p` such that `u[p] == v` or false
+# u = tuple of vectors containing coordinates
+function match_coordinate_vectors(u, v; tol = 1e-12)
+    p = zeros(Int, length(first(u)))
+    for i in eachindex(first(u)), j in eachindex((first(v)))
+        if norm(getindex.(u, i) .- getindex.(v, j)) < tol
+            p[i] = j
+        end
+    end
+    return p # [findfirst(abs.(u[i] .- v) .< tol) for i in eachindex(u)]
+end
+
+# returns element type of global element `global_e`
+element_type(global_e, element_types, EToV) = 
+    element_types[findfirst(length(EToV[global_e]) .== num_vertices.(element_types))]
+
 # construct node connectivity arrays for hybrid meshes. 
 # note that `rds` (the container of `RefElemData`s) must have the 
 # same ordering as the `ArrayPartition` `Xf`.
-function build_node_maps(rds::Dict{AbstractElemShape, <:RefElemData}, FToF, 
-                         Xf::NTuple{2, ArrayPartition}; tol = 1e-12)
-    xf, yf = Xf
-    for rd in values(rds)
-        Nfq = size(rd.Vf, 1)
-        
+# Here `element_ids` is a Dict{AbstractElemShape, "indices of elements"}.
+function build_node_maps(rds::Dict{AbstractElemShape, <:RefElemData{2}}, 
+                         EToV, FToF, Xf::NTuple{2, ArrayPartition}; tol = 1e-12)
+
+    # TODO: fix, this is repeated code                     
+    element_types = (keys(rds)..., ) # convert to tuple for indexing
+    element_ids = Dict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
+                     
+    # NOTE: this part assumes all faces have the same number of points (valid in 2D)
+    rd = first(values(rds))
+    num_points_per_face = rd.Nfq ÷ num_faces(rd.element_type)
+    fids(f) = (1:num_points_per_face) .+ (f-1) * num_points_per_face    
+    xf, yf = ntuple(_ -> [zeros(num_points_per_face) for _ in 1:length(FToF)], 2)
+
+    # create list of element types
+    global_faces = UnitRange{Int}[]
+    face_offset = 0
+    for e in 1:length(EToV)        
+        elem_type = element_type(e, element_types, EToV)        
+        push!(global_faces, (1:num_faces(elem_type)) .+ face_offset)
+        face_offset += num_faces(elem_type)
     end
 
-    # TODO: finish
-    return nothing, nothing, nothing    
+    # create xf, yf = vector of vectors::{points on each face}
+    for (elem_type_id, rd) in enumerate(values(rds))
+        elem_type = rd.element_type
+        for (e_local, e) in enumerate(element_ids[elem_type])
+            for f in 1:num_faces(elem_type)                
+                xf[global_faces[e][f]] .= Xf[1].x[elem_type_id][fids(f), e_local]
+                yf[global_faces[e][f]] .= Xf[2].x[elem_type_id][fids(f), e_local]
+            end
+        end
+    end
 
+    mapM = [collect(fids(f)) for f in 1:length(FToF)]
+    mapP = copy(mapM)
+    for (f1, f2) in enumerate(FToF)
+        if f1 != f2
+            x1, y1 = xf[f1], yf[f1]
+            x2, y2 = xf[f2], yf[f2]
+            p = match_coordinate_vectors((x1, y1), (x2, y2))
+            mapP[f1] .= mapM[f2][p]
+        end
+    end
+
+    mapB = nothing
+
+    # TODO: finish
+    return mapM, mapP, mapB
 end
 
 # computes geometric terms from nodal coordinates
@@ -138,7 +192,8 @@ function MeshData(VX, VY, EToV, rds::Dict{AbstractElemShape, <:RefElemData};
     nxyzJ = ArrayPartition.(getproperty.(geo, :nxyzJ)...)
     Jf = ArrayPartition(getproperty.(geo, :Jf)...)    
 
-    mapM, mapP, mapB = build_node_maps(rds, FToF, xyzf)
+    # TODO fix this
+    mapM, mapP, mapB = build_node_maps(rds, EToV, FToF, xyzf)
 
     return MeshData((VX, VY), EToV, FToF, 
                     xyz, xyzf, xyzq, wJq,
