@@ -123,7 +123,7 @@ function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs
 
     # check if number of face nodes 
     # TODO: this only works in 2D
-    num_face_nodes = length.(getproperty.(values(rds), :rf)) .÷ num_faces.(element_types)
+    num_face_nodes = length.(getproperty.(values(rds), :rf)) .÷ num_faces.(keys(rds))
     allequal(x) = all(y->y==x[1],x)
     if !allequal(num_face_nodes)
         Base.@warn "Number of nodes per face for each element should be the same, but instead is:" num_face_nodes
