@@ -30,6 +30,8 @@
 
     md = MeshData(VX, VY, EToV, rds)
     @test md.FToF == vec([1  5  3  14  2  6  7  17  16  10  13  12  11  4  15  9  8  18])
-    @test max.(abs.(md.xf[md.mapB]), abs.(md.yf[md.mapB])) .== 1
+
+    # test if all nodes on boundary are ±1
+    @test abs(max.(abs.(md.xf[md.mapB]), abs.(md.yf[md.mapB])) .- 1) .< 1e-12 
 
 end
