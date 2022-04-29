@@ -29,9 +29,9 @@
     EToV = [[1 2 4 5], [2 3 5 6], [5 8 9], [4 5 7 8], [9 6 5]]
 
     md = MeshData(VX, VY, EToV, rds)
-    @test md.FToF == vec([1  5  3  14  2  6  7  17  16  10  13  12  11  4  15  9  8  18])
+    @test md.FToF == vec([1, 5, 3, 11, 2, 6, 7, 17, 9, 15, 4, 12, 16, 14, 10, 13, 8, 18])
 
     # test if all nodes on boundary are ±1
-    @test abs(max.(abs.(md.xf[md.mapB]), abs.(md.yf[md.mapB])) .- 1) .< 1e-12 
+    @test all(@. abs(max(abs(md.xf[md.mapB]), abs(md.yf[md.mapB])) - 1) < 1e-12 )
 
 end
