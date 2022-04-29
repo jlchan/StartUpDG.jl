@@ -117,6 +117,10 @@ function compute_geometric_data(xyz, rd::RefElemData{2})
     return (; xyzf, xyzq, wJq, rstxyzJ, J, nxyzJ, Jf)
 end
 
+# returns a Dict{element_type, RefElemData} when specifying multiple element types
+RefElemData(element_types::NTuple{N, AbstractElemShape}, args...; kwargs...) where {N} = 
+    Dict((elem => RefElemData(elem, args...; kwargs...) for elem in element_types))
+
 # constructs MeshData for a hybrid mesh given a Dict of `RefElemData` 
 # with element type keys (e.g., `Tri()` or `Quad`). 
 function MeshData(VX, VY, EToV_unsorted, rds::Dict{AbstractElemShape, <:RefElemData};

@@ -1,6 +1,9 @@
 @testset "Hybrid mesh utilities" begin
 
-    rds = Dict((elem => RefElemData(N=2, elem) for elem in (Tri(), Quad())))
+    #rds = Dict((elem => RefElemData(N=2, elem) for elem in (Tri(), Quad())))
+    rds = RefElemData((Tri(), Quad()), N = 3)
+    @test rds[Tri()].element_type == Tri()
+    @test rds[Quad()].element_type == Quad()
 
     #   1  3_______4______5
     #      |   4   |  6  / 
