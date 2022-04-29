@@ -118,7 +118,7 @@ function compute_geometric_data(xyz, rd::RefElemData{2})
 end
 
 # returns a Dict{element_type, RefElemData} when specifying multiple element types in 2D
-function RefElemData(element_types::NTuple{N, <:Union{Tri, Quad}}, args...; kwargs...) where {N} 
+function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs...) where {N} 
     rds = Dict((elem => RefElemData(elem, args...; kwargs...) for elem in element_types))
 
     # check if number of face nodes 
