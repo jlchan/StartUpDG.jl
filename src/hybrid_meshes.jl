@@ -80,51 +80,15 @@ element_type(global_e, element_types, EToV) =
 function build_node_maps(rds::Dict{AbstractElemShape, <:RefElemData{2}}, 
                          EToV, FToF, Xf::NTuple{2, ArrayPartition}; tol = 1e-12)
 
-    # TODO: fix, this is repeated code                     
     element_types = (keys(rds)..., ) # convert to tuple for indexing
-    element_ids = Dict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
-                     
-    # NOTE: this part assumes all faces have the same number of points (valid in 2D)
+                
+    # # TODO: this part assumes all faces have the same number of points (valid in 2D)
     rd = first(values(rds))
     num_points_per_face = rd.Nfq ÷ num_faces(rd.element_type)
-    fids(f) = (1:num_points_per_face) .+ (f-1) * num_points_per_face    
-    xf, yf = ntuple(_ -> [zeros(num_points_per_face) for _ in 1:length(FToF)], 2)
+    xf = hcat(reshape.(Xf[1].x, num_points_per_face, num_faces.(element_types))...)
+    yf = hcat(reshape.(Xf[2].x, num_points_per_face, num_faces.(element_types))...)
 
-    # create list of element types
-    global_faces = UnitRange{Int}[]
-    face_offset = 0
-    for e in 1:length(EToV)        
-        elem_type = element_type(e, element_types, EToV)        
-        push!(global_faces, (1:num_faces(elem_type)) .+ face_offset)
-        face_offset += num_faces(elem_type)
-    end
-
-    # create xf, yf = vector of vectors::{points on each face}
-    for (elem_type_id, rd) in enumerate(values(rds))
-        elem_type = rd.element_type
-        for (e_local, e) in enumerate(element_ids[elem_type])
-            for f in 1:num_faces(elem_type)                
-                xf[global_faces[e][f]] .= Xf[1].x[elem_type_id][fids(f), e_local]
-                yf[global_faces[e][f]] .= Xf[2].x[elem_type_id][fids(f), e_local]
-            end
-        end
-    end
-
-    mapM = [collect(fids(f)) for f in 1:length(FToF)]
-    mapP = copy(mapM)
-    for (f1, f2) in enumerate(FToF)
-        if f1 != f2
-            x1, y1 = xf[f1], yf[f1]
-            x2, y2 = xf[f2], yf[f2]
-            p = match_coordinate_vectors((x1, y1), (x2, y2))
-            mapP[f1] .= mapM[f2][p]
-        end
-    end
-
-    mapB = nothing
-
-    # TODO: finish
-    return mapM, mapP, mapB
+    return build_node_maps(FToF, xf, yf)
 end
 
 # computes geometric terms from nodal coordinates
@@ -147,19 +111,21 @@ end
 
 # constructs MeshData for a hybrid mesh given a Dict of `RefElemData` 
 # with element type keys (e.g., `Tri()` or `Quad`). 
-function MeshData(VX, VY, EToV, rds::Dict{AbstractElemShape, <:RefElemData};
+function MeshData(VX, VY, EToV_unsorted, rds::Dict{AbstractElemShape, <:RefElemData};
                   is_periodic = (false, false))
 
-    # # sort EToV so that elements of the same type are contiguous
-    # p = sortperm(length.(EToV_unsorted))
-    # EToV = EToV_unsorted[p]
+    # sort EToV so that elements of the same type are contiguous
+    # order by number of vertices, e.g., Quad(), then Tri()
+    p = sortperm(length.(EToV_unsorted), order=Base.Order.Reverse)
+    EToV = EToV_unsorted[p]
 
+    # connect faces together 
     fvs = Dict(Pair(getproperty(rd, :element_type), getproperty(rd, :fv)) for rd in values(rds))
     FToF = StartUpDG.connect_mesh(EToV, fvs)
 
     # Dict between element type and element_ids of that type, e.g., element_ids[Tri()] = ...
     # We distinguish between different elements by the number of vertices. 
-    # This should work in 3D too, might have issues for 2D/3D though.
+    # This should work in 3D too (might have issues if we ever do mixed 2D/3D meshes).
     element_types = keys(rds)
     element_ids = Dict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
     num_elements_of_type(elem) = length(element_ids[elem])
@@ -179,7 +145,8 @@ function MeshData(VX, VY, EToV, rds::Dict{AbstractElemShape, <:RefElemData};
         end
     end
 
-    # returns tuple of NamedTuples containing geometric fields
+    # returns tuple of NamedTuples containing geometric fields 
+    # for each reference element in `rds`
     geo = compute_geometric_data.(values(xyz_hybrid), values(rds))
 
     # create array partitions for all geometric quantities
@@ -192,7 +159,6 @@ function MeshData(VX, VY, EToV, rds::Dict{AbstractElemShape, <:RefElemData};
     nxyzJ = ArrayPartition.(getproperty.(geo, :nxyzJ)...)
     Jf = ArrayPartition(getproperty.(geo, :Jf)...)    
 
-    # TODO fix this
     mapM, mapP, mapB = build_node_maps(rds, EToV, FToF, xyzf)
 
     return MeshData((VX, VY), EToV, FToF, 
