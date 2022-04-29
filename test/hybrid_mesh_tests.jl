@@ -37,4 +37,20 @@
     # test if all nodes on boundary are ±1
     @test all(@. abs(max(abs(md.xf[md.mapB]), abs(md.yf[md.mapB])) - 1) < 100 * eps() )
 
+    ## test that the DG derivative of a polynomial recovers the exact derivative
+    @unpack x, y = md
+    u = @. x^3 - x^2 * y + 2 * y^3
+    dudx = @. 3 * x^2 - 2 * x * y
+
+    # compute derivatives
+    @unpack rxJ, sxJ, J = md
+    dudr = ArrayPartition((getproperty.(values(rds), :Dr) .* u.x)...)
+    duds = ArrayPartition((getproperty.(values(rds), :Ds) .* u.x)...)
+    @test norm(@. dudx - (rxJ * dudr + sxJ * duds) / J) < 10 * length(u) * eps()
+
+    # compute jumps
+    @unpack mapP = md
+    uf = ArrayPartition((getproperty.(values(rds), :Vf) .* u.x)...)
+    uP = uf[mapP]
+    @test norm(vec(uf) - vec(uP)) < 10 * length(uf) * eps()
 end
