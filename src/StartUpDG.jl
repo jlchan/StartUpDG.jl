@@ -10,7 +10,7 @@ using LinearAlgebra: diagm, eigvals, Diagonal, I, mul!, norm
 using NodesAndModes: meshgrid
 @reexport using NodesAndModes # for basis functions
 using RecipesBase
-using RecursiveArrayTools: ArrayPartition
+@reexport using RecursiveArrayTools: ArrayPartition
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
 using SparseArrays: sparse, droptol!
