@@ -162,8 +162,8 @@ function MeshData(VX, VY, EToV_unsorted, rds::Dict{AbstractElemShape, <:RefElemD
         @unpack V1 = rds[elem_type]
         for (e_local, e) in enumerate(eids)
             etov = EToV[e]        
-            x[:, e_local] .= V1 * VX[etov']
-            y[:, e_local] .= V1 * VY[etov']
+            x[:, e_local] .= vec(V1 * VX[etov'])
+            y[:, e_local] .= vec(V1 * VY[etov'])
         end
     end
 
