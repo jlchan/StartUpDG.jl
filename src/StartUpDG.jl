@@ -41,6 +41,7 @@ include("boundary_utils.jl")
 export boundary_face_centroids, tag_boundary_faces
 
 include("hybrid_meshes.jl")
+export num_faces, num_vertices
 
 # uniform meshes + face vertex orderings are included
 include("mesh/simple_meshes.jl")
