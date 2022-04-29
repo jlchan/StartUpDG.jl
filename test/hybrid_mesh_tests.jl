@@ -35,6 +35,6 @@
     @test md.FToF == vec([1, 5, 3, 11, 2, 6, 7, 17, 9, 15, 4, 12, 16, 14, 10, 13, 8, 18])
 
     # test if all nodes on boundary are ±1
-    @test all(@. abs(max(abs(md.xf[md.mapB]), abs(md.yf[md.mapB])) - 1) < 1e-12 )
+    @test all(@. abs(max(abs(md.xf[md.mapB]), abs(md.yf[md.mapB])) - 1) < 100 * eps() )
 
 end
