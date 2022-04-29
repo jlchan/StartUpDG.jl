@@ -31,6 +31,10 @@
         @test all(vec.(rstf) .≈ rd.rstf)
         @test invoke(inverse_trace_constant,Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
         @test propertynames(rd)[1] == :elementType
+
+        @test StartUpDG.num_vertices(Tri()) == 3
+        @test StartUpDG.num_faces(Tri()) == 3
+
     end
 
     @testset "Quad" begin
@@ -46,6 +50,9 @@
         rstf = (x->Vfp * x[reshape(rd.Fmask,rd.Nfq÷rd.Nfaces,rd.Nfaces)]).(rd.rst)
         @test all(vec.(rstf) .≈ rd.rstf)
         @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)    
+
+        @test StartUpDG.num_vertices(Quad()) == 4
+        @test StartUpDG.num_faces(Quad()) == 4
     end
 
     @testset "Hex" begin
@@ -67,6 +74,9 @@
         @test rd.Pq * rd.Vq ≈ I
         @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
         # TODO: test interpolation of Fmask matches rd.rstf.
+
+        @test StartUpDG.num_vertices(Hex()) == 8
+        @test StartUpDG.num_faces(Hex()) == 6
     end
 
     @testset "Tet" begin
@@ -87,5 +97,15 @@
         @test abs(sum(rd.wf .* rd.ntJ)) < tol
         @test rd.Pq * rd.Vq ≈ I
         @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
+
+        @test StartUpDG.num_vertices(Tet()) == 4
+        @test StartUpDG.num_faces(Tet()) == 4
+    end
+
+    @testset "Misc Pyr, wedge" begin
+        @test StartUpDG.num_faces(Pyr()) == 5
+        @test StartUpDG.num_faces(Wedge()) == 5
+        @test StartUpDG.num_vertices(Pyr()) == 5
+        @test StartUpDG.num_vertices(Wedge()) == 6
     end
 end
