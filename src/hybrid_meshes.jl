@@ -117,9 +117,19 @@ function compute_geometric_data(xyz, rd::RefElemData{2})
     return (; xyzf, xyzq, wJq, rstxyzJ, J, nxyzJ, Jf)
 end
 
-# returns a Dict{element_type, RefElemData} when specifying multiple element types
-RefElemData(element_types::NTuple{N, AbstractElemShape}, args...; kwargs...) where {N} = 
-    Dict((elem => RefElemData(elem, args...; kwargs...) for elem in element_types))
+# returns a Dict{element_type, RefElemData} when specifying multiple element types in 2D
+function RefElemData(element_types::NTuple{N, <:Union{Tri, Quad}}, args...; kwargs...) where {N} 
+    rds = Dict((elem => RefElemData(elem, args...; kwargs...) for elem in element_types))
+
+    # check if number of face nodes 
+    # TODO: this only works in 2D
+    num_face_nodes = length.(getproperty.(values(rds), :rf)) .÷ num_faces.(element_types)
+    allequal(x) = all(y->y==x[1],x)
+    if !allequal(num_face_nodes)
+        Base.@warn "Number of nodes per face for each element should be the same, but instead is:" num_face_nodes
+    end
+    return rds
+end
 
 # constructs MeshData for a hybrid mesh given a Dict of `RefElemData` 
 # with element type keys (e.g., `Tri()` or `Quad`). 
