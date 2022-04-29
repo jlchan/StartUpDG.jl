@@ -82,11 +82,19 @@ function build_node_maps(rds::Dict{AbstractElemShape, <:RefElemData{2}},
 
     element_types = (keys(rds)..., ) # convert to tuple for indexing
                 
-    # # TODO: this part assumes all faces have the same number of points (valid in 2D)
+    # TODO: this part assumes all faces have the same number of points (valid in 2D)
     rd = first(values(rds))
     num_points_per_face = rd.Nfq ÷ num_faces(rd.element_type)
-    xf = hcat(reshape.(Xf[1].x, num_points_per_face, num_faces.(element_types))...)
-    yf = hcat(reshape.(Xf[2].x, num_points_per_face, num_faces.(element_types))...)
+
+    # TODO: fix, repeated code
+    element_ids = Dict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
+    num_elements_of_type(elem) = length(element_ids[elem])
+    
+    # TODO: this part assumes all faces have the same number of points (valid in 2D)
+    xf = hcat(reshape.(Xf[1].x, num_points_per_face, 
+                       num_faces.(element_types) .* num_elements_of_type.(element_types))...)
+    yf = hcat(reshape.(Xf[2].x, num_points_per_face, 
+                       num_faces.(element_types) .* num_elements_of_type.(element_types))...)
 
     return build_node_maps(FToF, xf, yf)
 end
