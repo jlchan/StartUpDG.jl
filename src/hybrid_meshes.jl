@@ -4,7 +4,7 @@ function (*)(A::ArrayPartition, B::ArrayPartition)
         throw(DimensionMismatch("size.(A, 2), $(size.(A.x, 2)), does not match size.(B, 1), $(size.(B.x, 1))"))
     end
     C = ArrayPartition(zeros.(eltype(A), size.(A.x, 1), size.(B.x, 2)))
-    return LinearAlgebra.mul!(C, A, B)
+    return mul!(C, A, B)
 end
 
 # Given a tuple of element types, find which element type has 
