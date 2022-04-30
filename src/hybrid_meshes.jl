@@ -59,7 +59,7 @@ end
 
 # returns back `p` such that `u[p] == v` or false
 # u = tuple of vectors containing coordinates
-function match_coordinate_vectors(u, v; tol = 1e-12)
+function match_coordinate_vectors(u, v; tol = 100 * eps())
     p = zeros(Int, length(first(u)))
     for i in eachindex(first(u)), j in eachindex((first(v)))
         if norm(getindex.(u, i) .- getindex.(v, j)) < tol
