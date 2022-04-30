@@ -1,4 +1,16 @@
 @testset "Hybrid mesh utilities" begin
+    A, B = randn(5, 5), randn(5, 5)
+    x, y = randn(5), randn(5)
+    AB = ArrayPartition(A, B)
+    xy = ArrayPartition(x, y)
+    @test norm(AB * xy - ArrayPartition(A * x, B * y)) < 10 * eps()
+
+    u = (1:3, 3:-1:1)
+    v = (3:-1:1, 1:3)
+    @test StartUpDG.match_coordinate_vectors(u, v) == [3, 2, 1]
+end
+
+@testset "Hybrid mesh RefElemData and MeshData" begin
 
     #rds = Dict((elem => RefElemData(N=2, elem) for elem in (Tri(), Quad())))
     rds = RefElemData((Tri(), Quad()), N = 3)
