@@ -16,8 +16,7 @@ md = MeshElemData(VXY, EToV, rd)
 Base.@kwdef struct MeshData{Dim, VolumeType, FaceType,                             
                             VertexType, EToVType, FToFType, 
                             VolumeWeightType, VolumeGeofacsType, VolumeJType,
-                            ConnectivityType, BoundaryMapType, 
-                            DimTimesDim}
+                            ConnectivityType, BoundaryMapType}
 
     # num_elements::Ti            # number of elements
     VXYZ::NTuple{Dim, VertexType}  # vertex coordinates
@@ -35,7 +34,7 @@ Base.@kwdef struct MeshData{Dim, VolumeType, FaceType,
     mapB::BoundaryMapType
 
     # volume geofacs Gij = dx_i/dxhat_j
-    rstxyzJ::SMatrix{Dim, Dim, VolumeGeofacsType, DimTimesDim}
+    rstxyzJ::VolumeGeofacsType
     J::VolumeJType
 
     # surface geofacs
@@ -231,7 +230,7 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2})
     rstxyzJ = SMatrix{2, 2}(rxJ, ryJ, sxJ, syJ)
 
     @unpack Vq, wq = rd
-    xq,yq = (x -> Vq * x).((x, y))
+    xq, yq = (x -> Vq * x).((x, y))
     wJq = diagm(wq) * (Vq * J)
 
     nxJ, nyJ, sJ = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)

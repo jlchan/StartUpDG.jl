@@ -1,19 +1,20 @@
 module StartUpDG
 
-using ConstructionBase: ConstructionBase
-using LinearAlgebra: diagm, eigvals, Diagonal, I
-using StaticArrays: SVector, SMatrix
-using Setfield: setproperties, @set    # for "modifying" structs (setproperties)
-using Kronecker: kronecker # for Hex element matrix manipulations
-
 using Reexport 
-@reexport using UnPack            # for getting values in RefElemData and MeshData
-@reexport using NodesAndModes     # for basis functions
 
-using NodesAndModes: meshgrid
-using SparseArrays: sparse, droptol!
+using Colors 
+using ConstructionBase: ConstructionBase
 using HDF5 # read in SBP triangular node data
-using RecipesBase, Colors 
+using Kronecker: kronecker # for Hex element matrix manipulations
+using LinearAlgebra: diagm, eigvals, Diagonal, I, mul!, norm
+using NodesAndModes: meshgrid
+@reexport using NodesAndModes # for basis functions
+using RecipesBase
+@reexport using RecursiveArrayTools: ArrayPartition
+using StaticArrays: SVector, SMatrix
+using Setfield: setproperties, @set # for "modifying" structs (setproperties)
+using SparseArrays: sparse, droptol!
+@reexport using UnPack  # for getting values in RefElemData and MeshData
 
 # reference element utility functions
 include("RefElemData.jl")
@@ -21,7 +22,7 @@ include("RefElemData_polynomial.jl")
 include("RefElemData_SBP.jl")
 include("ref_elem_utils.jl")
 export RefElemData, Polynomial
-export SBP, DefaultSBPType, TensorProductLobatto, Hicken, Kubatko  # types for SBP node dispatch
+export SBP, DefaultSBPType, TensorProductLobatto, Hicken, Kubatko # types for SBP node dispatch
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
 export hybridized_SBP_operators, inverse_trace_constant, face_type
 
@@ -38,6 +39,9 @@ export make_periodic
 # for tagging faces on boundaries
 include("boundary_utils.jl")
 export boundary_face_centroids, tag_boundary_faces
+
+include("hybrid_meshes.jl")
+export num_faces, num_vertices
 
 # uniform meshes + face vertex orderings are included
 include("mesh/simple_meshes.jl")
@@ -63,7 +67,7 @@ function __init__()
 end
 
 # simple explicit time-stepping included for conveniencea
-export ck45 # LSERK 45 
 include("explicit_timestep_utils.jl")
+export ck45 # LSERK 45 
 
 end

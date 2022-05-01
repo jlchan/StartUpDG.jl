@@ -32,7 +32,6 @@ function connect_mesh(EToV, fv)
     return FToF
 end
 
-
 """
     build_node_maps(Xf, FToF)
 
@@ -61,7 +60,7 @@ function build_node_maps(FToF, Xf...; tol = 1e-12)
     mapP = copy(mapM);
 
     D = zeros(Nfp, Nfp)
-    idM,idP = zeros(Int, Nfp), zeros(Int, Nfp)
+    idM, idP = zeros(Int, Nfp), zeros(Int, Nfp)
     for (f1, f2) in enumerate(FToF)
 
         fill!(D, zero(eltype(D)))
@@ -94,7 +93,7 @@ end
     make_periodic(md::MeshData{Dim}, is_periodic = ntuple(x->true,Dim)) where {Dim}
     make_periodic(md::MeshData, is_periodic = true)
 
-Returns new MeshData such that the node maps `mapP` and face maps `FToF` are now periodic.
+Returns new MeshData such that the node maps `mapP` and face maps `FToF` are now periodic.
 Here, `is_periodic` is a tuple of `Bool` indicating whether or not to impose periodic
 BCs in the `x`,`y`, or `z` coordinate.
 """
@@ -138,7 +137,7 @@ function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
     Flist = 1:length(FToF)
     Bfaces = findall(vec(FToF) .== Flist)
 
-        xb = xf[mapB]
+    xb = xf[mapB]
 
     xb, yb = xf[mapB], yf[mapB]
     Nfp = convert(Int, length(xf) / NfacesTotal)
