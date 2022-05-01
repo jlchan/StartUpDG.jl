@@ -55,13 +55,13 @@ end
 
     # compute derivatives
     @unpack rxJ, sxJ, J = md
-    dudr = ArrayPartition((getproperty.(values(rds), :Dr) .* u.x)...)
-    duds = ArrayPartition((getproperty.(values(rds), :Ds) .* u.x)...)
+    dudr = ArrayPartition(getproperty.(values(rds), :Dr)...) * u
+    duds = ArrayPartition(getproperty.(values(rds), :Ds)...) * u
     @test norm(@. dudx - (rxJ * dudr + sxJ * duds) / J) < 10 * length(u) * eps()
 
     # compute jumps
     @unpack mapP = md
-    uf = ArrayPartition((getproperty.(values(rds), :Vf) .* u.x)...)
+    uf = ArrayPartition(getproperty.(values(rds), :Vf)...) * u 
     uP = uf[mapP]
     @test norm(vec(uf) - vec(uP)) < 10 * length(uf) * eps()
 end
