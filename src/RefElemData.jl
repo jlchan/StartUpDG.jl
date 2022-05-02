@@ -12,14 +12,14 @@ rd = RefElemData(Tri(), N)
 ```
 """ 
 struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, 
-                   Nfaces, FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM, 
+                   FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM, 
                    VQ, VF, MM, P, D, L, VP, V1Type, WQ, WF} 
 
     elementType::ElemShape
     approximationType::ApproximationType # Polynomial / SBP{...}
 
     N::Int               # polynomial degree of accuracy
-    fv::NTuple{Nfaces, FV} # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
+    fv::FV # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
     V1::V1Type       # low order interpolation matrix
 
     rst::RST
@@ -76,7 +76,7 @@ function Base.propertynames(x::RefElemData{3}, private::Bool = false)
 end
 
 # convenience unpacking routines
-function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType, Nfaces}, s::Symbol) where {Dim, ElementType, ApproxType, Nfaces}
+function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbol) where {Dim, ElementType, ApproxType}
     if s==:r
         return getfield(x, :rst)[1]
     elseif s==:s
@@ -120,7 +120,7 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType, Nfaces}, 
         return getfield(x, :Drst)[3]
         
     elseif s==:Nfaces || s==:num_faces
-        return Nfaces
+        return length(getfield(x, :fv))
     elseif s==:Np
         return length(getfield(x, :rst)[1])
     elseif s==:Nq
