@@ -153,8 +153,8 @@ function MeshData(VX, VY, EToV_unsorted, rds::Dict{AbstractElemShape, <:RefElemD
     num_elements_of_type(elem) = length(element_ids[elem])
 
     # make node arrays 
-    allocate_node_arrays(num_rows, element_type) = ntuple(_ -> zeros(num_rows, num_elements_of_type(element_type)), 
-                                                          ndims(element_type))
+    allocate_node_arrays(num_rows, element_type) = 
+        ntuple(_ -> zeros(num_rows, num_elements_of_type(element_type)), ndims(element_type))
     xyz_hybrid = Dict((rd.element_type => allocate_node_arrays(size(rd.V1, 1), rd.element_type) for rd in values(rds)))
     for elem_type in element_types
         eids = element_ids[elem_type]

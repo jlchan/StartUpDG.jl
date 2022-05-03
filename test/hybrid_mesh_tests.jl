@@ -62,6 +62,8 @@ end
     # compute jumps
     @unpack mapP = md
     uf = ArrayPartition(getproperty.(values(rds), :Vf)...) * u 
-    uP = uf[mapP]
-    @test norm(vec(uf) - vec(uP)) < 10 * length(uf) * eps()
+    uP = uf[mapP]    
+    u_jump = similar(uf)
+    u_jump .= uP - uf
+    @test norm(u_jump) < 10 * length(uf) * eps()
 end
