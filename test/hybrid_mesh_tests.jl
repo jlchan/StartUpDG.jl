@@ -12,7 +12,6 @@ end
 
 @testset "Hybrid mesh RefElemData and MeshData" begin
 
-    #rds = Dict((elem => RefElemData(N=2, elem) for elem in (Tri(), Quad())))
     rds = RefElemData((Tri(), Quad()), N = 3)
     @test rds[Tri()].element_type == Tri()
     @test rds[Quad()].element_type == Quad()
