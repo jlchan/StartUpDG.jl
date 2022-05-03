@@ -9,6 +9,7 @@ using Kronecker: kronecker # for Hex element matrix manipulations
 using LinearAlgebra: diagm, eigvals, Diagonal, I, mul!, norm
 using NodesAndModes: meshgrid
 @reexport using NodesAndModes # for basis functions
+using OrderedCollections: LittleDict # fast ordered dict for a small number of entries
 using RecipesBase
 @reexport using RecursiveArrayTools: ArrayPartition
 using StaticArrays: SVector, SMatrix
