@@ -181,7 +181,7 @@ function MeshData(VX, VY, EToV_unsorted, rds::Dict{AbstractElemShape, <:RefElemD
     nxyzJ = ArrayPartition.(getproperty.(geo, :nxyzJ)...)
     Jf = ArrayPartition(getproperty.(geo, :Jf)...)    
 
-    mapM, mapP, mapB = build_node_maps(rds, EToV, FToF, xyzf)
+    mapM, mapP, mapB = vec.(build_node_maps(rds, EToV, FToF, xyzf))
 
     return MeshData((VX, VY), EToV, FToF, 
                     xyz, xyzf, xyzq, wJq,
