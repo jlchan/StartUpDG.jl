@@ -66,4 +66,8 @@ end
     u_jump = similar(uf)
     u_jump .= uP - uf
     @test norm(u_jump) < 10 * length(uf) * eps()
+    if norm(u_jump) > 10 * length(uf) * eps()
+        @show size.(u.x)
+        @show size.(uf.x)
+    end
 end
