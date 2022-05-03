@@ -19,7 +19,7 @@ end
 
 # if EToV is an array of arrays, treat it as a "ragged" index array for a hybrid mesh.
 function connect_mesh(EToV::AbstractVector{<:AbstractArray}, 
-                      face_vertex_indices::Dict{AbstractElemShape})
+                      face_vertex_indices::LittleDict{AbstractElemShape})
 
     elem_types = (keys(face_vertex_indices)...,)
 
@@ -76,8 +76,8 @@ element_type(global_e, element_types, EToV) =
 # construct node connectivity arrays for hybrid meshes. 
 # note that `rds` (the container of `RefElemData`s) must have the 
 # same ordering as the `ArrayPartition` `Xf`.
-# Here `element_ids` is a Dict{AbstractElemShape, "indices of elements"}.
-function build_node_maps(rds::Dict{AbstractElemShape, <:RefElemData{2}}, 
+# Here `element_ids` is a LittleDict{AbstractElemShape, "indices of elements"}.
+function build_node_maps(rds::LittleDict{AbstractElemShape, <:RefElemData{2}}, 
                          EToV, FToF, Xf::NTuple{2, ArrayPartition}; tol = 1e-12)
 
     element_types = (keys(rds)..., ) # convert to tuple for indexing
@@ -87,7 +87,7 @@ function build_node_maps(rds::Dict{AbstractElemShape, <:RefElemData{2}},
     num_points_per_face = rd.Nfq ÷ num_faces(rd.element_type)
 
     # TODO: fix, repeated code
-    element_ids = Dict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
+    element_ids = LittleDict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
     num_elements_of_type(elem) = length(element_ids[elem])
     
     # TODO: this part assumes all faces have the same number of points (valid in 2D)
@@ -117,9 +117,9 @@ function compute_geometric_data(xyz, rd::RefElemData{2})
     return (; xyzf, xyzq, wJq, rstxyzJ, J, nxyzJ, Jf)
 end
 
-# returns a Dict{element_type, RefElemData} when specifying multiple element types in 2D
+# returns a LittleDict{element_type, RefElemData} when specifying multiple element types in 2D
 function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs...) where {N} 
-    rds = Dict((elem => RefElemData(elem, args...; kwargs...) for elem in element_types))
+    rds = LittleDict((elem => RefElemData(elem, args...; kwargs...) for elem in element_types)...)
 
     # check if number of face nodes 
     # TODO: this only works in 2D
@@ -131,31 +131,32 @@ function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs
     return rds
 end
 
-# constructs MeshData for a hybrid mesh given a Dict of `RefElemData` 
+# constructs MeshData for a hybrid mesh given a LittleDict of `RefElemData` 
 # with element type keys (e.g., `Tri()` or `Quad`). 
-function MeshData(VX, VY, EToV_unsorted, rds::Dict{AbstractElemShape, <:RefElemData};
+function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:RefElemData};
                   is_periodic = (false, false))
 
     # sort EToV so that elements of the same type are contiguous
     # order by number of vertices, e.g., Quad(), then Tri()
-    p = sortperm(length.(EToV_unsorted), order=Base.Order.Reverse)
+    p = sortperm(length.(EToV_unsorted))
     EToV = EToV_unsorted[p]
 
     # connect faces together 
-    fvs = Dict(Pair(getproperty(rd, :element_type), getproperty(rd, :fv)) for rd in values(rds))
+    fvs = LittleDict((Pair(getproperty(rd, :element_type), 
+                           getproperty(rd, :fv)) for rd in values(rds))...)
     FToF = StartUpDG.connect_mesh(EToV, fvs)
 
-    # Dict between element type and element_ids of that type, e.g., element_ids[Tri()] = ...
+    # LittleDict between element type and element_ids of that type, e.g., element_ids[Tri()] = ...
     # We distinguish between different elements by the number of vertices. 
     # This should work in 3D too (might have issues if we ever do mixed 2D/3D meshes).
     element_types = keys(rds)
-    element_ids = Dict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
+    element_ids = LittleDict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
     num_elements_of_type(elem) = length(element_ids[elem])
 
     # make node arrays 
-    allocate_node_arrays(num_rows, element_type) = ntuple(_ -> zeros(num_rows, num_elements_of_type(element_type)), 
-                                                          ndims(element_type))
-    xyz_hybrid = Dict((rd.element_type => allocate_node_arrays(size(rd.V1, 1), rd.element_type) for rd in values(rds)))
+    allocate_node_arrays(num_rows, element_type) = 
+        ntuple(_ -> zeros(num_rows, num_elements_of_type(element_type)), ndims(element_type))
+    xyz_hybrid = LittleDict((rd.element_type => allocate_node_arrays(size(rd.V1, 1), rd.element_type) for rd in values(rds)))
     for elem_type in element_types
         eids = element_ids[elem_type]
         x, y = xyz_hybrid[elem_type]
@@ -181,7 +182,7 @@ function MeshData(VX, VY, EToV_unsorted, rds::Dict{AbstractElemShape, <:RefElemD
     nxyzJ = ArrayPartition.(getproperty.(geo, :nxyzJ)...)
     Jf = ArrayPartition(getproperty.(geo, :Jf)...)    
 
-    mapM, mapP, mapB = build_node_maps(rds, EToV, FToF, xyzf)
+    mapM, mapP, mapB = vec.(build_node_maps(rds, EToV, FToF, xyzf))
 
     return MeshData((VX, VY), EToV, FToF, 
                     xyz, xyzf, xyzq, wJq,
