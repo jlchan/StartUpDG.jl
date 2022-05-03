@@ -12,14 +12,14 @@ rd = RefElemData(Tri(), N)
 ```
 """ 
 struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, 
-                   FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM, 
+                   Nfaces, FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM, 
                    VQ, VF, MM, P, D, L, VP, V1Type, WQ, WF} 
 
     elementType::ElemShape
     approximationType::ApproximationType # Polynomial / SBP{...}
 
     N::Int               # polynomial degree of accuracy
-    fv::FV # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
+    fv::NTuple{Nfaces, FV} # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
     V1::V1Type       # low order interpolation matrix
 
     rst::RST
