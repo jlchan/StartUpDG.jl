@@ -70,23 +70,19 @@ element_type(global_e, element_types, EToV) =
 # same ordering as the `ArrayPartition` `Xf`.
 # Here `element_ids` is a LittleDict{AbstractElemShape, "indices of elements"}.
 function build_node_maps(rds::LittleDict{AbstractElemShape, <:RefElemData{2}}, 
-                         EToV, FToF, Xf::NTuple{2, ArrayPartition}; tol = 1e-12)
-
-    element_types = (keys(rds)..., ) # convert to tuple for indexing
-                
+                         EToV, FToF, Xf::NTuple{2}; tol = 1e-12)
+               
     # TODO: this part assumes all faces have the same number of points (valid in 2D)
     rd = first(values(rds))
     num_points_per_face = rd.Nfq ÷ num_faces(rd.element_type)
 
     # TODO: fix, repeated code
+    element_types = (keys(rds)..., ) # convert to tuple for indexing
     element_ids = LittleDict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
     num_elements_of_type(elem) = length(element_ids[elem])
-    
-    # TODO: this part assumes all faces have the same number of points (valid in 2D)
-    xf = hcat(reshape.(Xf[1].x, num_points_per_face, 
-                       num_faces.(element_types) .* num_elements_of_type.(element_types))...)
-    yf = hcat(reshape.(Xf[2].x, num_points_per_face, 
-                       num_faces.(element_types) .* num_elements_of_type.(element_types))...)
+
+    num_total_faces = length(first(Xf)) ÷ num_points_per_face
+    xf, yf = reshape.(Xf, num_points_per_face, num_total_faces)
 
     return build_node_maps(FToF, xf, yf)
 end
@@ -158,21 +154,22 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:Re
             x[:, e_local] .= vec(V1 * VX[etov'])
             y[:, e_local] .= vec(V1 * VY[etov'])
         end
-    end
+    end    
 
     # returns tuple of NamedTuples containing geometric fields 
     # for each reference element in `rds`
     geo = compute_geometric_data.(values(xyz_hybrid), values(rds))
 
-    # create array partitions for all geometric quantities
-    xyz = ArrayPartition.(values(xyz_hybrid)...)    
-    xyzf = ArrayPartition.(getproperty.(geo, :xyzf)...)
-    xyzq = ArrayPartition.(getproperty.(geo, :xyzq)...)
-    wJq = ArrayPartition(getproperty.(geo, :wJq)...)
-    rstxyzJ = ArrayPartition.(getproperty.(geo, :rstxyzJ)...)
-    J = ArrayPartition(getproperty.(geo, :J)...)
-    nxyzJ = ArrayPartition.(getproperty.(geo, :nxyzJ)...)
-    Jf = ArrayPartition(getproperty.(geo, :Jf)...)    
+    typename(x) = typeof(x).name.name
+
+    xyz = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(values(xyz_hybrid), i)))), length(keys(rds)))
+    xyzf = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzf), i)))), length(keys(rds)))
+    xyzq = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzq), i)))), length(keys(rds)))
+    rstxyzJ = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :rstxyzJ), i)))), length(keys(rds)))
+    nxyzJ = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :nxyzJ), i)))), length(keys(rds)))
+    wJq = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :wJq))))
+    J = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :J))))
+    Jf = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :Jf))))
 
     mapM, mapP, mapB = vec.(build_node_maps(rds, EToV, FToF, xyzf))
 
