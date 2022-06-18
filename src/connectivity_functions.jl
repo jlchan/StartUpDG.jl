@@ -83,11 +83,6 @@ function build_node_maps(FToF, Xf...; tol = 1e-12)
     return mapM, mapP, mapB
 end
 
-# old deprecated interface
-@deprecate make_periodic(rd::RefElemData, md::MeshData) make_periodic(md)
-@deprecate make_periodic(rd::RefElemData, md::MeshData, args...) make_periodic(md, args...)
-@deprecate make_periodic(md::MeshData, rd::RefElemData, args...) make_periodic(md, args...)
-
 """
     make_periodic(md::MeshData{Dim}, is_periodic...) where {Dim}
     make_periodic(md::MeshData{Dim}, is_periodic = ntuple(x->true,Dim)) where {Dim}
