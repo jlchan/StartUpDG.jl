@@ -21,6 +21,13 @@ end
     @test boundary_dict == Dict(:entire_boundary => [1,2,4,5])
 
     # test named tuple version
-    boundary_dict = tag_boundary_faces(md,(; :bottom => on_bottom_boundary, :top => on_top_boundary))
+    boundary_dict = tag_boundary_faces(md, (; :bottom => on_bottom_boundary, :top => on_top_boundary))
     @test boundary_dict == (; :bottom=>[1],:top=>[4])
+
+    # test node tagging
+    boundary_nodes = tag_boundary_nodes(rd, md, (; :bottom => on_bottom_boundary, :top => on_top_boundary))
+    @test all(on_bottom_boundary.(zip(md.xf[boundary_nodes.bottom], md.yf[boundary_nodes.bottom])))
+
+    boundary_dict = tag_boundary_faces(md, Dict(:bottom => on_bottom_boundary, :top => on_top_boundary))
+    @test all(on_bottom_boundary.(zip(md.xf[boundary_nodes[:bottom]], md.yf[boundary_nodes[:bottom]])))
 end
