@@ -13,7 +13,7 @@ md = MeshElemData(VXY, EToV, rd)
 @unpack x, y = md
 ```
 """
-Base.@kwdef struct MeshData{Dim, VolumeType, FaceType,                             
+Base.@kwdef struct MeshData{Dim, VolumeType, FaceType, VolumeQType,
                             VertexType, EToVType, FToFType, 
                             VolumeWeightType, VolumeGeofacsType, VolumeJType,
                             ConnectivityType, BoundaryMapType}
@@ -25,7 +25,7 @@ Base.@kwdef struct MeshData{Dim, VolumeType, FaceType,
 
     xyz::NTuple{Dim, VolumeType}   # physical points
     xyzf::NTuple{Dim, FaceType}  # face nodes
-    xyzq::NTuple{Dim, VolumeType}  # phys quad points, Jacobian-scaled weights
+    xyzq::NTuple{Dim, VolumeQType}  # phys quad points, Jacobian-scaled weights
     wJq::VolumeWeightType
 
     # arrays of connectivity indices between face nodes
