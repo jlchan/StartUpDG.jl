@@ -83,22 +83,22 @@ scatter(vec.(md.xyzf)..., msw=0, ms=1, aspect_ratio=:equal, ylims=(0,2), leg=fal
 shows the following figure
 ![u](assets/scramjet.png)
 
-## Tagging boundary faces
+## Tagging boundary faces and boundary nodes
 
-One can "tag" boundary faces by specifying boolean functions which evaluate to `true` if a point is on a given boundary segment. 
+One can "tag" boundary faces (or boundary nodes) by specifying boolean functions which evaluate to `true` if a point is on a given boundary segment. 
 ```julia
-using Test
-
 rd = RefElemData(Tri(), N=3)
 md = MeshData(uniform_mesh(Tri(), 1)..., rd)
 on_bottom_boundary(point, tol=1e-13) = abs(point[2] + 1) < tol # point = (x,y)
 on_top_boundary(point, tol=1e-13) = abs(point[2] - 1) < tol    
 
-boundary_dict = tag_boundary_faces(md, Dict(:bottom => on_bottom_boundary, :top => on_top_boundary))
-@test boundary_dict == Dict(:bottom => [1], :top => [4])
+boundary_face_dict = tag_boundary_faces(md, Dict(:bottom => on_bottom_boundary, :top => on_top_boundary))
+boundary_node_dict = tag_boundary_nodes(rd, md, Dict(:bottom => on_bottom_boundary, :top => on_top_boundary))
 ```
 
 You can also specify a list of boundaries using NamedTuples 
 ```julia
-boundary_dict = tag_boundary_faces(md,(; :bottom=>on_bottom_boundary,:top=>on_top_boundary))
+boundary_face_dict = tag_boundary_faces(md, (; :bottom=>on_bottom_boundary,:top=>on_top_boundary))
+boundary_node_dict = tag_boundary_nodes(rd, md, (; :bottom=>on_bottom_boundary,:top=>on_top_boundary))
 ```
+

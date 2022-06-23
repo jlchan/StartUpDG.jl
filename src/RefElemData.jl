@@ -12,15 +12,15 @@ rd = RefElemData(Tri(), N)
 ```
 """ 
 struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, 
-                   Nfaces, FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM, 
+                   FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM, 
                    VQ, VF, MM, P, D, L, VP, V1Type, WQ, WF} 
 
     elementType::ElemShape
     approximationType::ApproximationType # Polynomial / SBP{...}
 
-    N::Int               # polynomial degree of accuracy
-    fv::NTuple{Nfaces, FV} # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
-    V1::V1Type       # low order interpolation matrix
+    N::Int         # polynomial degree of accuracy
+    fv::FV         # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
+    V1::V1Type     # low order interpolation matrix
 
     rst::RST
     VDM::TVDM      # generalized Vandermonde matrix
@@ -120,7 +120,7 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbo
         return getfield(x, :Drst)[3]
         
     elseif s==:Nfaces || s==:num_faces
-        return length(getfield(x, :fv))
+        return num_faces(getfield(x, :elementType))
     elseif s==:Np
         return length(getfield(x, :rst)[1])
     elseif s==:Nq
@@ -159,6 +159,7 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 @inline num_vertices(::Wedge) = 6
 @inline num_vertices(::Pyr) = 5
 
+@inline num_faces(::Line) = 2
 @inline num_faces(::Tri) = 3
 @inline num_faces(::Union{Quad, Tet}) = 4
 @inline num_faces(::Union{Wedge, Pyr}) = 5
