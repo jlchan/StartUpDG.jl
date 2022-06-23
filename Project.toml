@@ -23,6 +23,7 @@ UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
 Colors = "0.12"
+ComponentArrays = "0.12"
 ConstructionBase = "1.0"
 HDF5 = "0.16"
 Kronecker = "0.5"
