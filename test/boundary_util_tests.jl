@@ -28,6 +28,6 @@ end
     boundary_nodes = tag_boundary_nodes(rd, md, (; :bottom => on_bottom_boundary, :top => on_top_boundary))
     @test all(on_bottom_boundary.(zip(md.xf[boundary_nodes.bottom], md.yf[boundary_nodes.bottom])))
 
-    boundary_dict = tag_boundary_faces(md, Dict(:bottom => on_bottom_boundary, :top => on_top_boundary))
+    boundary_nodes = tag_boundary_nodes(rd, md, Dict(:bottom => on_bottom_boundary, :top => on_top_boundary))
     @test all(on_bottom_boundary.(zip(md.xf[boundary_nodes[:bottom]], md.yf[boundary_nodes[:bottom]])))
 end
