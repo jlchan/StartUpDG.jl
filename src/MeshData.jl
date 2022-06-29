@@ -44,6 +44,11 @@ Base.@kwdef struct MeshData{Dim, VolumeType, FaceType, VolumeQType,
     is_periodic::NTuple{Dim, Bool}
 end
 
+ConstructionBase.getproperties(md::MeshData) = 
+    (; VXYZ=md.VXYZ, EToV=md.EToV, FToF=md.FToF, xyz=md.xyz, xyzf=md.xyzf, xyzq=md.xyzq, wJq=md.wJq,
+       mapM=md.mapM, mapP=md.mapP, mapB=md.mapB, rstxyzJ=md.rstxyzJ, J=md.J, nxyzJ=md.nxyzJ, Jf=md.Jf,
+       is_periodic=md.is_periodic)
+
 function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
     @nospecialize md
     print(io,"MeshData{$DIM}")
