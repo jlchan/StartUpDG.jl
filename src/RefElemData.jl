@@ -50,6 +50,12 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType,
     LIFT::L             # lift matrix
 end
 
+ConstructionBase.getproperties(rd::RefElemData) = 
+    (; elementType=rd.elementType, approximationType=rd.approximationType, N=rd.N, fv=rd.fv, V1=rd.V1, 
+       rst=rd.rst, VDM=rd.VDM, Fmask=rd.Fmask, Nplot=rd.Nplot, rstp=rd.rstp, Vp=rd.Vp, 
+       rstq=rd.rstq, wq=rd.wq, Vq=rd.Vq, rstf=rd.rstf, wf=rd.wf, Vf=rd.Vf, nrstJ=rd.nrstJ, 
+       M=rd.M, Pq=rd.Pq, Drst=rd.Drst, LIFT=rd.LIFT)
+
 function Base.show(io::IO, ::MIME"text/plain", rd::RefElemData)
     @nospecialize rd
     print(io,"RefElemData for a degree $(rd.N) $(rd.approximationType) approximation on $(rd.elementType) element.")
