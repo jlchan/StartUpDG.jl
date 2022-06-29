@@ -304,9 +304,9 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
     end
     geof = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
-    setproperties(md,(xyz=xyz, xyzq=xyzq, xyzf=xyzf,
-                  rstxyzJ=rstxyzJ, J=last(geo),
-                  nxyzJ=geof[1:Dim], Jf=last(geof)))
+    setproperties(md, (xyz=xyz, xyzq=xyzq, xyzf=xyzf,
+                       rstxyzJ=rstxyzJ, J=last(geo),
+                       nxyzJ=geof[1:Dim], Jf=last(geof)))
 end
 
 
