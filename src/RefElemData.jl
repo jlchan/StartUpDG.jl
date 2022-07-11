@@ -50,6 +50,12 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType,
     LIFT::L             # lift matrix
 end
 
+# need this to use @set outside of StartUpDG
+function ConstructionBase.setproperties(rd::RefElemData, patch::NamedTuple)
+    fields = (haskey(patch, symbol) ? getproperty(patch, symbol) : getproperty(rd, symbol) for symbol in fieldnames(typeof(rd)))         
+    return RefElemData(fields...)
+end
+
 ConstructionBase.getproperties(rd::RefElemData) = 
     (; elementType=rd.elementType, approximationType=rd.approximationType, N=rd.N, fv=rd.fv, V1=rd.V1, 
        rst=rd.rst, VDM=rd.VDM, Fmask=rd.Fmask, Nplot=rd.Nplot, rstp=rd.rstp, Vp=rd.Vp, 

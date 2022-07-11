@@ -42,4 +42,11 @@
     end
     @inferred foo(rd)
     @inferred foo(md)
+
+    # test setproperties
+    rd = RefElemData(Quad(), 2)
+    struct NewType end
+    patch = (; approximationType=NewType())
+    rd2 = StartUpDG.ConstructionBase.setproperties(rd, patch)
+    @test rd2.approximationType==NewType()
 end
