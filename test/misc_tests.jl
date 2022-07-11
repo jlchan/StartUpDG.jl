@@ -49,4 +49,9 @@
     patch = (; approximationType=NewType())
     rd2 = StartUpDG.ConstructionBase.setproperties(rd, patch)
     @test rd2.approximationType==NewType()
+
+    md = MeshData(uniform_mesh(Quad(), 4)..., rd)
+    patch = (; is_periodic=(true, false))
+    md2 = StartUpDG.ConstructionBase.setproperties(md, patch)
+    @test md2.is_periodic==(true, false)
 end
