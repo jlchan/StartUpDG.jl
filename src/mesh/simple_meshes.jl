@@ -8,28 +8,72 @@ end
 
 struct MeshOptions
     grouping::Bool
+    remapGroupName::Bool
 end
 
 """
-function readGmsh2D(filename)
-reads triangular GMSH 2D .msh files. returns (VX,VY), EToV
-# Supported formats and features:
-- version 2.2 (legacy) 
-- version 4.1 
-    - will have physical group support
-
-```julia
-VXY, EToV = readGmsh2D("eulerSquareCylinder2D.msh")
-```
-reads gmsh 4.1 .msh file type
-https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format
-Notes:The version 4 format has a more detailed block data format
-this leads to more complicated parser.
-returns: (VX,VY),EToV,elementData
+ returns the number of elements in a .msh file of a specified dimension
+"""
+function getNumElements(lines,Dim=2)
+    elem_start = findline("\$Elements",lines) + 1
+    temp_numBlocks,_,_,_ = split(lines[elem_start])
+    numBlocks = parse(Int,temp_numBlocks)
+    numElements = 0
+    block_data_line = elem_start + 1
+    for i in 1:numBlocks
+        temp_blockDim,_,_,temp_num_elem_in_block = split(lines[block_data_line])
+        blockDim = parse(Int,temp_blockDim)
+        num_elem_in_block = parse(Int,temp_num_elem_in_block)
+        if blockDim == Dim
+            numElements = numElements + num_elem_in_block
+        end
+        block_data_line = block_data_line + num_elem_in_block + 1
+    end
+    return numElements
+end
+"""
+GMSH uses integers for naming conventions. This function remaps the gmsh ids to
+a list of ids 1:numGroups. This just cleans up a little after Gmsh
+"""
+function remapElementGrouping!(eg)
+    groupIds = unique(eg) 
+    newIds = 1:length(groupIds)
+    map = Dict{Int,Int}()
+    for (i,id) in enumerate(groupIds)
+        map[id] = newIds[i]
+    end
+    @info "New group names: $map"
+    for (i,element) in enumerate(eg)
+        eg[i] = map[element]
+    end
+    return eg
+end
 
 """
+function readGmsh2D_v4(filename)
+reads triangular GMSH 2D .msh files. returns (VX,VY), EToV
+# Supported formats and features:
+- version 4.1 
+    - physical group support
+
+# Gmsh
+When creating .msh file to group surfaces into physical groups. Then opt for grouping
+for this fuction
+```julia
+VXY, EToV = readGmsh2D_v4("eulerSquareCylinder2D.msh")
+VXY, EToV = readGmsh2D_v4("eulerSquareCylinder2D.msh",false)
+VXY, EToV, grouping = readGmsh2D_v4("eulerSquareCylinder2D.msh", true)
+
+option = MeshOption(true)
+VXY, EToV, grouping = readGmsh2D_v4("eulerSquareCylinder2D.msh", option)
+```
+https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format
+
+Notes:The version 4 format has a more detailed block data format
+this leads to more complicated parser.
+"""
 function readGmsh2D_v4(filename::String, options::MeshOptions)
-    @unpack grouping = options;
+    @unpack grouping,remapGroupName = options;
     f = open(filename)
     lines = readlines(f)
 
@@ -61,8 +105,8 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
             surfTag, numPhysTag, PhysTag = [parse(Int,c) for c in surfaceInfo[[1,8,9]]]
             @assert numPhysTag == 1 "Surfaces must have one physical tag associated you have $numPhysTag"
             surfaceData[surfTag] = PhysTag
-            @info "Tag grouping: $surfaceData"
         end
+        @info "Tag grouping: $surfaceData"
     end
 
     node_start = findline("\$Nodes", lines) + 1
@@ -86,8 +130,9 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
     end
 
     elem_start = findline("\$Elements",lines) + 1
-    temp_numBlocks,temp_numElements,_,_ = split(lines[elem_start])
-    numElements = parse(Int,temp_numElements)
+    temp_numBlocks,_,_,_ = split(lines[elem_start])
+    numElements = getNumElements(lines) # Some elements in the .msh file are not our 2d mesh elements see docstring of function
+    @info "File has $numElements 2D Elements"
     numBlocks = parse(Int, temp_numBlocks)
 
     if grouping
@@ -97,15 +142,18 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
     EToV = zeros(Int64,numElements,3)
     block_line_start = elem_start + 1
     for block in 1:numBlocks 
-        _,temp_tag,_,temp_elemInBlock = split(lines[block_line_start])
+        temp_elem_block_dim,temp_tag,_,temp_elemInBlock = split(lines[block_line_start])
+        elem_block_dim = parse(Int, temp_elem_block_dim)
         numElemInBlock = parse(Int,temp_elemInBlock)
         surface_tag = parse(Int,temp_tag)
-        for e_idx in 1:numElemInBlock
-            vals = [parse(Int,c) for c in split(lines[e_idx+block_line_start])]
-            elem_global_idx, nodeA, nodeB, nodeC = vals
-            EToV[elem_global_idx,:] .= [nodeA,nodeB,nodeC]
-            if grouping
-                element_grouping[elem_global_idx] = surfaceData[surface_tag]
+        if elem_block_dim == 2 # only interesed in 2d triangle elements
+            for e_idx in 1:numElemInBlock
+                vals = [parse(Int,c) for c in split(lines[e_idx+block_line_start])]
+                elem_global_idx, nodeA, nodeB, nodeC = vals
+                EToV[elem_global_idx,:] .= [nodeA,nodeB,nodeC]
+                if grouping
+                    element_grouping[elem_global_idx] = surfaceData[surface_tag]
+                end
             end
         end
         block_line_start = block_line_start + numElemInBlock + 1
@@ -115,6 +163,10 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
     EToV = correct_negative_Jacobians!((VX, VY), EToV)
 
     if grouping
+        if remapGroupName
+            @info "Remapping Group Names"
+            element_grouping = remapElementGrouping!(element_grouping)
+        end
         return (VX, VY), EToV, element_grouping
     else
         return (VX,VY), EToV
@@ -127,13 +179,19 @@ for simpler code
     example: VXY, EToV, grouping = readGmsh2D_v4("file.msh",true)
     example: VXY, EToV = readGmsh2D_v4("file.msh",false)
 """
-function readGmsh2D_v4(filename::String,groupOpt::Bool=false) 
-    options = MeshOptions(groupOpt) 
+function readGmsh2D_v4(filename::String,groupOpt::Bool=false, remapGroupName::Bool=true) 
+    options = MeshOptions(groupOpt, remapGroupName) 
     return readGmsh2D_v4(filename, options)
 end
 
 """
-reads legacy Gmsh 2.2 file and parses for VXY and EToV data
+function readGmsh2D(filename)
+reads triangular GMSH 2D file format 2.2 0 8. returns (VX, VY), EToV
+# Examples
+```julia
+VXY, EToV = readGmsh2D("eulerSquareCylinder2D.msh")
+```
+
 https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_0029
 """
 function readGmsh2D(filename::String)
@@ -145,6 +203,8 @@ function readGmsh2D(filename::String)
     gmsh_version = parse(Float64,version)
     if gmsh_version == 2.2
         @info "reading gmsh file with legacy ($gmsh_version) format"
+    elseif gmsh_version == 4.1
+        @assert "This parsing function is not compatable with gmsh version $gmsh_version"
     else
         @warn "Gmsh file version is: $gmsh_version consider using a different parsing fuction for this file format"
     end
