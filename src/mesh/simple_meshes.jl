@@ -1,12 +1,19 @@
+function findline(name, lines)
+    for (i, line) in enumerate(lines)
+        if line == name
+            return i
+        end
+    end
+end
+
 """
-    function readGmsh2D(filename,num)
-  # groups
-  This special version of the function allows the user to group elements
-  groups ids assigned in gmsh are remaped to the numbers 1:num_groups
+function readGmsh2D(filename)
+reads triangular GMSH 2D .msh files. returns (VX,VY), EToV
+# Supported formats and features:
+- version 2.2 (legacy) 
+- version 4.1 
+    - will have physical group support
 
-reads triangular GMSH 2D file format 2.2 0 8. returns (VX, VY), EToV
-
-# Examples
 ```julia
 VXY, EToV = readGmsh2D("eulerSquareCylinder2D.msh")
 ```
@@ -14,42 +21,89 @@ VXY, EToV = readGmsh2D("eulerSquareCylinder2D.msh")
 function readGmsh2D(filename::String)
     f = open(filename)
     lines = readlines(f)
-
-    function findline(name, lines)
-        for (i, line) in enumerate(lines)
-            if line == name
-                return i
-            end
-        end
-    end
+    
     format_line = findline("\$MeshFormat",lines)+1
-    v,_,_ = split(lines[format_line])
+    version,_,dataSize = split(lines[format_line])
+    gmsh_version = parse(Float64,version)
+    data_size = parse(Int,dataSize)
+    if gmsh_version == 2.2
+        @info "reading gmsh file with legacy (2.2) Format"
+        VXY, EToV = read_v2_Gmsh2D(filename);
+        return VXY, EToV
+    elseif gmsh_version == 4.1
+        @info "reading gmsh file with (4.1) Format"
+    else
+        @warn "file format may not be compatible"
+        @info "version:$gmsh_version"
+        @info "default to reading gmsh file with (4.1) Format"
+    end
 
-
+    VXY,EToV = StartUpDG.read_v4_Gmsh2D(filename)
+    return VXY, EToV
 end
-function readGmsh2D(filename::String, groups=false)
+
+"""
+reads gmsh 4.1 .msh file type
+https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format
+Notes:The version 4 format has a more detailed block data format
+this leads to more complicated parser.
+returns: (VX,VY),EToV,elementData
+
+"""
+function read_v4_Gmsh2D(filename::String)
     f = open(filename)
     lines = readlines(f)
-
-    function findline(name, lines)
-        for (i, line) in enumerate(lines)
-            if line == name
-                return i
-            end
+    
+    node_start = findline("\$Nodes", lines) + 1
+    temp_numBlocks,temp_Nv,_,_ = split(lines[node_start])
+    numBlocks = parse(Int,temp_numBlocks)
+    Nv = parse(Int,temp_Nv)
+    VX,VY,VZ = ntuple(x->zeros(Float64,Nv),3)
+    block_line = node_start + 1
+    for block_idx in 1:numBlocks
+        _,_,_,temp_numNodes = split(lines[block_line])
+        numNodes = parse(Int,temp_numNodes)
+        for block_node_idx in 1:numNodes
+            node_num_line = block_line + block_node_idx 
+            node_cords_line = node_num_line + numNodes 
+            node_idx_global = parse(Int,lines[node_num_line])
+            vals = [parse(Float64,c) for c in split(lines[node_cords_line])]
+            VX[node_idx_global] = vals[1]
+            VY[node_idx_global] = vals[2]
         end
+        block_line = block_line + 2*numNodes+ 1
     end
 
-    if groups
-        physical_group_start = findline("\$PhysicalNames",lines) + 1
-        num_groups = parse(Int64, lines[physical_group_start])
-        group_ids = zeros(Int,num_groups)
-        for i in 1:num_groups
-            _,temp,_ = split(lines[i+physical_group_start])
-            group_num = parse(Int64,temp);
-            group_ids[i] = group_num
+    elem_start = findline("\$Elements",lines) + 1
+    temp_numBlocks,temp_numElements,_,_ = split(lines[elem_start])
+    numElements = parse(Int,temp_numElements)
+    numBlocks = parse(Int, temp_numBlocks)
+
+    EToV = zeros(Int64,numElements,3)
+    block_line_start = elem_start + 1
+    for block in 1:numBlocks 
+        _,_,_,temp_elemInBlock = split(lines[block_line_start])
+        numElemInBlock = parse(Int,temp_elemInBlock)
+        for e_idx in 1:numElemInBlock
+            vals = [parse(Int,c) for c in split(lines[e_idx+block_line_start])]
+            elem_global_idx, nodeA, nodeB, nodeC = vals
+            EToV[elem_global_idx,:] .= [nodeA,nodeB,nodeC]
         end
-        group_map = Dict(group_ids.=>1:num_groups)
+        block_line_start = block_line_start + numElemInBlock + 1
     end
+    EToV = EToV[:,vec([1 3 2])]  # permute for Gmsh ordering
+    EToV = correct_negative_Jacobians!((VX, VY), EToV)
+
+    return (VX, VY), EToV
+end
+
+"""
+reads legacy Gmsh 2.2 file and parses for VXY and EToV data
+https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_0029
+"""
+function read_v2_Gmsh2D(filename::String)
+    f = open(filename)
+    lines = readlines(f)
 
     node_start = findline("\$Nodes", lines) + 1
     Nv = parse(Int64, lines[node_start])
@@ -70,28 +124,18 @@ function readGmsh2D(filename::String, groups=false)
         end
     end
     EToV = zeros(Int64, K, 3)
-    if groups
-        physical_groups = zeros(Int,K) # Not sure why we need K rather than   K_all
-    end
     sk = 1
     for e = 1:K_all
         if length(split(lines[e+elem_start])) == 8
             vals = [parse(Int64, c) for c in split(lines[e+elem_start])]
-            if groups
-                physical_groups[sk] = group_map[vals[4]]
-            end
             EToV[sk, :] .= vals[6:8]
             sk = sk + 1
         end
     end
 
     EToV = EToV[:, vec([1 3 2])] # permute for Gmsh ordering
-
     EToV = correct_negative_Jacobians!((VX, VY), EToV)
 
-    if groups
-        return (VX, VY), EToV, physical_groups
-    end
     return (VX, VY), EToV
 end
 
