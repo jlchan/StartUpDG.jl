@@ -1,5 +1,8 @@
 """
-    function readGmsh2D(filename)
+    function readGmsh2D(filename,num)
+  # groups
+  This special version of the function allows the user to group elements
+  groups ids assigned in gmsh are remaped to the numbers 1:num_groups
 
 reads triangular GMSH 2D file format 2.2 0 8. returns (VX, VY), EToV
 
@@ -8,7 +11,7 @@ reads triangular GMSH 2D file format 2.2 0 8. returns (VX, VY), EToV
 VXY, EToV = readGmsh2D("eulerSquareCylinder2D.msh")
 ```
 """
-function readGmsh2D(filename)
+function readGmsh2D(filename::String)
     f = open(filename)
     lines = readlines(f)
 
@@ -18,6 +21,34 @@ function readGmsh2D(filename)
                 return i
             end
         end
+    end
+    format_line = findline("\$MeshFormat",lines)+1
+    v,_,_ = split(lines[format_line])
+
+
+end
+function readGmsh2D(filename::String, groups=false)
+    f = open(filename)
+    lines = readlines(f)
+
+    function findline(name, lines)
+        for (i, line) in enumerate(lines)
+            if line == name
+                return i
+            end
+        end
+    end
+
+    if groups
+        physical_group_start = findline("\$PhysicalNames",lines) + 1
+        num_groups = parse(Int64, lines[physical_group_start])
+        group_ids = zeros(Int,num_groups)
+        for i in 1:num_groups
+            _,temp,_ = split(lines[i+physical_group_start])
+            group_num = parse(Int64,temp);
+            group_ids[i] = group_num
+        end
+        group_map = Dict(group_ids.=>1:num_groups)
     end
 
     node_start = findline("\$Nodes", lines) + 1
@@ -39,10 +70,16 @@ function readGmsh2D(filename)
         end
     end
     EToV = zeros(Int64, K, 3)
+    if groups
+        physical_groups = zeros(Int,K) # Not sure why we need K rather than   K_all
+    end
     sk = 1
     for e = 1:K_all
         if length(split(lines[e+elem_start])) == 8
             vals = [parse(Int64, c) for c in split(lines[e+elem_start])]
+            if groups
+                physical_groups[sk] = group_map[vals[4]]
+            end
             EToV[sk, :] .= vals[6:8]
             sk = sk + 1
         end
@@ -52,6 +89,9 @@ function readGmsh2D(filename)
 
     EToV = correct_negative_Jacobians!((VX, VY), EToV)
 
+    if groups
+        return (VX, VY), EToV, physical_groups
+    end
     return (VX, VY), EToV
 end
 
