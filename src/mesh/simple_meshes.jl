@@ -6,6 +6,10 @@ function findline(name, lines)
     end
 end
 
+struct MeshOptions
+    grouping::Bool
+end
+
 """
 function readGmsh2D(filename)
 reads triangular GMSH 2D .msh files. returns (VX,VY), EToV
@@ -17,32 +21,6 @@ reads triangular GMSH 2D .msh files. returns (VX,VY), EToV
 ```julia
 VXY, EToV = readGmsh2D("eulerSquareCylinder2D.msh")
 ```
-"""
-function readGmsh2D(filename::String)
-    f = open(filename)
-    lines = readlines(f)
-    
-    format_line = findline("\$MeshFormat",lines)+1
-    version,_,dataSize = split(lines[format_line])
-    gmsh_version = parse(Float64,version)
-    data_size = parse(Int,dataSize)
-    if gmsh_version == 2.2
-        @info "reading gmsh file with legacy (2.2) Format"
-        VXY, EToV = read_v2_Gmsh2D(filename);
-        return VXY, EToV
-    elseif gmsh_version == 4.1
-        @info "reading gmsh file with (4.1) Format"
-    else
-        @warn "file format may not be compatible"
-        @info "version:$gmsh_version"
-        @info "default to reading gmsh file with (4.1) Format"
-    end
-
-    VXY,EToV = StartUpDG.read_v4_Gmsh2D(filename)
-    return VXY, EToV
-end
-
-"""
 reads gmsh 4.1 .msh file type
 https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format
 Notes:The version 4 format has a more detailed block data format
@@ -50,10 +28,43 @@ this leads to more complicated parser.
 returns: (VX,VY),EToV,elementData
 
 """
-function read_v4_Gmsh2D(filename::String)
+function readGmsh2D_v4(filename::String, options::MeshOptions)
+    @unpack grouping = options;
     f = open(filename)
     lines = readlines(f)
-    
+
+    format_line = findline("\$MeshFormat",lines)+1
+    version,_,dataSize = split(lines[format_line])
+    gmsh_version = parse(Float64,version)
+
+    if gmsh_version == 4.1
+        @info "reading gmsh file with legacy ($gmsh_version) format"
+    else
+        @warn "Gmsh file version is: $gmsh_version consider using a different parsing fuction for this file format"
+    end
+
+    if grouping
+        # For 2D Physical group data we are only interested in groupings in surface entities
+        # This will extract relevent grouping data for each surface
+        # only supports one physical group per Element
+        entities_start_line = findline("\$Entities", lines) +1
+        entities_block_data = split(lines[entities_start_line])
+        entities_block_data = [parse(Int,c) for c in entities_block_data[1:3]]
+        numPoints,numCurves,numSurfaces = entities_block_data[1:3]
+        @info "Entities| points:$numPoints| curves:$numCurves| surfaces:$numSurfaces"
+        
+        surface_start_line = entities_start_line + numPoints + numCurves
+        @info "Expecting Surface data to start on line $surface_start_line of .msh file"
+        surfaceData = Dict{Int,Int}()
+        for i in 1:numSurfaces
+            surfaceInfo = split(lines[i+surface_start_line])
+            surfTag, numPhysTag, PhysTag = [parse(Int,c) for c in surfaceInfo[[1,8,9]]]
+            @assert numPhysTag == 1 "Surfaces must have one physical tag associated you have $numPhysTag"
+            surfaceData[surfTag] = PhysTag
+            @info "Tag grouping: $surfaceData"
+        end
+    end
+
     node_start = findline("\$Nodes", lines) + 1
     temp_numBlocks,temp_Nv,_,_ = split(lines[node_start])
     numBlocks = parse(Int,temp_numBlocks)
@@ -79,31 +90,64 @@ function read_v4_Gmsh2D(filename::String)
     numElements = parse(Int,temp_numElements)
     numBlocks = parse(Int, temp_numBlocks)
 
+    if grouping
+        element_grouping = zeros(Int,numElements) #element physical group assignment
+    end
+
     EToV = zeros(Int64,numElements,3)
     block_line_start = elem_start + 1
     for block in 1:numBlocks 
-        _,_,_,temp_elemInBlock = split(lines[block_line_start])
+        _,temp_tag,_,temp_elemInBlock = split(lines[block_line_start])
         numElemInBlock = parse(Int,temp_elemInBlock)
+        surface_tag = parse(Int,temp_tag)
         for e_idx in 1:numElemInBlock
             vals = [parse(Int,c) for c in split(lines[e_idx+block_line_start])]
             elem_global_idx, nodeA, nodeB, nodeC = vals
             EToV[elem_global_idx,:] .= [nodeA,nodeB,nodeC]
+            if grouping
+                element_grouping[elem_global_idx] = surfaceData[surface_tag]
+            end
         end
         block_line_start = block_line_start + numElemInBlock + 1
     end
+
     EToV = EToV[:,vec([1 3 2])]  # permute for Gmsh ordering
     EToV = correct_negative_Jacobians!((VX, VY), EToV)
 
-    return (VX, VY), EToV
+    if grouping
+        return (VX, VY), EToV, element_grouping
+    else
+        return (VX,VY), EToV
+    end
+end
+
+"""
+For brevity while grouping is the only supported feature this allows
+for simpler code
+    example: VXY, EToV, grouping = readGmsh2D_v4("file.msh",true)
+    example: VXY, EToV = readGmsh2D_v4("file.msh",false)
+"""
+function readGmsh2D_v4(filename::String,groupOpt::Bool=false) 
+    options = MeshOptions(groupOpt) 
+    return readGmsh2D_v4(filename, options)
 end
 
 """
 reads legacy Gmsh 2.2 file and parses for VXY and EToV data
 https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_0029
 """
-function read_v2_Gmsh2D(filename::String)
+function readGmsh2D(filename::String)
     f = open(filename)
     lines = readlines(f)
+
+    format_line = findline("\$MeshFormat",lines)+1
+    version,_,dataSize = split(lines[format_line])
+    gmsh_version = parse(Float64,version)
+    if gmsh_version == 2.2
+        @info "reading gmsh file with legacy ($gmsh_version) format"
+    else
+        @warn "Gmsh file version is: $gmsh_version consider using a different parsing fuction for this file format"
+    end
 
     node_start = findline("\$Nodes", lines) + 1
     Nv = parse(Int64, lines[node_start])
