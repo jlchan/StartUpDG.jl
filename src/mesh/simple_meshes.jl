@@ -154,7 +154,7 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
         element_grouping = zeros(Int, numElements) #element physical group assignment
     end
 
-    EToV = zeros(Int64,numElements,3)
+    EToV = zeros(Int64, numElements, 3)
     block_line_start = elem_start + 1
     elem_global_idx = 0
     for block in 1:numBlocks 
