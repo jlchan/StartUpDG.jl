@@ -73,7 +73,7 @@ Notes:The version 4 format has a more detailed block data format
 this leads to more complicated parser.
 """
 function readGmsh2D_v4(filename::String, options::MeshOptions)
-    @unpack grouping,remapGroupName = options;
+    @unpack grouping, remapGroupName = options;
 
     if !isfile(filename)
         @assert "file does not exist"
