@@ -219,9 +219,9 @@ function readGmsh2D(filename::String)
     f = open(filename)
     lines = readlines(f)
 
-    format_line = findline("\$MeshFormat",lines)+1
-    version,_,dataSize = split(lines[format_line])
-    gmsh_version = parse(Float64,version)
+    format_line = findline("\$MeshFormat", lines)+1
+    version, _, dataSize = split(lines[format_line])
+    gmsh_version = parse(Float64, version)
     if gmsh_version == 2.2
         @info "reading gmsh file with legacy ($gmsh_version) format"
     elseif gmsh_version == 4.1
