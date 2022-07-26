@@ -74,17 +74,32 @@ this leads to more complicated parser.
 """
 function readGmsh2D_v4(filename::String, options::MeshOptions)
     @unpack grouping,remapGroupName = options;
+
+    if !isfile(filename)
+        @assert "file does not exist"
+    end
+
     f = open(filename)
     lines = readlines(f)
 
     format_line = findline("\$MeshFormat",lines)+1
     version,_,dataSize = split(lines[format_line])
     gmsh_version = parse(Float64,version)
+    group_requested_but_none_in_file = false
+
 
     if gmsh_version == 4.1
         @info "reading gmsh file with legacy ($gmsh_version) format"
     else
         @warn "Gmsh file version is: $gmsh_version consider using a different parsing fuction for this file format"
+    end
+
+    # grouping may be requested yet not be present in the file
+    if isnothing(findline("\$PhysicalNames",lines)) && grouping == true
+        @warn "No grouping data in file. Setting grouping option to false"
+        group_requested_but_none_in_file = true
+        grouping=false
+        remapGroupName=false
     end
 
     if grouping
@@ -141,6 +156,7 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
 
     EToV = zeros(Int64,numElements,3)
     block_line_start = elem_start + 1
+    elem_global_idx = 0
     for block in 1:numBlocks 
         temp_elem_block_dim,temp_tag,_,temp_elemInBlock = split(lines[block_line_start])
         elem_block_dim = parse(Int, temp_elem_block_dim)
@@ -148,8 +164,9 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
         surface_tag = parse(Int,temp_tag)
         if elem_block_dim == 2 # only interesed in 2d triangle elements
             for e_idx in 1:numElemInBlock
+                elem_global_idx = elem_global_idx + 1
                 vals = [parse(Int,c) for c in split(lines[e_idx+block_line_start])]
-                elem_global_idx, nodeA, nodeB, nodeC = vals
+                _, nodeA, nodeB, nodeC = vals
                 EToV[elem_global_idx,:] .= [nodeA,nodeB,nodeC]
                 if grouping
                     element_grouping[elem_global_idx] = surfaceData[surface_tag]
@@ -168,9 +185,13 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
             element_grouping = remapElementGrouping!(element_grouping)
         end
         return (VX, VY), EToV, element_grouping
-    else
-        return (VX,VY), EToV
     end
+
+    if group_requested_but_none_in_file
+        return (VX,VY),EToV, zeros(Int,numElements)
+    end
+
+    return (VX,VY), EToV
 end
 
 """
@@ -179,7 +200,7 @@ for simpler code
     example: VXY, EToV, grouping = readGmsh2D_v4("file.msh",true)
     example: VXY, EToV = readGmsh2D_v4("file.msh",false)
 """
-function readGmsh2D_v4(filename::String,groupOpt::Bool=false, remapGroupName::Bool=true) 
+function readGmsh2D_v4(filename::String,groupOpt::Bool=false, remapGroupName::Bool=false) 
     options = MeshOptions(groupOpt, remapGroupName) 
     return readGmsh2D_v4(filename, options)
 end
