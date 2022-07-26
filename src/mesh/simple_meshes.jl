@@ -22,7 +22,7 @@ function getNumElements(lines,Dim=2)
     block_data_line = elem_start + 1
     for i in 1:numBlocks
         temp_blockDim, _, _, temp_num_elem_in_block = split(lines[block_data_line])
-        blockDim = parse(Int,t emp_blockDim)
+        blockDim = parse(Int, temp_blockDim)
         num_elem_in_block = parse(Int, temp_num_elem_in_block)
         if blockDim == Dim
             numElements = numElements + num_elem_in_block
