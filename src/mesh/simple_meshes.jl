@@ -84,7 +84,7 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
 
     format_line = findline("\$MeshFormat",lines)+1
     version, _, dataSize = split(lines[format_line])
-    gmsh_version = parse(Float64,version)
+    gmsh_version = parse(Float64, version)
     group_requested_but_none_in_file = false
 
 
@@ -109,7 +109,7 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
         entities_start_line = findline("\$Entities", lines) +1
         entities_block_data = split(lines[entities_start_line])
         entities_block_data = [parse(Int,c) for c in entities_block_data[1:3]]
-        numPoints,numCurves,numSurfaces = entities_block_data[1:3]
+        numPoints, numCurves, numSurfaces = entities_block_data[1:3]
         @info "Entities| points:$numPoints| curves:$numCurves| surfaces:$numSurfaces"
         
         surface_start_line = entities_start_line + numPoints + numCurves
@@ -125,19 +125,19 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
     end
 
     node_start = findline("\$Nodes", lines) + 1
-    temp_numBlocks,temp_Nv,_,_ = split(lines[node_start])
-    numBlocks = parse(Int,temp_numBlocks)
-    Nv = parse(Int,temp_Nv)
-    VX,VY,VZ = ntuple(x->zeros(Float64,Nv),3)
+    temp_numBlocks, temp_Nv, _ = split(lines[node_start])
+    numBlocks = parse(Int, temp_numBlocks)
+    Nv = parse(Int, temp_Nv)
+    VX, VY, VZ = ntuple(x->zeros(Float64, Nv), 3)
     block_line = node_start + 1
     for block_idx in 1:numBlocks
-        _,_,_,temp_numNodes = split(lines[block_line])
-        numNodes = parse(Int,temp_numNodes)
+        _, _, _, temp_numNodes = split(lines[block_line])
+        numNodes = parse(Int, temp_numNodes)
         for block_node_idx in 1:numNodes
             node_num_line = block_line + block_node_idx 
             node_cords_line = node_num_line + numNodes 
-            node_idx_global = parse(Int,lines[node_num_line])
-            vals = [parse(Float64,c) for c in split(lines[node_cords_line])]
+            node_idx_global = parse(Int, lines[node_num_line])
+            vals = [parse(Float64, c) for c in split(lines[node_cords_line])]
             VX[node_idx_global] = vals[1]
             VY[node_idx_global] = vals[2]
         end
@@ -145,7 +145,7 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
     end
 
     elem_start = findline("\$Elements",lines) + 1
-    temp_numBlocks,_,_,_ = split(lines[elem_start])
+    temp_numBlocks, _ = split(lines[elem_start])
     numElements = getNumElements(lines) # Some elements in the .msh file are not our 2d mesh elements see docstring of function
     @info "File has $numElements 2D Elements"
     numBlocks = parse(Int, temp_numBlocks)
