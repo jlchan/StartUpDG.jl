@@ -167,7 +167,7 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
                 elem_global_idx = elem_global_idx + 1
                 vals = [parse(Int,c) for c in split(lines[e_idx+block_line_start])]
                 _, nodeA, nodeB, nodeC = vals
-                EToV[elem_global_idx,:] .= [nodeA,nodeB,nodeC]
+                EToV[elem_global_idx,:] .= [nodeA, nodeB, nodeC]
                 if grouping
                     element_grouping[elem_global_idx] = surfaceData[surface_tag]
                 end
