@@ -1,4 +1,11 @@
-function findline(name, lines)
+"""
+findline(word::String,lines)
+## Ouput
+line number of given word in file
+## Notes
+expexted that the word exists once in the file
+"""
+function findline(name::String, lines::Vector{String})
     for (i, line) in enumerate(lines)
         if line == name
             return i
@@ -6,59 +13,82 @@ function findline(name, lines)
     end
 end
 
-struct MeshOptions
+"""
+    MeshImportOptions
+This struct allows the user to opt for supported features when importing
+a gmsh 4.1 .msh file. 
+## Support
+- grouping::Bool | On import would you like to include physical group assignements of 2D elements?
+- remap\\_group\\_name::Bool | On import would you like to maintain or remap physical group ID? Remap results in groupIds in the range 1:number\\_group\\_ids.
+"""
+struct MeshImportOptions
     grouping::Bool
-    remapGroupName::Bool
+    remap_group_name::Bool
 end
 
 """
  returns the number of elements in a .msh file of a specified dimension
+ ## Notes: Gmsh includes elements in a .msh file of multiple dimensions. We want a count of how many
+ 2D elements are in our file. This corisponds to the number of elements in our tri mesh.
 """
-function getNumElements(lines,Dim=2)
-    elem_start = findline("\$Elements",lines) + 1
-    temp_numBlocks, _ = split(lines[elem_start])
-    numBlocks = parse(Int, temp_numBlocks)
-    numElements = 0
+function get_num_elements(lines::Vector{String}, Dim=2)
+    elem_start = findline("\$Elements", lines) + 1
+    temp_num_blocks = split(lines[elem_start])[1]
+    num_blocks = parse(Int, temp_num_blocks)
+    num_elements = 0
     block_data_line = elem_start + 1
-    for i in 1:numBlocks
+    for i in 1:num_blocks
         temp_blockDim, _, _, temp_num_elem_in_block = split(lines[block_data_line])
         blockDim = parse(Int, temp_blockDim)
         num_elem_in_block = parse(Int, temp_num_elem_in_block)
         if blockDim == Dim
-            numElements = numElements + num_elem_in_block
+            num_elements = num_elements + num_elem_in_block
         end
         block_data_line = block_data_line + num_elem_in_block + 1
     end
-    return numElements
+    return num_elements
 end
+
 """
+remap_element_grouping!(eg::Vector{Int})
 GMSH uses integers for naming conventions. This function remaps the gmsh ids to
 a list of ids 1:numGroups. This just cleans up a little after Gmsh
+## Example output
+remap_element_grouping([16,16,17,17]) -> [1,1,2,2]
 """
-function remapElementGrouping!(eg)
-    groupIds = unique(eg) 
+function remap_element_grouping(eg::Vector{Int})
+    groupIds = unique(eg)
     newIds = 1:length(groupIds)
     map = Dict{Int,Int}()
-    for (i,id) in enumerate(groupIds)
+    for (i, id) in enumerate(groupIds)
         map[id] = newIds[i]
     end
     @info "New group names: $map"
-    for (i,element) in enumerate(eg)
+    for (i, element) in enumerate(eg)
         eg[i] = map[element]
     end
     return eg
 end
 
 """
-function readGmsh2D_v4(filename)
-reads triangular GMSH 2D .msh files. returns (VX,VY), EToV
+ function readGmsh2D_v4(filename)
+
+reads triangular GMSH 2D .msh files. 
+
+# Output
+This depends on if grouping is opted for or not
+- returns: (VX,VY), EToV
+- return:(VX,VY),EToV,grouping
+
 # Supported formats and features:
 - version 4.1 
-    - physical group support
+    'physical group support
+    'remap group ids
 
-# Gmsh
-When creating .msh file to group surfaces into physical groups. Then opt for grouping
-for this fuction
+## grouping application
+When modeling the wave equation you might want wave speeds to vary accross your domain. By assigning Physical groups
+in gmsh we can maintain such groupings upon importing the .msh file. Each imported element will be a member of a phyical group.
+
 ```julia
 VXY, EToV = readGmsh2D_v4("eulerSquareCylinder2D.msh")
 VXY, EToV = readGmsh2D_v4("eulerSquareCylinder2D.msh",false)
@@ -72,8 +102,8 @@ https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format
 Notes:The version 4 format has a more detailed block data format
 this leads to more complicated parser.
 """
-function readGmsh2D_v4(filename::String, options::MeshOptions)
-    @unpack grouping, remapGroupName = options;
+function readGmsh2D_v4(filename::String, options::MeshImportOptions)
+    @unpack grouping, remap_group_name = options
 
     if !isfile(filename)
         @assert "file does not exist"
@@ -82,7 +112,7 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
     f = open(filename)
     lines = readlines(f)
 
-    format_line = findline("\$MeshFormat",lines)+1
+    format_line = findline("\$MeshFormat", lines) + 1
     version, _, dataSize = split(lines[format_line])
     gmsh_version = parse(Float64, version)
     group_requested_but_none_in_file = false
@@ -95,103 +125,107 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
     end
 
     # grouping may be requested yet not be present in the file
-    if isnothing(findline("\$PhysicalNames",lines)) && grouping == true
+    if isnothing(findline("\$PhysicalNames", lines)) && grouping == true
         @warn "No grouping data in file. Setting grouping option to false"
         group_requested_but_none_in_file = true
-        grouping=false
-        remapGroupName=false
+        grouping = false
+        remap_group_name = false
     end
 
     if grouping
+        # surface_data_dict = get_surface_tag(lines::Vector{String}) 
+
         # For 2D Physical group data we are only interested in groupings in surface entities
         # This will extract relevent grouping data for each surface
         # only supports one physical group per Element
-        entities_start_line = findline("\$Entities", lines) +1
+        entities_start_line = findline("\$Entities", lines) + 1
         entities_block_data = split(lines[entities_start_line])
-        entities_block_data = [parse(Int,c) for c in entities_block_data[1:3]]
+        entities_block_data = [parse(Int, c) for c in entities_block_data[1:3]]
         numPoints, numCurves, numSurfaces = entities_block_data[1:3]
         @info "Entities| points:$numPoints| curves:$numCurves| surfaces:$numSurfaces"
-        
+
         surface_start_line = entities_start_line + numPoints + numCurves
         @info "Expecting Surface data to start on line $surface_start_line of .msh file"
         surfaceData = Dict{Int,Int}()
         for i in 1:numSurfaces
             surfaceInfo = split(lines[i+surface_start_line])
-            surfTag, numPhysTag, PhysTag = [parse(Int,c) for c in surfaceInfo[[1,8,9]]]
+            surfTag, numPhysTag, PhysTag = [parse(Int, c) for c in surfaceInfo[[1, 8, 9]]]
             @assert numPhysTag == 1 "Surfaces must have one physical tag associated you have $numPhysTag"
             surfaceData[surfTag] = PhysTag
         end
         @info "Tag grouping: $surfaceData"
     end
 
+    # VX,VY,VZ = getnodes(lines::Vector{String})
     node_start = findline("\$Nodes", lines) + 1
-    temp_numBlocks, temp_Nv, _ = split(lines[node_start])
-    numBlocks = parse(Int, temp_numBlocks)
+    temp_num_blocks, temp_Nv, _, _ = split(lines[node_start])
+    num_blocks = parse(Int, temp_num_blocks)
     Nv = parse(Int, temp_Nv)
-    VX, VY, VZ = ntuple(x->zeros(Float64, Nv), 3)
+    VX, VY, VZ = ntuple(x -> zeros(Float64, Nv), 3)
     block_line = node_start + 1
-    for block_idx in 1:numBlocks
-        _, _, _, temp_numNodes = split(lines[block_line])
-        numNodes = parse(Int, temp_numNodes)
-        for block_node_idx in 1:numNodes
-            node_num_line = block_line + block_node_idx 
-            node_cords_line = node_num_line + numNodes 
+    for block_idx in 1:num_blocks
+        temp_num_nodes = split(lines[block_line])[4]
+        num_nodes = parse(Int, temp_num_nodes)
+        for block_node_idx in 1:num_nodes
+            node_num_line = block_line + block_node_idx
+            node_cords_line = node_num_line + num_nodes
             node_idx_global = parse(Int, lines[node_num_line])
             vals = [parse(Float64, c) for c in split(lines[node_cords_line])]
             VX[node_idx_global] = vals[1]
             VY[node_idx_global] = vals[2]
         end
-        block_line = block_line + 2*numNodes+ 1
+        block_line = block_line + 2 * num_nodes + 1
     end
 
-    elem_start = findline("\$Elements",lines) + 1
-    temp_numBlocks, _ = split(lines[elem_start])
-    numElements = getNumElements(lines) # Some elements in the .msh file are not our 2d mesh elements see docstring of function
-    @info "File has $numElements 2D Elements"
-    numBlocks = parse(Int, temp_numBlocks)
+    elem_start = findline("\$Elements", lines) + 1
+    temp_num_blocks, _, _, _ = split(lines[elem_start])
+    num_elements = get_num_elements(lines) # Some elements in the .msh file are not our 2d mesh elements see docstring of function
+    @info "File has $num_elements 2D Elements"
+    num_blocks = parse(Int, temp_num_blocks)
 
     if grouping
-        element_grouping = zeros(Int, numElements) #element physical group assignment
+        element_grouping = zeros(Int, num_elements) #element physical group assignment
     end
 
-    EToV = zeros(Int64, numElements, 3)
+    EToV = zeros(Int64, num_elements, 3)
+    # EToV = get_etov(lines::Vector{String})
     block_line_start = elem_start + 1
     elem_global_idx = 0
-    for block in 1:numBlocks 
-        temp_elem_block_dim, temp_tag, _, temp_elemInBlock = split(lines[block_line_start])
+    for block in 1:num_blocks
+        temp_elem_block_dim, temp_tag, _, temp_elem_in_block = split(lines[block_line_start])
         elem_block_dim = parse(Int, temp_elem_block_dim)
-        numElemInBlock = parse(Int, temp_elemInBlock)
+        num_elem_in_block = parse(Int, temp_elem_in_block)
         surface_tag = parse(Int, temp_tag)
         if elem_block_dim == 2 # only interesed in 2d triangle elements
-            for e_idx in 1:numElemInBlock
+            for e_idx in 1:num_elem_in_block
                 elem_global_idx = elem_global_idx + 1
-                vals = [parse(Int,c) for c in split(lines[e_idx+block_line_start])]
+                vals = [parse(Int, c) for c in split(lines[e_idx+block_line_start])]
                 _, nodeA, nodeB, nodeC = vals
-                EToV[elem_global_idx,:] .= [nodeA, nodeB, nodeC]
+                EToV[elem_global_idx, :] .= [nodeA, nodeB, nodeC]
                 if grouping
                     element_grouping[elem_global_idx] = surfaceData[surface_tag]
                 end
             end
         end
-        block_line_start = block_line_start + numElemInBlock + 1
+        block_line_start = block_line_start + num_elem_in_block + 1
     end
 
-    EToV = EToV[:,vec([1 3 2])]  # permute for Gmsh ordering
+    EToV = EToV[:, vec([1 3 2])]  # permute for Gmsh ordering
     EToV = correct_negative_Jacobians!((VX, VY), EToV)
 
     if grouping
-        if remapGroupName
+        if remap_group_name
             @info "Remapping Group Names"
-            element_grouping = remapElementGrouping!(element_grouping)
+            element_grouping = remap_element_grouping(element_grouping)
         end
         return (VX, VY), EToV, element_grouping
     end
 
     if group_requested_but_none_in_file
-        return (VX,VY),EToV, zeros(Int,numElements)
+        return (VX, VY), EToV, zeros(Int, num_elements)
     end
 
-    return (VX,VY), EToV
+    return (VX, VY), EToV
 end
 
 """
@@ -200,8 +234,8 @@ for simpler code
     example: VXY, EToV, grouping = readGmsh2D_v4("file.msh",true)
     example: VXY, EToV = readGmsh2D_v4("file.msh",false)
 """
-function readGmsh2D_v4(filename::String,groupOpt::Bool=false, remapGroupName::Bool=false) 
-    options = MeshOptions(groupOpt, remapGroupName) 
+function readGmsh2D_v4(filename::String, groupOpt::Bool=false, remap_group_name::Bool=false)
+    options = MeshImportOptions(groupOpt, remap_group_name)
     return readGmsh2D_v4(filename, options)
 end
 
@@ -219,7 +253,7 @@ function readGmsh2D(filename::String)
     f = open(filename)
     lines = readlines(f)
 
-    format_line = findline("\$MeshFormat", lines)+1
+    format_line = findline("\$MeshFormat", lines) + 1
     version, _, dataSize = split(lines[format_line])
     gmsh_version = parse(Float64, version)
     if gmsh_version == 2.2
@@ -270,7 +304,7 @@ end
 # using the [Shoelace_formula](https://en.wikipedia.org/wiki/Shoelace_formula).
 function compute_triangle_area(tri)
     B, A, C = tri
-    return 0.5 * (A[1] * (B[2] - C[2]) + B[1] * (C[2]-A[2]) + C[1] * (A[2] - B[2]))
+    return 0.5 * (A[1] * (B[2] - C[2]) + B[1] * (C[2] - A[2]) + C[1] * (A[2] - B[2]))
 end
 
 function correct_negative_Jacobians!((VX, VY), EToV)
@@ -424,7 +458,7 @@ function uniform_mesh(elem::Tet, Nx, Ny, Nz)
     Nv = Nxp * Nyp * Nzp
     K = Nx * Ny * Nz
 
-    id(i,j,k) = i + Nxp * j + Nxp * Nyp * k
+    id(i, j, k) = i + Nxp * j + Nxp * Nyp * k
 
     x1D = LinRange(-1, 1, Nxp)
     y1D = LinRange(-1, 1, Nyp)
@@ -433,7 +467,7 @@ function uniform_mesh(elem::Tet, Nx, Ny, Nz)
     x, y, z = mymeshgrid(x1D, y1D, z1D)
 
     # 6 tets per cube
-    EToV = zeros(Int, 6*K, 4)
+    EToV = zeros(Int, 6 * K, 4)
     ee = 1
     for e = 1:K
         em = e - 1
@@ -441,35 +475,35 @@ function uniform_mesh(elem::Tet, Nx, Ny, Nz)
         j = div(em - k * Nx * Ny, Nx)
         i = em % Nx
 
-        EToV[ee, 1] = id(i,   j,   k)
-        EToV[ee, 2] = id(i+1, j,   k)
-        EToV[ee, 3] = id(i+1, j+1, k)
-        EToV[ee, 4] = id(i,   j,   k+1)
-        
-        EToV[ee+1, 1] = id(i+1, j,   k)
-        EToV[ee+1, 2] = id(i+1, j,   k+1)
-        EToV[ee+1, 3] = id(i+1, j+1, k)
-        EToV[ee+1, 4] = id(i,   j,   k+1)
+        EToV[ee, 1] = id(i, j, k)
+        EToV[ee, 2] = id(i + 1, j, k)
+        EToV[ee, 3] = id(i + 1, j + 1, k)
+        EToV[ee, 4] = id(i, j, k + 1)
 
-        EToV[ee+2, 1] = id(i,   j,   k+1)
-        EToV[ee+2, 2] = id(i+1, j+1, k+1)
-        EToV[ee+2, 3] = id(i+1, j,   k+1)
-        EToV[ee+2, 4] = id(i+1, j+1, k)
+        EToV[ee+1, 1] = id(i + 1, j, k)
+        EToV[ee+1, 2] = id(i + 1, j, k + 1)
+        EToV[ee+1, 3] = id(i + 1, j + 1, k)
+        EToV[ee+1, 4] = id(i, j, k + 1)
 
-        EToV[ee+3, 1] = id(i,   j+1, k+1)
-        EToV[ee+3, 2] = id(i+1, j+1, k+1)
-        EToV[ee+3, 3] = id(i,   j,   k+1)
-        EToV[ee+3, 4] = id(i+1, j+1, k)
+        EToV[ee+2, 1] = id(i, j, k + 1)
+        EToV[ee+2, 2] = id(i + 1, j + 1, k + 1)
+        EToV[ee+2, 3] = id(i + 1, j, k + 1)
+        EToV[ee+2, 4] = id(i + 1, j + 1, k)
 
-        EToV[ee+4, 1] = id(i,   j+1, k  )
-        EToV[ee+4, 2] = id(i,   j+1, k+1)
-        EToV[ee+4, 3] = id(i,   j,   k+1)
-        EToV[ee+4, 4] = id(i+1, j+1, k  )
+        EToV[ee+3, 1] = id(i, j + 1, k + 1)
+        EToV[ee+3, 2] = id(i + 1, j + 1, k + 1)
+        EToV[ee+3, 3] = id(i, j, k + 1)
+        EToV[ee+3, 4] = id(i + 1, j + 1, k)
 
-        EToV[ee+5, 1] = id(i,   j,   k  )
-        EToV[ee+5, 2] = id(i+1, j+1, k  )
-        EToV[ee+5, 3] = id(i,   j+1, k  )
-        EToV[ee+5, 4] = id(i,   j,   k+1)
+        EToV[ee+4, 1] = id(i, j + 1, k)
+        EToV[ee+4, 2] = id(i, j + 1, k + 1)
+        EToV[ee+4, 3] = id(i, j, k + 1)
+        EToV[ee+4, 4] = id(i + 1, j + 1, k)
+
+        EToV[ee+5, 1] = id(i, j, k)
+        EToV[ee+5, 2] = id(i + 1, j + 1, k)
+        EToV[ee+5, 3] = id(i, j + 1, k)
+        EToV[ee+5, 4] = id(i, j, k + 1)
 
         ee += 6
     end

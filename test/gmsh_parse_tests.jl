@@ -31,7 +31,7 @@ end
         @test EToV_1 == EToV_2 
         f = open(file)
         lines = readlines(f)
-        num_elements = StartUpDG.getNumElements(lines)
+        num_elements = StartUpDG.get_num_elements(lines)
         @test length(unique(group_2))==1
     else
         @info "file for this test is missing"
@@ -51,7 +51,7 @@ end;
         @test EToV_1 == EToV_2 
         f = open(file)
         lines = readlines(f)
-        num_elements = StartUpDG.getNumElements(lines)
+        num_elements = StartUpDG.get_num_elements(lines)
         @test group_2 == zeros(Int,num_elements)
     else
         @info "file for this test is missing"

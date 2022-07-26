@@ -47,7 +47,7 @@ export num_faces, num_vertices
 # uniform meshes + face vertex orderings are included
 include("mesh/simple_meshes.jl")
 export readGmsh2D, uniform_mesh
-export readGmsh2D_v4, MeshOptions 
+export readGmsh2D_v4, MeshImportOptions 
 # Plots.jl recipes for meshes
 include("mesh/mesh_visualization.jl")
 export VertexMeshPlotter, MeshPlotter
