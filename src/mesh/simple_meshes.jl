@@ -151,7 +151,7 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
     numBlocks = parse(Int, temp_numBlocks)
 
     if grouping
-        element_grouping = zeros(Int,numElements) #element physical group assignment
+        element_grouping = zeros(Int, numElements) #element physical group assignment
     end
 
     EToV = zeros(Int64,numElements,3)
