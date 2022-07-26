@@ -17,7 +17,7 @@ end
 function getNumElements(lines,Dim=2)
     elem_start = findline("\$Elements",lines) + 1
     temp_numBlocks,_,_,_ = split(lines[elem_start])
-    numBlocks = parse(Int,temp_numBlocks)
+    numBlocks = parse(Int, temp_numBlocks)
     numElements = 0
     block_data_line = elem_start + 1
     for i in 1:numBlocks
