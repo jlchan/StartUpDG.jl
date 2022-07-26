@@ -158,10 +158,10 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
     block_line_start = elem_start + 1
     elem_global_idx = 0
     for block in 1:numBlocks 
-        temp_elem_block_dim,temp_tag,_,temp_elemInBlock = split(lines[block_line_start])
+        temp_elem_block_dim, temp_tag, _, temp_elemInBlock = split(lines[block_line_start])
         elem_block_dim = parse(Int, temp_elem_block_dim)
-        numElemInBlock = parse(Int,temp_elemInBlock)
-        surface_tag = parse(Int,temp_tag)
+        numElemInBlock = parse(Int, temp_elemInBlock)
+        surface_tag = parse(Int, temp_tag)
         if elem_block_dim == 2 # only interesed in 2d triangle elements
             for e_idx in 1:numElemInBlock
                 elem_global_idx = elem_global_idx + 1
