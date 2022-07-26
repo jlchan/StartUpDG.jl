@@ -83,7 +83,7 @@ function readGmsh2D_v4(filename::String, options::MeshOptions)
     lines = readlines(f)
 
     format_line = findline("\$MeshFormat",lines)+1
-    version,_,dataSize = split(lines[format_line])
+    version, _, dataSize = split(lines[format_line])
     gmsh_version = parse(Float64,version)
     group_requested_but_none_in_file = false
 
