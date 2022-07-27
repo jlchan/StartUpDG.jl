@@ -57,11 +57,11 @@ a list of ids 1:numGroups. This just cleans up a little after Gmsh
 remap_element_grouping([16,16,17,17]) -> [1,1,2,2]
 """
 function remap_element_grouping(eg::Vector{Int})
-    groupIds = unique(eg)
-    newIds = 1:length(groupIds)
+    groupids = unique(eg)
+    newids = 1:length(groupids)
     map = Dict{Int,Int}()
-    for (i, id) in enumerate(groupIds)
-        map[id] = newIds[i]
+    for (i, id) in enumerate(groupids)
+        map[id] = newids[i]
     end
     @info "New group names: $map"
     for (i, element) in enumerate(eg)
