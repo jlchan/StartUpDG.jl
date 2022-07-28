@@ -5,82 +5,79 @@
 @testset "$approxType MeshData initialization with gmsh import" for approxType = [Polynomial(),SBP()]
     io = open("stderr.txt","w")
     redirect_stderr(io)
-    @testset "file group: $file" for file in ["mesh_no_pert","pert_mesh"]
-        @testset "2D tri gmsh import verison $version" for version = [2.2,4.1] 
-            tol = 5e5*eps() # higher tolerance due to floating point issues?
+    @testset "2D tri gmsh import verison $version" for version = [2.2,4.1] 
+        file = "pert_mesh"
+        tol = 5e7*eps() # higher tolerance due to floating point issues?
+        N = 3
 
-            N = 3
-            K1D = 2
-            rd = RefElemData(Tri(), approxType, N)
-            if version == 2.2
-                VXY, EToV = readGmsh2D("testset_mesh/$file"*".msh");
-            elseif version == 4.1
-                VXY, EToV = readGmsh2D_v4("testset_mesh/$file"*"_v4.msh");
-            end
-            md = MeshData(VXY,EToV, rd)
-            @unpack wq, Dr, Ds, Vq, Vf, wf = rd
-            Nfaces = length(rd.fv)
-            @unpack x, y, xq, yq, xf, yf, K = md
-            @unpack rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq = md
-            @unpack FToF, mapM, mapP, mapB = md
+        rd = RefElemData(Tri(), approxType, N)
+        if version == 2.2
+            VXY, EToV = readGmsh2D("testset_mesh/$file"*".msh");
+        elseif version == 4.1
+            VXY, EToV = readGmsh2D_v4("testset_mesh/$file"*"_v4.msh");
+        end
+        md = MeshData(VXY, EToV, rd)
 
-            @test md.x == md.xyz[1]
+        @unpack wq, Dr, Ds, Vq, Vf, wf = rd
+        Nfaces = length(rd.fv)
+        @unpack x, y, xq, yq, xf, yf, K = md
+        @unpack rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq = md
+        @unpack FToF, mapM, mapP, mapB = md
 
-            @testset  "check positivity of Jacobian" begin
-                @test all(J .> 0)
-                h = estimate_h(rd, md)
-                @test h ≈ 2 / K1D skip=true
-            end
+        @test md.x == md.xyz[1]
 
-            @testset  "check differentiation" begin
-                u = @. x^2 + 2 * x * y - y^2
-                dudx_exact = @. 2*x + 2*y
-                dudy_exact = @. 2*x - 2*y
-                dudr,duds = (D->D*u).((Dr, Ds))
-                dudx = @. (rxJ * dudr + sxJ * duds) / J
-                dudy = @. (ryJ * dudr + syJ * duds) / J
-                @test dudx ≈ dudx_exact
-                @test dudy ≈ dudy_exact
-            end
+        @testset  "check positivity of Jacobian" begin
+            @test all(J .> 0)
+        end
 
-            @testset "check volume integration" begin
-                @test Vq*x ≈ xq
-                @test Vq*y ≈ yq
-                @test diagm(wq) * (Vq * J) ≈ wJq
-                @test abs(sum(xq .* wJq)) < tol skip=true
-                @test abs(sum(yq .* wJq)) < tol skip=true
-            end
+        @testset  "check differentiation" begin
+            u = @. x^2 + 2 * x * y - y^2
+            dudx_exact = @. 2*x + 2*y
+            dudy_exact = @. 2*x - 2*y
+            dudr,duds = (D->D*u).((Dr, Ds))
+            dudx = @. (rxJ * dudr + sxJ * duds) / J
+            dudy = @. (ryJ * dudr + syJ * duds) / J
+            @test dudx ≈ dudx_exact
+            @test dudy ≈ dudy_exact
+        end
 
-            @testset "check surface integration begin" begin
-                @test Vf * x ≈ xf
-                @test Vf * y ≈ yf
-                @test abs(sum(wf .* nxJ)) < tol skip=true
-                @test abs(sum(wf .* nyJ)) < tol skip=true
-                @test sum(@. wf * nxJ * (1 + xf) / 2) ≈ 2.0 skip=true # check sign of normals
-            end
+        @testset "check volume integration" begin
+            @test Vq*x ≈ xq
+            @test Vq*y ≈ yq
+            @test diagm(wq) * (Vq * J) ≈ wJq
+            @test abs(sum(xq .* wJq)) < tol skip=true 
+            @test abs(sum(yq .* wJq)) < tol skip=true
+        end
 
-            @testset "check connectivity and boundary maps" begin
-                u = @. (1-x) * (1+x) * (1-y) * (1+y)
-                uf = Vf * u
-                @test uf ≈ uf[mapP]        skip=true
-                @test norm(uf[mapB]) < tol skip=true
-            end
+        @testset "check surface integration begin" begin
+            @test Vf * x ≈ xf
+            @test Vf * y ≈ yf
+            @test abs(sum(wf .* nxJ)) < tol 
+            @test abs(sum(wf .* nyJ)) < tol 
+            @test sum(@. wf * nxJ * (1 + xf) / 2) ≈ 2.0 skip=true # check sign of normals
+        end
 
-            @testset "check periodic node connectivity maps" begin
-                md = make_periodic(md, (true, true))
-                @unpack mapP = md
-                u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y))
-                uf = Vf * u
-                @test uf ≈ uf[mapP] skip=true
-            end
+        @testset "check connectivity and boundary maps" begin
+            u = @. (1-x) * (1+x) * (1-y) * (1+y)
+            uf = Vf * u
+            @test uf ≈ uf[mapP]        
+            @test norm(uf[mapB]) < tol skip=true
+        end
 
-            @testset "check MeshData struct copying" begin
-                xyz = (x->x .+ 1).(md.xyz) # affine shift
-                md2 = MeshData(rd, md, xyz...)
-                @test sum(norm.(md2.rstxyzJ .- md.rstxyzJ)) < tol
-                @test sum(norm.(md2.nxyzJ .- md.nxyzJ)) < tol
-                @test all(md2.xyzf .≈ (x->x .+ 1).(md.xyzf))
-            end
+        @testset "check periodic node connectivity maps" begin
+            md = make_periodic(md, (true, true))
+            @unpack mapP = md
+            u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y))
+            uf = Vf * u
+            @test uf ≈ uf[mapP]  skip=true
+        end
+
+        @testset "check MeshData struct copying" begin
+            xyz = (x->x .+ 1).(md.xyz) # affine shift
+            md2 = MeshData(rd, md, xyz...)
+            @test sum(norm.(md2.rstxyzJ .- md.rstxyzJ)) < tol
+            @test sum(norm.(md2.nxyzJ .- md.nxyzJ)) < tol
+            @test all(md2.xyzf .≈ (x->x .+ 1).(md.xyzf))
         end
     end
     close(io)
