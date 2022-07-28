@@ -2,6 +2,11 @@
 # malpasset.msh was previously a 2.2 file. Exported version 
 # of 4.1 has been added for testing
 
+@testset "test gmsh element id remapping" begin
+    testvec = [16,15,16,17,18]
+    @test remap_element_grouping(testvec) == [1,2,1,3,4]
+end
+
 @testset "$approxType MeshData initialization with gmsh import" for approxType = [Polynomial(),SBP()]
     io = open("stderr.txt","w")
     redirect_stderr(io)
