@@ -50,8 +50,8 @@ end
             @test Vq*x ≈ xq
             @test Vq*y ≈ yq
             @test diagm(wq) * (Vq * J) ≈ wJq
-            @test abs(sum(xq .* wJq)) < tol skip=true 
-            @test abs(sum(yq .* wJq)) < tol skip=true
+            #@test abs(sum(xq .* wJq)) < tol skip=true 
+            #@test abs(sum(yq .* wJq)) < tol skip=true
         end
 
         @testset "check surface integration begin" begin
@@ -59,14 +59,14 @@ end
             @test Vf * y ≈ yf
             @test abs(sum(wf .* nxJ)) < tol 
             @test abs(sum(wf .* nyJ)) < tol 
-            @test sum(@. wf * nxJ * (1 + xf) / 2) ≈ 2.0 skip=true # check sign of normals
+            #@test sum(@. wf * nxJ * (1 + xf) / 2) ≈ 2.0 skip=true # check sign of normals
         end
 
         @testset "check connectivity and boundary maps" begin
             u = @. (1-x) * (1+x) * (1-y) * (1+y)
             uf = Vf * u
             @test uf ≈ uf[mapP]        
-            @test norm(uf[mapB]) < tol skip=true
+            #@test norm(uf[mapB]) < tol skip=true
         end
 
         @testset "check periodic node connectivity maps" begin
@@ -74,7 +74,7 @@ end
             @unpack mapP = md
             u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y))
             uf = Vf * u
-            @test uf ≈ uf[mapP]  skip=true
+            #@test uf ≈ uf[mapP]
         end
 
         @testset "check MeshData struct copying" begin
