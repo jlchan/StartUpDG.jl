@@ -3,14 +3,14 @@
 # of 4.1 has been added for testing
 
 @testset "test gmsh element id remapping" begin
-    testvec = [16,15,16,17,18]
-    @test StartUpDG.remap_element_grouping(testvec) == [1,2,1,3,4]
+    testvec = [16, 15, 16, 17, 18]
+    @test StartUpDG.remap_element_grouping(testvec) == [1, 2, 1, 3, 4]
 end
 
-@testset "$approxType MeshData initialization with gmsh import" for approxType = [Polynomial(),SBP()]
+@testset "$approxType MeshData initialization with gmsh import" for approxType = [Polynomial(), SBP()]
     io = open("stderr.txt","w")
     redirect_stderr(io)
-    @testset "2D tri gmsh import verison $version" for version = [2.2,4.1] 
+    @testset "2D tri gmsh import verison $version" for version = [2.2, 4.1] 
         file = "pert_mesh"
         tol = 5e7*eps() # higher tolerance due to floating point issues?
         N = 3
@@ -94,8 +94,8 @@ end
     redirect_stderr(io)
     file = "testset_mesh/one_group_v4.msh"
     if isfile(file)
-        VXY_1,EToV_1 = readGmsh2D_v4(file)
-        VXY_2,EToV_2,group_2 = readGmsh2D_v4(file,true) 
+        VXY_1, EToV_1 = readGmsh2D_v4(file)
+        VXY_2, EToV_2, group_2 = readGmsh2D_v4(file,true) 
         @test VXY_1 == VXY_2 
         @test EToV_1 == EToV_2 
         f = open(file)
@@ -116,14 +116,14 @@ end;
     redirect_stderr(io)
     file = "testset_mesh/no_group_v4.msh"
     if isfile(file)
-        VXY_1,EToV_1 = readGmsh2D_v4(file)
-        VXY_2,EToV_2,group_2 = readGmsh2D_v4(file,true) 
+        VXY_1, EToV_1 = readGmsh2D_v4(file)
+        VXY_2, EToV_2, group_2 = readGmsh2D_v4(file, true) 
         @test VXY_1 == VXY_2 
         @test EToV_1 == EToV_2 
         f = open(file)
         lines = readlines(f)
         num_elements = StartUpDG.get_num_elements(lines)
-        @test group_2 == zeros(Int,num_elements)
+        @test group_2 == zeros(Int, num_elements)
     else
         @info "file for this test is missing"
     end
