@@ -18,10 +18,10 @@ Base.@kwdef struct MeshData{Dim, VolumeType, FaceType, VolumeQType,
                             VolumeWeightType, VolumeGeofacsType, VolumeJType,
                             ConnectivityType, BoundaryMapType}
 
-    # num_elements::Ti            # number of elements
+    # num_elements::Ti             # number of elements
     VXYZ::NTuple{Dim, VertexType}  # vertex coordinates
-    EToV::EToVType              # mesh vertex array 
-    FToF::FToFType              # face connectivity
+    EToV::EToVType                 # mesh vertex array 
+    FToF::FToFType                 # face connectivity
 
     xyz::NTuple{Dim, VolumeType}   # physical points
     xyzf::NTuple{Dim, FaceType}  # face nodes
@@ -154,14 +154,7 @@ end
 
 Returns a MeshData struct with high order DG mesh information from the unstructured
 mesh information (VXYZ..., EToV).
-
-    MeshData(md::MeshData, rd::RefElemData, xyz...)
-
-Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
-and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
-    `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
-
 # splats VXYZ 
 MeshData(VXYZ::T, EToV, rd::RefElemData{NDIMS}) where {NDIMS, T <: NTuple{NDIMS}} = 
     MeshData(VXYZ..., EToV, rd)
@@ -170,46 +163,46 @@ function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
     # Construct global coordinates
     @unpack V1 = rd
-    x = V1*VX[transpose(EToV)]
-    K = size(EToV,1)
+    x = V1 * VX[transpose(EToV)]
+    K = size(EToV, 1)
     Nfaces = 2
 
-    FToF = zeros(Int,Nfaces,K)
+    FToF = zeros(Int, Nfaces, K)
     sk = 1
     for e = 1:K
-        l = 2*e-1
-        r = 2*e
-        FToF[1:2,e] .= [l-1; r+1]
+        l = 2 * e-1
+        r = 2 * e
+        FToF[1:2, e] .= [l-1; r+1]
         sk += 1
     end
-    FToF[1,1] = 1
-    FToF[Nfaces,K] = Nfaces*K
+    FToF[1, 1] = 1
+    FToF[Nfaces, K] = Nfaces * K
 
     # Connectivity maps
     @unpack Vf = rd
-    xf = Vf*x
-    mapM = reshape(1:2*K,2,K)
+    xf = Vf * x
+    mapM = reshape(1:2*K, 2, K)
     mapP = copy(mapM)
-    mapP[1,2:end] .= mapM[2,1:end-1]
-    mapP[2,1:end-1] .= mapM[1,2:end]
-    mapB = findall(@. mapM[:]==mapP[:])
+    mapP[1, 2:end] .= mapM[2, 1:end-1]
+    mapP[2, 1:end-1] .= mapM[1, 2:end]
+    mapB = findall(@. mapM[:] == mapP[:])
 
     # Geometric factors and surface normals
-    J = repeat(transpose(diff(VX)/2),length(rd.r),1)
+    J = repeat(transpose(diff(VX) / 2), length(rd.r), 1)
     rxJ = one.(J)
-    nxJ = repeat([-1.0; 1.0],1,K)
-    sJ = abs.(nxJ)
+    nxJ = repeat([-1.0; 1.0], 1, K)
+    Jf = abs.(nxJ)
 
-    @unpack Vq,wq = rd
-    xq = Vq*x
-    wJq = diagm(wq)*(Vq*J)
+    @unpack Vq, wq = rd
+    xq = Vq * x
+    wJq = diagm(wq) * (Vq * J)
 
     is_periodic = (false,)
-    return MeshData(tuple(VX),EToV,FToF,
-                    tuple(x),tuple(xf),tuple(xq),wJq,
-                    collect(mapM),mapP,mapB,
-                    SMatrix{1,1}(tuple(rxJ)),J,
-                    tuple(nxJ),sJ,
+    return MeshData(tuple(VX), EToV, FToF,
+                    tuple(x), tuple(xf), tuple(xq), wJq,
+                    collect(mapM), mapP, mapB,
+                    SMatrix{1,1}(tuple(rxJ)), J,
+                    tuple(nxJ), Jf,
                     is_periodic)
 
 end
@@ -294,6 +287,13 @@ end
 
 MeshData(md::MeshData, rd::RefElemData, xyz...) = MeshData(rd, md, xyz...)
 
+"""
+    MeshData(md::MeshData, rd::RefElemData, xyz...)
+
+Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
+and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
+    `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
+"""
 function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
 
     # compute new quad and plotting points
@@ -320,12 +320,12 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
 end
 
 
-# physical normals are computed via G*nhatJ, G = matrix of geometric terms
+# physical normals are computed via G * nhatJ, where G = matrix of geometric terms
 function compute_normals(geo::SMatrix{Dim, Dim}, Vf, nrstJ...) where {Dim}
     nxyzJ = ntuple(x -> zeros(size(Vf, 1), size(first(geo), 2)), Dim)
     for i = 1:Dim, j = 1:Dim
         nxyzJ[i] .+= (Vf * geo[i,j]) .* nrstJ[j]
     end
-    sJ = sqrt.(sum(map(x -> x.^2, nxyzJ)))
-    return nxyzJ..., sJ
+    Jf = sqrt.(sum(map(x -> x.^2, nxyzJ)))
+    return nxyzJ..., Jf
 end
