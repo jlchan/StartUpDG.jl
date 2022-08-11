@@ -45,6 +45,8 @@ export boundary_face_centroids, tag_boundary_faces, tag_boundary_nodes
 include("hybrid_meshes.jl")
 export num_faces, num_vertices
 
+include("cut_cell_meshes.jl")
+
 # uniform meshes + face vertex orderings are included
 include("mesh/simple_meshes.jl")
 export readGmsh2D, uniform_mesh
