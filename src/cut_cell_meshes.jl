@@ -324,8 +324,8 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     region_flags, cutcell_indices, cutcells = 
         define_regions((vx, vy), curves, stop_pts, binary_regions=false)
 
-    # sort vector of cut cells so that they match the ordering when iterating 
-    # through Cartesian mesh indices ex, ey 
+    # we sort the vector of cut cells so that they match the ordering when 
+    # iterating through Cartesian mesh indices via (ex, ey)
     cutcell_ordering = zeros(Int, length(cutcells))
     sk = 1
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y 
