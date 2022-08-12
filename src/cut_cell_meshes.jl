@@ -110,6 +110,86 @@ function is_inside_domain(ex, ey, regions)
     end
 end
 
+# Computes face geometric terms from a RefElemData, `quad_rule_face = (r1D, w1D)`, 
+# the vectors of the 1D vertex nodes `vx` and `vy`, and named tuple 
+# `cutcell_data = (; region_flags, stop_pts, cutcell_indices, cutcells)`. 
+function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cutcell_data)
+
+    # domain size and reference face weights
+    cells_per_dimension_x, cells_per_dimension_y = length(vx) - 1, length(vy) - 1
+    LX, LY = (x -> x[2] - x[1]).(extrema.((vx, vy)))
+
+    r1D, w1D = quad_rule_face
+
+    @unpack region_flags, stop_pts, cutcells, cutcell_indices = cutcell_data
+
+    # count number of cells and cut face nodes
+    num_cartesian_cells = sum(region_flags .== 0)
+    num_cut_cells = sum(region_flags .== 1) 
+    nodes_per_face = length(r1D)
+    num_cut_face_nodes = count_cut_face_nodes(cutcells, nodes_per_face)
+
+    xf, yf, nxJ, nyJ, Jf = 
+        ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nfq, num_cartesian_cells), 
+                                cut=zeros(num_cut_face_nodes)), 5)
+
+    # 3) compute Cartesian face points and geometric factors
+    face_ids_left_right = 1:(length(rd.rf) ÷ 2)
+    face_ids_top_bottom = ((length(rd.rf) ÷ 2) + 1):length(rd.rf)
+
+    # the face Jacobian involves scaling between mapped and reference domain
+    Jf.cartesian[face_ids_top_bottom, :] .= LX / (cells_per_dimension_x * sum(w1D))
+    Jf.cartesian[face_ids_left_right, :] .= LY / (cells_per_dimension_y * sum(w1D))
+
+    e = 1
+    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
+        if is_Cartesian(region_flags[ex, ey])
+            vx_element = SVector(vx[ex], vx[ex + 1], vx[ex], vx[ex + 1])
+            vy_element = SVector(vy[ey], vy[ey], vy[ey + 1], vy[ey + 1])
+            x, y = map(x -> rd.V1 * x, (vx_element, vy_element))
+            mul!(view(xf.cartesian, :, e), rd.Vf, x)
+            mul!(view(yf.cartesian, :, e), rd.Vf, y)
+            view(nxJ.cartesian, :, e) .= rd.nrJ .* view(Jf.cartesian, :, e)
+            view(nyJ.cartesian, :, e) .= rd.nsJ .* view(Jf.cartesian, :, e)
+            e = e + 1
+        end
+    end        
+   
+    # 4) compute cut-cell face points
+    element_indices = compute_element_indices(region_flags)
+
+    fid = 1
+    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
+        if is_cut(region_flags[ex, ey])
+
+            # `cutcell_indices[ex, ey]` returns the global cutcell index 
+            e = cutcell_indices[ex, ey] 
+
+            curve = cutcells[e]
+            stop_points = curve.stop_pts
+            for f in 1:length(stop_points)-1
+                for i in eachindex(r1D)
+                    s = map_to_interval(r1D[i], stop_points[f], stop_points[f+1])
+
+                    x_node, y_node = curve(s)                
+                    xf.cut[fid], yf.cut[fid] = x_node, y_node
+
+                    tangent_vector = PathIntersections.ForwardDiff.derivative(curve, s)
+                    normal_node = SVector{2}(tangent_vector[2], -tangent_vector[1])
+                    nxJ.cut[fid], nyJ.cut[fid] = -normal_node # flip sign for outward normal
+
+                    # Jacobian involves scaling between mapped and reference domain
+                    scaling = (stop_points[f+1] - stop_points[f]) / sum(w1D)
+                    Jf.cut[fid] = norm(tangent_vector) * scaling
+
+                    fid += 1
+                end
+            end      
+        end # is_cut
+    end
+    return xf, yf, nxJ, nyJ, Jf
+end
+
 """
     connect_mesh(rd, xf, yf, region_flags, cutcells)
     
