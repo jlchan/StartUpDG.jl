@@ -384,7 +384,3 @@ function get_1d_quadrature(rd::RefElemData{2, Quad})
     # face ordering on a quad is -/+ x, -/+ y. face 3 = -y
     return rf[:, 3], wf[:, 3]
 end
-
-function pick_interpolation_nodes(rd, curve::Function, sampling_degree=100)
-
-end
