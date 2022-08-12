@@ -363,19 +363,6 @@ end
 is_Cartesian(flag) = flag==0 ? true : false
 is_cut(flag) = flag > 0
 
-function get_cell_type(ex, ey, regions) 
-    if is_Cartesian(regions[ex, ey])
-        return CartesianCell()
-    elseif is_cut(regions[ex, ey])
-        return CutCell()
-    end
-end
-
-function split_into_faces(x, num_faces)
-    x_reshaped = reshape(x, length(x) ÷ num_faces, num_faces)
-    return [view(x_reshaped , :, f) for f in 1:num_faces]
-end
-
 # returns the 1D quadrature used to build a RefElemData surface quadrature 
 function get_1d_quadrature(rd::RefElemData{2, Quad})
     nfaces = num_faces(rd.element_type)
