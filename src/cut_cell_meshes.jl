@@ -40,7 +40,12 @@ function neighbor_across_face(f, ex, ey)
     end
 end
 
-function compute_face_centroids(rd, xf, yf, num_cartesian_cells, num_cut_cells)
+function compute_face_centroids(rd, xf, yf, num_cartesian_cells, cut_faces_per_cell)
+
+    num_cut_cells = length(cut_faces_per_cell)
+    num_cut_faces = sum(cut_faces_per_cell)
+    cut_face_offsets = [0; cumsum(cut_faces_per_cell)[1:end-1]] 
+
     num_points_per_face = length(rd.rf) ÷ num_faces(rd.element_type)
     
     face_centroids_x = ComponentArray(cartesian=zeros(num_faces(rd.element_type), num_cartesian_cells), 
@@ -55,11 +60,11 @@ function compute_face_centroids(rd, xf, yf, num_cartesian_cells, num_cut_cells)
     end
 
     for e in 1:num_cut_cells    
-        face_node_ids = (1:(num_points_per_face * cut_faces_per_cell[e])) .+ face_offsets[e] * num_points_per_face
+        face_node_ids = (1:(num_points_per_face * cut_faces_per_cell[e])) .+ cut_face_offsets[e] * num_points_per_face
         xf_element = reshape(view(xf.cut, face_node_ids), num_points_per_face, cut_faces_per_cell[e])
         yf_element = reshape(view(yf.cut, face_node_ids), num_points_per_face, cut_faces_per_cell[e])
 
-        face_ids = (1:cut_faces_per_cell[e]) .+ face_offsets[e]
+        face_ids = (1:cut_faces_per_cell[e]) .+ cut_face_offsets[e]
         view(face_centroids_x.cut, face_ids) .= vec(sum(xf_element, dims=1) / num_points_per_face)
         view(face_centroids_y.cut, face_ids) .= vec(sum(yf_element, dims=1) / num_points_per_face)
     end
