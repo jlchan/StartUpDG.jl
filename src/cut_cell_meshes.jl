@@ -193,13 +193,19 @@ function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cut
 end
 
 """
-    connect_mesh(rd, xf, yf, region_flags, cutcells; tol = 1e2 * eps())
+    connect_mesh(rd, face_centroids, region_flags, cutcells; tol = 1e2 * eps())
     
 Connects faces of a cut mesh to each other, returns `FToF` such that face 
-`f` is connected to `FToF[f]`.  The keyword argument `tol` is the tolerance 
-used for determining matches between face centroids. 
+`f` is connected to `FToF[f]`. 
+
+Inputs:
+- rd::RefElemData
+- face_centroids = (face_centroids_x, face_centroids_y), where `face_centroids_x/y` 
+                    are vectors of coordinates of face centroids
+- `region_flags`, `cutcells` are return arguments from `PathIntersections.define_regions`
+The keyword argument `tol` is the tolerance for matches between face centroids. 
 """    
-function connect_mesh(rd, xf, yf, region_flags, cutcells; tol = 1e2 * eps())
+function connect_mesh(rd, face_centroids, region_flags, cutcells; tol = 1e2 * eps())
 
     cells_per_dimension_x, cells_per_dimension_y = size(region_flags)
 
@@ -207,12 +213,12 @@ function connect_mesh(rd, xf, yf, region_flags, cutcells; tol = 1e2 * eps())
     # the arrays `xf.cartesian[:, e]` or `xf.cut[:, e]`
     element_indices = compute_element_indices(region_flags) 
 
-    num_cartesian_cells, num_cut_cells = size(xf.cartesian, 2), length(cutcells)
-    cut_faces_per_cell = StartUpDG.count_cut_faces(cutcells)
+    num_cartesian_cells = sum(region_flags .== 0)
+    num_cut_cells = sum(region_flags .== 1) 
+    cut_faces_per_cell = count_cut_faces(cutcells)
 
     # compute face centroids for making face matches
-    face_centroids_x, face_centroids_y = 
-        compute_face_centroids(rd, xf, yf, num_cartesian_cells, cut_faces_per_cell)
+    face_centroids_x, face_centroids_y = face_centroids
 
     num_cut_faces = sum(cut_faces_per_cell)
     num_total_faces = num_cut_faces + num_faces(rd.element_type) * num_cartesian_cells
@@ -262,7 +268,7 @@ function connect_mesh(rd, xf, yf, region_flags, cutcells; tol = 1e2 * eps())
                         # into the arrays `face_centroids_x`, `face_centroids_y`.
                         nbr_face_ids = nbr_face_ids .+ length(face_centroids_x.cartesian)
                     end
-                    
+
                     # check for matches in face and neighbor face centroids.
                     # note: we index into the global `face_centroids_x/y` container 
                     # rather than the `.cut` or `.cartesian subarrays`.
@@ -335,7 +341,13 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     xf, yf, nxJ, nyJ, Jf = compute_face_data(rd, quad_rule_face, vx, vy, cutcell_data)
 
     # 4) Compute mesh connectivity from face points
-    FToF = connect_mesh(rd, xf, yf, region_flags, cutcells)
+    num_cartesian_cells = sum(region_flags .== 0)
+    num_cut_cells = sum(region_flags .== 1) 
+    cut_faces_per_cell = count_cut_faces(cutcells)
+
+    # we compute face-to-face connectivity by matching face centroids
+    face_centroids = compute_face_centroids(rd, xf, yf, num_cartesian_cells, cut_faces_per_cell)
+    FToF = connect_mesh(rd, face_centroids, region_flags, cutcells)
 
     # 5) Compute node-to-node mappings
     num_total_faces = length(FToF)
