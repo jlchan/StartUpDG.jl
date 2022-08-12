@@ -50,15 +50,21 @@ function connect_mesh(EToV::AbstractVector{<:AbstractArray},
 end
 
 # returns back `p` such that `u[p] == v` or false
-# u = tuple of vectors containing coordinates
+# u, v are tuples of vectors containing x, y, and z coordinates.
 function match_coordinate_vectors(u, v; tol = 100 * eps())
     p = zeros(Int, length(first(u)))
+    match_coordinate_vectors!(p, u, v; tol=tol)
+    return p # [findfirst(abs.(u[i] .- v) .< tol) for i in eachindex(u)]
+end
+
+function match_coordinate_vectors!(p, u, v; tol = 100 * eps())
+    fill!(p, zero(eltype(p)))
     for i in eachindex(first(u)), j in eachindex((first(v)))
         if norm(getindex.(u, i) .- getindex.(v, j)) < tol
             p[i] = j
         end
     end
-    return p # [findfirst(abs.(u[i] .- v) .< tol) for i in eachindex(u)]
+    return p 
 end
 
 # returns element type of global element `global_e`
