@@ -326,17 +326,17 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     num_total_faces = length(FToF)
     num_points_per_face = length(rd.rf) ÷ num_faces(rd.element_type)
 
-    # 3) compute Cartesian face points and geometric factors
-    face_ids_left_right = 1:(length(rd.rf) ÷ 2)
-    face_ids_top_bottom = ((length(rd.rf) ÷ 2) + 1):length(rd.rf)
-    Jf.cartesian[face_ids_top_bottom, :] .= LX / cells_per_dimension_x 
-    Jf.cartesian[face_ids_left_right, :] .= LY / cells_per_dimension_y
-
-    e = 1
-    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
-        if is_Cartesian(region_flags[ex, ey])
-            vx_element = SVector(vx[ex], vx[ex + 1], vx[ex], vx[ex + 1])
-            vy_element = SVector(vy[ey], vy[ey], vy[ey + 1], vy[ey + 1])
+    # WARNING: this only works if the same quadrature rule is used for all faces!
+    mapM = collect(reshape(1:num_points_per_face * num_total_faces, num_points_per_face, num_total_faces))
+    mapP = copy(mapM)
+    p = zeros(Int, num_points_per_face)
+    for f in 1:length(FToF)
+        idM = view(mapM, :, f)
+        idP = view(mapM, :, FToF[f])
+        xyzM = (view(xf, idM), view(yf, idM))
+        xyzP = (view(xf, idP), view(yf, idP))
+        StartUpDG.match_coordinate_vectors!(p, xyzM, xyzP)
+        mapP[p, f] .= idP
     end
 
     # 5) use face points to compute integrals
