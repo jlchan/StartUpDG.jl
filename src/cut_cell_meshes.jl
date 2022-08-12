@@ -112,7 +112,7 @@ end
 
 # Computes face geometric terms from a RefElemData, `quad_rule_face = (r1D, w1D)`, 
 # the vectors of the 1D vertex nodes `vx` and `vy`, and named tuple 
-# `cutcell_data = (; region_flags, stop_pts, cutcell_indices, cutcells)`. 
+# `cutcell_data = (; region_flags, stop_pts, cutcells)`. 
 function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cutcell_data)
 
     # domain size and reference face weights
@@ -121,7 +121,7 @@ function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cut
 
     r1D, w1D = quad_rule_face
 
-    @unpack region_flags, stop_pts, cutcells, cutcell_indices = cutcell_data
+    @unpack region_flags, stop_pts, cutcells = cutcell_data
 
     # count number of cells and cut face nodes
     num_cartesian_cells = sum(region_flags .== 0)
@@ -158,15 +158,14 @@ function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cut
     # 4) compute cut-cell face points
     element_indices = compute_element_indices(region_flags)
 
+    e = 1
     fid = 1
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
         if is_cut(region_flags[ex, ey])
 
-            # `cutcell_indices[ex, ey]` returns the global cutcell index 
-            e = cutcell_indices[ex, ey] 
-
             curve = cutcells[e]
             stop_points = curve.stop_pts
+
             for f in 1:length(stop_points)-1
                 for i in eachindex(r1D)
                     s = map_to_interval(r1D[i], stop_points[f], stop_points[f+1])
@@ -184,7 +183,10 @@ function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cut
 
                     fid += 1
                 end
-            end      
+            end     
+
+            e += 1
+
         end # is_cut
     end
     return xf, yf, nxJ, nyJ, Jf
@@ -315,8 +317,20 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     region_flags, cutcell_indices, cutcells = 
         define_regions((vx, vy), curves, stop_pts, binary_regions=false)
 
+    # sort vector of cut cells so that they match the ordering when iterating 
+    # through Cartesian mesh indices ex, ey 
+    cutcell_ordering = zeros(Int, length(cutcells))
+    sk = 1
+    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y 
+        if is_cut(region_flags[ex, ey])
+            cutcell_ordering[sk] = cutcell_indices[ex, ey] 
+            sk += 1
+        end        
+    end
+    permute!(cutcells, cutcell_ordering)
+
     # 3) Compute face points
-    cutcell_data = (; region_flags, stop_pts, cutcell_indices, cutcells)
+    cutcell_data = (; region_flags, stop_pts, cutcells)
     xf, yf, nxJ, nyJ, Jf = compute_face_data(rd, quad_rule_face, vx, vy, cutcell_data)
 
     # 4) Compute mesh connectivity from face points
