@@ -193,30 +193,31 @@ function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cut
 end
 
 """
-    connect_mesh(rd, xf, yf, region_flags, cutcells)
+    connect_mesh(rd, xf, yf, region_flags, cutcells; tol = 1e2 * eps())
     
 Connects faces of a cut mesh to each other, returns `FToF` such that face 
 `f` is connected to `FToF[f]`.  The keyword argument `tol` is the tolerance 
+used for determining matches between face centroids. 
 """    
-function connect_mesh(rd, xf, yf, region_flags, cutcells)
+function connect_mesh(rd, xf, yf, region_flags, cutcells; tol = 1e2 * eps())
 
     cells_per_dimension_x, cells_per_dimension_y = size(region_flags)
-
-    num_cartesian_cells, num_cut_cells = size(xf.cartesian, 2), length(cutcells)
 
     # element_indices[ex, ey] returns the global (flattened) element index into 
     # the arrays `xf.cartesian[:, e]` or `xf.cut[:, e]`
     element_indices = compute_element_indices(region_flags) 
 
+    num_cartesian_cells, num_cut_cells = size(xf.cartesian, 2), length(cutcells)
     cut_faces_per_cell = StartUpDG.count_cut_faces(cutcells)
-    num_cut_faces = sum(cut_faces_per_cell)
-    num_total_faces = num_cut_faces + num_faces(rd.element_type) * num_cartesian_cells
-    cut_face_offsets = [0; cumsum(cut_faces_per_cell)[1:end-1]] 
 
     # compute face centroids for making face matches
     face_centroids_x, face_centroids_y = 
         compute_face_centroids(rd, xf, yf, num_cartesian_cells, cut_faces_per_cell)
 
+    num_cut_faces = sum(cut_faces_per_cell)
+    num_total_faces = num_cut_faces + num_faces(rd.element_type) * num_cartesian_cells
+    cut_face_offsets = [0; cumsum(cut_faces_per_cell)[1:end-1]] 
+    
     # To determine face-to-face matches, we work with each background Cartesian element 
     # and search through the 4 neighboring background Cartesian elements for a match in 
     # the face centroids of the current cell and the face centroids of its neighbors.     
@@ -269,7 +270,7 @@ function connect_mesh(rd, xf, yf, region_flags, cutcells)
                         xy = SVector(face_centroids_x[i], face_centroids_y[i])
                         for j in nbr_face_ids
                             xy_nbr = SVector(face_centroids_x[j], face_centroids_y[j])
-                            if norm(xy - xy_nbr) < 100 * eps()
+                            if norm(xy - xy_nbr) < tol * max(1, norm(xy), norm(xy_nbr))
                                 FToF[i] = j  
                                 # println("match found for f = $f, e=($ex, $ey), 
                                 #          enbr=($ex_nbr, $ey_nbr)")
@@ -340,11 +341,11 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     num_total_faces = length(FToF)
     num_points_per_face = length(rd.rf) ÷ num_faces(rd.element_type)
 
-    # WARNING: this only works if the same quadrature rule is used for all faces!
+    # WARNING: this only works if the same quadrature rule is used for all faces!    
     mapM = collect(reshape(1:num_points_per_face * num_total_faces, num_points_per_face, num_total_faces))
     mapP = copy(mapM)
-    p = zeros(Int, num_points_per_face)
-    for f in 1:length(FToF)
+    p = zeros(Int, num_points_per_face) # temp storage for a permutation vector
+    for f in eachindex(FToF)
         idM = view(mapM, :, f)
         idP = view(mapM, :, FToF[f])
         xyzM = (view(xf, idM), view(yf, idM))
@@ -352,11 +353,21 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
         StartUpDG.match_coordinate_vectors!(p, xyzM, xyzP)
         mapP[p, f] .= idP
     end
+    mapB = findall(vec(mapM) .==vec(mapP))
 
     # 5) use face points to compute integrals
     face_data = (; xf, yf, nxJ, nyJ, Jf)
 
-    return xf, yf, nxJ, nyJ, Jf, FToF, region_flags, cutcells
+
+    num_cartesian_cells, num_cut_cells = size(xf.cartesian, 2), length(cutcells)
+    cut_faces_per_cell = StartUpDG.count_cut_faces(cutcells)
+
+    # compute face centroids for making face matches
+    face_centroids_x, face_centroids_y = 
+        compute_face_centroids(rd, xf, yf, num_cartesian_cells, cut_faces_per_cell)
+
+
+    return xf, yf, nxJ, nyJ, Jf, FToF, mapM, mapP, mapB, region_flags, cutcells, (face_centroids_x, face_centroids_y)
 
 end
 
