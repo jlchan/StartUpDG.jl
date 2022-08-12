@@ -196,7 +196,7 @@ end
     connect_mesh(rd, xf, yf, region_flags, cutcells)
     
 Connects faces of a cut mesh to each other, returns `FToF` such that face 
-`f` is connected to `FToF[f]`. 
+`f` is connected to `FToF[f]`.  The keyword argument `tol` is the tolerance 
 """    
 function connect_mesh(rd, xf, yf, region_flags, cutcells)
 
@@ -234,7 +234,7 @@ function connect_mesh(rd, xf, yf, region_flags, cutcells)
         # `e_nbr` because the ordering of faces is different for cut elements
         # and Cartesian elements. 
         if is_Cartesian(region_flags[ex, ey])
-            face_ids = (1:num_faces(rd.element_type) .+ (e-1) * num_faces(rd.element_type))
+            face_ids = (1:num_faces(rd.element_type)) .+ (e-1) * num_faces(rd.element_type)
         elseif is_cut(region_flags[ex, ey])
             face_ids = (1:cut_faces_per_cell[e]) .+ cut_face_offsets[e]
 
@@ -261,7 +261,7 @@ function connect_mesh(rd, xf, yf, region_flags, cutcells)
                         # into the arrays `face_centroids_x`, `face_centroids_y`.
                         nbr_face_ids = nbr_face_ids .+ length(face_centroids_x.cartesian)
                     end
-
+                    
                     # check for matches in face and neighbor face centroids.
                     # note: we index into the global `face_centroids_x/y` container 
                     # rather than the `.cut` or `.cartesian subarrays`.
