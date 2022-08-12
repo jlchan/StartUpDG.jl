@@ -198,6 +198,8 @@ Connects faces of a cut mesh to each other, returns `FToF` such that face
 """    
 function connect_mesh(rd, xf, yf, region_flags, cutcells)
 
+    cells_per_dimension_x, cells_per_dimension_y = size(region_flags)
+
     num_cartesian_cells, num_cut_cells = size(xf.cartesian, 2), length(cutcells)
 
     # element_indices[ex, ey] returns the global (flattened) element index into 
@@ -211,15 +213,13 @@ function connect_mesh(rd, xf, yf, region_flags, cutcells)
 
     # compute face centroids for making face matches
     face_centroids_x, face_centroids_y = 
-    compute_face_centroids(rd, xf, yf, num_cartesian_cells, num_cut_cells)
+        compute_face_centroids(rd, xf, yf, num_cartesian_cells, cut_faces_per_cell)
 
-    # To determine face-to-face matches, we work with the background Cartesian grid. 
-    # For each background Cartesian element, we look for the 4 neighboring background 
-    # Cartesian elements and search for a match in the face centroids of the current 
-    # cell and the face centroids of its neighbors. 
-    #
-    # This works because the cut cells can only have Cartesian neighbors across
-    # flat-sided faces, and wouldn't work for meshes with curved interior interfaces.    
+    # To determine face-to-face matches, we work with each background Cartesian element 
+    # and search through the 4 neighboring background Cartesian elements for a match in 
+    # the face centroids of the current cell and the face centroids of its neighbors.     
+    # NOTE: this works because the cut cells can only have Cartesian neighbors across
+    # flat-sided faces. It wouldn't work for meshes with curved interior interfaces.    
 
     FToF = collect(1:num_total_faces)
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
@@ -228,14 +228,17 @@ function connect_mesh(rd, xf, yf, region_flags, cutcells)
 
         # Determine face indices of current cell. The face indices are determined 
         # from the flattened (e.g., not ex, ey) element ordering. 
-        # Note: we search for matches between all faces of `e` and all faces of 
+        # NOTE: we search for matches between all faces of `e` and all faces of 
         # `e_nbr` because the ordering of faces is different for cut elements
         # and Cartesian elements. 
         if is_Cartesian(region_flags[ex, ey])
             face_ids = (1:num_faces(rd.element_type) .+ (e-1) * num_faces(rd.element_type))
         elseif is_cut(region_flags[ex, ey])
             face_ids = (1:cut_faces_per_cell[e]) .+ cut_face_offsets[e]
-            face_ids = face_ids .+ length(face_centroids_x.cartesian)
+
+            # we offset by the number of Cartesian faces so we can index globally
+            # into the arrays `face_centroids_x`, `face_centroids_y`.
+            face_ids = face_ids .+ length(face_centroids_x.cartesian) 
         end
 
         if is_inside_domain(ex, ey, region_flags)
@@ -251,6 +254,9 @@ function connect_mesh(rd, xf, yf, region_flags, cutcells)
                         nbr_face_ids = (1:num_faces(rd.element_type)) .+ (e_nbr-1) * num_faces(rd.element_type)
                     elseif is_cut(region_flags[ex_nbr, ey_nbr])
                         nbr_face_ids = (1:cut_faces_per_cell[e_nbr]) .+ cut_face_offsets[e_nbr]
+
+                        # we offset by the number of Cartesian faces so we can index globally
+                        # into the arrays `face_centroids_x`, `face_centroids_y`.
                         nbr_face_ids = nbr_face_ids .+ length(face_centroids_x.cartesian)
                     end
 
@@ -263,7 +269,8 @@ function connect_mesh(rd, xf, yf, region_flags, cutcells)
                             xy_nbr = SVector(face_centroids_x[j], face_centroids_y[j])
                             if norm(xy - xy_nbr) < 100 * eps()
                                 FToF[i] = j  
-                                println("match found for f = $f, e=($ex, $ey), enbr=($ex_nbr, $ey_nbr)")
+                                # println("match found for f = $f, e=($ex, $ey), 
+                                #          enbr=($ex_nbr, $ey_nbr)")
                             end
                         end
                     end
@@ -296,10 +303,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     vx = LinRange(coordinates_min[1], coordinates_max[1], cells_per_dimension_x + 1)
     vy = LinRange(coordinates_min[2], coordinates_max[2], cells_per_dimension_y + 1)    
 
-    # domain size and reference face weights
-    LX, LY = (x -> x[2] - x[1]).(extrema.((vx, vy)))
-
-    # `regions` has 3 values:
+    # `regions` is a matrix of dimensions `(cells_per_dimension_x, cells_per_dimension_y)` with 3 values:
     #   *  1: cut cell
     #   *  0: Cartesian cell
     #   * -1: excluded cells (in the cut-out region)
@@ -311,17 +315,16 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     region_flags, cutcell_indices, cutcells = 
         define_regions((vx, vy), curves, stop_pts, binary_regions=false)
 
-    r1D, w1D = quad_rule_face
+    # 3) Compute face points
+    cutcell_data = (; region_flags, stop_pts, cutcell_indices, cutcells)
+    xf, yf, nxJ, nyJ, Jf = compute_face_data(rd, quad_rule_face, vx, vy, cutcell_data)
 
-    # count number of cells and cut face nodes
-    num_cartesian_cells = sum(region_flags .== 0)
-    num_cut_cells = sum(region_flags .== 1) 
-    nodes_per_face = length(r1D)
-    num_cut_face_nodes = count_cut_face_nodes(cutcells, nodes_per_face)
+    # 4) Compute mesh connectivity from face points
+    FToF = connect_mesh(rd, xf, yf, region_flags, cutcells)
 
-    xf, yf, nxJ, nyJ, Jf = 
-        ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nfq, num_cartesian_cells), 
-                                   cut=zeros(num_cut_face_nodes)), 5)
+    # 5) Compute node-to-node mappings
+    num_total_faces = length(FToF)
+    num_points_per_face = length(rd.rf) ÷ num_faces(rd.element_type)
 
     # 3) compute Cartesian face points and geometric factors
     face_ids_left_right = 1:(length(rd.rf) ÷ 2)
@@ -334,136 +337,13 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
         if is_Cartesian(region_flags[ex, ey])
             vx_element = SVector(vx[ex], vx[ex + 1], vx[ex], vx[ex + 1])
             vy_element = SVector(vy[ey], vy[ey], vy[ey + 1], vy[ey + 1])
-            x, y = map(x -> rd.V1 * x, (vx_element, vy_element))
-            mul!(view(xf.cartesian, :, e), rd.Vf, x)
-            mul!(view(yf.cartesian, :, e), rd.Vf, y)
-            view(nxJ.cartesian, :, e) .= rd.nrJ .* view(Jf.cartesian, :, e)
-            view(nyJ.cartesian, :, e) .= rd.nsJ .* view(Jf.cartesian, :, e)
-            e = e + 1
-        end
-    end        
-
-    element_indices = compute_element_indices(region_flags)
-
-    # 4) compute cut-cell face points
-    fid = 1
-    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
-        if is_cut(region_flags[ex, ey])
-            e = cutcell_indices[ex, ey]
-            curve = cutcells[e]
-            stop_points = curve.stop_pts
-            for f in 1:length(stop_points)-1
-                for i in eachindex(r1D)
-                    s = map_to_interval(r1D[i], stop_points[f], stop_points[f+1])
-
-                    x_node, y_node = curve(s)                
-                    xf.cut[fid], yf.cut[fid] = x_node, y_node
-
-                    tangent_vector = PathIntersections.ForwardDiff.derivative(curve, s)
-                    normal_node = SVector{2}(tangent_vector[2], -tangent_vector[1])
-                    nxJ.cut[fid], nyJ.cut[fid] = -normal_node # flip sign for outward normal
-
-                    scaling = (stop_points[f+1] - stop_points[f]) / 2
-                    Jf.cut[fid] = norm(tangent_vector) * scaling
-
-                    fid += 1
-                end
-            end      
-        end # is_cut
     end
 
-    FToF = connect_mesh(rd, xf, yf, region_flags, cutcells)
-
+    # 5) use face points to compute integrals
     face_data = (; xf, yf, nxJ, nyJ, Jf)
-       
-    return xf, yf, nxJ, nyJ, Jf, region_flags, cutcells
 
-    # # 5) find face-to-face matches 
-    # num_cut_faces = count_cut_faces(cutcells)
-    # num_total_faces = sum(num_cut_faces)
-    # face_offsets = [0; cumsum(num_cut_faces)[1:end-1]] 
+    return xf, yf, nxJ, nyJ, Jf, FToF, region_flags, cutcells
 
-    # num_Cartesian_faces = num_faces(rd.element_type) 
-    # FToF = collect(1:num_total_faces)
-    # for ex in 1:num_cells_x, ey in 1:num_cells_y    
-    #     e = region_cell_indices[ex, ey]        
-    #     for Cartesian_face in 1:num_Cartesian_faces
-    #         exy = (ex, ey)
-    #         exy_nbr = neighbor_across_face(Cartesian_face, ex, ey)
-    #         if is_inside_domain(exy..., regions) && is_inside_domain(exy_nbr..., regions)
-    #             face_matches = find_face_matches(exy, exy_nbr, mesh)
-    #             if !isnothing(face_matches)
-    #                 f, f_nbr = face_matches
-    #                 e_nbr = region_cell_indices[exy_nbr...]
-
-    #                 face_id = f + face_offsets[e]
-    #                 neighbor_face_id = f_nbr + face_offsets[e_nbr]
-
-    #                 FToF[face_id] = neighbor_face_id 
-    #             end
-    #         end
-    #     end
-    # end
-
-
-    # # compute face nodes
-    # num_active_cells = sum(regions .>= 0)
-    # xf, yf, nx, ny, wJf = 
-    #     ntuple(_ -> [[zeros(size(rd.Vf, 1) ÷ rd.Nfaces) for f in 1:rd.Nfaces] for e in 1:num_active_cells], 5)
-    # w1D = reference_quadrature[2] # reference quadrature weights
-    # cartesian_cells, cut_cells = Int[], Int[]
-    # region_cell_indices = zeros(Int, cells_per_dimension_x, cells_per_dimension_y)
-
-    # # loop through Cartesian cells first
-    # e = 1 # element counter
-    # for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
-    #     if is_Cartesian(regions[ex, ey])         
-    #         vx_element = SVector(vx[ex], vx[ex + 1], vx[ex], vx[ex + 1])
-    #         vy_element = SVector(vy[ey], vy[ey], vy[ey + 1], vy[ey + 1])
-    #         x, y = map(x -> rd.V1 * x, (vx_element, vy_element))
-    #         xf[e] .= split_into_faces(rd.Vf * x, rd.Nfaces)
-    #         yf[e] .= split_into_faces(rd.Vf * y, rd.Nfaces)
-
-    #         # left/right, bottom/top ordering of faces
-    #         fill!.((nx[e][1], ny[e][1]), (-1,  0))
-    #         fill!.((nx[e][2], ny[e][2]), ( 1,  0))
-    #         fill!.((nx[e][3], ny[e][3]), ( 0, -1))
-    #         fill!.((nx[e][4], ny[e][4]), ( 0,  1))
-
-    #         wJf[e][1] .= (LX ./ cells_per_dimension_x) .* w1D ./ sum(w1D)
-    #         wJf[e][2] .= (LX ./ cells_per_dimension_x) .* w1D ./ sum(w1D)
-    #         wJf[e][3] .= (LY ./ cells_per_dimension_y) .* w1D ./ sum(w1D)
-    #         wJf[e][4] .= (LY ./ cells_per_dimension_y) .* w1D ./ sum(w1D)
-
-    #         push!(cartesian_cells, e)        
-    #         region_cell_indices[ex, ey] = e
-    #         e = e + 1
-    #     end
-    # end
-    
-    # # loop through cut cells next 
-    # for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
-    #     if is_cut(regions[ex, ey])
-    #         normals = cutcell_geo[:n][cutcell_i[ex, ey]]
-    #         points = cutcell_geo[:pts][cutcell_i[ex, ey]]
-    #         weights = cutcell_geo[:wts][cutcell_i[ex, ey]]
-    #         xf[e], yf[e], nx[e], ny[e], wJf[e] = ntuple(_ -> Vector{Vector{Float64}}[], 5)
-    #         for f in eachindex(normals)
-    #             Jf = norm.(normals[f])
-    #             push!(xf[e], getindex.(points[f], 1))
-    #             push!(yf[e], getindex.(points[f], 2))
-    #             push!(nx[e], getindex.(normals[f], 1) ./ Jf)
-    #             push!(ny[e], getindex.(normals[f], 2) ./ Jf)
-    #             push!(wJf[e], weights[f])
-    #         end
-            
-    #         push!(cut_cells, e)
-    #         region_cell_indices[ex, ey] = e    
-    #         e = e + 1
-    #     end
-    # end    
-    
-    # return xf, yf
 end
 
 is_Cartesian(flag) = flag==0 ? true : false
