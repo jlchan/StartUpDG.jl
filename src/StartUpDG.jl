@@ -7,7 +7,7 @@ using Colors
 using ConstructionBase: ConstructionBase
 using HDF5 # read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
-using LinearAlgebra: diagm, eigvals, Diagonal, I, mul!, norm
+using LinearAlgebra: diagm, eigvals, Diagonal, I, mul!, norm, qr, ColumnNorm
 using NodesAndModes: meshgrid
 @reexport using NodesAndModes # for basis functions
 using OrderedCollections: LittleDict # fast ordered dict for a small number of entries
@@ -45,7 +45,9 @@ export boundary_face_centroids, tag_boundary_faces, tag_boundary_nodes
 include("hybrid_meshes.jl")
 export num_faces, num_vertices
 
+include("physical_frame_basis.jl")
 include("cut_cell_meshes.jl")
+export PhysicalFrame
 
 # uniform meshes + face vertex orderings are included
 include("mesh/simple_meshes.jl")

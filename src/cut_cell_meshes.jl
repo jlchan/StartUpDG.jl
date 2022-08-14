@@ -1,20 +1,8 @@
-# struct 
+# dimension of a cut cell polynomial space
+@inline Np_cut(N) = (N + 1) * (N + 2) ÷ 2 
 
 # maps x ∈ [-1,1] to [a,b]
 map_to_interval(x, a, b) = a + (b-a) * 0.5 * (1 + x)
-
-function count_cut_face_nodes(cutcells, nodes_per_faces)
-    num_cut_face_nodes = 0
-    for curve in cutcells
-        stop_points = curve.stop_pts
-        for f in 1:length(stop_points)-1
-            for i in 1:nodes_per_faces
-                num_cut_face_nodes += 1
-            end
-        end
-    end
-    return num_cut_face_nodes
-end
 
 function count_cut_faces(cutcells)
     num_cut_faces = zeros(Int, length(cutcells))
@@ -40,11 +28,12 @@ function neighbor_across_face(f, ex, ey)
     end
 end
 
-function compute_face_centroids(rd, xf, yf, num_cartesian_cells, cut_faces_per_cell)
+function compute_face_centroids(rd, xf, yf, cutcell_data)
 
+    @unpack region_flags, cut_faces_per_cell, cut_face_offsets = cutcell_data
     num_cut_cells = length(cut_faces_per_cell)
+    num_cartesian_cells = sum(region_flags .== 0)
     num_cut_faces = sum(cut_faces_per_cell)
-    cut_face_offsets = [0; cumsum(cut_faces_per_cell)[1:end-1]] 
 
     num_points_per_face = length(rd.rf) ÷ num_faces(rd.element_type)
     
@@ -112,8 +101,9 @@ end
 
 # Computes face geometric terms from a RefElemData, `quad_rule_face = (r1D, w1D)`, 
 # the vectors of the 1D vertex nodes `vx` and `vy`, and named tuple 
-# `cutcell_data = (; region_flags, stop_pts, cutcells)`. 
-function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cutcell_data)
+# `cutcell_data is a NamedTuple containing `region_flags`, `stop_pts``, `cutcells`. 
+function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face, 
+                                vx, vy, cutcell_data; tol=100 * eps())
 
     # domain size and reference face weights
     cells_per_dimension_x, cells_per_dimension_y = length(vx) - 1, length(vy) - 1
@@ -121,13 +111,19 @@ function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cut
 
     r1D, w1D = quad_rule_face
 
-    @unpack region_flags, stop_pts, cutcells = cutcell_data
+    @unpack region_flags, stop_pts, cutcells, cut_faces_per_cell = cutcell_data
 
     # count number of cells and cut face nodes
     num_cartesian_cells = sum(region_flags .== 0)
     num_cut_cells = sum(region_flags .== 1) 
     nodes_per_face = length(r1D)
-    num_cut_face_nodes = count_cut_face_nodes(cutcells, nodes_per_face)
+    num_cut_face_nodes = nodes_per_face * sum(cut_faces_per_cell)
+
+    x, y, J = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Np, num_cartesian_cells), 
+                                         cut=zeros(Np_cut(rd.N), num_cut_cells)), 3)
+
+    rxJ, sxJ, ryJ, syJ = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Np, num_cartesian_cells), 
+                                                    cut=zeros(Np_cut(rd.N), num_cut_cells)), 4)
 
     xf, yf, nxJ, nyJ, Jf = 
         ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nfq, num_cartesian_cells), 
@@ -138,6 +134,9 @@ function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cut
     face_ids_top_bottom = ((length(rd.rf) ÷ 2) + 1):length(rd.rf)
 
     # the face Jacobian involves scaling between mapped and reference domain
+    rxJ.cartesian .= LX / (2 * cells_per_dimension_x)
+    sxJ.cartesian .= LY / (2 * cells_per_dimension_y)
+    J.cartesian .= (LX / cells_per_dimension_x) * (LY / cells_per_dimension_y) / 4 # 4 = reference volume
     Jf.cartesian[face_ids_top_bottom, :] .= LX / (cells_per_dimension_x * sum(w1D))
     Jf.cartesian[face_ids_left_right, :] .= LY / (cells_per_dimension_y * sum(w1D))
 
@@ -146,9 +145,11 @@ function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cut
         if is_Cartesian(region_flags[ex, ey])
             vx_element = SVector(vx[ex], vx[ex + 1], vx[ex], vx[ex + 1])
             vy_element = SVector(vy[ey], vy[ey], vy[ey + 1], vy[ey + 1])
-            x, y = map(x -> rd.V1 * x, (vx_element, vy_element))
-            mul!(view(xf.cartesian, :, e), rd.Vf, x)
-            mul!(view(yf.cartesian, :, e), rd.Vf, y)
+            x_element, y_element = map(x -> rd.V1 * x, (vx_element, vy_element))
+            view(x.cartesian, :, e) .= x_element
+            view(y.cartesian, :, e) .= y_element
+            mul!(view(xf.cartesian, :, e), rd.Vf, x_element)
+            mul!(view(yf.cartesian, :, e), rd.Vf, y_element)
             view(nxJ.cartesian, :, e) .= rd.nrJ .* view(Jf.cartesian, :, e)
             view(nyJ.cartesian, :, e) .= rd.nsJ .* view(Jf.cartesian, :, e)
             e = e + 1
@@ -157,6 +158,11 @@ function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cut
    
     # 4) compute cut-cell face points
     element_indices = compute_element_indices(region_flags)
+    physical_frame_elements = PhysicalFrame[] # populate this as we iterate through cut cells
+
+    # The volume Jacobian for cut elements is 1 since the "reference element" 
+    # is the cut element itself. 
+    fill!(J.cut, one(eltype(J)))
 
     e = 1
     fid = 1
@@ -183,13 +189,66 @@ function compute_face_data(rd::RefElemData{2, Quad}, quad_rule_face, vx, vy, cut
 
                     fid += 1
                 end
-            end     
+            end
+
+            # find points inside element
+            vx_element = SVector(vx[ex], vx[ex + 1], vx[ex], vx[ex + 1])
+            vy_element = SVector(vy[ey], vy[ey], vy[ey + 1], vy[ey + 1])
+            x_element, y_element = map(x -> rd.V1 * x, (vx_element, vy_element))
+
+            @unpack curves = cutcell_data
+            N_sampled = 3 * rd.N
+            r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
+            V_sampled = vandermonde(rd.element_type, rd.N, r_sampled, s_sampled) / rd.VDM 
+            x_sampled, y_sampled = V_sampled * x_element, V_sampled * y_element
+
+            # TODO: fix, only works for a single curve for now
+            is_in_element = is_contained.(first(curves), zip(x_sampled, y_sampled)) .== false
+
+            while sum(is_in_element) < Np_cut(rd.N)
+                # TODO: fix, only works for a single curve for now
+                is_in_element = is_contained.(first(curves), zip(x_sampled, y_sampled)) .== false
+                if sum(is_in_element) < Np_cut(rd.N)
+                    N_sampled += rd.N
+                    r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
+                    V_sampled = vandermonde(rd.element_type, rd.N, r_sampled, s_sampled) / rd.VDM 
+                    x_sampled, y_sampled = V_sampled * x_element, V_sampled * y_element    
+                end
+            end
+               
+            # here, we evaluate a PhysicalFrame basis by shifting and scaling the 
+            # coordinates on an element back to the reference element [-1, 1]^2.
+            @unpack cut_faces_per_cell, cut_face_offsets = cutcell_data
+            num_points_per_face = length(r1D)
+            cut_face_node_ids = (1:num_points_per_face * cut_faces_per_cell[e]) .+ 
+                                num_points_per_face * cut_face_offsets[e]
+
+            physical_frame_element = 
+                PhysicalFrame(xf.cut[cut_face_node_ids], yf.cut[cut_face_node_ids])
+            push!(physical_frame_elements, physical_frame_element)
+
+            ids_in_element = findall(is_in_element)
+            V = vandermonde(physical_frame_element, rd.N, 
+                            r_sampled[ids_in_element], 
+                            s_sampled[ids_in_element]) 
+
+            # use pivoted QR to find good interpolation points
+            QRfac = qr(V', ColumnNorm())
+            ids = QRfac.p[1:Np_cut(rd.N)]
+            view(x.cut, :, e) .= x_sampled[ids_in_element[ids]]
+            view(y.cut, :, e) .= y_sampled[ids_in_element[ids]]
+
+            # geometric terms depend on the shifting and scaling
+            view(rxJ.cut, :, e) .= physical_frame_element.scaling[1]
+            view(syJ.cut, :, e) .= physical_frame_element.scaling[2]
 
             e += 1
 
         end # is_cut
     end
-    return xf, yf, nxJ, nyJ, Jf
+
+    rstxyzJ = SMatrix{2, 2}(rxJ, sxJ, ryJ, syJ)
+    return x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf
 end
 
 """
@@ -205,24 +264,22 @@ Inputs:
 - `region_flags`, `cutcells` are return arguments from `PathIntersections.define_regions`
 The keyword argument `tol` is the tolerance for matches between face centroids. 
 """    
-function connect_mesh(rd, face_centroids, region_flags, cutcells; tol = 1e2 * eps())
+function connect_mesh(rd, face_centroids, cutcell_data; tol = 1e2 * eps())
+
+    @unpack region_flags, cut_faces_per_cell, cut_face_offsets = cutcell_data
 
     cells_per_dimension_x, cells_per_dimension_y = size(region_flags)
+    num_cartesian_cells = sum(region_flags .== 0)
+    num_cut_faces = sum(cut_faces_per_cell)
+    num_total_faces = num_cut_faces + num_faces(rd.element_type) * num_cartesian_cells
 
     # element_indices[ex, ey] returns the global (flattened) element index into 
     # the arrays `xf.cartesian[:, e]` or `xf.cut[:, e]`
     element_indices = compute_element_indices(region_flags) 
 
-    num_cartesian_cells = sum(region_flags .== 0)
-    num_cut_cells = sum(region_flags .== 1) 
-    cut_faces_per_cell = count_cut_faces(cutcells)
-
     # compute face centroids for making face matches
     face_centroids_x, face_centroids_y = face_centroids
 
-    num_cut_faces = sum(cut_faces_per_cell)
-    num_total_faces = num_cut_faces + num_faces(rd.element_type) * num_cartesian_cells
-    cut_face_offsets = [0; cumsum(cut_faces_per_cell)[1:end-1]] 
     
     # To determine face-to-face matches, we work with each background Cartesian element 
     # and search through the 4 neighboring background Cartesian elements for a match in 
@@ -292,6 +349,20 @@ function connect_mesh(rd, face_centroids, region_flags, cutcells; tol = 1e2 * ep
     return FToF
 end
 
+is_Cartesian(flag) = flag==0 ? true : false
+is_cut(flag) = flag > 0
+
+# returns the 1D quadrature used to build a RefElemData surface quadrature 
+function get_1d_quadrature(rd::RefElemData{2, Quad})
+    nfaces = num_faces(rd.element_type)
+    num_points_per_face = length(rd.wf) ÷ nfaces
+    rf = reshape(rd.rf, num_points_per_face, nfaces)
+    wf = reshape(rd.wf, num_points_per_face, nfaces)
+    
+    # face ordering on a quad is -/+ x, -/+ y. face 3 = -y
+    return rf[:, 3], wf[:, 3]
+end
+
 """
     function MeshData(rd, geometry, vxyz...)
 
@@ -324,8 +395,8 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     region_flags, cutcell_indices, cutcells = 
         define_regions((vx, vy), curves, stop_pts, binary_regions=false)
 
-    # we sort the vector of cut cells so that they match the ordering when 
-    # iterating through Cartesian mesh indices via (ex, ey)
+    # sort the vector of cut cells so that they match the ordering when 
+    # iterating through Cartesian mesh indices via (ex, ey).
     cutcell_ordering = zeros(Int, length(cutcells))
     sk = 1
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y 
@@ -336,24 +407,24 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     end
     permute!(cutcells, cutcell_ordering)
 
-    # 3) Compute face points
-    cutcell_data = (; region_flags, stop_pts, cutcells)
-    xf, yf, nxJ, nyJ, Jf = compute_face_data(rd, quad_rule_face, vx, vy, cutcell_data)
-
-    # 4) Compute mesh connectivity from face points
-    num_cartesian_cells = sum(region_flags .== 0)
-    num_cut_cells = sum(region_flags .== 1) 
+    # pack useful cut cell information together. 
     cut_faces_per_cell = count_cut_faces(cutcells)
+    cut_face_offsets = [0; cumsum(cut_faces_per_cell)[1:end-1]] 
+    cutcell_data = (; curves, region_flags, stop_pts, cutcells, cut_faces_per_cell, cut_face_offsets)
 
-    # we compute face-to-face connectivity by matching face centroids
-    face_centroids = compute_face_centroids(rd, xf, yf, num_cartesian_cells, cut_faces_per_cell)
-    FToF = connect_mesh(rd, face_centroids, region_flags, cutcells)
+    # 3) Compute volume and face points
+    x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf = 
+        compute_geometric_data(rd, quad_rule_face, vx, vy, cutcell_data)
+
+    # 4) Compute face-to-face connectivity by matching face centroids
+    face_centroids = compute_face_centroids(rd, xf, yf, cutcell_data)
+    FToF = connect_mesh(rd, face_centroids, cutcell_data)
 
     # 5) Compute node-to-node mappings
     num_total_faces = length(FToF)
     num_points_per_face = length(rd.rf) ÷ num_faces(rd.element_type)
 
-    # WARNING: this only works if the same quadrature rule is used for all faces!    
+    # WARNING: this only works if the same quadrature rule is used for all faces! 
     mapM = collect(reshape(1:num_points_per_face * num_total_faces, num_points_per_face, num_total_faces))
     mapP = copy(mapM)
     p = zeros(Int, num_points_per_face) # temp storage for a permutation vector
@@ -365,34 +436,21 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
         StartUpDG.match_coordinate_vectors!(p, xyzM, xyzP)
         mapP[p, f] .= idP
     end
-    mapB = findall(vec(mapM) .==vec(mapP))
+    mapB = findall(vec(mapM) .==vec(mapP)) # determine boundary nodes
 
-    # 5) use face points to compute integrals
-    face_data = (; xf, yf, nxJ, nyJ, Jf)
+    VXYZ = ntuple(_ -> nothing, 2)
+    EToV = nothing
 
+    Nq_cut = Np_cut(3 * rd.N)
+    num_cartesian_cells = sum(region_flags .== 0)
+    num_cut_cells = sum(region_flags .== 1)
+    xq, yq, wJq = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nq, num_cartesian_cells), 
+                                             cut=zeros(Nq_cut, num_cut_cells)), 3)
 
-    num_cartesian_cells, num_cut_cells = size(xf.cartesian, 2), length(cutcells)
-    cut_faces_per_cell = StartUpDG.count_cut_faces(cutcells)
-
-    # compute face centroids for making face matches
-    face_centroids_x, face_centroids_y = 
-        compute_face_centroids(rd, xf, yf, num_cartesian_cells, cut_faces_per_cell)
-
-
-    return xf, yf, nxJ, nyJ, Jf, FToF, mapM, mapP, mapB, region_flags, cutcells, (face_centroids_x, face_centroids_y)
-
-end
-
-is_Cartesian(flag) = flag==0 ? true : false
-is_cut(flag) = flag > 0
-
-# returns the 1D quadrature used to build a RefElemData surface quadrature 
-function get_1d_quadrature(rd::RefElemData{2, Quad})
-    nfaces = num_faces(rd.element_type)
-    num_points_per_face = length(rd.wf) ÷ nfaces
-    rf = reshape(rd.rf, num_points_per_face, nfaces)
-    wf = reshape(rd.wf, num_points_per_face, nfaces)
+    is_periodic = (false, false)
     
-    # face ordering on a quad is -/+ x, -/+ y. face 3 = -y
-    return rf[:, 3], wf[:, 3]
+    return MeshData(VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, mapM, mapP, mapB, 
+                    rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
+
 end
+
