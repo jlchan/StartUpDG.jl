@@ -180,6 +180,7 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 @inline face_type(::Union{Tri, Quad}) = Line()
 @inline face_type(::Hex) = Quad()
 @inline face_type(::Tet) = Tri()
+@inline face_type(::Wedge, id) = (id < 3) ? Quad() : Tri()
 
 # ====================================================
 #          RefElemData approximation types

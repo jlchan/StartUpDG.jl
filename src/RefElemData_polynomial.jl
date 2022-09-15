@@ -245,3 +245,95 @@ function RefElemData(elem::Hex, approxType::Polynomial, N;
 end
 
 
+"""
+    RefElemData(elem::Wedge, approxType::Polynomial, N;
+    quad_rule_vol=quad_nodes(elem, N),
+    quad_rule_face=quad_nodes(face_type(elem), N),
+    Nplot=10)
+
+Build operators for prisms/wedges
+"""
+function RefElemData(elem::Wedge, approxType::Polynomial, N;
+    quad_rule_vol=quad_nodes(elem, N),
+    quad_rule_face=quad_nodes(face_type(elem, 1), N),
+    Nplot=10)
+
+    #Find the vertices of the faces
+    fv = face_vertices(elem)
+    #Get interpolation nodes of degree N 
+    r, s, t = nodes(elem, N)
+    VDM, Vr, Vs, Vt = basis(elem, N, r, s, t)
+    Dr, Ds, Dt = (A -> A/VDM).((Vr, Vs, Vt))
+    Drst = (Dr, Ds, Dt)
+
+    fn1, fn2, fn3, fn4, fn5  = find_face_nodes(elem, r, s, t)
+    Fmask = tuple(fn1, fn2, fn3, fn4, fn5)
+
+    # low order interpolation nodes
+    r1, s1, t1 = nodes(elem, 1)
+    V1 = vandermonde(elem, 1, r, s, t) / vandermonde(elem, 1, r1, s1, t1)
+
+    r1D, w1D = quad_nodes(Line(), N)
+    rt, st, wt = quad_nodes(Tri(), N)
+    #triangle face quadrature
+    rft, sft, tft = ntuple(_ ->zeros(length(rt), length(r1D)), 3)
+    for i in eachindex(r1D)
+        rft[:, i] .= rt
+        sft[:, i] .= st
+        tft[:, i] .= r1D[i]
+    end
+
+    tri_vandermonde = vandermonde(Tri(), N, rt, st)
+    line_vandermonde = vandermonde(Line(), N, r1D)
+    display(tri_vandermonde)
+    display(line_vandermonde)
+    Vf = kron(tri_vandermonde, line_vandermonde)
+
+    display(Vf)
+
+    wf = kron(wt, w1D)
+
+    display(wf)
+    rstf = tuple(rt, st, r1D)
+
+    #quad face quadrature
+    rqf, sqf, sqf, nrqJ, nsqJ = init_face_data(Tri(), quad_rule_face = quad_nodes(Line(), N))
+    Vqf = kron(vandermonde(Tri(), N, rqf, sqf), line_vandermonde)
+
+    display(Vqf)
+
+
+
+   
+
+    #TODO what about the normals
+    zt = zeros(size(rt)) 
+    et = ones(size(rt))
+    zq = zeros(size(r1D))
+    eq = ones(size(r1D))
+
+    #for nrJ and nsJ normal on face 1-3 coincide with the triangular normals
+    nrJ = [zq; eq; -eq; zt; zt]
+    nsJ = [-eq; eq; zq; zt; zt]
+    ntJ = [zq; zq; zq; -et; et]     #normal on the face??
+
+    rq, sq, tq, wq = quad_rule_vol
+    Vq = vandermonde(elem, N, rq, sq, tq) / VDM
+    M  = Vq' * diagm(wq) * Vq
+    Pq = M \ (Vq' * diagm(wq))
+
+    # plotting nodes
+    rp, sp, tp = equi_nodes(elem, Nplot)
+    Vp = vandermonde(elem, N, rp, sp, tp) / VDM
+
+    #TODO
+    LIFT = M \ (Vf' *diagm(wf))
+
+    return RefElemData(elem, approxType, N, fv, V1,
+                        tuple(r, s, t), VDM, Fmask,
+                        Nplot, tuple(rp, sp, tp), Vp,
+                        tuple(rq, sq, tq), wq, Vq,
+                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
+                        M, Pq, Drst, LIFT)
+end
+

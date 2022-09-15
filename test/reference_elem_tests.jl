@@ -102,10 +102,42 @@
         @test StartUpDG.num_faces(Tet()) == 4
     end
 
-    @testset "Misc Pyr, wedge" begin
-        @test StartUpDG.num_faces(Pyr()) == 5
+    @testset "Wedge" begin
+        rd = RefElemData(Wedge(), N)
+        @test rd.Pq * rd.Vq ≈ I
+        @test propertynames(rd)[1] == :elementType
+        @test rd.r == rd.rst[1]
+        @test rd.s == rd.rst[2]
+        @test rd.t == rd.rst[3]
+
+        @test rd.rf == rd.rstf[1]    
+        @test rd.sf == rd.rstf[2]
+        @test rd.tf == rd.rstf[3] 
+
+        @test rd.rq == rd.rstq[1]    
+        @test rd.sq == rd.rstq[2]
+        @test rd.tq == rd.rstq[3] 
+
+        @test rd.rp == rd.rstp[1]    
+        @test rd.sp == rd.rstp[2]
+        @test rd.tp == rd.rstp[3] 
+
+        @test rd.Np == length(rd.r)  
+        @test rd.Nq == length(rd.rq)
+        
+        @test abs(sum(rd.wq)) - 4 < tol
+        @test abs(sum(rd.wf)) - 4 < tol
+
+        @test abs(sum(rd.wf .* rd.nrJ)) < tol
+        @test abs(sum(rd.wf .* rd.nsJ)) < tol
+        @test abs(sum(rd.wf .* rd.ntJ)) < tol
+        
         @test StartUpDG.num_faces(Wedge()) == 5
-        @test StartUpDG.num_vertices(Pyr()) == 5
         @test StartUpDG.num_vertices(Wedge()) == 6
+    end
+
+    @testset "Misc Pyr" begin
+        @test StartUpDG.num_faces(Pyr()) == 5
+        @test StartUpDG.num_vertices(Pyr()) == 5
     end
 end
