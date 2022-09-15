@@ -16,6 +16,7 @@ using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
 using SparseArrays: sparse, droptol!
 @reexport using UnPack  # for getting values in RefElemData and MeshData
+using WriteVTK
 
 # reference element utility functions
 include("RefElemData.jl")
@@ -50,7 +51,8 @@ export readGmsh2D, uniform_mesh
 export readGmsh2D_v4, MeshImportOptions 
 # Plots.jl recipes for meshes
 include("mesh/mesh_visualization.jl")
-export VertexMeshPlotter, MeshPlotter
+export VertexMeshPlotter, MeshPlotter, wedge_plotter
+
 
 using Requires
 function __init__()                 

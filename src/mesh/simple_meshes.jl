@@ -362,6 +362,31 @@ function uniform_mesh(elem::Tri, Kx, Ky)
     return (VX[:], VY[:]), EToV
 end
 
+function uniform_mesh(elem::Wedge, Kx, Ky)
+    #Todo: Introduce Kz
+    (VY, VX, VZ) = meshgrid(LinRange(-1, 1, Ky + 1), LinRange(-1, 1, Kx + 1), LinRange(-1, 1, 2))
+    sk = 1
+    shift = (Kx+1)*(Ky+1)
+    EToV = zeros(Int, 2 * Kx * Ky, 6)
+    for ey = 1:Ky
+        for ex = 1:Kx
+            id(ex, ey) = ex + (ey - 1) * (Kx + 1) # index function
+            id1 = id(ex, ey)
+            id2 = id(ex + 1, ey)
+            id3 = id(ex + 1, ey + 1)
+            id4 = id(ex, ey + 1)
+            id5 = id1 + shift
+            id6 = id2 + shift
+            id7 = id3 + shift
+            id8 = id4 + shift
+            EToV[2*sk-1, :] = [id1 id3 id2 id5 id7 id6]
+            EToV[2*sk, :] = [id3 id1 id4 id7 id5 id8]
+            sk += 1
+        end
+    end
+    return (VX[:], VY[:], VZ[:]), EToV
+end
+
 uniform_mesh(elem::Union{Tri,Quad}, Kx) = uniform_mesh(elem, Kx, Kx)
 uniform_mesh(elem::Hex, Kx) = uniform_mesh(elem, Kx, Kx, Kx)
 

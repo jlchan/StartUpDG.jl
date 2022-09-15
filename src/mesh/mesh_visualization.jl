@@ -68,3 +68,19 @@ RecipesBase.@recipe function f(m::VertexMeshPlotter)
     return xmesh, ymesh
 end
 
+function wedge_plotter(VXYZ, EToV)
+    num_elem = first(size(EToV))
+    num_points = first(size(VXYZ[1]))
+    points = zeros(Float64, (3, num_points))
+    point_data = zeros(Int32, (num_points))
+    points[1, :] = VXYZ[1]
+    points[2, :] = VXYZ[2]
+    points[3, :] = VXYZ[3]
+    for i in 1:num_points
+        point_data[i] = i
+    end
+    cells = [MeshCell(VTKCellTypes.VTK_WEDGE, EToV[i, :]) for i in 1:num_elem]
+    vtkfile = vtk_grid("mesh", points, cells)
+    vtkfile["point_id", VTKPointData()] = point_data
+    vtk_save(vtkfile)
+end
