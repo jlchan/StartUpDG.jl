@@ -1,128 +1,172 @@
 """
-    struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
+    struct MeshData{Dim, Tv, Ti}
 
 MeshData: contains info for a high order piecewise polynomial discretization on an
-unstructured mesh.
+unstructured mesh. 
 
-Use `@unpack` to extract fields. Example:
+Example:
 ```julia
-N,K1D = 3,2
-rd = RefElemData(Tri(),N)
-VX,VY,EToV = uniform_mesh(Tri(),K1D)
-md = MeshElemData(VX,VY,EToV,rd)
-@unpack x,y = md
+N, K1D = 3, 2
+rd = RefElemData(Tri(), N)
+VXY, EToV = uniform_mesh(Tri(), K1D)
+md = MeshElemData(VXY, EToV, rd)
+@unpack x, y = md
 ```
 """
-struct MeshData{Dim, GeoType, IndexType, BdryIndexType}
+Base.@kwdef struct MeshData{Dim, VolumeType, FaceType, VolumeQType,
+                            VertexType, EToVType, FToFType, 
+                            VolumeWeightType, VolumeGeofacsType, VolumeJType,
+                            ConnectivityType, BoundaryMapType}
 
-    VXYZ::NTuple{Dim,T} where{T}  # vertex coordinates
-    K::Int                       # num elems
-    EToV                         # mesh vertex array
-    FToF::IndexType                # face connectivity
+    # num_elements::Ti            # number of elements
+    VXYZ::NTuple{Dim, VertexType}  # vertex coordinates
+    EToV::EToVType              # mesh vertex array 
+    FToF::FToFType              # face connectivity
 
-    xyz::NTuple{Dim,GeoType}   # physical points
-    xyzf::NTuple{Dim,GeoType}  # face nodes
-    xyzq::NTuple{Dim,GeoType}  # phys quad points, Jacobian-scaled weights
-    wJq::GeoType
+    xyz::NTuple{Dim, VolumeType}   # physical points
+    xyzf::NTuple{Dim, FaceType}  # face nodes
+    xyzq::NTuple{Dim, VolumeQType}  # phys quad points, Jacobian-scaled weights
+    wJq::VolumeWeightType
 
     # arrays of connectivity indices between face nodes
-    mapM::IndexType
-    mapP::IndexType
-    mapB::BdryIndexType
+    mapM::ConnectivityType
+    mapP::ConnectivityType
+    mapB::BoundaryMapType
 
     # volume geofacs Gij = dx_i/dxhat_j
-    rstxyzJ::SMatrix{Dim,Dim,GeoType,L} where {L}
-    J::GeoType
+    rstxyzJ::VolumeGeofacsType
+    J::VolumeJType
 
     # surface geofacs
-    nxyzJ::NTuple{Dim,GeoType}
-    sJ::GeoType
+    nxyzJ::NTuple{Dim, FaceType}
+    Jf::FaceType
+
+    is_periodic::NTuple{Dim, Bool}
+end
+
+function ConstructionBase.setproperties(md::MeshData, patch::NamedTuple)
+    fields = (haskey(patch, symbol) ? getproperty(patch, symbol) : getproperty(md, symbol) for symbol in fieldnames(typeof(md)))
+    return MeshData(fields...)
+end
+
+ConstructionBase.getproperties(md::MeshData) = 
+    (; VXYZ=md.VXYZ, EToV=md.EToV, FToF=md.FToF, xyz=md.xyz, xyzf=md.xyzf, xyzq=md.xyzq, wJq=md.wJq,
+       mapM=md.mapM, mapP=md.mapP, mapB=md.mapB, rstxyzJ=md.rstxyzJ, J=md.J, nxyzJ=md.nxyzJ, Jf=md.Jf,
+       is_periodic=md.is_periodic)
+
+function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
+    @nospecialize md
+    print(io,"MeshData{$DIM}")
+end
+function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM}) where {DIM}
+    @nospecialize md
+    print(io,"MeshData of dimension $DIM with $(md.K) elements")
 end
 
 # enable use of @set and setproperties(...) for MeshData
-ConstructionBase.constructorof(::Type{MeshData{A,B,C,D}}) where {A,B,C,D} = MeshData{A,B,C,D}
+ConstructionBase.constructorof(::Type{MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}}) where {T1, T2, T3, T4, T5, T6, T7, T8, T9} = MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}
 
-# type alias for just Dim
-const MeshData{Dim} = MeshData{Dim,GeoType,IndexType,BdryIndexType} where {GeoType,IndexType,BdryIndexType}
+function Base.propertynames(x::MeshData{1}, private::Bool = false)
+    return (fieldnames(MeshData)...,
+            :num_elements, :VX, :x, :xq, :xf, :nxJ, :rxJ)
+end
+function Base.propertynames(x::MeshData{2}, private::Bool = false) 
+    return (fieldnames(MeshData)...,
+            :num_elements, :VX, :VY, :x, :y, :xq, :yq, :xf, :yf, 
+            :nxJ, :nyJ, :rxJ, :sxJ, :ryJ, :syJ)
+end
+function Base.propertynames(x::MeshData{3}, private::Bool = false) 
+    return (fieldnames(MeshData)...,
+            :num_elements, :VX, :VY, :VZ, :x, :y, :z, :xq, :yq, :zq, :xf, :yf, :zf, 
+            :nxJ, :nyJ, :nzJ, :rxJ, :sxJ, :txJ, :ryJ, :syJ, :tyJ, :rzJ, :szJ, :tzJ)
+end
 
 # convenience routines for unpacking individual tuple entries
-function Base.getproperty(x::MeshData,s::Symbol)
+function Base.getproperty(x::MeshData, s::Symbol)
 
     if s==:VX
-        return getproperty(x, :VXYZ)[1]
+        return getfield(x, :VXYZ)[1]
     elseif s==:VY
-        return getproperty(x, :VXYZ)[2]
+        return getfield(x, :VXYZ)[2]
     elseif s==:VZ
-        return getproperty(x, :VXYZ)[3]
+        return getfield(x, :VXYZ)[3]
 
     elseif s==:x
-        return getproperty(x, :xyz)[1]
+        return getfield(x, :xyz)[1]
     elseif s==:y
-        return getproperty(x, :xyz)[2]
+        return getfield(x, :xyz)[2]
     elseif s==:z
-        return getproperty(x, :xyz)[3]
+        return getfield(x, :xyz)[3]
 
     elseif s==:xq
-        return getproperty(x, :xyzq)[1]
+        return getfield(x, :xyzq)[1]
     elseif s==:yq
-        return getproperty(x, :xyzq)[2]
+        return getfield(x, :xyzq)[2]
     elseif s==:zq
-        return getproperty(x, :xyzq)[3]
+        return getfield(x, :xyzq)[3]
 
     elseif s==:xf
-        return getproperty(x, :xyzf)[1]
+        return getfield(x, :xyzf)[1]
     elseif s==:yf
-        return getproperty(x, :xyzf)[2]
+        return getfield(x, :xyzf)[2]
     elseif s==:zf
-        return getproperty(x, :xyzf)[3]
+        return getfield(x, :xyzf)[3]
 
     elseif s==:nxJ
-        return getproperty(x, :nxyzJ)[1]
+        return getfield(x, :nxyzJ)[1]
     elseif s==:nyJ
-        return getproperty(x, :nxyzJ)[2]
+        return getfield(x, :nxyzJ)[2]
     elseif s==:nzJ
-        return getproperty(x, :nxyzJ)[3]
+        return getfield(x, :nxyzJ)[3]
 
     elseif s==:rxJ
-        return getproperty(x, :rstxyzJ)[1,1]
+        return getfield(x, :rstxyzJ)[1,1]
     elseif s==:sxJ
-        return getproperty(x, :rstxyzJ)[1,2]
+        return getfield(x, :rstxyzJ)[1,2]
     elseif s==:txJ
-        return getproperty(x, :rstxyzJ)[1,3]
+        return getfield(x, :rstxyzJ)[1,3]
     elseif s==:ryJ
-        return getproperty(x, :rstxyzJ)[2,1]
+        return getfield(x, :rstxyzJ)[2,1]
     elseif s==:syJ
-        return getproperty(x, :rstxyzJ)[2,2]
+        return getfield(x, :rstxyzJ)[2,2]
     elseif s==:tyJ
-        return getproperty(x, :rstxyzJ)[2,3]
+        return getfield(x, :rstxyzJ)[2,3]
     elseif s==:rzJ
-        return getproperty(x, :rstxyzJ)[3,1]
+        return getfield(x, :rstxyzJ)[3,1]
     elseif s==:szJ
-        return getproperty(x, :rstxyzJ)[3,2]
+        return getfield(x, :rstxyzJ)[3,2]
     elseif s==:tzJ
-        return getproperty(x, :rstxyzJ)[3,3]
+        return getfield(x, :rstxyzJ)[3,3]
+    elseif s==:K || s==:num_elements # old behavior where K = num_elements
+        return size(getfield(x, :EToV), 1)
 
+    elseif s==:sJ 
+        return getfield(x, :Jf)
+
+    # return getfield(x,:num_elements) # num rows in EToV = num elements
     else
-        return getfield(x,s)
+        return getfield(x, s)
     end
 end
 
 """
-    MeshData(VX,EToV,rd::RefElemData)
-    MeshData(VX,VY,EToV,rd::RefElemData)
-    MeshData(VX,VY,VZ,EToV,rd::RefElemData)
+    MeshData(VXYZ, EToV, rd::RefElemData)
 
 Returns a MeshData struct with high order DG mesh information from the unstructured
-mesh information (VXYZ...,EToV).
+mesh information (VXYZ..., EToV).
 
-    MeshData(md::MeshData,rd::RefElemData,xyz...)
+    MeshData(md::MeshData, rd::RefElemData, xyz...)
 
 Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
 
-function MeshData(VX,EToV,rd::RefElemData)
+# splats VXYZ 
+MeshData(VXYZ::T, EToV, rd::RefElemData{NDIMS}) where {NDIMS, T <: NTuple{NDIMS}} = 
+    MeshData(VXYZ..., EToV, rd)
+
+function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
     # Construct global coordinates
     @unpack V1 = rd
@@ -160,120 +204,128 @@ function MeshData(VX,EToV,rd::RefElemData)
     xq = Vq*x
     wJq = diagm(wq)*(Vq*J)
 
-    return MeshData(tuple(VX),K,EToV,FToF,
-                     tuple(x),tuple(xf),tuple(xq),wJq,
-                     collect(mapM),mapP,mapB,
-                     SMatrix{1,1}(tuple(rxJ)),J,
-                     tuple(nxJ),sJ)
+    is_periodic = (false,)
+    return MeshData(tuple(VX),EToV,FToF,
+                    tuple(x),tuple(xf),tuple(xq),wJq,
+                    collect(mapM),mapP,mapB,
+                    SMatrix{1,1}(tuple(rxJ)),J,
+                    tuple(nxJ),sJ,
+                    is_periodic)
 
 end
 
-function MeshData(VX,VY,EToV,rd::RefElemData)
+function MeshData(VX, VY, EToV, rd::RefElemData{2})
 
     @unpack fv = rd
-    FToF = connect_mesh(EToV,fv)
-    Nfaces,K = size(FToF)
+    FToF = connect_mesh(EToV, fv)
+    Nfaces, K = size(FToF)
 
     #Construct global coordinates
     @unpack V1 = rd
-    x = V1*VX[transpose(EToV)]
-    y = V1*VY[transpose(EToV)]
+    x = V1 * VX[transpose(EToV)]
+    y = V1 * VY[transpose(EToV)]
 
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
-    @unpack r,s,Vf = rd
-    xf = Vf*x
-    yf = Vf*y
-    mapM,mapP,mapB = build_node_maps(FToF,xf,yf)
-    Nfp = convert(Int,size(Vf,1)/Nfaces)
-    mapM = reshape(mapM,Nfp*Nfaces,K)
-    mapP = reshape(mapP,Nfp*Nfaces,K)
+    @unpack Vf = rd
+    xf = Vf * x
+    yf = Vf * y
+    mapM, mapP, mapB = build_node_maps(FToF, xf, yf)
+    Nfp = size(Vf, 1) ÷ Nfaces
+    mapM = reshape(mapM, Nfp * Nfaces, K)
+    mapP = reshape(mapP, Nfp * Nfaces, K)
 
     #Compute geometric factors and surface normals
-    @unpack Dr,Ds = rd
+    @unpack Dr, Ds = rd
     rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, Dr, Ds)
-    rstxyzJ = SMatrix{2,2}(rxJ,ryJ,sxJ,syJ)
+    rstxyzJ = SMatrix{2, 2}(rxJ, ryJ, sxJ, syJ)
 
-    @unpack Vq,wq = rd
-    xq,yq = (x->Vq*x).((x,y))
-    wJq = diagm(wq)*(Vq*J)
+    @unpack Vq, wq = rd
+    xq, yq = (x -> Vq * x).((x, y))
+    wJq = diagm(wq) * (Vq * J)
 
-    nxJ,nyJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
+    nxJ, nyJ, sJ = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
-    return MeshData(tuple(VX,VY),K,EToV,FToF,
-                     tuple(x,y),tuple(xf,yf),tuple(xq,yq),wJq,
-                     mapM,mapP,mapB,
-                     SMatrix{2,2}(tuple(rxJ,ryJ,sxJ,syJ)),J,
-                     tuple(nxJ,nyJ),sJ)
+    is_periodic = (false, false)
+    return MeshData(tuple(VX, VY), EToV, FToF,
+                    tuple(x, y), tuple(xf, yf), tuple(xq, yq), wJq,
+                    mapM, mapP, mapB,
+                    SMatrix{2, 2}(tuple(rxJ, ryJ, sxJ, syJ)), J,
+                    tuple(nxJ, nyJ), sJ,
+                    is_periodic)
 
 end
 
-function MeshData(VX,VY,VZ,EToV,rd::RefElemData)
+function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
 
     @unpack fv = rd
-    FToF = connect_mesh(EToV,fv)
-    Nfaces,K = size(FToF)
+    FToF = connect_mesh(EToV, fv)
+    Nfaces, K = size(FToF)
 
     #Construct global coordinates
     @unpack V1 = rd
-    x,y,z = (x->V1*x[transpose(EToV)]).((VX,VY,VZ))
+    x, y, z = (x -> V1 * x[transpose(EToV)]).((VX, VY, VZ))
 
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
-    @unpack r,s,t,Vf = rd
-    xf,yf,zf = (x->Vf*x).((x,y,z))
-    mapM,mapP,mapB = build_node_maps(FToF,xf,yf,zf)
-    Nfp = convert(Int,size(Vf,1)/Nfaces)
-    mapM = reshape(mapM,Nfp*Nfaces,K)
-    mapP = reshape(mapP,Nfp*Nfaces,K)
+    @unpack r, s, t, Vf = rd
+    xf, yf, zf = (x -> Vf * x).((x, y, z))
+    mapM, mapP, mapB = build_node_maps(FToF, xf, yf, zf)
+    Nfp = convert(Int, size(Vf, 1) / Nfaces)
+    mapM = reshape(mapM, Nfp * Nfaces, K)
+    mapP = reshape(mapP, Nfp * Nfaces, K)
 
     #Compute geometric factors and surface normals
-    @unpack Dr,Ds,Dt = rd
-    rxJ,sxJ,txJ,ryJ,syJ,tyJ,rzJ,szJ,tzJ,J = geometric_factors(x,y,z,Dr,Ds,Dt)
-    rstxyzJ = SMatrix{3,3}(rxJ,ryJ,rzJ,sxJ,syJ,szJ,txJ,tyJ,tzJ)
+    @unpack Dr, Ds, Dt = rd
+    rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J = geometric_factors(x, y, z, Dr, Ds, Dt)
+    rstxyzJ = SMatrix{3, 3}(rxJ, ryJ, rzJ, sxJ, syJ, szJ, txJ, tyJ, tzJ)
 
-    @unpack Vq,wq = rd
-    xq,yq,zq = (x->Vq*x).((x,y,z))
-    wJq = diagm(wq)*(Vq*J)
+    @unpack Vq, wq = rd
+    xq, yq, zq = (x -> Vq * x).((x, y, z))
+    wJq = diagm(wq) * (Vq * J)
 
     nxJ,nyJ,nzJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
 
-    return MeshData(tuple(VX,VY,VZ),K,EToV,FToF,
-                     tuple(x,y,z),tuple(xf,yf,zf),tuple(xq,yq,zq),wJq,
-                     mapM,mapP,mapB,
-                     rstxyzJ,J,tuple(nxJ,nyJ,nzJ),sJ)
+    is_periodic = (false, false, false)
+    return MeshData(tuple(VX, VY, VZ), EToV, FToF,
+                    tuple(x, y, z), tuple(xf, yf, zf), tuple(xq, yq, zq), wJq,
+                    mapM, mapP, mapB,
+                    rstxyzJ, J, tuple(nxJ, nyJ, nzJ), sJ,
+                    is_periodic)
 end
 
-function MeshData(md::MeshData{Dim},rd::RefElemData,xyz...) where {Dim}
+MeshData(md::MeshData, rd::RefElemData, xyz...) = MeshData(rd, md, xyz...)
+
+function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
 
     # compute new quad and plotting points
-    xyzf = map(x->rd.Vf*x,xyz)
-    xyzq = map(x->rd.Vq*x,xyz)
+    xyzf = map(x -> rd.Vf * x, xyz)
+    xyzq = map(x -> rd.Vq * x, xyz)
 
     #Compute geometric factors and surface normals
-    geo = geometric_factors(xyz...,rd.Drst...)
+    geo = geometric_factors(xyz..., rd.Drst...)
     if Dim==1
-        rstxyzJ = SMatrix{Dim,Dim}(geo[1])
+        rstxyzJ = SMatrix{Dim, Dim}(geo[1])
     elseif Dim==2
-        rstxyzJ = SMatrix{Dim,Dim}(geo[1],geo[3],
-                                   geo[2],geo[4])
+        rstxyzJ = SMatrix{Dim, Dim}(geo[1], geo[3],
+                                    geo[2], geo[4])
     elseif Dim==3
-        rstxyzJ = SMatrix{Dim,Dim}(geo[1],geo[4],geo[7],
-                                   geo[2],geo[5],geo[8],
-                                   geo[3],geo[6],geo[9])
+        rstxyzJ = SMatrix{Dim, Dim}(geo[1], geo[4], geo[7],
+                                    geo[2], geo[5], geo[8],
+                                    geo[3], geo[6], geo[9])
     end
-    geof = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
+    geof = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
-    setproperties(md,(xyz=xyz,xyzq=xyzq,xyzf=xyzf,
-                  rstxyzJ=rstxyzJ,J=last(geo),
-                  nxyzJ=geof[1:Dim],sJ=last(geof)))
+    setproperties(md, (xyz=xyz, xyzq=xyzq, xyzf=xyzf,
+                       rstxyzJ=rstxyzJ, J=last(geo),
+                       nxyzJ=geof[1:Dim], Jf=last(geof)))
 end
 
 
 # physical normals are computed via G*nhatJ, G = matrix of geometric terms
-function compute_normals(geo::SMatrix{Dim,Dim},Vf,nrstJ...) where {Dim}
-    nxyzJ = ntuple(x->zeros(size(Vf,1),size(first(geo),2)),Dim)
+function compute_normals(geo::SMatrix{Dim, Dim}, Vf, nrstJ...) where {Dim}
+    nxyzJ = ntuple(x -> zeros(size(Vf, 1), size(first(geo), 2)), Dim)
     for i = 1:Dim, j = 1:Dim
-        nxyzJ[i] .+= (Vf*geo[i,j]).*nrstJ[j]
+        nxyzJ[i] .+= (Vf * geo[i,j]) .* nrstJ[j]
     end
-    sJ = sqrt.(sum(map(x->x.^2,nxyzJ)))
-    return nxyzJ...,sJ
+    sJ = sqrt.(sum(map(x -> x.^2, nxyzJ)))
+    return nxyzJ..., sJ
 end

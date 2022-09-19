@@ -9,10 +9,11 @@ makedocs(
     modules=[StartUpDG],
     pages = [
         "Home" => "index.md",        
+        "Background and conventions" => "conventions.md",        
         "`RefElemData`" => "RefElemData.md",
         "`MeshData`" => "MeshData.md",
-        "Fieldname aliases" => "fieldaliases.md",
         "Example: computing DG derivatives" => "ex_dg_deriv.md",
+        "Hybrid meshes" => "hybrid_mesh.md",
         "Timestepping" => "tstep_usage.md",
         "Reference" => "index_refs.md",
         "Authors" => "authors.md",

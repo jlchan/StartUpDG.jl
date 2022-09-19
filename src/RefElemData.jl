@@ -1,232 +1,216 @@
 """
-    struct RefElemData{Dim,ElemShape <: ElementShape,
-                       IvMat,IfMat,MMat,PMat,DMat,LMat}
+    struct RefElemData
 
 RefElemData: contains info (interpolation points, volume/face quadrature, operators)
-for a high order nodal polynomial basis on a given reference element.
+for a high order nodal basis on a given reference element. 
 
-Use `@unpack` to extract fields. Example:
+Example:
 ```julia
 N = 3
-rd = RefElemData(Tri(),N)
-@unpack r,s = rd
+rd = RefElemData(Tri(), N)
+@unpack r, s = rd
 ```
-"""
-struct RefElemData{Dim,ElemShape <: ElementShape,
-                   IvMat,IfMat,MMat,PMat,DMat,LMat}
+""" 
+struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, 
+                   FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM, 
+                   VQ, VF, MM, P, D, L, VP, V1Type, WQ, WF} 
 
-    elemShape::ElemShape
+    elementType::ElemShape
+    approximationType::ApproximationType # Polynomial / SBP{...}
 
-    Nfaces::Int # num faces
-    fv          # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
-    V1          # low order interpolation matrix
+    N::Int         # polynomial degree of accuracy
+    fv::FV         # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
+    V1::V1Type     # low order interpolation matrix
 
-    rst::NTuple{Dim,T} where {T}
-    VDM     # generalized Vandermonde matrix
+    rst::RST
+    VDM::TVDM      # generalized Vandermonde matrix
+    Fmask::FMASK   # indices of face nodes
 
-    # interp/quad nodes
-    rstp::NTuple{Dim,T} where {T}
-    Vp      # interpolation matrix to plotting nodes
+    # plotting nodes: TODO - remove? Probably doesn't need to be in RefElemData
+    Nplot::Int
+    rstp::RSTP
+    Vp::VP      # interpolation matrix to plotting nodes
 
-    rstq::NTuple{Dim,T} where {T}
-    wq
-    Vq::IvMat         # quad interp mat
+    # quadrature 
+    rstq::RSTQ
+    wq::WQ
+    Vq::VQ              # quad interp mat
 
-    rstf::NTuple{Dim,T} where {T}
-    wf # quad weights
-    Vf::IfMat         # face quad interp mat
+    # face quadrature 
+    rstf::RSTF
+    wf::WF      # quad weights
+    Vf::VF              # face quad interp mat
+    nrstJ::NRSTJ    # reference normals, quad weights
 
-    # reference normals, quad weights
-    nrstJ::NTuple{Dim,T} where {T}
-
-    M::MMat          # mass matrix
-    Pq::PMat         # L2 projection matrix
+    M::MM                # mass matrix
+    Pq::P               # L2 projection matrix
 
     # specialize diff and lift (dense, sparse, Bern, etc)
-    Drst::NTuple{Dim,DMat} # differentiation operators
-    LIFT::LMat             # lift matrix
+    Drst::NTuple{Dim, D} # differentiation operators
+    LIFT::L             # lift matrix
 end
 
-# type alias for just dim/shape
-const RefElemData{Dim,ElemShape<:ElementShape} =
-    RefElemData{Dim,ElemShape,IvMat,IfMat,MMat,PMat,DMat,LMat} where {IvMat,IfMat,MMat,PMat,DMat,LMat}
+# need this to use @set outside of StartUpDG
+function ConstructionBase.setproperties(rd::RefElemData, patch::NamedTuple)
+    fields = (haskey(patch, symbol) ? getproperty(patch, symbol) : getproperty(rd, symbol) for symbol in fieldnames(typeof(rd)))         
+    return RefElemData(fields...)
+end
 
-# type alias for just dim
-const RefElemData{Dim} = RefElemData{Dim,ElemShape,IvMat,IfMat,MMat,PMat,DMat,LMat} where
-                        {ElemShape <: ElementShape, IvMat,IfMat,MMat,PMat,DMat,LMat}
+ConstructionBase.getproperties(rd::RefElemData) = 
+    (; elementType=rd.elementType, approximationType=rd.approximationType, N=rd.N, fv=rd.fv, V1=rd.V1, 
+       rst=rd.rst, VDM=rd.VDM, Fmask=rd.Fmask, Nplot=rd.Nplot, rstp=rd.rstp, Vp=rd.Vp, 
+       rstq=rd.rstq, wq=rd.wq, Vq=rd.Vq, rstf=rd.rstf, wf=rd.wf, Vf=rd.Vf, nrstJ=rd.nrstJ, 
+       M=rd.M, Pq=rd.Pq, Drst=rd.Drst, LIFT=rd.LIFT)
 
+function Base.show(io::IO, ::MIME"text/plain", rd::RefElemData)
+    @nospecialize rd
+    print(io,"RefElemData for a degree $(rd.N) $(rd.approximationType) approximation on $(rd.elementType) element.")
+end
+
+function Base.show(io::IO, rd::RefElemData)
+    @nospecialize basis # reduce precompilation time
+    print(io,"RefElemData{N=$(rd.N),$(rd.approximationType),$(rd.elementType)}.")
+end
+
+_propertynames(::Type{RefElemData}, private::Bool = false) = (:Nfaces, :Np, :Nq, :Nfq)
+function Base.propertynames(x::RefElemData{1}, private::Bool=false) 
+    return (fieldnames(RefElemData)..., _propertynames(RefElemData)...,
+            :r, :rq, :rf, :rp, :nrJ, :Dr)
+end
+function Base.propertynames(x::RefElemData{2}, private::Bool = false)
+    return (fieldnames(RefElemData)..., _propertynames(RefElemData)...,
+            :r, :s, :rq, :sq, :rf, :sf, :rp, :sp, :nrJ, :nsJ, :Dr, :Ds)
+end
+function Base.propertynames(x::RefElemData{3}, private::Bool = false)
+    return (fieldnames(RefElemData)..., _propertynames(RefElemData)...,
+            :r, :s, :t, :rq, :sq, :tq, :rf, :sf, :tf, 
+            :rp, :sp, :tp, :nrJ, :nsJ, :ntJ, :Dr, :Ds, :Dt)
+end
 
 # convenience unpacking routines
-function Base.getproperty(x::RefElemData, s::Symbol)
+function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbol) where {Dim, ElementType, ApproxType}
     if s==:r
-        return getproperty(x,:rst)[1]
+        return getfield(x, :rst)[1]
     elseif s==:s
-        return getproperty(x,:rst)[2]
+        return getfield(x, :rst)[2]
     elseif s==:t
-        return getproperty(x,:rst)[3]
+        return getfield(x, :rst)[3]
 
     elseif s==:rq
-        return getproperty(x,:rstq)[1]
+        return getfield(x, :rstq)[1]
     elseif s==:sq
-        return getproperty(x,:rstq)[2]
+        return getfield(x, :rstq)[2]
     elseif s==:tq
-        return getproperty(x,:rstq)[3]
+        return getfield(x, :rstq)[3]
 
     elseif s==:rf
-        return getproperty(x,:rstf)[1]
+        return getfield(x, :rstf)[1]
     elseif s==:sf
-        return getproperty(x,:rstf)[2]
+        return getfield(x, :rstf)[2]
     elseif s==:tf
-        return getproperty(x,:rstf)[3]
+        return getfield(x, :rstf)[3]
 
     elseif s==:rp
-        return getproperty(x,:rstp)[1]
+        return getfield(x, :rstp)[1]
     elseif s==:sp
-        return getproperty(x,:rstp)[2]
+        return getfield(x, :rstp)[2]
     elseif s==:tp
-        return getproperty(x,:rstp)[3]
+        return getfield(x, :rstp)[3]
 
     elseif s==:nrJ
-        return getproperty(x,:nrstJ)[1]
+        return getfield(x, :nrstJ)[1]
     elseif s==:nsJ
-        return getproperty(x,:nrstJ)[2]
+        return getfield(x, :nrstJ)[2]
     elseif s==:ntJ
-        return getproperty(x,:nrstJ)[3]
+        return getfield(x, :nrstJ)[3]
 
     elseif s==:Dr
-        return getproperty(x,:Drst)[1]
+        return getfield(x, :Drst)[1]
     elseif s==:Ds
-        return getproperty(x,:Drst)[2]
+        return getfield(x, :Drst)[2]
     elseif s==:Dt
-        return getproperty(x,:Drst)[3]
-
+        return getfield(x, :Drst)[3]
+        
+    elseif s==:Nfaces || s==:num_faces
+        return num_faces(getfield(x, :elementType))
+    elseif s==:Np
+        return length(getfield(x, :rst)[1])
+    elseif s==:Nq
+        return length(getfield(x, :rstq)[1])
+    elseif s==:Nfq
+        return length(getfield(x, :rstf)[1])
+    elseif s==:elemShape || s==:element_type # for compatibility with Trixi formatting
+        return getfield(x, :elementType)
+    elseif s==:approximation_type
+        return getfield(x, :approximationType)
     else
-        return getfield(x,s)
+        return getfield(x, s)
     end
 end
 
 """
-    RefElemData(elem::Line, N; Nq=N+1)
-    RefElemData(elem::Union{Tri,Quad}, N;
-                 quad_rule_vol = quad_nodes(elem,N),
-                 quad_rule_face = gauss_quad(0,0,N))
-    RefElemData(elem::Hex,N;
-                 quad_rule_vol = quad_nodes(elem,N),
-                 quad_rule_face = quad_nodes(Quad(),N))
+    function RefElemData(elem; N, kwargs...)
+    function RefElemData(elem, approxType; N, kwargs...)
 
-Constructor for RefElemData for different element types.
+Keyword argument constructor for RefElemData (to "label" `N` via `rd = RefElemData(Line(), N=3)`)
 """
-function RefElemData(elem::Line, N; quad_rule_vol = quad_nodes(elem,N+1))
+RefElemData(elem; N, kwargs...) = RefElemData(elem, N; kwargs...)
+RefElemData(elem, approxType; N, kwargs...) = RefElemData(elem, approxType, N; kwargs...)
 
-    fv = face_vertices(elem)
-    Nfaces = length(fv)
+# default to Polynomial-type RefElemData
+RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs...)
 
-    # Construct matrices on reference elements
-    r = nodes(elem,N)
-    VDM = vandermonde(elem, N, r)
-    Dr = grad_vandermonde(elem, N, r)/VDM
 
-    V1 = vandermonde(elem,1,r)/vandermonde(elem,1,[-1;1])
+@inline Base.ndims(::Line) = 1
+@inline Base.ndims(::Union{Tri,Quad}) = 2
+@inline Base.ndims(::Union{Tet,Hex}) = 3
 
-    rq,wq = quad_rule_vol
-    Vq = vandermonde(elem,N,rq)/VDM
-    M = Vq'*diagm(wq)*Vq
-    Pq = M\(Vq'*diagm(wq))
+@inline num_vertices(::Tri) = 3
+@inline num_vertices(::Union{Quad, Tet}) = 4
+@inline num_vertices(::Hex) = 8
+@inline num_vertices(::Wedge) = 6
+@inline num_vertices(::Pyr) = 5
 
-    rf = [-1.0;1.0]
-    nrJ = [-1.0;1.0]
-    wf = [1.0;1.0]
-    Vf = vandermonde(elem,N,rf)/VDM
-    LIFT = M\(Vf') # lift matrix
+@inline num_faces(::Line) = 2
+@inline num_faces(::Tri) = 3
+@inline num_faces(::Union{Quad, Tet}) = 4
+@inline num_faces(::Union{Wedge, Pyr}) = 5
+@inline num_faces(::Hex) = 6
 
-    # plotting nodes
-    rp = equi_nodes(elem,10)
-    Vp = vandermonde(elem,N,rp)/VDM
+@inline face_type(::Union{Tri, Quad}) = Line()
+@inline face_type(::Hex) = Quad()
+@inline face_type(::Tet) = Tri()
 
-    return RefElemData(elem,Nfaces,fv,V1,tuple(r),VDM,tuple(rp),Vp,
-                       tuple(rq),wq,Vq,tuple(rf),wf,Vf,tuple(nrJ),
-                       M,Pq,tuple(Dr),LIFT)
-end
+# ====================================================
+#          RefElemData approximation types
+# ====================================================
 
-function RefElemData(elem::Union{Tri,Quad}, N;
-                     quad_rule_vol = quad_nodes(elem,N),
-                     quad_rule_face = gauss_quad(0,0,N))
+struct Polynomial end 
 
-    fv = face_vertices(elem) # set faces for triangle
-    Nfaces = length(fv)
+# ========= SBP approximation types ============
 
-    # Construct matrices on reference elements
-    r,s = nodes(elem,N)
-    VDM,Vr,Vs = basis(elem,N,r,s)
-    Dr = Vr/VDM
-    Ds = Vs/VDM
+struct DefaultSBPType end
 
-    # low order interpolation nodes
-    r1,s1 = nodes(elem,1)
-    V1 = vandermonde(elem,1,r,s)/vandermonde(elem,1,r1,s1)
+# line/quad/hex nodes
+struct TensorProductLobatto end
 
-    rf,sf,wf,nrJ,nsJ = init_face_data(elem,N,quad_nodes_face=quad_rule_face)
+# triangle node types
+struct Hicken end 
+struct Kubatko{FaceNodeType} end
 
-    rq,sq,wq = quad_rule_vol
-    Vq = vandermonde(elem,N,rq,sq)/VDM
-    M = Vq'*diagm(wq)*Vq
-    Pq = M\(Vq'*diagm(wq))
+# face node types for Kubatko
+struct LegendreFaceNodes end
+struct LobattoFaceNodes end
 
-    Vf = vandermonde(elem,N,rf,sf)/VDM # interpolates from nodes to face nodes
-    LIFT = M\(Vf'*diagm(wf)) # lift matrix used in rhs evaluation
+# SBP ApproximationType: the more common diagonal E diagonal-norm SBP operators on tri/quads.
+struct SBP{Type}
+    SBP() = new{DefaultSBPType}() # no-parameter default
+    SBP{T}() where {T} = new{T}()  # default constructor
+end 
 
-    # plotting nodes
-    rp, sp = equi_nodes(elem,10)
-    Vp = vandermonde(elem,N,rp,sp)/VDM
+# sets default to TensorProductLobatto on Quads 
+RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{TensorProductLobatto}(), N)
 
-    # sparsify for Quad
-    tol = 1e-13
-    Drs = typeof(elem)==Quad ? droptol!.(sparse.((Dr,Ds)),tol) : (Dr,Ds)
-    # Vf = typeof(elem)==Quad ? droptol!(sparse(Vf),tol) : Vf
-    # LIFT = typeof(elem)==Quad ? droptol!(sparse(LIFT),tol) : LIFT
+# sets default to Kubatko{LobattoFaceNodes} on Tris
+RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
 
-    return RefElemData(elem,Nfaces,fv,V1,tuple(r,s),VDM,tuple(rp,sp),Vp,
-                       tuple(rq,sq),wq,Vq,tuple(rf,sf),wf,Vf,tuple(nrJ,nsJ),
-                       M,Pq,Drs,LIFT)
-end
-
-function RefElemData(elem::Hex,N;
-                     quad_rule_vol = quad_nodes(elem,N),
-                     quad_rule_face = quad_nodes(Quad(),N))
-
-    fv = face_vertices(elem) # set faces for triangle
-    Nfaces = length(fv)
-
-    # Construct matrices on reference elements
-    r,s,t = nodes(elem,N)
-    VDM,Vr,Vs,Vt = basis(elem,N,r,s,t)
-    Dr,Ds,Dt = (A->A/VDM).((Vr,Vs,Vt))
-
-    # low order interpolation nodes
-    r1,s1,t1 = nodes(elem,1)
-    V1 = vandermonde(elem,1,r,s,t)/vandermonde(elem,1,r1,s1,t1)
-
-    #Nodes on faces, and face node coordinate
-    rf,sf,tf,wf,nrJ,nsJ,ntJ = init_face_data(elem,N)
-
-    # quadrature nodes - build from 1D nodes.
-    rq,sq,tq,wq = quad_rule_vol
-    Vq = vandermonde(elem,N,rq,sq,tq)/VDM
-    M = Vq'*diagm(wq)*Vq
-    Pq = M\(Vq'*diagm(wq))
-
-    Vf = vandermonde(elem,N,rf,sf,tf)/VDM
-    LIFT = M\(Vf'*diagm(wf))
-
-    # plotting nodes
-    rp,sp,tp = equi_nodes(elem,15)
-    Vp = vandermonde(elem,N,rp,sp,tp)/VDM
-
-    Drst = sparse.((Dr,Ds,Dt))
-    Vf = sparse(Vf)
-
-    return RefElemData(elem,Nfaces,fv,V1,tuple(r,s,t),VDM,tuple(rp,sp,tp),Vp,
-                       tuple(rq,sq,tq),wq,Vq,
-                       tuple(rf,sf,tf),wf,Vf,tuple(nrJ,nsJ,ntJ),
-                       M,Pq,Drst,LIFT)
-end
