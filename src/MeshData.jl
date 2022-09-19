@@ -72,7 +72,6 @@ function Base.propertynames(x::MeshData{1}, private::Bool = false)
     return (fieldnames(MeshData)...,
             :num_elements, :VX, :x, :xq, :xf, :nxJ, :rxJ)
 end
-
 function Base.propertynames(x::MeshData{2}, private::Bool = false) 
     return (fieldnames(MeshData)...,
             :num_elements, :VX, :VY, :x, :y, :xq, :yq, :xf, :yf, 
@@ -157,6 +156,12 @@ end
 
 Returns a MeshData struct with high order DG mesh information from the unstructured
 mesh information (VXYZ..., EToV).
+
+    MeshData(md::MeshData, rd::RefElemData, xyz...)
+
+Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
+and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
+    `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
 # splats VXYZ 
 MeshData(VXYZ::T, EToV, rd::RefElemData{NDIMS}) where {NDIMS, T <: NTuple{NDIMS}} = 
