@@ -47,6 +47,25 @@ Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
     is_periodic::NTuple{Dim, Bool}
 end
 
+function ConstructionBase.setproperties(md::MeshData, patch::NamedTuple)
+    fields = (haskey(patch, symbol) ? getproperty(patch, symbol) : getproperty(md, symbol) for symbol in fieldnames(typeof(md)))
+    return MeshData(fields...)
+end
+
+ConstructionBase.getproperties(md::MeshData) = 
+    (; VXYZ=md.VXYZ, EToV=md.EToV, FToF=md.FToF, xyz=md.xyz, xyzf=md.xyzf, xyzq=md.xyzq, wJq=md.wJq,
+       mapM=md.mapM, mapP=md.mapP, mapB=md.mapB, rstxyzJ=md.rstxyzJ, J=md.J, nxyzJ=md.nxyzJ, Jf=md.Jf,
+       is_periodic=md.is_periodic)
+
+function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
+    @nospecialize md
+    print(io,"MeshData{$DIM}")
+end
+function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM}) where {DIM}
+    @nospecialize md
+    print(io,"MeshData of dimension $DIM with $(md.K) elements")
+end
+
 # enable use of @set and setproperties(...) for MeshData
 ConstructionBase.constructorof(::Type{MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}}) where {T1, T2, T3, T4, T5, T6, T7, T8, T9} = 
     MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}
@@ -168,6 +187,8 @@ and outputs a new MeshData struct. Only fields modified are the coordinate-depen
 """
 # splats VXYZ 
 MeshData(VXYZ::T, EToV, rd) where {NDIMS, T <: NTuple{NDIMS}} = MeshData(VXYZ..., EToV, rd)
+
+function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
 function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
