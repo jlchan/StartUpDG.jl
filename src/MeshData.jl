@@ -213,7 +213,7 @@ function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
                     tuple(x), tuple(xf), tuple(xq), wJq,
                     collect(mapM), mapP, mapB,
                     SMatrix{1,1}(tuple(rxJ)), J,
-                    tuple(nxJ), sJ,
+                    tuple(nxJ), Jf,
                     is_periodic)
 end
 
