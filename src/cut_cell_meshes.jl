@@ -1,9 +1,6 @@
 # used to identify the mesh type
 struct CutCellMesh end
 
-# dimension of a cut cell polynomial space
-@inline Np_cut(N) = (N + 1) * (N + 2) ÷ 2 
-
 # maps x ∈ [-1,1] to [a,b]
 map_to_interval(x, a, b) = a + (b-a) * 0.5 * (1 + x)
 
