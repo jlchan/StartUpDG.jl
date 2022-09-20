@@ -70,25 +70,6 @@ end
 ConstructionBase.constructorof(::Type{MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}}) where {T1, T2, T3, T4, T5, T6, T7, T8, T9} = 
     MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}
 
-function ConstructionBase.setproperties(md::MeshData, patch::NamedTuple)
-    fields = (haskey(patch, symbol) ? getproperty(patch, symbol) : getproperty(md, symbol) for symbol in fieldnames(typeof(md)))
-    return MeshData(fields...)
-end
-
-ConstructionBase.getproperties(md::MeshData) = 
-    (; VXYZ=md.VXYZ, EToV=md.EToV, FToF=md.FToF, xyz=md.xyz, xyzf=md.xyzf, xyzq=md.xyzq, wJq=md.wJq,
-       mapM=md.mapM, mapP=md.mapP, mapB=md.mapB, rstxyzJ=md.rstxyzJ, J=md.J, nxyzJ=md.nxyzJ, Jf=md.Jf,
-       is_periodic=md.is_periodic)
-
-function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
-    @nospecialize md
-    print(io,"MeshData{$DIM}")
-end
-
-function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM}) where {DIM}
-    @nospecialize md
-    print(io,"MeshData of dimension $DIM with $(md.K) elements")
-end
 
 function Base.propertynames(x::MeshData{1}, private::Bool = false)
     return (fieldnames(MeshData)...,
@@ -190,8 +171,6 @@ MeshData(VXYZ::T, EToV, rd) where {NDIMS, T <: NTuple{NDIMS}} = MeshData(VXYZ...
 
 function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
-function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
-
     # Construct global coordinates
     @unpack V1 = rd
     x = V1 * VX[transpose(EToV)]
@@ -236,7 +215,6 @@ function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
                     SMatrix{1,1}(tuple(rxJ)), J,
                     tuple(nxJ), sJ,
                     is_periodic)
-
 end
 
 function MeshData(VX, VY, EToV, rd::RefElemData{2})
