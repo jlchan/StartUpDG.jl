@@ -1,3 +1,6 @@
+# used to identify the mesh type
+struct CutCellMesh end
+
 # dimension of a cut cell polynomial space
 @inline Np_cut(N) = (N + 1) * (N + 2) ÷ 2 
 
@@ -449,7 +452,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
 
     is_periodic = (false, false)
     
-    return MeshData(VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, mapM, mapP, mapB, 
+    return MeshData(CutCellMesh(), VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, mapM, mapP, mapB, 
                     rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
 
 end
