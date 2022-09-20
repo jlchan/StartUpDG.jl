@@ -173,7 +173,7 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:Re
 
     mapM, mapP, mapB = vec.(build_node_maps(rds, EToV, FToF, xyzf))
 
-    return MeshData((VX, VY), EToV, FToF, 
+    return MeshData(Tuple(element_types), (VX, VY), EToV, FToF, 
                     xyz, xyzf, xyzq, wJq,
                     mapM, mapP, mapB,
                     rstxyzJ, J, nxyzJ, Jf, 
