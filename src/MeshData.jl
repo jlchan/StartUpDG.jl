@@ -13,12 +13,15 @@ md = MeshElemData(VXY, EToV, rd)
 @unpack x, y = md
 ```
 """
-Base.@kwdef struct MeshData{Dim, VolumeType, FaceType, VolumeQType,
+Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
                             VertexType, EToVType, FToFType, 
                             VolumeWeightType, VolumeGeofacsType, VolumeJType,
                             ConnectivityType, BoundaryMapType}
 
-    # num_elements::Ti             # number of elements
+    # this field defaults to the element shape, but can be 
+    # used to specify cut, hybrid, etc meshes. 
+    mesh_type::MeshType 
+
     VXYZ::NTuple{Dim, VertexType}  # vertex coordinates
     EToV::EToVType                 # mesh vertex array 
     FToF::FToFType                 # face connectivity
@@ -164,8 +167,7 @@ and outputs a new MeshData struct. Only fields modified are the coordinate-depen
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
 # splats VXYZ 
-MeshData(VXYZ::T, EToV, rd::RefElemData{NDIMS}) where {NDIMS, T <: NTuple{NDIMS}} = 
-    MeshData(VXYZ..., EToV, rd)
+MeshData(VXYZ::T, EToV, rd) where {NDIMS, T <: NTuple{NDIMS}} = MeshData(VXYZ..., EToV, rd)
 
 function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
@@ -206,11 +208,12 @@ function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
     wJq = diagm(wq) * (Vq * J)
 
     is_periodic = (false,)
-    return MeshData(tuple(VX), EToV, FToF,
+
+    return MeshData(rd.element_type, tuple(VX), EToV, FToF,
                     tuple(x), tuple(xf), tuple(xq), wJq,
                     collect(mapM), mapP, mapB,
                     SMatrix{1,1}(tuple(rxJ)), J,
-                    tuple(nxJ), Jf,
+                    tuple(nxJ), sJ,
                     is_periodic)
 
 end
@@ -247,7 +250,7 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2})
     nxJ, nyJ, sJ = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
     is_periodic = (false, false)
-    return MeshData(tuple(VX, VY), EToV, FToF,
+    return MeshData(rd.element_type, tuple(VX, VY), EToV, FToF,
                     tuple(x, y), tuple(xf, yf), tuple(xq, yq), wJq,
                     mapM, mapP, mapB,
                     SMatrix{2, 2}(tuple(rxJ, ryJ, sxJ, syJ)), J,
@@ -286,7 +289,7 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
     nxJ,nyJ,nzJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
 
     is_periodic = (false, false, false)
-    return MeshData(tuple(VX, VY, VZ), EToV, FToF,
+    return MeshData(rd.element_type, tuple(VX, VY, VZ), EToV, FToF,
                     tuple(x, y, z), tuple(xf, yf, zf), tuple(xq, yq, zq), wJq,
                     mapM, mapP, mapB,
                     rstxyzJ, J, tuple(nxJ, nyJ, nzJ), sJ,
