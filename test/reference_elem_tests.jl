@@ -122,11 +122,20 @@
         @test rd.sp == rd.rstp[2]
         @test rd.tp == rd.rstp[3] 
 
+        @test isapprox(rd.rf, rd.Vf * rd.r)
+        @test isapprox(rd.rq, rd.Vq * rd.r)
+
+        @test isapprox(rd.sf, rd.Vf * rd.s)
+        @test isapprox(rd.sq, rd.Vq * rd.s)
+
+        @test isapprox(rd.tf, rd.Vf * rd.t)
+        @test isapprox(rd.tq, rd.Vq * rd.t)
+
         @test rd.Np == length(rd.r)  
         @test rd.Nq == length(rd.rq)
         
-        @test abs(sum(rd.wq)) - 4 < tol
-        @test abs(sum(rd.wf)) - 4 < tol
+        # 2 * tri_face + 3 * quad_face
+        @test abs(sum(rd.wf)) - (2*2 + 3*4) < tol
 
         @test abs(sum(rd.wf .* rd.nrJ)) < tol
         @test abs(sum(rd.wf .* rd.nsJ)) < tol
