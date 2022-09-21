@@ -180,6 +180,11 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 @inline face_type(::Union{Tri, Quad}) = Line()
 @inline face_type(::Hex) = Quad()
 @inline face_type(::Tet) = Tri()
+
+# Wedges have different types of faces depending on the face. 
+# We define the first three faces to be quadrilaterals and the 
+# last two faces are triangles.
+@inline face_type(elem::AbstractElemShape, id) = face_type(elem)
 @inline face_type(::Wedge, id) = (id < 3) ? Quad() : Tri()
 
 # ====================================================
