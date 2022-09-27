@@ -452,8 +452,9 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     num_total_faces = length(FToF)
     num_points_per_face = length(rd.rf) ÷ num_faces(rd.element_type)
 
-    # WARNING: this only works if the same quadrature rule is used for all faces! 
-    mapM = collect(reshape(1:num_points_per_face * num_total_faces, num_points_per_face, num_total_faces))
+    # !!! Warning: this only works if the same quadrature rule is used for all faces! 
+    mapM = collect(reshape(1:num_points_per_face * num_total_faces, 
+                           num_points_per_face, num_total_faces))
     mapP = copy(mapM)
     p = zeros(Int, num_points_per_face) # temp storage for a permutation vector
     for f in eachindex(FToF)
@@ -464,7 +465,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
         StartUpDG.match_coordinate_vectors!(p, xyzM, xyzP)
         mapP[p, f] .= idP
     end
-    mapB = findall(vec(mapM) .==vec(mapP)) # determine boundary nodes
+    mapB = findall(vec(mapM) .== vec(mapP)) # determine boundary nodes
 
     # compute cut-cell quadratures
     _, w1D = quad_rule_face
