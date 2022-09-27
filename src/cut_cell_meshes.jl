@@ -1,5 +1,19 @@
-# used to identify the `MeshData` field `mesh_type`
-struct CutCellMesh end
+"""
+`CutCellMesh` is used in the `MeshData` field `mesh_type` for cut cell meshes.
+
+The field `physical_frame_elements` is a container with shifting/scaling information for 
+each element. We evaluate the physical basis over each element by applying a shifting and 
+scaling of the physical coordinates. The resulting shifted/scaled coordinates then fall 
+into the reference element and can be used to evaluate a reference element basis. 
+
+The field `cut_face_nodes` is a container whose elements are indices of face nodes for a 
+cut element. In other words, `md.xf.cut[cut_face_nodes[1]]` returns the face nodes of the 
+first element. 
+"""
+struct CutCellMesh{T1, T2}
+    physical_frame_elements::T1
+    cut_face_nodes::T2
+end
 
 # maps x ∈ [-1,1] to [a,b]
 map_to_interval(x, a, b) = a + (b-a) * 0.5 * (1 + x)
@@ -540,8 +554,15 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
 
     # default to non-periodic 
     is_periodic = (false, false)
+
+    # get indices of cut face nodes 
+    face_ids(e) = reshape((1:(num_points_per_face * cut_faces_per_cell[e])) .+ cut_face_offsets[e] * num_points_per_face, 
+                          num_points_per_face, cut_faces_per_cell[e])
+    cut_face_node_ids = [face_ids(e) for e in 1:num_cut_cells]
+
     
-    return MeshData(CutCellMesh(), VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, mapM, mapP, mapB, 
+    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids), 
+                    VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, mapM, mapP, mapB, 
                     rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
 
 end
