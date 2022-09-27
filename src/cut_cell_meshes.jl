@@ -381,6 +381,9 @@ of grid cells placed along each dimension.
 Additional keywords:
 - `ds`, `arc_tol`, `corner_tol`: see PathIntersections.jl docs
 """
+MeshData(rd::RefElemData, curves, cells_per_dimension;  kwargs...) = 
+    MeshData(rd::RefElemData, curves, cells_per_dimension, cells_per_dimension;  kwargs...)
+
 function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dimension_y; 
                   quad_rule_face = get_1d_quadrature(rd), 
                   coordinates_min=(-1.0, -1.0), coordinates_max=(1.0, 1.0), 
@@ -419,8 +422,8 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     cut_face_offsets = [0; cumsum(cut_faces_per_cell)[1:end-1]] 
     cutcell_data = (; curves, region_flags, stop_pts, cutcells, cut_faces_per_cell, cut_face_offsets)
 
-    # 3) Compute volume and face points
-    x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf = 
+    # 3) Compute volume, face points, and physical frame element scalings
+    physical_frame_elements, x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf = 
         compute_geometric_data(rd, quad_rule_face, vx, vy, cutcell_data)
 
     # 4) Compute face-to-face connectivity by matching face centroids
