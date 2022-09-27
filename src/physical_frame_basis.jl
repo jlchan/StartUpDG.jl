@@ -9,9 +9,9 @@
 `PhysicalFrame` element type. Uses a total degree N approximation space, but is 
 computed with a tensor product Legendre basis as opposed to a triangular PKDO basis.
 """
-struct PhysicalFrame{shifting <: Union{<:SVector, <:NTuple}, scaling <: Union{<:SVector, <:NTuple}} <: AbstractElemShape
-    shifting::shifting
-    scaling::scaling
+struct PhysicalFrame{Shifting <: Union{<:SVector, <:NTuple}, Scaling <: Union{<:SVector, <:NTuple}} <: AbstractElemShape
+    shifting::Shifting
+    scaling::Scaling
 end
 
 """
