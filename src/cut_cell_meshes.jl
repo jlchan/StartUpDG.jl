@@ -152,7 +152,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     # domain size and reference face weights
     cells_per_dimension_x, cells_per_dimension_y = length(vx) - 1, length(vy) - 1
     LX, LY = (x -> x[2] - x[1]).(extrema.((vx, vy)))
-
+    
     r1D, w1D = quad_rule_face
 
     @unpack region_flags, stop_pts, cutcells, cut_faces_per_cell = cutcell_data
@@ -219,16 +219,20 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
                 for i in eachindex(r1D)
                     s = map_to_interval(r1D[i], stop_points[f], stop_points[f+1])
 
+                    # compute the tangent vector at a node, use it to compute the face 
+                    # Jacobian and normals
                     x_node, y_node = curve(s)                
-                    xf.cut[fid], yf.cut[fid] = x_node, y_node
-
+                    xf.cut[fid], yf.cut[fid] = x_node, y_node                    
                     tangent_vector = PathIntersections.ForwardDiff.derivative(curve, s)
-                    normal_node = SVector{2}(tangent_vector[2], -tangent_vector[1])
-                    nxJ.cut[fid], nyJ.cut[fid] = -normal_node # flip sign for outward normal
 
-                    # Jacobian involves scaling between mapped and reference domain
+                    # the face Jacobian involves scaling between mapped and reference face
                     scaling = (stop_points[f+1] - stop_points[f]) / sum(w1D)
                     Jf.cut[fid] = norm(tangent_vector) * scaling
+
+                    # we have to flip the sign to get the outward normal. 
+                    # note: we compute the scaled normal nxJ for consistency with other meshes. 
+                    normal_node = SVector{2}(tangent_vector[2], -tangent_vector[1])
+                    nxJ.cut[fid], nyJ.cut[fid] = (-normal_node / norm(normal_node)) .* Jf.cut[fid] 
 
                     fid += 1
                 end
@@ -547,7 +551,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     VXYZ = ntuple(_ -> nothing, 2)
     EToV = nothing # dummy field for cut cells
 
-    Nq_cut = Np_cut(3 * rd.N)
+    # Nq_cut = Np_cut(3 * rd.N)
     # xq, yq, wJq = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nq, num_cartesian_cells), 
     #                                          cut=zeros(Nq_cut, num_cut_cells)), 3)
     xq, yq, wJq = nothing, nothing, nothing # TODO: fix and remove
@@ -556,14 +560,13 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     is_periodic = (false, false)
 
     # get indices of cut face nodes 
-    face_ids(e) = reshape((1:(num_points_per_face * cut_faces_per_cell[e])) .+ cut_face_offsets[e] * num_points_per_face, 
-                          num_points_per_face, cut_faces_per_cell[e])
+    face_ids(e) = (1:(num_points_per_face * cut_faces_per_cell[e])) .+ 
+                    cut_face_offsets[e] * num_points_per_face
     cut_face_node_ids = [face_ids(e) for e in 1:num_cut_cells]
-
     
     return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids), 
-                    VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, mapM, mapP, mapB, 
-                    rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
+                    VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, 
+                    mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
 
 end
 
