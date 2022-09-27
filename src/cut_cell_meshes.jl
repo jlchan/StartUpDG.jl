@@ -1,4 +1,4 @@
-# used to identify the mesh type
+# used to identify the `MeshData` field `mesh_type`
 struct CutCellMesh end
 
 # maps x ∈ [-1,1] to [a,b]
