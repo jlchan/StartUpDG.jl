@@ -99,6 +99,36 @@ function is_inside_domain(ex, ey, regions)
     end
 end
 
+# generates at least Np_target sampling points within a cut cell defined by `curve`
+# returns both x_sampled, y_sampled (physical points inside the cut cell), as well as 
+# r_sampled, y_sampled (reference points which correspond to x_sampled, y_sampled).
+function generate_sampling_points(rd, curve, Np_target, cell_vertices_x, cell_vertices_y; 
+                                  N_sampled = 3 * rd.N)
+    r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
+
+    # map sampled points to the background Cartesian cell
+    dx, dy = cell_vertices_x[2] - cell_vertices_x[1], cell_vertices_y[2] - cell_vertices_y[1]
+    x_sampled = @. dx * 0.5 * (1 + r_sampled) + cell_vertices_x[1]
+    y_sampled = @. dy * 0.5 * (1 + s_sampled) + cell_vertices_y[1]
+
+    is_in_element = is_contained.(curve, zip(x_sampled, y_sampled)) .== false
+
+    while sum(is_in_element) < Np_target
+        is_in_element = is_contained.(curve, zip(x_sampled, y_sampled)) .== false
+        if sum(is_in_element) < Np_target
+            N_sampled += rd.N
+            r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
+            dx, dy = cell_vertices_x[2] - cell_vertices_x[1], cell_vertices_y[2] - cell_vertices_y[1]
+            x_sampled = @. dx * 0.5 * (1 + r_sampled) + cell_vertices_x[1]
+            y_sampled = @. dy * 0.5 * (1 + s_sampled) + cell_vertices_y[1]        
+        end
+    end
+
+    ids_in_element = findall(is_in_element)
+
+    return x_sampled[ids_in_element], y_sampled[ids_in_element]
+end
+
 # Computes face geometric terms from a RefElemData, `quad_rule_face = (r1D, w1D)`, 
 # the vectors of the 1D vertex nodes `vx` and `vy`, and named tuple 
 # `cutcell_data is a NamedTuple containing `region_flags`, `stop_pts``, `cutcells`. 
@@ -157,7 +187,6 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     end        
    
     # 4) compute cut-cell face points
-    element_indices = compute_element_indices(region_flags)
     physical_frame_elements = PhysicalFrame[] # populate this as we iterate through cut cells
 
     # The volume Jacobian for cut elements is 1 since the "reference element" 
@@ -192,29 +221,10 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
             end
 
             # find points inside element
-            vx_element = SVector(vx[ex], vx[ex + 1], vx[ex], vx[ex + 1])
-            vy_element = SVector(vy[ey], vy[ey], vy[ey + 1], vy[ey + 1])
-            x_element, y_element = map(x -> rd.V1 * x, (vx_element, vy_element))
-
             @unpack curves = cutcell_data
-            N_sampled = 3 * rd.N
-            r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
-            V_sampled = vandermonde(rd.element_type, rd.N, r_sampled, s_sampled) / rd.VDM 
-            x_sampled, y_sampled = V_sampled * x_element, V_sampled * y_element
-
-            # TODO: fix, only works for a single curve for now
-            is_in_element = is_contained.(first(curves), zip(x_sampled, y_sampled)) .== false
-
-            while sum(is_in_element) < Np_cut(rd.N)
-                # TODO: fix, only works for a single curve for now
-                is_in_element = is_contained.(first(curves), zip(x_sampled, y_sampled)) .== false
-                if sum(is_in_element) < Np_cut(rd.N)
-                    N_sampled += rd.N
-                    r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
-                    V_sampled = vandermonde(rd.element_type, rd.N, r_sampled, s_sampled) / rd.VDM 
-                    x_sampled, y_sampled = V_sampled * x_element, V_sampled * y_element    
-                end
-            end
+           
+            x_sampled, y_sampled = 
+                generate_sampling_points(rd, first(curves), Np_cut(rd.N), vx[ex:ex+1], vy[ey:ey+1])
                
             # here, we evaluate a PhysicalFrame basis by shifting and scaling the 
             # coordinates on an element back to the reference element [-1, 1]^2.
@@ -227,16 +237,13 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
                 PhysicalFrame(xf.cut[cut_face_node_ids], yf.cut[cut_face_node_ids])
             push!(physical_frame_elements, physical_frame_element)
 
-            ids_in_element = findall(is_in_element)
-            V = vandermonde(physical_frame_element, rd.N, 
-                            r_sampled[ids_in_element], 
-                            s_sampled[ids_in_element]) 
+            V = vandermonde(physical_frame_element, rd.N, x_sampled, y_sampled) 
 
             # use pivoted QR to find good interpolation points
             QRfac = qr(V', ColumnNorm())
             ids = QRfac.p[1:Np_cut(rd.N)]
-            view(x.cut, :, e) .= x_sampled[ids_in_element[ids]]
-            view(y.cut, :, e) .= y_sampled[ids_in_element[ids]]
+            view(x.cut, :, e) .= x_sampled[ids]
+            view(y.cut, :, e) .= y_sampled[ids]
 
             # geometric terms depend on the shifting and scaling
             view(rxJ.cut, :, e) .= physical_frame_element.scaling[1]
@@ -248,7 +255,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     end
 
     rstxyzJ = SMatrix{2, 2}(rxJ, sxJ, ryJ, syJ)
-    return x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf
+    return physical_frame_elements, x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf
 end
 
 """
