@@ -15,6 +15,11 @@ struct CutCellMesh{T1, T2}
     cut_face_nodes::T2
 end
 
+function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, MeshType}) where {DIM, MeshType}
+    @nospecialize md
+    print(io,"Cut-cell MeshData of dimension $DIM with $(md.num_elements) elements")
+end
+
 # maps x ∈ [-1,1] to [a,b]
 map_to_interval(x, a, b) = a + (b-a) * 0.5 * (1 + x)
 
@@ -571,3 +576,8 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
 
 end
 
+function num_elements(md::MeshData{DIM, <:CutCellMesh}) where {DIM}
+    mt = md.mesh_type
+    # the number of columns of x = number of elements
+    return size(md.x.cartesian, 2) + size(md.x.cut, 2)
+end

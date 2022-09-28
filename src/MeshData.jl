@@ -61,9 +61,10 @@ function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
     @nospecialize md
     print(io,"MeshData{$DIM}")
 end
-function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM}) where {DIM}
+
+function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, MeshType}) where {DIM, MeshType}
     @nospecialize md
-    print(io,"MeshData of dimension $DIM with $(md.K) elements")
+    print(io,"$MeshType MeshData of dimension $DIM with $(md.num_elements) elements")
 end
 
 # enable use of @set and setproperties(...) for MeshData
