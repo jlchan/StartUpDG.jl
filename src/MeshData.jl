@@ -143,7 +143,7 @@ function Base.getproperty(x::MeshData, s::Symbol)
     elseif s==:tzJ
         return getfield(x, :rstxyzJ)[3,3]
     elseif s==:K || s==:num_elements # old behavior where K = num_elements
-        return size(getfield(x, :EToV), 1)
+        return num_elements(x)
 
     elseif s==:sJ 
         return getfield(x, :Jf)
@@ -153,6 +153,8 @@ function Base.getproperty(x::MeshData, s::Symbol)
         return getfield(x, s)
     end
 end
+
+num_elements(md) = size(getfield(md, :EToV), 1)
 
 """
     MeshData(VXYZ, EToV, rd::RefElemData)
