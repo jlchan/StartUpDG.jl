@@ -148,7 +148,7 @@ function Base.getproperty(x::MeshData, s::Symbol)
         
     # old behavior where K = num_elements        
     elseif s==:K || s==:num_elements 
-        return size(getfield(x, :EToV), 1)
+        return num_elements(x)
 
     # old notation in the NDG book where sJ (surface Jacobian) is 
     # used instead of Jf (Jacobian for the face)                
