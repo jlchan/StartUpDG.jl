@@ -9,13 +9,16 @@ into the reference element and can be used to evaluate a reference element basis
 The field `cut_face_nodes` is a container whose elements are indices of face nodes for a 
 cut element. In other words, `md.xf.cut[cut_face_nodes[1]]` returns the face nodes of the 
 first element. 
+
+The field `cut_cell_operators` contains matrices which are precomputed for a cut-cell mesh. 
 """
-struct CutCellMesh{T1, T2}
+struct CutCellMesh{T1, T2, T3}
     physical_frame_elements::T1
     cut_face_nodes::T2
+    cut_cell_operators::T3
 end
 
-function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, MeshType}) where {DIM, MeshType}
+function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, <:CutCellMesh}) where {DIM}
     @nospecialize md
     print(io,"Cut-cell MeshData of dimension $DIM with $(md.num_elements) elements")
 end
@@ -569,15 +572,18 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     face_ids(e) = (1:(num_points_per_face * cut_faces_per_cell[e])) .+ 
                     cut_face_offsets[e] * num_points_per_face
     cut_face_node_ids = [face_ids(e) for e in 1:num_cut_cells]
-    
-    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids), 
+
+    # !!! fix this so Christina can run the wave solver. 
+    # !!! Needs (at minimum) LIFT matrices
+    cut_cell_operators = nothing
+
+    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, cut_cell_operators), 
                     VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, 
                     mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
 
 end
 
 function num_elements(md::MeshData{DIM, <:CutCellMesh}) where {DIM}
-    mt = md.mesh_type
-    # the number of columns of x = number of elements
+    # the number of elements is given by the number of columns of each component of x
     return size(md.x.cartesian, 2) + size(md.x.cut, 2)
 end
