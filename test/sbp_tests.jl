@@ -39,12 +39,12 @@
         @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
         @test rd.Pq*rd.Vq ≈ I
         @test all(vec.(rd.rstf) .≈ (x->getindex(x,rd.Fmask)).(rd.rst))
-        @test invoke(inverse_trace_constant,Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)    
+        @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)    
     end
     
     @testset "TensorProductLobatto Hex" begin
         rd = RefElemData(Hex(),SBP(),N)
-        @test propertynames(rd)[1] == :elementType
+        @test propertynames(rd)[1] == :element_type
         @test rd.t == rd.rst[3]
         @test rd.tf == rd.rstf[3]    
         @test rd.tq == rd.rstq[3]
