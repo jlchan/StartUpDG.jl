@@ -185,11 +185,11 @@ end
 get_face_nodes(x::AbstractVector, Fmask) = view(x, Fmask)
 get_face_nodes(x::AbstractMatrix, Fmask) = view(x, Fmask, :)
 
-function _convert_RefElemData_fields_to_SBP(rd, approxType::SBP)
+function _convert_RefElemData_fields_to_SBP(rd, approx_type::SBP)
     rd = @set rd.M = Diagonal(rd.wq)
     rd = @set rd.Pq = I
     rd = @set rd.Vq = I
-    rd = @set rd.approximationType = approxType
+    rd = @set rd.approximation_type = approx_type
     return rd
 end
 
