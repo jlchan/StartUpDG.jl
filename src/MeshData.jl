@@ -19,18 +19,20 @@ Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
                             ConnectivityType, BoundaryMapType}
 
     # this field defaults to the element shape, but can be 
-    # used to specify cut, hybrid, etc meshes. 
+    # used to specify cut-cell, hybrid, non-conforming meshes. 
     mesh_type::MeshType 
 
-    VXYZ::NTuple{Dim, VertexType}  # vertex coordinates
-    EToV::EToVType                 # mesh vertex array 
-    FToF::FToFType                 # face connectivity
+    # TODO: move VXYZ, EToV into a `VertexMappedMesh` mesh_type?
+    VXYZ::NTuple{Dim, VertexType}   # vertex coordinates
+    EToV::EToVType                  # mesh vertex array     
+    FToF::FToFType                  # face connectivity
 
-    xyz::NTuple{Dim, VolumeType}   # physical points
-    xyzf::NTuple{Dim, FaceType}  # face nodes
+    xyz::NTuple{Dim, VolumeType}    # physical points
+    xyzf::NTuple{Dim, FaceType}     # face nodes
     xyzq::NTuple{Dim, VolumeQType}  # phys quad points, Jacobian-scaled weights
     wJq::VolumeWeightType
 
+    # TODO: move mapP, mapB into a "conforming mesh type"?
     # arrays of connectivity indices between face nodes
     mapM::ConnectivityType
     mapP::ConnectivityType
@@ -143,9 +145,13 @@ function Base.getproperty(x::MeshData, s::Symbol)
         return getfield(x, :rstxyzJ)[3,2]
     elseif s==:tzJ
         return getfield(x, :rstxyzJ)[3,3]
-    elseif s==:K || s==:num_elements # old behavior where K = num_elements
-        return num_elements(x)
+        
+    # old behavior where K = num_elements        
+    elseif s==:K || s==:num_elements 
+        return size(getfield(x, :EToV), 1)
 
+    # old notation in the NDG book where sJ (surface Jacobian) is 
+    # used instead of Jf (Jacobian for the face)                
     elseif s==:sJ 
         return getfield(x, :Jf)
 
