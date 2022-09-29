@@ -12,6 +12,8 @@
         @unpack rxJ, J, nxJ, wJq = md
         @unpack mapM, mapP, mapB = md
 
+        @test md.mesh_type==rd.element_type
+
         @test md.x == md.xyz[1]
 
         # check positivity of Jacobian
@@ -62,6 +64,7 @@
         @unpack rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq = md
         @unpack FToF, mapM, mapP, mapB = md
 
+        @test md.mesh_type==rd.element_type
         @test md.x == md.xyz[1]
 
         # check positivity of Jacobian
@@ -126,6 +129,7 @@
         @unpack rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq = md
         @unpack FToF, mapM, mapP, mapB = md
 
+        @test md.mesh_type==rd.element_type
         @test md.x == md.xyz[1]
 
         # check positivity of Jacobian
@@ -185,6 +189,7 @@
         @unpack nxJ, nyJ, nzJ, sJ = md
         @unpack FToF, mapM, mapP, mapB = md
 
+        @test md.mesh_type==rd.element_type
         @test md.x == md.xyz[1]
 
         # check positivity of Jacobian
@@ -252,6 +257,7 @@ end
     @unpack nxJ, nyJ, nzJ, sJ = md
     @unpack FToF, mapM, mapP, mapB = md
 
+    @test md.mesh_type==rd.element_type
     @test md.x == md.xyz[1]
 
     # check positivity of Jacobian
