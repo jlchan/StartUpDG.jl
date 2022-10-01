@@ -303,10 +303,6 @@ end
 
 MeshData(md::MeshData, rd::RefElemData, xyz...) = MeshData(rd, md, xyz...)
 
-struct Curved{T}
-    mesh_type::T
-end
-
 function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
 
     # compute new quad and plotting points
@@ -330,8 +326,7 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
     J = last(geo)
     wJq = diagm(rd.wq) * (rd.Vq * J)
 
-    setproperties(md, (mesh_type = Curved(md.mesh_type), 
-                       xyz, xyzq, xyzf, rstxyzJ, J, wJq,
+    setproperties(md, (xyz, xyzq, xyzf, rstxyzJ, J, wJq,
                        nxyzJ=geof[1:Dim], Jf=last(geof)))
 end
 

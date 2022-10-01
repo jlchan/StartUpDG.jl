@@ -184,7 +184,6 @@
         md = MeshData(md, rd, x_curved, y_curved)
         @test sum(@. md.wJq) ≈ 4
         @test sum(@. md.wJq * md.xq^2) ≈ 4/3
-        @test md.mesh_type isa StartUpDG.Curved{Quad}
     end
 
     @testset "3D hex mesh initialization" begin
