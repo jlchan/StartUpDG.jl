@@ -333,8 +333,10 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
     end
     geof = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
-    setproperties(md, (xyz=xyz, xyzq=xyzq, xyzf=xyzf,
-                       rstxyzJ=rstxyzJ, J=last(geo),
+    J = last(geo)
+    wJq = diagm(rd.wq) * (rd.Vq * J)
+
+    setproperties(md, (xyz, xyzq, xyzf, rstxyzJ, J, wJq,
                        nxyzJ=geof[1:Dim], Jf=last(geof)))
 end
 
