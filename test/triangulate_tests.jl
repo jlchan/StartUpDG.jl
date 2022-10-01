@@ -1,3 +1,5 @@
+mean(x) = sum(x) / length(x)
+
 @testset "Mesh, timestep, and Triangulate utils" begin
     tol = 5e2 * eps()
     @testset "Timestep utils" begin
@@ -60,7 +62,6 @@
         md = MeshData((VX, VY), EToV, rd)
         @test size(EToV, 1) == md.num_elements == 493
         @test length(VX) == length(VY) == 272
-        mean(x) = sum(x) / length(x)
         @test isapprox(mean(md.x), 1.0, rtol=1 / domain.num_segments)
         @test isapprox(mean(md.y), 2.0, rtol=1 / domain.num_segments)
         @test isapprox(sum(md.wJq), pi, rtol=1 / domain.num_segments)
@@ -73,7 +74,6 @@
         md = MeshData((VX, VY), EToV, rd)
         @test size(EToV, 1) == md.num_elements == 129
         @test length(VX) == length(VY) == 82
-        mean(x) = sum(x) / length(x)
         @test isapprox(sum(md.wJq), pi / 4, rtol=1 / domain.num_segments)
     end
 end
