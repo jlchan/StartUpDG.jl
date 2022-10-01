@@ -174,7 +174,7 @@
     @testset "2D curved tests" begin
         rd = RefElemData(Quad(), N=4)
         md = MeshData(uniform_mesh(Quad(), 4, 4)..., rd)
-        (; x, y) = md
+        @unpack x, y = md
         x_curved = @. x + 0.1 * sin(pi * x) * sin(pi * y)
         y_curved = @. y + 0.1 * sin(pi * x) * sin(pi * y)
         md = MeshData(md, rd, x_curved, y_curved)
