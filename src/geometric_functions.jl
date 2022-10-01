@@ -1,6 +1,6 @@
 """
     geometric_factors(x, y, Dr, Ds)
-    geometric_factors(x, y, z, Dr, Ds, Dt, Filters=(I,I,I))
+    geometric_factors(x, y, z, Dr, Ds, Dt, Filters=(I, I, I))
 
 Compute metrics of mappings between "real" elements and reference elements,
 outward pointing normals on faces of every elements, and Jacobian.
@@ -14,8 +14,8 @@ meshes' (Kopriva 2006).
 """
 
 function geometric_factors(x, y, Dr, Ds)
-    xr, xs = Dr*x, Ds*x
-    yr, ys = Dr*y, Ds*y
+    xr, xs = Dr * x, Ds * x
+    yr, ys = Dr * y, Ds * y
 
     J = @. -xs * yr + xr * ys
     rxJ, sxJ =  ys, -yr
@@ -24,29 +24,29 @@ function geometric_factors(x, y, Dr, Ds)
     return rxJ, sxJ, ryJ, syJ, J
 end
 
-function geometric_factors(x, y, z, Dr, Ds, Dt, Filters=(I,I,I))
+function geometric_factors(x, y, z, Dr, Ds, Dt, Filters=(I, I, I))
 
-    xr, xs, xt = Dr*x, Ds*x, Dt*x
-    yr, ys, yt = Dr*y, Ds*y, Dt*y
-    zr, zs, zt = Dr*z, Ds*z, Dt*z
+    xr, xs, xt = Dr * x, Ds * x, Dt * x
+    yr, ys, yt = Dr * y, Ds * y, Dt * y
+    zr, zs, zt = Dr * z, Ds * z, Dt * z
 
-    Fr, Fs, Ft = (Dr*y).*z, (Ds*y).*z, (Dt*y).*z
-    Fr,Fs,Ft = ((A,x)->A*x).(Filters,(Fr,Fs,Ft))
-    rxJ = Dt*(Fs) - Ds*(Ft)
-    sxJ = Dr*(Ft) - Dt*(Fr)
-    txJ = Ds*(Fr) - Dr*(Fs)
+    Fr, Fs, Ft = (Dr * y) .* z, (Ds * y) .* z, (Dt * y) .* z
+    Fr, Fs, Ft = ((A, x)-> A * x).(Filters, (Fr, Fs, Ft))
+    rxJ = Dt * Fs - Ds * Ft
+    sxJ = Dr * Ft - Dt * Fr
+    txJ = Ds * Fr - Dr * Fs
 
-    Fr, Fs, Ft = (Dr*x).*z, (Ds*x).*z, (Dt*x).*z
-    Fr,Fs,Ft = ((A,x)->A*x).(Filters,(Fr,Fs,Ft))
-    ryJ = -(Dt*(Fs) - Ds*(Ft))
-    syJ = -(Dr*(Ft) - Dt*(Fr))
-    tyJ = -(Ds*(Fr) - Dr*(Fs))
+    Fr, Fs, Ft = (Dr * x) .* z, (Ds * x) .* z, (Dt * x) .* z
+    Fr, Fs, Ft = ((A, x) -> A * x).(Filters, (Fr, Fs, Ft))
+    ryJ = -(Dt * Fs - Ds * Ft)
+    syJ = -(Dr * Ft - Dt * Fr)
+    tyJ = -(Ds * Fr - Dr * Fs)
 
-    Fr, Fs, Ft = (Dr*y).*x, (Ds*y).*x, (Dt*y).*x
-    Fr,Fs,Ft = ((A,x)->A*x).(Filters,(Fr,Fs,Ft))
-    rzJ = -(Dt*(Fs) - Ds*(Ft))
-    szJ = -(Dr*(Ft) - Dt*(Fr))
-    tzJ = -(Ds*(Fr) - Dr*(Fs))
+    Fr, Fs, Ft = (Dr * y) .* x, (Ds * y) .* x, (Dt * y) .* x
+    Fr, Fs, Ft = ((A, x) -> A * x).(Filters, (Fr, Fs, Ft))
+    rzJ = -(Dt * Fs - Ds * Ft)
+    szJ = -(Dr * Ft - Dt * Fr)
+    tzJ = -(Ds * Fr - Dr * Fs)
 
     J = @. xr * (ys * zt - zs * yt) - yr * (xs * zt - zs * xt) + zr * (xs * yt - ys * xt)
 

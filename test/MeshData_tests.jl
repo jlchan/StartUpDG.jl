@@ -171,6 +171,17 @@
         @test uf ≈ uf[mapP]
     end
 
+    @testset "2D curved tests" begin
+        rd = RefElemData(Quad(), N=4)
+        md = MeshData(uniform_mesh(Quad(), 4, 4)..., rd)
+        (; x, y) = md
+        x_curved = @. x + 0.1 * sin(pi * x) * sin(pi * y)
+        y_curved = @. y + 0.1 * sin(pi * x) * sin(pi * y)
+        md = MeshData(md, rd, x_curved, y_curved)
+        @test sum(@. md.wJq) ≈ 4
+        @test sum(@. md.wJq * md.xq^2) ≈ 4/3
+    end
+
     @testset "3D hex mesh initialization" begin
         tol = 5e2*eps()
 
