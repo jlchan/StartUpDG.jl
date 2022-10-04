@@ -257,7 +257,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
             @unpack cut_faces_per_cell, cut_face_offsets = cutcell_data
             num_points_per_face = length(r1D)
             cut_face_node_ids = (1:num_points_per_face * cut_faces_per_cell[e]) .+ 
-                                num_points_per_face * cut_face_offsets[e]
+                                 num_points_per_face * cut_face_offsets[e]
 
             physical_frame_element = 
                 PhysicalFrame(xf.cut[cut_face_node_ids], yf.cut[cut_face_node_ids])
@@ -478,6 +478,8 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     # compute cut-cell quadratures
     _, w1D = quad_rule_face
     wJf = similar(Jf)
+
+    # ComponentArray components are views, so assignment instead of .= should be OK
     wJf.cartesian = Diagonal(w1D) * reshape(Jf.cartesian, length(w1D), length(Jf.cartesian) ÷ length(w1D))
     wJf.cut = Diagonal(w1D) * reshape(Jf.cut, length(w1D), length(Jf.cut) ÷ length(w1D))
     nx, ny = nxJ ./ Jf, nyJ ./ Jf
