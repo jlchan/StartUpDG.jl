@@ -20,7 +20,10 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, <:CutCellMesh}) where {DIM}
     @nospecialize md
-    print(io,"Cut-cell MeshData of dimension $DIM with $(md.num_elements) elements")
+    num_cartesian_elements = size(md.x.cartesian, 2)
+    num_cut_elements = size(md.x.cut, 2)
+    print(io,"Cut-cell MeshData of dimension $DIM with $(md.num_elements) elements " * 
+             "($(num_cartesian_elements) Cartesian, $(num_cut_elements) cut)")
 end
 
 # maps x ∈ [-1,1] to [a,b]
