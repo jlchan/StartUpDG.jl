@@ -510,24 +510,13 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
                 
     #             # naive approach; no guarantees of positivity
     #             QR = qr(Vq', ColumnNorm())
-    #             ids = QR.p[1:min(size(Vq, 1), Np_cut(3 * rd.N))] # oversample candidate quadrature nodes
+    #             ids = QR.p[1:min(size(Vq, 1), Np_cut(4 * rd.N))] # oversample candidate quadrature nodes
     #             wq = Vq[ids,:]' \ b
     #             quadrature_error = norm(Vq[ids,:]' * wq - b)
                 
     #             # # this seems to produce a sparse solution
     #             # wq = nonneg_lsq(Vq', b; alg=:fnnls)                
     #             # ids = findall(@. abs(wq) > 100 * eps())
-    #             # quadrature_error = norm(Vq' * wq - b)
-
-    #             # # should produce a sparse vector of positive weights
-    #             # !!! needs HiGHS and JuMP to work!
-    #             # model = Model(HiGHS.Optimizer)
-    #             # set_silent(model)
-    #             # @variable(model, w[1:size(Vq, 1)] >= 0) 
-    #             # @objective(model, Min, sum(w))
-    #             # @constraint(model, moment_constraints, Vq' * w .== b)
-    #             # @time optimize!(model)
-    #             # wq = value.(w)
     #             # quadrature_error = norm(Vq' * wq - b)
 
     #             # ids = findall(@. abs(wq) > 100 * eps())            
