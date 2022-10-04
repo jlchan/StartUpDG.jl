@@ -29,7 +29,7 @@ export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...
 export hybridized_SBP_operators, inverse_trace_constant, face_type
 
 include("MeshData.jl")
-export MeshData 
+export MeshData, num_elements
 
 include("geometric_functions.jl")
 export geometric_factors, estimate_h
