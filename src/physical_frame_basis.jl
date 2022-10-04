@@ -5,21 +5,23 @@
 
 """
     `PhysicalFrame <: AbstractElemShape`
-
+    
 `PhysicalFrame` element type. Uses a total degree N approximation space, but is 
 computed with a tensor product Legendre basis as opposed to a triangular PKDO basis.
+Stores fields `shifting` and `scaling` to shift/scale physical coordinates so that 
+they are on the reference element. 
+
+    PhysicalFrame()
+    PhysicalFrame(CutCell(), x, y)
+
+Constructors for a PhysicalFrame object (optionally uses arrays of points `x`, `y` on a cut element).
+
 """
 struct PhysicalFrame{Shifting <: Union{<:SVector, <:NTuple}, Scaling <: Union{<:SVector, <:NTuple}} <: AbstractElemShape
     shifting::Shifting
     scaling::Scaling
 end
 
-"""
-    PhysicalFrame()
-    PhysicalFrame(CutCell(), x, y)
-
-Constructor for a PhysicalFrame object given arrays of points `x`, `y` on a cut element. 
-"""
 # default shifting and scaling
 PhysicalFrame() = PhysicalFrame(SVector(0.0, 0.0), SVector(1.0, 1.0))
 
