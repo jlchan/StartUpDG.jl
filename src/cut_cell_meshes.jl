@@ -483,11 +483,71 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     wJf.cartesian = Diagonal(w1D) * reshape(Jf.cartesian, length(w1D), length(Jf.cartesian) ÷ length(w1D))
     wJf.cut = Diagonal(w1D) * reshape(Jf.cut, length(w1D), length(Jf.cut) ÷ length(w1D))
     nx, ny = nxJ ./ Jf, nyJ ./ Jf
+
+    num_cartesian_cells = sum(region_flags .== 0)
+    num_cut_cells = sum(region_flags .== 1)
+       
+    # get indices of cut face nodes 
+    face_ids(e) = (1:(num_points_per_face * cut_faces_per_cell[e])) .+ 
+                    cut_face_offsets[e] * num_points_per_face
+    cut_face_node_ids = [face_ids(e) for e in 1:num_cut_cells]
     
+    # pre-compute and factorize cut-cell mass matrices 
+    cut_mass_matrices = [zeros(Np_cut(rd.N), Np_cut(rd.N)) for _ in 1:num_cut_cells]
+    Ix, Iy = StartUpDG.antidiff_operators(2 * rd.N)
+    e = 1
+    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
+        if is_cut(region_flags[ex, ey])
+            face_node_ids = cut_face_node_ids[e]
+
+            xf_element, yf_element, nx_element, ny_element, wJf_element = 
+                map(x -> view(x, face_node_ids), (xf.cut, yf.cut, nx.cut, ny.cut, wJf.cut))
+                        
+            ## compute volume integrals using numerical Green's theorem and surface integrals                
+
+            # generate over-sampling points 
+            x_sampled, y_sampled = generate_sampling_points(rd, first(curves), Np_cut(2 * rd.N), 
+                                                            vx[ex:ex+1], vy[ey:ey+1]; 
+                                                            N_sampled = 3 * rd.N)
+
+            # evaluate the degree N nodal basis at over-sampled points 
+            VDM = vandermonde(physical_frame_elements[e], rd.N, view(x.cut, :, e), view(y.cut, :, e))                 
+            V = vandermonde(physical_frame_elements[e], rd.N, x_sampled, y_sampled) / VDM
+
+            # higher degree bases for computing integrals
+            V2N = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled) 
+            Vf = vandermonde(physical_frame_elements[e], 2 * rd.N + 1, xf_element, yf_element)
+
+            # display(yf_element)
+            # display(Vf)
+            
+            for i in 1:Np_cut(rd.N), j in 1:Np_cut(rd.N)
+                # exploit symmetry
+                if i >= j 
+                    # the mass matrix integrands are L_i * L_j. We represent them in the physical frame basis                    
+                    integrand = V2N \ (V[:, i] .* V[:, j])
+
+                    # incorporate scaling of coordinates into integral
+                    scaling = physical_frame_elements[e].scaling
+                    x_integrand = (Ix * integrand) ./ scaling[1]
+                    y_integrand = (Iy * integrand) ./ scaling[2]
+
+                    # ∫_vol f = ∫_vol ∇⋅ (0.5 * [Ix; Iy] * f) = 
+                    #           ∫_surf 0.5 * ((Ix * f) * nx + (Iy * f) * ny
+                    M_ij = 0.5 * ((Vf * x_integrand)' * (wJf_element .* nx_element) + 
+                                  (Vf * y_integrand)' * (wJf_element .* ny_element)) 
+
+                    cut_mass_matrices[e][i,j] = M_ij
+                    cut_mass_matrices[e][j,i] = M_ij
+                end
+            end            
+            e += 1
+        end
+    end 
+
     # xq_list, yq_list, wq_list = ntuple(_ -> typeof(w1D)[], 3)
     # @time begin 
     #     # aim to integrate degree 2N basis 
-    #     Ix, Iy = StartUpDG.antidiff_operators(2 * rd.N)
     #     e = 1
     #     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
     #         if is_cut(region_flags[ex, ey])
@@ -533,8 +593,6 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     #     end
     # end
 
-    num_cartesian_cells = sum(region_flags .== 0)
-    num_cut_cells = sum(region_flags .== 1)
 
     # xq, yq, wJq = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nq, num_cartesian_cells), 
     #                                          cut=zeros(num_cut_quad_points)), 3)    
@@ -559,14 +617,9 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     # default to non-periodic 
     is_periodic = (false, false)
 
-    # get indices of cut face nodes 
-    face_ids(e) = (1:(num_points_per_face * cut_faces_per_cell[e])) .+ 
-                    cut_face_offsets[e] * num_points_per_face
-    cut_face_node_ids = [face_ids(e) for e in 1:num_cut_cells]
-
     # !!! fix this so Christina can run the wave solver. 
     # !!! Needs (at minimum) LIFT matrices
-    cut_cell_operators = nothing
+    cut_cell_operators = (; cut_mass_matrices)
 
     return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, cut_cell_operators), 
                     VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, 
@@ -574,6 +627,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
 
 end
 
+# this is used in src/MeshData.jl in `getproperty` 
 function num_elements(md::MeshData{DIM, <:CutCellMesh}) where {DIM}
     # the number of elements is given by the number of columns of each component of x
     return size(md.x.cartesian, 2) + size(md.x.cut, 2)
