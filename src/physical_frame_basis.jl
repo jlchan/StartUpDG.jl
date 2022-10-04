@@ -31,12 +31,19 @@ function PhysicalFrame(x, y)
     return PhysicalFrame(shifting, scaling)
 end
 
-function NodesAndModes.basis(elem::PhysicalFrame, N, x, y)
-    Np = (N + 1) * (N + 2) ÷ 2
-
+function shift_and_scale(elem::PhysicalFrame, x, y)
     @unpack shifting, scaling = elem
     r = @. (x - shifting[1]) * scaling[1]
     s = @. (y - shifting[2]) * scaling[2]
+    return r, s
+end
+
+function NodesAndModes.basis(elem::PhysicalFrame, N, x, y)
+    Np = (N + 1) * (N + 2) ÷ 2
+
+    r, s = shift_and_scale(elem, x, y)
+
+    @unpack scaling = elem
 
     sk = 1
     V, Vr, Vs = ntuple(x->zeros(length(r), Np), 3)
