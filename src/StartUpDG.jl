@@ -7,7 +7,7 @@ using Colors
 using ConstructionBase: ConstructionBase
 using HDF5 # read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
-using LinearAlgebra: diagm, eigvals, Diagonal, I, mul!, norm, qr, ColumnNorm
+using LinearAlgebra: cond, diagm, eigvals, Diagonal, I, mul!, norm, qr, ColumnNorm
 using NodesAndModes: meshgrid
 @reexport using NodesAndModes # for basis functions
 using OrderedCollections: LittleDict # fast ordered dict for a small number of entries

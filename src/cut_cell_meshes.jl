@@ -128,7 +128,7 @@ end
 # returns both x_sampled, y_sampled (physical points inside the cut cell), as well as 
 # r_sampled, y_sampled (reference points which correspond to x_sampled, y_sampled).
 function generate_sampling_points(rd, curve, Np_target, cell_vertices_x, cell_vertices_y; 
-                                  N_sampled = 3 * rd.N)
+                                  N_sampled = 4 * rd.N)
     r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
 
     # map sampled points to the background Cartesian cell
@@ -250,10 +250,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
             end
 
             # find points inside element
-            @unpack curves = cutcell_data
-           
-            x_sampled, y_sampled = 
-                generate_sampling_points(rd, first(curves), Np_cut(rd.N), vx[ex:ex+1], vy[ey:ey+1])
+            @unpack curves = cutcell_data        
                
             # here, we evaluate a PhysicalFrame basis by shifting and scaling the 
             # coordinates on an element back to the reference element [-1, 1]^2.
@@ -265,12 +262,28 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
             physical_frame_element = 
                 PhysicalFrame(xf.cut[cut_face_node_ids], yf.cut[cut_face_node_ids])
             push!(physical_frame_elements, physical_frame_element)
-
+                    
+            x_sampled, y_sampled = 
+                generate_sampling_points(rd, first(curves), 2 * Np_cut(rd.N), 
+                                         vx[ex:ex+1], vy[ey:ey+1])
             V = vandermonde(physical_frame_element, rd.N, x_sampled, y_sampled) 
 
             # use pivoted QR to find good interpolation points
             QRfac = qr(V', ColumnNorm())
             ids = QRfac.p[1:Np_cut(rd.N)]
+
+            # if the condition number of the VDM is really bad, 
+            # then crank up the number of samples. 
+            if cond(V[ids,:]) > 1e10
+                @warn "Conditioning of VDM for element $e is $(cond(V[ids,:]));" * 
+                      "recomputing with a finer set of samples."
+                x_sampled, y_sampled = 
+                    generate_sampling_points(rd, first(curves), 2 * Np_cut(rd.N), 
+                                            vx[ex:ex+1], vy[ey:ey+1]; 
+                                            N_sampled = 100)
+                V = vandermonde(physical_frame_element, rd.N, x_sampled, y_sampled) 
+            end
+
             view(x.cut, :, e) .= x_sampled[ids]
             view(y.cut, :, e) .= y_sampled[ids]
 
@@ -511,10 +524,10 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
             # generate over-sampling points 
             x_sampled, y_sampled = generate_sampling_points(rd, first(curves), Np_cut(2 * rd.N), 
                                                             vx[ex:ex+1], vy[ey:ey+1]; 
-                                                            N_sampled = 3 * rd.N)
+                                                            N_sampled = 5 * rd.N)
 
             # evaluate the degree N nodal basis at over-sampled points 
-            VDM = vandermonde(physical_frame_elements[e], rd.N, view(x.cut, :, e), view(y.cut, :, e))                 
+            VDM = vandermonde(physical_frame_elements[e], rd.N, view(x.cut, :, e), view(y.cut, :, e))
             V = vandermonde(physical_frame_elements[e], rd.N, x_sampled, y_sampled) / VDM
 
             # higher degree bases for computing integrals
