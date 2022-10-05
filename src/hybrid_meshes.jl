@@ -147,7 +147,7 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:Re
 
     # LittleDict between element type and element_ids of that type, e.g., element_ids[Tri()] = ...
     # We distinguish between different elements by the number of vertices. 
-    # This should work in 3D too (might have issues if we ever do mixed 2D/3D meshes).
+    # This should work in 3D too (but might have issues if we ever do mixed 2D/3D meshes).
     element_types = keys(rds)
     element_ids = LittleDict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
     num_elements_of_type(elem) = length(element_ids[elem])
