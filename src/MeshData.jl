@@ -336,6 +336,7 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
     J = last(geo)
     wJq = diagm(rd.wq) * (rd.Vq * J)
 
+    # TODO: should we warp VXYZ as well? Or just set it to nothing since it no longer determines geometric terms?
     setproperties(md, (xyz, xyzq, xyzf, rstxyzJ, J, wJq,
                        nxyzJ=geof[1:Dim], Jf=last(geof)))
 end
