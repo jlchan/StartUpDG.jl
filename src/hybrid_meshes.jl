@@ -116,11 +116,12 @@ function compute_geometric_data(xyz, rd::RefElemData{2})
     return (; xyzf, xyzq, wJq, rstxyzJ, J, nxyzJ, Jf)
 end
 
-# returns a LittleDict{element_type, RefElemData} when specifying multiple element types in 2D
+# TODO: switch LittleDict to NamedTuple-based type for consistency (e.g., `rd.Quad.Dr` instead of `rd[Quad()].Dr`)
 function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs...) where {N} 
+    # returns a LittleDict{element_type, RefElemData} when specifying multiple element types in 2D
     rds = LittleDict((elem => RefElemData(elem, args...; kwargs...) for elem in element_types)...)
 
-    # check if number of face nodes 
+    # check if number of face nodes is the same 
     # TODO: this only works in 2D
     num_face_nodes = length.(getproperty.(values(rds), :rf)) .÷ num_faces.(keys(rds))
     allequal(x) = all(y->y==x[1],x)
