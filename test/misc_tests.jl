@@ -46,9 +46,9 @@
     # test setproperties
     rd = RefElemData(Quad(), 2)
     struct NewType end
-    patch = (; approximationType=NewType())
+    patch = (; approximation_type=NewType())
     rd2 = StartUpDG.ConstructionBase.setproperties(rd, patch)
-    @test rd2.approximationType==NewType()
+    @test rd2.approximation_type==NewType()
 
     md = MeshData(uniform_mesh(Quad(), 4)..., rd)
     patch = (; is_periodic=(true, false))

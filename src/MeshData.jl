@@ -142,10 +142,8 @@ function Base.getproperty(x::MeshData, s::Symbol)
         return getfield(x, :rstxyzJ)[3,2]
     elseif s==:tzJ
         return getfield(x, :rstxyzJ)[3,3]
-        
-    # old behavior where K = num_elements        
-    elseif s==:K || s==:num_elements 
-        return size(getfield(x, :EToV), 1)
+    elseif s==:K || s==:num_elements # old behavior where K = num_elements
+        return num_elements(x)
 
     # old notation in the NDG book where sJ (surface Jacobian) is 
     # used instead of Jf (Jacobian for the face)                
@@ -157,6 +155,8 @@ function Base.getproperty(x::MeshData, s::Symbol)
         return getfield(x, s)
     end
 end
+
+num_elements(md) = size(getfield(md, :EToV), 1)
 
 """
     MeshData(VXYZ, EToV, rd::RefElemData)
@@ -326,6 +326,7 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
     J = last(geo)
     wJq = diagm(rd.wq) * (rd.Vq * J)
 
+    # TODO: should we warp VXYZ as well? Or just set it to nothing since it no longer determines geometric terms?
     setproperties(md, (xyz, xyzq, xyzf, rstxyzJ, J, wJq,
                        nxyzJ=geof[1:Dim], Jf=last(geof)))
 end
