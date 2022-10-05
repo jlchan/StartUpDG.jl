@@ -122,11 +122,12 @@ function compute_geometric_data(xyz, rd::RefElemData{2})
     return (; xyzf, xyzq, wJq, rstxyzJ, J, nxyzJ, Jf)
 end
 
-# returns a LittleDict{element_type, RefElemData} when specifying multiple element types in 2D
+# TODO: switch LittleDict to NamedTuple-based type for consistency (e.g., `rd.Quad.Dr` instead of `rd[Quad()].Dr`)
 function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs...) where {N} 
+    # returns a LittleDict{element_type, RefElemData} when specifying multiple element types in 2D
     rds = LittleDict((elem => RefElemData(elem, args...; kwargs...) for elem in element_types)...)
 
-    # check if number of face nodes 
+    # check if number of face nodes is the same 
     # TODO: this only works in 2D
     num_face_nodes = length.(getproperty.(values(rds), :rf)) .÷ num_faces.(keys(rds))
     allequal(x) = all(y->y==x[1],x)
@@ -153,7 +154,7 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:Re
 
     # LittleDict between element type and element_ids of that type, e.g., element_ids[Tri()] = ...
     # We distinguish between different elements by the number of vertices. 
-    # This should work in 3D too (might have issues if we ever do mixed 2D/3D meshes).
+    # This should work in 3D too (but might have issues if we ever do mixed 2D/3D meshes).
     element_types = keys(rds)
     element_ids = LittleDict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
     num_elements_of_type(elem) = length(element_ids[elem])
@@ -179,11 +180,16 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:Re
 
     typename(x) = typeof(x).name.name
 
-    xyz = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(values(xyz_hybrid), i)))), length(keys(rds)))
-    xyzf = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzf), i)))), length(keys(rds)))
-    xyzq = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzq), i)))), length(keys(rds)))
-    rstxyzJ = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :rstxyzJ), i)))), length(keys(rds)))
-    nxyzJ = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :nxyzJ), i)))), length(keys(rds)))
+    n_dims = 2
+    xyz = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(values(xyz_hybrid), i)))), n_dims)
+    xyzf = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzf), i)))), n_dims)
+    xyzq = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzq), i)))), n_dims)
+
+    # 4 entries in the geometric term matrix for 2D hybrid meshes
+    rstxyzJ = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :rstxyzJ), i)))), n_dims * n_dims)
+    rstxyzJ = SMatrix{2, 2}(rstxyzJ...)
+
+    nxyzJ = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :nxyzJ), i)))), n_dims)
     wJq = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :wJq))))
     J = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :J))))
     Jf = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :Jf))))
