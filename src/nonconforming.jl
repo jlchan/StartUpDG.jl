@@ -1,5 +1,42 @@
-struct NonConformingMesh{F, I, P}
-    non_conforming_faces::F
+"""
+!!! warning "Experimental implementation"
+    This is an experimental feature and may change in future releases.
+
+This is a proof of concept implementation of a non-conforming mesh in StartUpDG.jl. 
+The intended usage is as follows:
+
+```julia
+rd = RefElemData(Quad(), N=7)
+md = MeshData(NonConformingQuadMeshExample(), rd)
+
+@unpack x, y = md
+u = @. sin(pi * x) * sin(pi * y)
+
+# interpolate to faces
+num_total_faces = num_faces(rd.element_type) * md.num_elements
+u_face = reshape(rd.Vf * u, :, num_total_faces)
+
+# interpolate faces to mortars (`uf` denotes mortar faces for `NonConformingMesh` types)
+@unpack conforming_faces, non_conforming_faces, mortar_interpolation_matrix = md.mesh_type
+u_mortar = similar(md.xf)
+view(u_mortar, :, 1:length(conforming_faces)) .= view(u_face, :, conforming_faces)
+
+# interpolate to non-conforming faces, which are stored after the conforming faces
+for (i, f) in enumerate(non_conforming_faces)
+    mortar_face_ids = (1:num_mortars_per_face(rd)) .+ (i-1) * num_mortars_per_face(rd) .+ length(conforming_faces)
+    u_mortar[:, mortar_face_ids] .= reshape(mortar_interpolation_matrix * u_face[:, f], :, num_mortars_per_face(rd))
+end
+
+# get exterior values
+uP = u_mortar[md.mapP]
+```
+The `mortar_projection_matrix` similarly maps values from 2 mortar faces back to values on the 
+original non-conforming face. These can be used to create DG solvers on non-conforming meshes.
+
+"""
+struct NonConformingMesh{CF, NCF, I, P}
+    conforming_faces::CF
+    non_conforming_faces::NCF
     mortar_interpolation_matrix::I
     mortar_projection_matrix::P
 end
@@ -51,6 +88,9 @@ function NonConformingQuadMeshExample()
     return NonConformingQuadMeshExample((VX, VY), EToV, FToF, non_conforming_faces)
 end
 
+# one non-conforming quad face is split into 2 mortar faces
+num_mortars_per_face(rd::RefElemData{2, Quad}) = 2
+
 function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
 
     (VX, VY) = mesh.VXY
@@ -87,9 +127,8 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
     num_total_faces = num_faces(rd.element_type) * num_elements
     conforming_faces = setdiff(1:num_total_faces, non_conforming_faces)
 
-    # one non-conforming face is divided into 2
-    num_split_faces = 2 
-    num_mortar_faces = num_split_faces * length(non_conforming_faces) + length(conforming_faces)
+    # one non-conforming face is divided into 2 in 2D
+    num_mortar_faces = num_mortars_per_face(rd) * length(non_conforming_faces) + length(conforming_faces)
    
     # copy over conforming face data
     x_mortar = similar(xf, (num_face_points, num_mortar_faces))
@@ -103,7 +142,7 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
         x_interpolated = reshape(mortar_interpolation_matrix * xf[:, f], size(xf, 1), 2)
         y_interpolated = reshape(mortar_interpolation_matrix * yf[:, f], size(xf, 1), 2)        
         
-        mortar_face_ids = (1:num_split_faces) .+ (i-1) * num_split_faces .+ length(conforming_faces)
+        mortar_face_ids = (1:num_mortars_per_face(rd)) .+ (i-1) * num_mortars_per_face(rd) .+ length(conforming_faces)
         view(x_mortar, :, mortar_face_ids) .= x_interpolated
         view(y_mortar, :, mortar_face_ids) .= y_interpolated
     end
@@ -124,9 +163,8 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
 
     is_periodic = (false, false)
 
-    mesh_type = NonConformingMesh(non_conforming_faces, 
-                                  mortar_interpolation_matrix, 
-                                  mortar_projection_matrix)
+    mesh_type = NonConformingMesh(conforming_faces, non_conforming_faces, 
+                                  mortar_interpolation_matrix, mortar_projection_matrix)
 
     return MeshData(mesh_type, tuple(VX, VY), EToV, FToF,
                     tuple(x, y), tuple(x_mortar, y_mortar), tuple(xq, yq), wJq,

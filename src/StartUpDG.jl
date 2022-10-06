@@ -45,7 +45,7 @@ include("hybrid_meshes.jl")
 export num_faces, num_vertices
 
 include("nonconforming.jl")
-export NonConformingQuadMeshExample
+export num_mortars_per_face, NonConformingQuadMeshExample
 
 # uniform meshes + face vertex orderings are included
 include("mesh/simple_meshes.jl")
