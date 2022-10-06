@@ -49,10 +49,14 @@ include("physical_frame_basis.jl")
 include("cut_cell_meshes.jl")
 export PhysicalFrame
 
+include("nonconforming.jl")
+export num_mortars_per_face, NonConformingQuadMeshExample
+
 # uniform meshes + face vertex orderings are included
 include("mesh/simple_meshes.jl")
 export readGmsh2D, uniform_mesh
 export readGmsh2D_v4, MeshImportOptions 
+
 # Plots.jl recipes for meshes
 include("mesh/mesh_visualization.jl")
 export VertexMeshPlotter, MeshPlotter
