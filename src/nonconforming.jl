@@ -112,12 +112,12 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
     mortar_projection_matrix = mortar_mass_matrix \ (mortar_interpolation_matrix' * diagm(w_split))
     
     #Construct global coordinates
-    (; V1) = rd
+    @unpack V1 = rd
     x = V1 * VX[transpose(EToV)]
     y = V1 * VY[transpose(EToV)]
 
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
-    (; Vf) = rd
+    @unpack Vf = rd
     xf = Vf * x
     yf = Vf * y
 
@@ -151,11 +151,11 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
     mapM, mapP, mapB = build_node_maps(FToF, x_mortar, y_mortar)    
 
     #Compute geometric factors and surface normals
-    (; Dr, Ds) = rd
+    @unpack Dr, Ds = rd
     rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, Dr, Ds)
     rstxyzJ = SMatrix{2, 2}(rxJ, ryJ, sxJ, syJ)
 
-    (; Vq, wq) = rd
+    @unpack Vq, wq = rd
     xq, yq = (x -> Vq * x).((x, y))
     wJq = diagm(wq) * (Vq * J)
 
