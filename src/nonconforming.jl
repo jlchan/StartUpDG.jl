@@ -9,7 +9,7 @@ The intended usage is as follows:
 rd = RefElemData(Quad(), N=7)
 md = MeshData(NonConformingQuadMeshExample(), rd)
 
-(; x, y) = md
+@unpack x, y = md
 u = @. sin(pi * x) * sin(pi * y)
 
 # interpolate to faces
@@ -17,7 +17,7 @@ num_total_faces = num_faces(rd.element_type) * md.num_elements
 u_face = reshape(rd.Vf * u, :, num_total_faces)
 
 # interpolate faces to mortars (`uf` denotes mortar faces for `NonConformingMesh` types)
-(; conforming_faces, non_conforming_faces, mortar_interpolation_matrix) = md.mesh_type
+@unpack conforming_faces, non_conforming_faces, mortar_interpolation_matrix = md.mesh_type
 u_mortar = similar(md.xf)
 view(u_mortar, :, 1:length(conforming_faces)) .= view(u_face, :, conforming_faces)
 
