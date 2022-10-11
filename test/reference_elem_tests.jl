@@ -107,7 +107,7 @@
     @testset "Wedge" begin
         rd = RefElemData(Wedge(), N)
         
-        @test propertynames(rd)[1] == :elementType
+        @test propertynames(rd)[1] == :element_type
         @test rd.r == rd.rst[1]
         @test rd.s == rd.rst[2]
         @test rd.t == rd.rst[3]
