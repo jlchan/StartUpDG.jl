@@ -13,21 +13,26 @@ md = MeshElemData(VXY, EToV, rd)
 @unpack x, y = md
 ```
 """
-Base.@kwdef struct MeshData{Dim, VolumeType, FaceType, VolumeQType,
+Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
                             VertexType, EToVType, FToFType, 
                             VolumeWeightType, VolumeGeofacsType, VolumeJType,
                             ConnectivityType, BoundaryMapType}
 
-    # num_elements::Ti            # number of elements
-    VXYZ::NTuple{Dim, VertexType}  # vertex coordinates
-    EToV::EToVType              # mesh vertex array 
-    FToF::FToFType              # face connectivity
+    # this field defaults to the element shape, but can be 
+    # used to specify cut-cell, hybrid, non-conforming meshes. 
+    mesh_type::MeshType 
 
-    xyz::NTuple{Dim, VolumeType}   # physical points
-    xyzf::NTuple{Dim, FaceType}  # face nodes
+    # TODO: move VXYZ, EToV into a `VertexMappedMesh` mesh_type?
+    VXYZ::NTuple{Dim, VertexType}   # vertex coordinates
+    EToV::EToVType                  # mesh vertex array     
+    FToF::FToFType                  # face connectivity
+
+    xyz::NTuple{Dim, VolumeType}    # physical points
+    xyzf::NTuple{Dim, FaceType}     # face nodes
     xyzq::NTuple{Dim, VolumeQType}  # phys quad points, Jacobian-scaled weights
     wJq::VolumeWeightType
 
+    # TODO: move mapP, mapB into a "conforming mesh type"?
     # arrays of connectivity indices between face nodes
     mapM::ConnectivityType
     mapP::ConnectivityType
@@ -50,7 +55,7 @@ function ConstructionBase.setproperties(md::MeshData, patch::NamedTuple)
 end
 
 ConstructionBase.getproperties(md::MeshData) = 
-    (; VXYZ=md.VXYZ, EToV=md.EToV, FToF=md.FToF, xyz=md.xyz, xyzf=md.xyzf, xyzq=md.xyzq, wJq=md.wJq,
+    (; mesh_type=md.mesh_type, VXYZ=md.VXYZ, EToV=md.EToV, FToF=md.FToF, xyz=md.xyz, xyzf=md.xyzf, xyzq=md.xyzq, wJq=md.wJq,
        mapM=md.mapM, mapP=md.mapP, mapB=md.mapB, rstxyzJ=md.rstxyzJ, J=md.J, nxyzJ=md.nxyzJ, Jf=md.Jf,
        is_periodic=md.is_periodic)
 
@@ -138,8 +143,10 @@ function Base.getproperty(x::MeshData, s::Symbol)
     elseif s==:tzJ
         return getfield(x, :rstxyzJ)[3,3]
     elseif s==:K || s==:num_elements # old behavior where K = num_elements
-        return size(getfield(x, :EToV), 1)
+        return num_elements(x)
 
+    # old notation in the NDG book where sJ (surface Jacobian) is 
+    # used instead of Jf (Jacobian for the face)                
     elseif s==:sJ 
         return getfield(x, :Jf)
 
@@ -148,6 +155,8 @@ function Base.getproperty(x::MeshData, s::Symbol)
         return getfield(x, s)
     end
 end
+
+num_elements(md) = size(getfield(md, :EToV), 1)
 
 """
     MeshData(VXYZ, EToV, rd::RefElemData)
@@ -163,8 +172,7 @@ and outputs a new MeshData struct. Only fields modified are the coordinate-depen
 """
 
 # splats VXYZ 
-MeshData(VXYZ::T, EToV, rd::RefElemData{NDIMS}) where {NDIMS, T <: NTuple{NDIMS}} = 
-    MeshData(VXYZ..., EToV, rd)
+MeshData(VXYZ::T, EToV, rd) where {NDIMS, T <: NTuple{NDIMS}} = MeshData(VXYZ..., EToV, rd)
 
 function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
@@ -205,11 +213,12 @@ function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
     wJq = diagm(wq)*(Vq*J)
 
     is_periodic = (false,)
-    return MeshData(tuple(VX),EToV,FToF,
-                    tuple(x),tuple(xf),tuple(xq),wJq,
-                    collect(mapM),mapP,mapB,
-                    SMatrix{1,1}(tuple(rxJ)),J,
-                    tuple(nxJ),sJ,
+
+    return MeshData(rd.element_type, tuple(VX), EToV, FToF,
+                    tuple(x), tuple(xf), tuple(xq), wJq,
+                    collect(mapM), mapP, mapB,
+                    SMatrix{1,1}(tuple(rxJ)), J,
+                    tuple(nxJ), sJ,
                     is_periodic)
 
 end
@@ -246,7 +255,7 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2})
     nxJ, nyJ, sJ = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
     is_periodic = (false, false)
-    return MeshData(tuple(VX, VY), EToV, FToF,
+    return MeshData(rd.element_type, tuple(VX, VY), EToV, FToF,
                     tuple(x, y), tuple(xf, yf), tuple(xq, yq), wJq,
                     mapM, mapP, mapB,
                     SMatrix{2, 2}(tuple(rxJ, ryJ, sxJ, syJ)), J,
@@ -285,7 +294,7 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
     nxJ,nyJ,nzJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
 
     is_periodic = (false, false, false)
-    return MeshData(tuple(VX, VY, VZ), EToV, FToF,
+    return MeshData(rd.element_type, tuple(VX, VY, VZ), EToV, FToF,
                     tuple(x, y, z), tuple(xf, yf, zf), tuple(xq, yq, zq), wJq,
                     mapM, mapP, mapB,
                     rstxyzJ, J, tuple(nxJ, nyJ, nzJ), sJ,
@@ -314,8 +323,11 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
     end
     geof = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
-    setproperties(md, (xyz=xyz, xyzq=xyzq, xyzf=xyzf,
-                       rstxyzJ=rstxyzJ, J=last(geo),
+    J = last(geo)
+    wJq = diagm(rd.wq) * (rd.Vq * J)
+
+    # TODO: should we warp VXYZ as well? Or just set it to nothing since it no longer determines geometric terms?
+    setproperties(md, (xyz, xyzq, xyzf, rstxyzJ, J, wJq,
                        nxyzJ=geof[1:Dim], Jf=last(geof)))
 end
 

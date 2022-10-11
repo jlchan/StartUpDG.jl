@@ -46,7 +46,7 @@ struct VertexMeshPlotter{NDIMS, Tv, Ti, Nfaces}
     fv::NTuple{Nfaces, Vector{Int}}
 end
 
-RecipesBase.@recipe function f(m::VertexMeshPlotter)
+RecipesBase.@recipe function f(m::VertexMeshPlotter{2})
 
     @unpack VXY, EToV, fv = m
     VX, VY = VXY

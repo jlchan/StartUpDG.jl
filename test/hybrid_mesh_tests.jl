@@ -36,7 +36,7 @@ end
     EToV = [[1 2 4 5], [2 3 5 6], [5 8 9], [4 5 7 8], [9 6 5]]
 
     md = MeshData(VX, VY, EToV, rds)
-    # @test md.FToF == vec([1, 5, 3, 11, 2, 6, 7, 17, 9, 15, 4, 12, 16, 14, 10, 13, 8, 18])
+    @test md.mesh_type == StartUpDG.HybridMesh((Quad(), Tri()))
 
     # test if all nodes on boundary are ±1
     @test all(@. abs(max(abs(md.xf[md.mapB]), abs(md.yf[md.mapB])) - 1) < 100 * eps() )
@@ -46,12 +46,14 @@ end
     u = @. x^3 - x^2 * y + 2 * y^3
     dudx = @. 3 * x^2 - 2 * x * y
 
-    # # compute derivatives
-    # @unpack rxJ, sxJ, J = md
-    # dudr = ArrayPartition(getproperty.(values(rds), :Dr)...) * u
-    # duds = ArrayPartition(getproperty.(values(rds), :Ds)...) * u
-    # dudx_DG = @. (rxJ * dudr + sxJ * duds) / J
-    # @test norm(@. dudx - dudx_DG) < 10 * length(u) * eps()
+    @unpack rxJ, sxJ, J = md
+    dudr, duds = similar(md.x), similar(md.x)
+    dudr.Quad .= rds[Quad()].Dr * u.Quad
+    duds.Quad .= rds[Quad()].Ds * u.Quad
+    dudr.Tri .= rds[Tri()].Dr * u.Tri
+    duds.Tri .= rds[Tri()].Ds * u.Tri
+
+    @test norm(@. dudx - (rxJ * dudr + sxJ * duds) / J) < 1e3 * eps()
 
     # compute jumps
     @unpack mapP = md

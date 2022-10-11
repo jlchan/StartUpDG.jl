@@ -12,8 +12,10 @@
         @test rd.Pq * rd.Vq ≈ I
         @test rd.r[rd.Fmask[:]] ≈ rd.rf
         @test invoke(inverse_trace_constant, Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
-        @test propertynames(rd)[1] == :elementType
+        @test propertynames(rd)[1] == :element_type
         @test rd.elementType == rd.element_type
+
+        # test for deprecated CamlCase approximationType usage
         @test rd.approximationType == rd.approximation_type
     end
 
@@ -30,7 +32,7 @@
         rstf = (x->Vfp * x[reshape(rd.Fmask, rd.Nfq ÷ rd.Nfaces, rd.Nfaces)]).(rd.rst)
         @test all(vec.(rstf) .≈ rd.rstf)
         @test invoke(inverse_trace_constant,Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
-        @test propertynames(rd)[1] == :elementType
+        @test propertynames(rd)[1] == :element_type
 
         @test StartUpDG.num_vertices(Tri()) == 3
         @test StartUpDG.num_faces(Tri()) == 3
@@ -57,7 +59,7 @@
 
     @testset "Hex" begin
         rd = RefElemData(Hex(),N)
-        @test propertynames(rd)[1] == :elementType
+        @test propertynames(rd)[1] == :element_type
         @test rd.t == rd.rst[3]
         @test rd.tf == rd.rstf[3]    
         @test rd.tq == rd.rstq[3]
@@ -81,7 +83,7 @@
 
     @testset "Tet" begin
         rd = RefElemData(Tet(),N)
-        @test propertynames(rd)[1] == :elementType
+        @test propertynames(rd)[1] == :element_type
         @test rd.t == rd.rst[3]
         @test rd.tf == rd.rstf[3]    
         @test rd.tq == rd.rstq[3]
