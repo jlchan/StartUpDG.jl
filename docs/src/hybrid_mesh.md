@@ -30,9 +30,30 @@ dudx = @. 3 * x^2 - 2 * x * y
 
 # compute local derivatives
 @unpack rxJ, sxJ, J = md
-dudr = ArrayPartition((getproperty.(values(rds), :Dr) .* u.x)...)
-duds = ArrayPartition((getproperty.(values(rds), :Ds) .* u.x)...)
+dudr, duds = similar(md.x), similar(md.x)
+dudr.Quad .= rds[Quad()].Dr * u.Quad
+duds.Quad .= rds[Quad()].Ds * u.Quad
+dudr.Tri .= rds[Tri()].Dr * u.Tri
+duds.Tri .= rds[Tri()].Ds * u.Tri
+
 @show norm(@. dudx - (rxJ * dudr + sxJ * duds) / J) # should be O(1e-14)
 ```
 
-Todo: add example usage of `mapP`. 
+The main difference in the representation of hybrid meshes compared with standard `MeshData` objects
+is the use of [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl) as storage for the
+geometric coordinates. These arrays have "fields" corresponding to the element type, for example
+```julia
+md.x.Tri
+md.x.Quad
+```
+but can still be indexed as linear arrays. 
+
+The `mapP` field behaves similarly. If we interpolate the values of `u` for each element type to surface
+quadrature nodes, we can use `mapP` to linearly index into the array to find neighbors. 
+```julia
+uf = similar(md.xf)
+uf.Quad .= rds[Quad()].Vf * u.Quad
+uf.Tri .= rds[Tri()].Vf * u.Tri
+uf[md.mapP] # this returns the exterior node values
+```
+
