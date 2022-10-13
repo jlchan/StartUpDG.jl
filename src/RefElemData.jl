@@ -187,7 +187,6 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 # We define the first three faces to be quadrilaterals and the 
 # last two faces are triangles.
 @inline face_type(elem::AbstractElemShape, id) = face_type(elem)
-@inline face_type(elem::AbstractElemShape, id) = face_type(elem)
 @inline face_type(::Wedge, id) = (id < 3) ? Quad() : Tri()
 
 # ====================================================
