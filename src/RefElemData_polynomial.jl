@@ -258,6 +258,7 @@ function RefElemData(elem::Wedge, approxType::Polynomial, N;
 
     #Find the vertices of the faces
     fv = face_vertices(elem)
+
     #Get interpolation nodes of degree N 
     r, s, t = nodes(elem, N)
     
