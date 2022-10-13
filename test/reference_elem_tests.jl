@@ -136,9 +136,6 @@
         @test rd.Np == length(rd.r)  
         @test rd.Nq == length(rd.rq)
         
-        # 3 * quad_face + 2 * tri_face
-        @test sum(rd.wf) ≈ (2*4 + sqrt(2)*4 + 2*2) 
-
         @test abs(sum(rd.wf .* rd.nrJ)) < tol
         @test abs(sum(rd.wf .* rd.nsJ)) < tol
         @test abs(sum(rd.wf .* rd.ntJ)) < tol

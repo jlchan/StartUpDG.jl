@@ -279,10 +279,10 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
     # build face quadrature nodes
     rquad, squad, wquad = quad_rule_face[1]
     rtri, stri, wtri = quad_rule_face[2]
-    rf = vcat(rquad,        rquad,   -one.(wquad), rtri          , rtri)
-    sf = vcat(-one.(wquad), -rquad,   rquad      , stri          , stri)
-    tf = vcat(squad,        squad,   squad      , -one.(wtri)   , one.(wtri))
-    wf = vcat(wquad, sqrt(2) * wquad, wquad, wtri, wtri)
+    rf = vcat( rquad,         rquad,   -one.(wquad),  rtri      , rtri)
+    sf = vcat(-one.(wquad),  -rquad,    rquad      ,  stri      , stri)
+    tf = vcat( squad,         squad,    squad      , -one.(wtri), one.(wtri))
+    wf = vcat(wquad, wquad, wquad, wtri, wtri)
 
     rstf = tuple(rf, sf, tf)
     Vf = vandermonde(elem, N, rf, sf, tf) / VDM
