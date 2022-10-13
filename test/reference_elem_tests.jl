@@ -140,6 +140,17 @@
         @test abs(sum(rd.wf .* rd.nsJ)) < tol
         @test abs(sum(rd.wf .* rd.ntJ)) < tol
 
+        @unpack node_ids_by_face = rd.element_type
+        @test sum(rd.wf[node_ids_by_face[1]]) ≈ 4
+        # Note: this is not the true area of face 2. Because we map 
+        # all faces back to the reference face, there is a factor of 
+        # sqrt(2) difference from the true area. 
+        @test sum(rd.wf[node_ids_by_face[2]]) ≈ 4 
+        @test sum(rd.wf[node_ids_by_face[3]]) ≈ 4
+        @test sum(rd.wf[node_ids_by_face[4]]) ≈ 2
+        @test sum(rd.wf[node_ids_by_face[5]]) ≈ 2
+
+
         @test rd.Pq * rd.Vq ≈ I
         
         # 1/2 of a hex
