@@ -292,7 +292,7 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
     et, eq = ones(length(wtri)), ones(length(wquad))
     nrJ = [zq; eq; -eq; zt; zt]
     nsJ = [-eq; eq; zq; zt; zt]
-    ntJ = [zq; zq; zq; -et; et]     
+    ntJ = [zq; zq; zq; -et; et]
 
     rq, sq, tq, wq = quad_rule_vol
     Vq = vandermonde(elem, N, rq, sq, tq) / VDM

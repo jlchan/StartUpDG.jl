@@ -5,14 +5,14 @@
 Given volume nodes `r`, `s`, `t`, finds face nodes. Note that this function implicitly
 defines an ordering on the faces.
 """
-function find_face_nodes(elem::Tri, r, s, tol=50*eps())
+function find_face_nodes(::Tri, r, s, tol=50*eps())
     e1 = findall(@. abs(s + 1) < tol)
     e2 = findall(@. abs(r + s) < tol)
     e3 = findall(@. abs(r + 1) < tol)
     return e1, reverse(e2), reverse(e3)
 end
 
-function find_face_nodes(elem::Quad, r, s, tol=50*eps())
+function find_face_nodes(::Quad, r, s, tol=50*eps())
     e1 = findall(@. abs(r + 1) < tol)
     e2 = findall(@. abs(r - 1) < tol)
     e3 = findall(@. abs(s + 1) < tol)
@@ -20,7 +20,7 @@ function find_face_nodes(elem::Quad, r, s, tol=50*eps())
     return e1, e2, e3, e4
 end
 
-function find_face_nodes(elem::Hex, r, s, t, tol=50*eps())
+function find_face_nodes(::Hex, r, s, t, tol=50*eps())
     fv1 = findall(@. abs(r + 1) < tol)
     fv2 = findall(@. abs(r - 1) < tol)
     fv3 = findall(@. abs(s + 1) < tol)
@@ -30,7 +30,7 @@ function find_face_nodes(elem::Hex, r, s, t, tol=50*eps())
     return fv1, fv2, fv3, fv4, fv5, fv6
 end
 
-function find_face_nodes(elem::Tet, r, s, t, tol=50*eps())
+function find_face_nodes(::Tet, r, s, t, tol=50*eps())
     fv1 = findall(@. abs(s +1) < tol)
     fv2 = findall(@. abs(r + s + t + 1) < tol)
     fv3 = findall(@. abs(r + 1) < tol)
@@ -40,7 +40,7 @@ end
 
 # Faces are ordered as described in "Coarse mesh partitioning for tree based AMR" 
 # by Burstedde and Holke (2018). https://arxiv.org/pdf/1611.02929.pdf
-function find_face_nodes(elem::Wedge, r, s, t, tol=50*eps())
+function find_face_nodes(::Wedge, r, s, t, tol=50*eps())
     fv1 = findall(@. abs(s + 1) < tol)  # first quad face
     fv2 = findall(@. abs(r + s) < tol)  # second quad face
     fv3 = findall(@. abs(r + 1) < tol)  # third quad face
@@ -50,7 +50,7 @@ function find_face_nodes(elem::Wedge, r, s, t, tol=50*eps())
 end
 
 # face vertices = face nodes of degree 1
-face_vertices(elem::Line) = 1, 2
+face_vertices(::Line) = 1, 2
 face_vertices(elem) = find_face_nodes(elem, nodes(elem, 1)...)
 
 
@@ -58,7 +58,7 @@ face_vertices(elem) = find_face_nodes(elem, nodes(elem, 1)...)
 ##### face data for diff elements
 #####
 
-function map_face_nodes(elem::Tri, face_nodes)
+function map_face_nodes(::Tri, face_nodes)
     r1D = face_nodes
     e = ones(size(r1D)) # vector of all ones
     rf = [r1D; -r1D; -e];
@@ -66,7 +66,7 @@ function map_face_nodes(elem::Tri, face_nodes)
     return rf, sf
 end
 
-function map_face_nodes(elem::Quad, face_nodes)
+function map_face_nodes(::Quad, face_nodes)
     r1D = face_nodes
     e = ones(size(r1D))
     rf = [-e; e; r1D; r1D]
@@ -74,7 +74,7 @@ function map_face_nodes(elem::Quad, face_nodes)
     return rf, sf
 end
 
-function map_face_nodes(elem::Hex, face_nodes...)
+function map_face_nodes(::Hex, face_nodes...)
     r, s = face_nodes
     e = ones(size(r))
     rf = [-e; e; r; r; r; r]
@@ -83,7 +83,7 @@ function map_face_nodes(elem::Hex, face_nodes...)
     return rf, sf, tf
 end
 
-function map_face_nodes(elem::Tet, face_nodes...)
+function map_face_nodes(::Tet, face_nodes...)
     r, s = face_nodes
     e = ones(size(r))
     rf = [r; r; -e; r]
