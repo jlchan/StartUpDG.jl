@@ -284,6 +284,12 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
     tf = vcat( squad,         squad,    squad      , -one.(wtri), one.(wtri))
     wf = vcat(wquad, wquad, wquad, wtri, wtri)
 
+    # index into the face nodes     
+    quad_face_ids(f) = (1:length(wquad)) .+ (f-1) * length(wquad)
+    tri_face_ids(f) = (1:length(wtri)) .+ (f-1) * length(wtri) .+ 3 * length(wquad)
+    node_ids_by_face = (quad_face_ids(1), quad_face_ids(2), quad_face_ids(3), 
+                        tri_face_ids(1), tri_face_ids(2))
+
     rstf = tuple(rf, sf, tf)
     Vf = vandermonde(elem, N, rf, sf, tf) / VDM
         
@@ -305,7 +311,7 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
 
     LIFT = M \ (Vf' * diagm(wf))
 
-    return RefElemData(elem, approximation_type, N, fv, V1,
+    return RefElemData(Wedge(node_ids_by_face), approximation_type, N, fv, V1,
                        tuple(r, s, t), VDM, Fmask,
                        Nplot, tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
