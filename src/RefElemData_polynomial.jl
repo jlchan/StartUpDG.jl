@@ -268,25 +268,22 @@ function RefElemData(elem::Wedge, approxType::Polynomial, N;
     fn1, fn2, fn3, fn4, fn5  = find_face_nodes(elem, r, s, t)
     Fmask = tuple(fn1, fn2, fn3, fn4, fn5)
 
-
     # low order interpolation nodes
     r1, s1, t1 = nodes(elem, 1)
     V1 = vandermonde(elem, 1, r, s, t) / vandermonde(elem, 1, r1, s1, t1)
-    #r1D, w1D = quad_nodes(Line(), N)
-    #rf, sf, tf = ntuple(_ -> zeros(length(r), length(r1D)), 3)
-    #for i in eachindex(r1D)
-    #    rf[:, i] .= r
-    #    sf[:, i] .= s
-    #    tf[:, i] .= r1D[i]
-    #end
-    #rstf = tuple(rf, sf, tf)
+    
     rqf, sqf, wqf = quad_nodes(Quad(), N)
-    rft, sft, wft = quad_nodes(Tri(), N)
-    wf = vec(append!(repeat(wqf, 3), repeat(wft, 2)))
-    fn = vcat(fn1, fn2, fn3, fn4, fn5)
-    rf = r[fn]
-    sf = s[fn]
-    tf = t[fn]
+    rtf, stf, wtf = quad_nodes(Tri(), N)
+    tri = RefElemData(Tri(), N)
+
+
+    otf = ones(size(rtf))
+    #sqf refers to the height of quad-face nodes. 
+    rf = vcat(repeat(tri.rf[1:(N+1)],N+1),repeat(tri.rf[N+2:2*(N+1)],N+1), repeat(tri.rf[(2*(N+1)+1):3*(N+1)],N+1), rtf, rtf)
+    sf = vcat(repeat(tri.sf[1:(N+1)],N+1),repeat(tri.sf[N+2:2*(N+1)],N+1), repeat(tri.sf[(2*(N+1)+1):3*(N+1)],N+1), stf, stf)
+    tf = vcat(sqf, sqf, sqf, -otf, otf)
+    wf = vec(append!(repeat(wqf, 3), repeat(wtf, 2)))
+
     rstf = tuple(rf, sf, tf)
     Vf = vandermonde(elem, N, rf, sf, tf) / VDM
     
