@@ -41,6 +41,53 @@ function connect_mesh(EToV, fv)
     return FToF
 end
 
+function build_node_maps(FToF, face_types, N, Xf...; tol = 1e-12)
+    number_of_passed_face_nodes = 0
+    #TODO: There has to be a better way than this with some julia-magic
+    Xf_sorted = [Vector{Vector{Int}}[], Vector{Vector{Int}}[], Vector{Vector{Int}}[]]
+
+    dims = length(Xf)
+    for face in 1:length(face_types)
+        num_face_nodes = num_nodes(face_types[face], N)
+        for i in 1:dims
+            push!(xf_sorted, Xf[i,(number_of_passed_face_nodes + 1):(number_of_passed_face_nodes + num_face_nodes)])
+        end
+        number_of_passed_face_nodes += num_face_nodes
+    end 
+    
+    
+    mapM = Vector{Vector{eltype(first(FToF))}}[]
+    mapP = copy(mapM);
+
+    D = zeros(Nfp, Nfp)
+    idM, idP = zeros(Int, Nfp), zeros(Int, Nfp)
+    for (f1, f2) in enumerate(FToF)
+        Nf1 = num_nodes(face_types[f1], 1)
+        Nf2 = num_nodes(face_types[f2], 1)
+        idM, idP = zeros(Int, Nf1), zeros(Int, Nf1)
+        if Nf2 != Nf1
+            #Debug-output. TODO: delete before merging into dev
+            break
+        end
+        push!(mapM, zeros(Nf1))
+        push!(mapP, zeros(Nf2))
+        D = zeros(Nf1, Nf2)
+        fill!(D, zero(eltype(D)))
+        for i in 1:dims
+            for j in 1:Nf1, k in 1:Nf2
+                D[j,k] +=abs(Xf_sorted[i][f1][j] - Xf_sorted[i][f2][k])
+            end
+        end
+        refd = maximum(D[:])
+        map!(id -> id[1], idM, findall(@. D < 1e-12 * refd))
+        map!(id -> id[2], idP, findall(@. D < 1e-12 * refd))
+        @. mapP[f1, idM] = idP + (f2 - 1) * Nf1
+        println(f1, " ", f2)
+        println(idM)
+        println(idP)
+    end
+end
+
 """
     build_node_maps(Xf, FToF)
 
@@ -50,7 +97,7 @@ elements. `mapM` - map minus (interior). `mapP` - map plus (exterior).
 `Xf = (xf, yf, zf)` and `FToF` is size `(Nfaces * K)` and `FToF[face]` = face neighbor
 
 `mapM`, `mapP` are Vectors of Vectors, of the length Nfaces, where each Vector
-is of length Nfp of the corresponding face.
+is of length Nfp of the corresponding
 
 # Examples
 ```julia
@@ -64,49 +111,13 @@ function build_node_maps(FToF, Xf...; tol = 1e-12)
     NfacesK = length(FToF)    
     dims = length(Xf)
 
-    for e in 1:2
-        for f in 1:3
-            push!(zf_sorted, zf[((f-1)*4+1):(f*4),e])
-        end
-        nqfp = 3 * 4
-        for f in 4:5
-            bnds = (f-4)*3
-            push!(zf_sorted, zf[(nqfp+bnds):(nqfp+bnds+2),e])
-        end
-    end
-
-
-    
-    mapM = Vector{Vector{eltype(first(FToF))}}[]
+    # number nodes consecutively
+    Nfp  = length(Xf[1]) ÷ NfacesK
+    mapM = reshape(collect(1:length(Xf[1])), Nfp, NfacesK);
     mapP = copy(mapM);
 
     D = zeros(Nfp, Nfp)
     idM, idP = zeros(Int, Nfp), zeros(Int, Nfp)
-    for (f1, f2) in enumerate(FToF)
-        Nf1 = num_nodes(ftypes[f1], 1)
-        Nf2 = num_nodes(ftypes[f2], 1)
-        idM, idP = zeros(Int, Nf1), zeros(Int, Nf1)
-        if Nf2 != Nf1
-            break
-        end
-        push!(mapM, zeros(Nf1))
-        push!(mapP, zeros(Nf2))
-        D = zeros(Nf1, Nf2)
-        fill!(D, zero(eltype(D)))
-        for j in 1:Nf1, k in 1:Nf2
-            D[j,k] +=abs(xf_sorted[f1][j] - xf_sorted[f2][k])
-            D[j,k] +=abs(yf_sorted[f1][j] - yf_sorted[f2][k])
-            D[j,k] +=abs(zf_sorted[f1][j] - zf_sorted[f2][k])
-        end
-        refd = maximum(D[:])
-        map!(id -> id[1], idM, findall(@. D < 1e-12 * refd))
-        map!(id -> id[2], idP, findall(@. D < 1e-12 * refd))
-        @. mapP[f1, idM] = idP + (f2 - 1) * Nf1
-        println(f1, " ", f2)
-        println(idM)
-        println(idP)
-    end
-
     for (f1, f2) in enumerate(FToF)
 
         fill!(D, zero(eltype(D)))

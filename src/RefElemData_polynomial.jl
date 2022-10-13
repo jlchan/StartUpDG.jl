@@ -35,6 +35,10 @@ function init_face_data(elem::Hex; quad_rule_face=quad_nodes(Quad(), N))
     return rf, sf, tf, wf, nrJ, nsJ, ntJ
 end
 
+# The number of nodes 
+@inline num_nodes(::Tri, N) = (N+1)*(N+2) / 2
+@inline num_nodes(::Quad, N) = (N+1)*(N+2)
+
 function init_face_data(elem::Tet; quad_rule_face=quad_nodes(Tri(), N))
     rquad, squad, wquad = quad_rule_face
     e = ones(size(rquad))
