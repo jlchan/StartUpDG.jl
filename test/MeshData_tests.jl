@@ -254,6 +254,17 @@
     end
 end
 
+@testset "Wedge mesh initialization" begin
+    tol = 5e2 * eps()
+    N = 3
+    K1D = 1
+    rd = RefElemData(Wedge(), N)
+    VXYZ, EToV = uniform_mesh(Wedge(), K1D, K1D)
+    md = MeshData(VXYZ, EToV, rd)
+
+    @test md.mesh_type = rd.element_type
+end
+
 @testset "3D polynomial tet mesh initialization" begin
     tol = 5e2 * eps()
 
