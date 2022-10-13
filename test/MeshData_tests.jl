@@ -1,3 +1,22 @@
+@testset "Wedge mesh initialization" begin
+    tol = 5e2 * eps()
+    N = 3
+    K1D = 1
+    rd = RefElemData(Wedge(), N)
+    VX = [-1; 1; -1; 1; -1; 1; -1; 1]
+    VY = [-1; -1; 1; 1; -1; -1; 1; 1]
+    VZ = [-1; -1; -1; -1; 1; 1; 1; 1]
+
+    EToV = [1 5 2 6 4 8; 1 5 4 8 3 7]
+
+    md = MeshData(VX, VY, VZ, EToV, rd)
+    display(md.mapM)
+    display(md.mapP)
+    display(md.mapB)
+
+    @test md.mesh_type = rd.element_type
+end
+
 @testset "$approxType MeshData initialization" for approxType = [Polynomial(), SBP()]
     @testset "1D mesh initialization" begin
         tol = 5e2*eps()
@@ -252,17 +271,6 @@
         uf = Vf * u
         @test uf ≈ uf[mapP]
     end
-end
-
-@testset "Wedge mesh initialization" begin
-    tol = 5e2 * eps()
-    N = 3
-    K1D = 1
-    rd = RefElemData(Wedge(), N)
-    VXYZ, EToV = uniform_mesh(Wedge(), K1D, K1D)
-    md = MeshData(VXYZ, EToV, rd)
-
-    @test md.mesh_type = rd.element_type
 end
 
 @testset "3D polynomial tet mesh initialization" begin
