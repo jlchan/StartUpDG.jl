@@ -137,7 +137,7 @@
         @test rd.Nq == length(rd.rq)
         
         # 3 * quad_face + 2 * tri_face
-        @test abs(sum(rd.wf)) - (3*4 + 2*2) < tol
+        @test sum(rd.wf) ≈ (2*4 + sqrt(2)*4 + 2*2) 
 
         @test abs(sum(rd.wf .* rd.nrJ)) < tol
         @test abs(sum(rd.wf .* rd.nsJ)) < tol
@@ -145,8 +145,8 @@
 
         @test rd.Pq * rd.Vq ≈ I
         
-        #1/2 of a hex
-        @test abs(sum(rd.wq)) ≈ 4
+        # 1/2 of a hex
+        @test sum(rd.wq) ≈ 4
         
         @test StartUpDG.num_faces(Wedge()) == 5
         @test StartUpDG.num_vertices(Wedge()) == 6
