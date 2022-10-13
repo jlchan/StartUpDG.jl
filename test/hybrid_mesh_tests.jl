@@ -1,66 +1,68 @@
-@testset "Hybrid mesh utilities" begin
-    u = (1:3, 3:-1:1)
-    v = (3:-1:1, 1:3)
-    @test StartUpDG.match_coordinate_vectors(u, v) == [3, 2, 1]
-end
+@testset "Hybrid meshes" begin 
+    @testset "Hybrid mesh utilities" begin
+        u = (1:3, 3:-1:1)
+        v = (3:-1:1, 1:3)
+        @test StartUpDG.match_coordinate_vectors(u, v) == [3, 2, 1]
+    end
 
-@testset "Hybrid mesh RefElemData and MeshData" begin
+    @testset "Hybrid mesh RefElemData and MeshData" begin
 
-    rds = RefElemData((Tri(), Quad()), N = 3)
-    @test rds[Tri()].element_type == Tri()
-    @test rds[Quad()].element_type == Quad()
+        rds = RefElemData((Tri(), Quad()), N = 3)
+        @test rds[Tri()].element_type == Tri()
+        @test rds[Quad()].element_type == Quad()
 
-    #   1  3_______4______5
-    #      |   4   |  6  / 
-    #      |1     2|7  5
-    #      |   3   |  /  
-    #  -1  1 ----- 2        1
+        #   1  3_______4______5
+        #      |   4   |  6  / 
+        #      |1     2|7  5
+        #      |   3   |  /  
+        #  -1  1 ----- 2        1
 
-    VX = [-1; 0; -1; 0; 1]
-    VY = [-1; -1; 1; 1; 1]
-    EToV = [[1 2 3 4], [2 4 5]]
-    md = MeshData(VX, VY, EToV, rds)
-    # @test md.FToF == vec([1  7  3  4  5  6  2])
+        VX = [-1; 0; -1; 0; 1]
+        VY = [-1; -1; 1; 1; 1]
+        EToV = [[1 2 3 4], [2 4 5]]
+        md = MeshData(VX, VY, EToV, rds)
+        # @test md.FToF == vec([1  7  3  4  5  6  2])
 
-    # Simple hybrid mesh for testing
-    #   1  7______8______9
-    #      |      | 3  / |
-    #      |   4  |  / 5 |
-    #   0  4 ---- 5 ---- 6 
-    #      |      |      |
-    #      |   1  |   2  |
-    #   -1 1 ---- 2 ---- 3
-    #     -1      0      1
-    VX = [-1; 0; 1; -1; 0; 1; -1; 0; 1]
-    VY = [-1; -1; -1; 0; 0; 0; 1; 1; 1]
-    EToV = [[1 2 4 5], [2 3 5 6], [5 8 9], [4 5 7 8], [9 6 5]]
+        # Simple hybrid mesh for testing
+        #   1  7______8______9
+        #      |      | 3  / |
+        #      |   4  |  / 5 |
+        #   0  4 ---- 5 ---- 6 
+        #      |      |      |
+        #      |   1  |   2  |
+        #   -1 1 ---- 2 ---- 3
+        #     -1      0      1
+        VX = [-1; 0; 1; -1; 0; 1; -1; 0; 1]
+        VY = [-1; -1; -1; 0; 0; 0; 1; 1; 1]
+        EToV = [[1 2 4 5], [2 3 5 6], [5 8 9], [4 5 7 8], [9 6 5]]
 
-    md = MeshData(VX, VY, EToV, rds)
-    @test md.mesh_type == StartUpDG.HybridMesh((Quad(), Tri()))
+        md = MeshData(VX, VY, EToV, rds)
+        @test md.mesh_type == StartUpDG.HybridMesh((Quad(), Tri()))
 
-    # test if all nodes on boundary are ±1
-    @test all(@. abs(max(abs(md.xf[md.mapB]), abs(md.yf[md.mapB])) - 1) < 100 * eps() )
+        # test if all nodes on boundary are ±1
+        @test all(@. abs(max(abs(md.xf[md.mapB]), abs(md.yf[md.mapB])) - 1) < 100 * eps() )
 
-    ## test that the DG derivative of a polynomial recovers the exact derivative
-    @unpack x, y = md
-    u = @. x^3 - x^2 * y + 2 * y^3
-    dudx = @. 3 * x^2 - 2 * x * y
+        ## test that the DG derivative of a polynomial recovers the exact derivative
+        @unpack x, y = md
+        u = @. x^3 - x^2 * y + 2 * y^3
+        dudx = @. 3 * x^2 - 2 * x * y
 
-    @unpack rxJ, sxJ, J = md
-    dudr, duds = similar(md.x), similar(md.x)
-    dudr.Quad .= rds[Quad()].Dr * u.Quad
-    duds.Quad .= rds[Quad()].Ds * u.Quad
-    dudr.Tri .= rds[Tri()].Dr * u.Tri
-    duds.Tri .= rds[Tri()].Ds * u.Tri
+        @unpack rxJ, sxJ, J = md
+        dudr, duds = similar(md.x), similar(md.x)
+        dudr.Quad .= rds[Quad()].Dr * u.Quad
+        duds.Quad .= rds[Quad()].Ds * u.Quad
+        dudr.Tri .= rds[Tri()].Dr * u.Tri
+        duds.Tri .= rds[Tri()].Ds * u.Tri
 
-    @test norm(@. dudx - (rxJ * dudr + sxJ * duds) / J) < 1e3 * eps()
+        @test norm(@. dudx - (rxJ * dudr + sxJ * duds) / J) < 1e3 * eps()
 
-    # compute jumps
-    @unpack mapP = md
-    uf = ComponentArray(Tri=rds[Tri()].Vf * u.Tri, Quad=rds[Quad()].Vf * u.Quad)
-    uP = uf[mapP]    
-    u_jump = similar(uf)
-    u_jump .= uP - uf
-    @test mapP !== md.mapM # make sure connectivity maps aren't just the same
-    @test norm(u_jump) < 10 * length(uf) * eps() # jumps should be zero for a continuous function
+        # compute jumps
+        @unpack mapP = md
+        uf = ComponentArray(Tri=rds[Tri()].Vf * u.Tri, Quad=rds[Quad()].Vf * u.Quad)
+        uP = uf[mapP]    
+        u_jump = similar(uf)
+        u_jump .= uP - uf
+        @test mapP !== md.mapM # make sure connectivity maps aren't just the same
+        @test norm(u_jump) < 10 * length(uf) * eps() # jumps should be zero for a continuous function
+    end
 end
