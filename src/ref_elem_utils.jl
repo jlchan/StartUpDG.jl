@@ -38,13 +38,14 @@ function find_face_nodes(elem::Tet, r, s, t, tol=50*eps())
     return fv1, fv2, fv3, fv4
 end
 
-# Faces are ordered as described in https://arxiv.org/pdf/1611.02929.pdf
+# Faces are ordered as described in "Coarse mesh partitioning for tree based AMR" 
+# by Burstedde and Holke (2018). https://arxiv.org/pdf/1611.02929.pdf
 function find_face_nodes(elem::Wedge, r, s, t, tol=50*eps())
-    fv1 = findall(@. abs(s + 1) < tol)  #first quad face
-    fv2 = findall(@. abs(r + s) < tol)  #second quad face
-    fv3 = findall(@. abs(r + 1) < tol)  #third quad face
-    fv4 = findall(@. abs(t + 1) < tol)  #buttom tri face
-    fv5 = findall(@. abs(t - 1) < tol)  #top tri face
+    fv1 = findall(@. abs(s + 1) < tol)  # first quad face
+    fv2 = findall(@. abs(r + s) < tol)  # second quad face
+    fv3 = findall(@. abs(r + 1) < tol)  # third quad face
+    fv4 = findall(@. abs(t + 1) < tol)  # bottom tri face
+    fv5 = findall(@. abs(t - 1) < tol)  # top tri face
     return fv1, fv2, fv3, fv4, fv5
 end
 

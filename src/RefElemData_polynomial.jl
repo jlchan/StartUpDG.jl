@@ -62,7 +62,7 @@ end
 
 Constructor for `RefElemData` for different element types.
 """
-function RefElemData(elem::Line, approxType::Polynomial, N; 
+function RefElemData(elem::Line, approximation_type::Polynomial, N; 
                      quad_rule_vol=quad_nodes(elem, N+1), 
                      Nplot=10)
 
@@ -91,7 +91,7 @@ function RefElemData(elem::Line, approxType::Polynomial, N;
     rp = equi_nodes(elem, Nplot)
     Vp = vandermonde(elem, N, rp) / VDM
 
-    return RefElemData(elem, approxType, N, fv, V1,
+    return RefElemData(elem, approximation_type, N, fv, V1,
                        tuple(r), VDM, vec(Fmask),
                        Nplot, tuple(rp), Vp,
                        tuple(rq), wq, Vq,
@@ -99,7 +99,7 @@ function RefElemData(elem::Line, approxType::Polynomial, N;
                        M, Pq, tuple(Dr), LIFT)
 end
 
-function RefElemData(elem::Union{Tri, Quad},  approxType::Polynomial, N;
+function RefElemData(elem::Union{Tri, Quad},  approximation_type::Polynomial, N;
                      quad_rule_vol=quad_nodes(elem, N),
                      quad_rule_face=quad_nodes(face_type(elem), N),
                      Nplot=10)
@@ -131,7 +131,7 @@ function RefElemData(elem::Union{Tri, Quad},  approxType::Polynomial, N;
     rp, sp = equi_nodes(elem, Nplot)
     Vp = vandermonde(elem, N, rp, sp) / VDM
 
-    return RefElemData(elem, approxType, N, fv, V1,
+    return RefElemData(elem, approximation_type, N, fv, V1,
                        tuple(r, s), VDM, vec(Fmask),
                        Nplot, tuple(rp, sp), Vp,
                        tuple(rq, sq), wq, Vq,
@@ -139,7 +139,7 @@ function RefElemData(elem::Union{Tri, Quad},  approxType::Polynomial, N;
                        M, Pq, (Dr, Ds), LIFT)
 end
 
-function RefElemData(elem::Tet, approxType::Polynomial, N;
+function RefElemData(elem::Tet, approximation_type::Polynomial, N;
                      quad_rule_vol=quad_nodes(elem, N),
                      quad_rule_face=quad_nodes(face_type(elem), N),
                      Nplot=10)
@@ -171,7 +171,7 @@ function RefElemData(elem::Tet, approxType::Polynomial, N;
     rp, sp, tp = equi_nodes(elem, Nplot)
     Vp = vandermonde(elem, N, rp, sp, tp) / VDM
 
-    return RefElemData(elem, approxType, N, fv, V1,
+    return RefElemData(elem, approximation_type, N, fv, V1,
                        tuple(r, s, t), VDM, vec(Fmask),
                        Nplot, tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
@@ -180,7 +180,7 @@ function RefElemData(elem::Tet, approxType::Polynomial, N;
 end
 
 # specialize constructor for `Hex` to allow for higher polynomial degrees `N`
-function RefElemData(elem::Hex, approxType::Polynomial, N;
+function RefElemData(elem::Hex, approximation_type::Polynomial, N;
                      quad_rule_vol = quad_nodes(elem, N),
                      quad_rule_face = quad_nodes(face_type(elem), N),
                      Nplot = 10)
@@ -234,7 +234,7 @@ function RefElemData(elem::Hex, approxType::Polynomial, N;
 
     Drst = (Dr, Ds, Dt)
 
-    return RefElemData(elem, approxType, N, fv, V1,
+    return RefElemData(elem, approximation_type, N, fv, V1,
                        tuple(r, s, t), VDM, vec(Fmask),
                        Nplot, tuple(rp, sp, tp), Vp, 
                        tuple(rq, sq, tq), wq, Vq,
@@ -251,7 +251,7 @@ end
 
 Build operators for prisms/wedges
 """
-function RefElemData(elem::Wedge, approxType::Polynomial, N;
+function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
     quad_rule_vol=quad_nodes(elem, N),
     quad_rule_face=quad_nodes(face_type(elem, 1), N),
     Nplot=10)
@@ -309,13 +309,13 @@ function RefElemData(elem::Wedge, approxType::Polynomial, N;
     rp, sp, tp = equi_nodes(elem, Nplot)
     Vp = vandermonde(elem, N, rp, sp, tp) / VDM
 
-    LIFT = M \ (Vf' *diagm(wf))
+    LIFT = M \ (Vf' * diagm(wf))
 
-    return RefElemData(elem, approxType, N, fv, V1,
-                        tuple(r, s, t), VDM, Fmask,
-                        Nplot, tuple(rp, sp, tp), Vp,
-                        tuple(rq, sq, tq), wq, Vq,
-                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
-                        M, Pq, Drst, LIFT)
+    return RefElemData(elem, approximation_type, N, fv, V1,
+                       tuple(r, s, t), VDM, Fmask,
+                       Nplot, tuple(rp, sp, tp), Vp,
+                       tuple(rq, sq, tq), wq, Vq,
+                       rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
+                       M, Pq, Drst, LIFT)
 end
 
