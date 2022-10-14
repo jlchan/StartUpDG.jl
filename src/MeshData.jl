@@ -303,14 +303,16 @@ end
 
 MeshData(md::MeshData, rd::RefElemData, xyz...) = MeshData(rd, md, xyz...)
 
-function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
-
+function recompute_geometry(rd::RefElemData{Dim}, xyz) where {Dim}
     # compute new quad and plotting points
     xyzf = map(x -> rd.Vf * x, xyz)
     xyzq = map(x -> rd.Vq * x, xyz)
 
     #Compute geometric factors and surface normals
     geo = geometric_factors(xyz..., rd.Drst...)
+    J = last(geo)
+    wJq = diagm(rd.wq) * (rd.Vq * J)
+
     if Dim==1
         rstxyzJ = SMatrix{Dim, Dim}(geo[1])
     elseif Dim==2
@@ -322,13 +324,17 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
                                     geo[3], geo[6], geo[9])
     end
     geof = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
+    nxyzJ = geof[1:Dim]
+    Jf = last(geof)
+    return xyzf, xyzq, rstxyzJ, J, wJq, nxyzJ, Jf
+end
 
-    J = last(geo)
-    wJq = diagm(rd.wq) * (rd.Vq * J)
+function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
+
+    xyzf, xyzq, rstxyzJ, J, wJq, nxyzJ, Jf = recompute_geometry(rd, xyz)
 
     # TODO: should we warp VXYZ as well? Or just set it to nothing since it no longer determines geometric terms?
-    setproperties(md, (xyz, xyzq, xyzf, rstxyzJ, J, wJq,
-                       nxyzJ=geof[1:Dim], Jf=last(geof)))
+    return setproperties(md, (; xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyzJ, Jf))
 end
 
 

@@ -131,6 +131,8 @@ function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs
     return rds
 end
 
+typename(x) = typeof(x).name.name
+
 # constructs MeshData for a hybrid mesh given a LittleDict of `RefElemData` 
 # with element type keys (e.g., `Tri()` or `Quad`). 
 function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:RefElemData};
@@ -172,8 +174,6 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:Re
     # for each reference element in `rds`
     geo = compute_geometric_data.(values(xyz_hybrid), values(rds))
 
-    typename(x) = typeof(x).name.name
-
     n_dims = 2
     xyz = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(values(xyz_hybrid), i)))), n_dims)
     xyzf = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzf), i)))), n_dims)
@@ -195,4 +195,36 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:Re
                     mapM, mapP, mapB,
                     rstxyzJ, J, nxyzJ, Jf, 
                     is_periodic)
+end
+
+function MeshData(rds::LittleDict{AbstractElemShape, <:RefElemData{Dim}}, 
+                  md::MeshData{Dim}, xyz_curved...) where {Dim}
+
+    # TODO: can this be made type stable?
+    tuple_fields = LittleDict{AbstractElemShape, NamedTuple}()
+    scalar_fields = LittleDict{AbstractElemShape, NamedTuple}()
+    for element_type in keys(rds)
+        rd = rds[element_type]
+
+        # compute curved geometric properties for each element type
+        xyz = getproperty.(xyz_curved, typename(element_type))
+        xyzf, xyzq, rstxyzJ, J, wJq, nxyzJ, Jf = recompute_geometry(rd, xyz)
+
+        tuple_fields[element_type] = (; xyz, xyzq, xyzf, rstxyzJ, nxyzJ)
+        scalar_fields[element_type] = (; J, wJq, Jf)
+    end
+
+    element_type_names = Symbol.(typename.(keys(rds)))
+
+    xyz   = Tuple(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyz)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
+    xyzf  = Tuple(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyzf)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
+    xyzq  = Tuple(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyzq)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
+    nxyzJ = Tuple(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :nxyzJ)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
+    rstxyzJ = SMatrix{Dim, Dim}(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :rstxyzJ)[dim] for element_type in keys(rds))))) for dim in 1:Dim * Dim)
+
+    J = ComponentArray(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :J) for element_type in keys(rds)))))
+    wJq = ComponentArray(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :wJq) for element_type in keys(rds)))))
+    Jf = ComponentArray(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :Jf) for element_type in keys(rds)))))
+
+    return setproperties(md, (; xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyzJ, Jf))
 end
