@@ -42,25 +42,35 @@ function connect_mesh(EToV, fv)
 end
 
 function build_node_maps(FToF, face_types, N, Xf...; tol = 1e-12)
-    number_of_passed_face_nodes = 0
+    
     #TODO: There has to be a better way than this with some julia-magic
-    Xf_sorted = [Vector{Vector{Int}}[], Vector{Vector{Int}}[], Vector{Vector{Int}}[]]
-
+    Xf_sorted = [Vector{Float64}[], Vector{Float64}[], Vector{Float64}[]]
     dims = length(Xf)
-    for face in 1:length(face_types)
-        num_face_nodes = num_nodes(face_types[face], N)
-        for i in 1:dims
-            push!(xf_sorted, Xf[i,(number_of_passed_face_nodes + 1):(number_of_passed_face_nodes + num_face_nodes)])
-        end
-        number_of_passed_face_nodes += num_face_nodes
-    end 
-    
-    
     mapM = Vector{Vector{eltype(first(FToF))}}[]
+    
+    
+    for i in 1:dims
+        number_of_passed_face_nodes = 0
+        Xfi = vec(Xf[i])
+        for face in eachindex(face_types)
+            num_face_nodes = num_nodes(face_types[face], N)
+            push!(Xf_sorted[i], Xfi[(number_of_passed_face_nodes + 1):(number_of_passed_face_nodes + num_face_nodes)])
+            number_of_passed_face_nodes += num_face_nodes
+        end
+    end
+    number_of_passed_face_nodes = 0
+    for face in eachindex(face_types)
+        num_face_nodes = num_nodes(face_types[face], N)
+        push!(mapM, [collect((number_of_passed_face_nodes+1):(number_of_passed_face_nodes + num_face_nodes))])
+        number_of_passed_face_nodes += num_face_nodes
+    end
     mapP = copy(mapM);
+    
+    
+    
 
-    D = zeros(Nfp, Nfp)
-    idM, idP = zeros(Int, Nfp), zeros(Int, Nfp)
+    #D = zeros(Nfp, Nfp)
+    #idM, idP = zeros(Int, Nfp), zeros(Int, Nfp)
     for (f1, f2) in enumerate(FToF)
         Nf1 = num_nodes(face_types[f1], 1)
         Nf2 = num_nodes(face_types[f2], 1)
@@ -69,8 +79,6 @@ function build_node_maps(FToF, face_types, N, Xf...; tol = 1e-12)
             #Debug-output. TODO: delete before merging into dev
             break
         end
-        push!(mapM, zeros(Nf1))
-        push!(mapP, zeros(Nf2))
         D = zeros(Nf1, Nf2)
         fill!(D, zero(eltype(D)))
         for i in 1:dims
@@ -81,11 +89,13 @@ function build_node_maps(FToF, face_types, N, Xf...; tol = 1e-12)
         refd = maximum(D[:])
         map!(id -> id[1], idM, findall(@. D < 1e-12 * refd))
         map!(id -> id[2], idP, findall(@. D < 1e-12 * refd))
-        @. mapP[f1, idM] = idP + (f2 - 1) * Nf1
+        #This breaks
+        #@. mapP[f1][idM] = idP + (f2 - 1) * Nf1
         println(f1, " ", f2)
         println(idM)
         println(idP)
     end
+    display(mapM)
 end
 
 """
