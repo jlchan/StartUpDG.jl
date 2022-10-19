@@ -32,8 +32,25 @@ function connect_mesh(EToV, fv)
     return FToF
 end
 
+# returns back `p` such that `u[p] == v` or false
+# u = tuple of vectors containing coordinates
+function match_coordinate_vectors(u, v; tol = 100 * eps())
+    p = zeros(Int, length(first(u)))
+    return match_coordinate_vectors!(p, u, v)
+end
+function match_coordinate_vectors!(p, u, v; tol = 100 * eps())
+    for (i, u_i) in enumerate(zip(u...))
+        for (j, v_i) in enumerate(zip(v...))
+            if norm(u_i .- v_i) < tol 
+                p[i] = j
+            end
+        end
+    end
+    return p 
+end
+
 """
-    build_node_maps(Xf, FToF)
+    build_node_maps(FToF, Xf)
 
 Intialize the connectivity table along all edges and boundary node tables of all
 elements. `mapM` - map minus (interior). `mapP` - map plus (exterior).
@@ -44,42 +61,32 @@ elements. `mapM` - map minus (interior). `mapP` - map plus (exterior).
 
 # Examples
 ```julia
-julia> mapM, mapP, mapB = build_node_maps((xf, yf), FToF)
+julia> mapM, mapP, mapB = build_node_maps(FToF, (xf, yf))
 ```
 """
-
 function build_node_maps(FToF, Xf...; tol = 1e-12)
 
-    NODETOL = tol
-    NfacesK = length(FToF)    
-    dims = length(Xf)
+    # total number of faces 
+    num_faces_total = length(FToF)    
+    
+    # num face points: assumes all faces have the same number of nodes
+    num_nodes_per_face = length(Xf[1]) ÷ num_faces_total 
 
     # number nodes consecutively
-    Nfp  = length(Xf[1]) ÷ NfacesK
-    mapM = reshape(collect(1:length(Xf[1])), Nfp, NfacesK);
+    mapM = reshape(collect(1:length(Xf[1])), num_nodes_per_face, num_faces_total);
     mapP = copy(mapM);
 
-    D = zeros(Nfp, Nfp)
-    idM, idP = zeros(Int, Nfp), zeros(Int, Nfp)
+    # reshape to be a face-first array
+    Xf = reshape.(Xf, num_nodes_per_face, num_faces_total)
+
+    p = zeros(Int, num_nodes_per_face)
     for (f1, f2) in enumerate(FToF)
-
-        fill!(D, zero(eltype(D)))
-
-        # find volume node numbers of left and right nodes
-        for i in 1:dims
-            Xfi = reshape(Xf[i], Nfp, NfacesK)
-            for j in 1:Nfp, k in 1:Nfp
-                D[j, k] += abs(Xfi[j, f1] - Xfi[k, f2])
-            end
-        end
-
-        refd = maximum(D[:])
-        map!(id -> id[1], idM, findall(@. D < NODETOL * refd))
-        map!(id -> id[2], idP, findall(@. D < NODETOL * refd))        
-        @. mapP[idM, f1] = idP + (f2 - 1) * Nfp
+        face_1_coordinates = view.(Xf, :, f1)
+        face_2_coordinates = view.(Xf, :, f2)        
+        match_coordinate_vectors!(p, face_1_coordinates, face_2_coordinates, tol=tol)
+        @. mapP[:, f1] = mapM[p, f2]
     end
-
-    mapB = map(x -> x[1], findall(@. mapM[:]==mapP[:]))
+    mapB = findall(vec(mapM) .== vec(mapP))
     return mapM, mapP, mapB
 end
 
@@ -92,7 +99,8 @@ Returns new MeshData such that the node maps `mapP` and face maps `FToF` are now
 Here, `is_periodic` is a tuple of `Bool` indicating whether or not to impose periodic
 BCs in the `x`,`y`, or `z` coordinate.
 """
-make_periodic(md::MeshData{Dim}, is_periodic::Bool = true) where {Dim} = make_periodic(md, ntuple(_->is_periodic, Dim)) 
+make_periodic(md::MeshData{Dim}, is_periodic::Bool = true) where {Dim} = 
+    make_periodic(md, ntuple(_->is_periodic, Dim)) 
 
 function make_periodic(md::MeshData{Dim}, is_periodic::NTuple{Dim, Bool}) where {Dim, Bool}
 
