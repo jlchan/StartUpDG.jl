@@ -154,7 +154,7 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:Re
     J = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :J))))
     Jf = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :Jf))))
 
-    mapM, mapP, mapB = vec.(build_node_maps(FToF, xyzf...))
+    mapM, mapP, mapB = vec.(build_node_maps(FToF, xyzf))
 
     return MeshData(HybridMesh(Tuple(element_types)), (VX, VY), EToV, FToF, 
                     xyz, xyzf, xyzq, wJq,

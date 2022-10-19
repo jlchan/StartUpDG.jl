@@ -64,7 +64,7 @@ elements. `mapM` - map minus (interior). `mapP` - map plus (exterior).
 julia> mapM, mapP, mapB = build_node_maps(FToF, (xf, yf))
 ```
 """
-function build_node_maps(FToF, Xf...; tol = 1e-12)
+function build_node_maps(FToF, Xf; tol = 1e-12)
 
     # total number of faces 
     num_faces_total = length(FToF)    
