@@ -1,19 +1,39 @@
-@testset "Wedge mesh initialization" begin
-    tol = 5e2 * eps()
-    N = 3
-    K1D = 1
-    rd = RefElemData(Wedge(), N)
-    VXYZ = ([-1, 1, -1, 1, -1, 1, -1, 1], [-1, -1, 1, 1, -1, -1, 1, 1], [-1, -1, -1, -1, 1, 1, 1, 1])
+@testset "$N degree MeshData init" for N = [1, 2, 3]
+    @testset "Wedge mesh initialization" begin
+        tol = 5e2 * eps()
+        K1D = 1
+        rd = RefElemData(Wedge(), N)
+        VXYZ = ([-1, 1, -1, 1, -1, 1, -1, 1], [-1, -1, 1, 1, -1, -1, 1, 1], [-1, -1, -1, -1, 1, 1, 1, 1])
 
 
-    EToV = [1 5 2 6 4 8; 1 5 4 8 3 7]
+        EToV = [1 5 2 6 4 8; 1 5 4 8 3 7]
 
-    md = MeshData(VX, VY, VZ, EToV, rd)
-    display(md.mapM)
-    display(md.mapP)
-    display(md.mapB)
+        md = MeshData(VXYZ, EToV, rd)
+    
 
-    @test md.mesh_type = rd.element_type
+        @unpack wq, Dr, Vq, Vf, wf = rd
+        @unpack x, xq, xf, K = md
+        @unpack rxJ, J, nxJ, wJq = md
+        @unpack mapM, mapP, mapB = md
+
+        #@test all(J .> 0)
+
+        # check volume integration
+        @test Vq * x ≈ xq
+        @test diagm(wq) * (Vq * J) ≈ wJq
+        @test abs(sum(xq .* wJq)) < tol
+
+        # check connectivity and boundary maps
+        u = @. (1-x) * (1+x)
+        uf = Vf * u
+        for (f1, f2) in enumerate(md.FToF)
+            if f1 != f2
+                @test norm(uf[mapM[f1]] - uf[mapP[f2]]) < tol
+            end
+        end
+
+        @test md.mesh_type == rd.element_type
+    end
 end
 
 @testset "$approxType MeshData initialization" for approxType = [Polynomial(), SBP()]
