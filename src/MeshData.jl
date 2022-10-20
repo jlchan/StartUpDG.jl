@@ -25,6 +25,7 @@ Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
     # TODO: move VXYZ, EToV into a `VertexMappedMesh` mesh_type?
     VXYZ::NTuple{Dim, VertexType}   # vertex coordinates
     EToV::EToVType                  # mesh vertex array     
+
     FToF::FToFType                  # face connectivity
 
     xyz::NTuple{Dim, VolumeType}    # physical points
@@ -164,7 +165,7 @@ num_elements(md) = size(getfield(md, :EToV), 1)
 Returns a MeshData struct with high order DG mesh information from the unstructured
 mesh information (VXYZ..., EToV).
 
-    MeshData(md::MeshData, rd::RefElemData, xyz...)
+    MeshData(rd::RefElemData, md::MeshData, xyz...)
 
 Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
