@@ -25,6 +25,7 @@ Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
     # TODO: move VXYZ, EToV into a `VertexMappedMesh` mesh_type?
     VXYZ::NTuple{Dim, VertexType}   # vertex coordinates
     EToV::EToVType                  # mesh vertex array     
+
     FToF::FToFType                  # face connectivity
 
     xyz::NTuple{Dim, VolumeType}    # physical points
@@ -164,7 +165,7 @@ num_elements(md) = size(getfield(md, :EToV), 1)
 Returns a MeshData struct with high order DG mesh information from the unstructured
 mesh information (VXYZ..., EToV).
 
-    MeshData(md::MeshData, rd::RefElemData, xyz...)
+    MeshData(rd::RefElemData, md::MeshData, xyz...)
 
 Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
@@ -172,7 +173,8 @@ and outputs a new MeshData struct. Only fields modified are the coordinate-depen
 """
 
 # splats VXYZ 
-MeshData(VXYZ::T, EToV, rd) where {NDIMS, T <: NTuple{NDIMS}} = MeshData(VXYZ..., EToV, rd)
+MeshData(VXYZ::T, EToV, other_args...) where {NDIMS, T <: NTuple{NDIMS}} = 
+    MeshData(VXYZ..., EToV, other_args...)
 
 function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
@@ -238,7 +240,7 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2})
     @unpack Vf = rd
     xf = Vf * x
     yf = Vf * y
-    mapM, mapP, mapB = build_node_maps(FToF, xf, yf)
+    mapM, mapP, mapB = build_node_maps(FToF, (xf, yf))
     Nfp = size(Vf, 1) ÷ Nfaces
     mapM = reshape(mapM, Nfp * Nfaces, K)
     mapP = reshape(mapP, Nfp * Nfaces, K)
@@ -277,7 +279,7 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
     @unpack r, s, t, Vf = rd
     xf, yf, zf = (x -> Vf * x).((x, y, z))
-    mapM, mapP, mapB = build_node_maps(FToF, xf, yf, zf)
+    mapM, mapP, mapB = build_node_maps(FToF, (xf, yf, zf))
     Nfp = convert(Int, size(Vf, 1) / Nfaces)
     mapM = reshape(mapM, Nfp * Nfaces, K)
     mapP = reshape(mapP, Nfp * Nfaces, K)
@@ -301,7 +303,7 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
                     is_periodic)
 end
 
-MeshData(md::MeshData, rd::RefElemData, xyz...) = MeshData(rd, md, xyz...)
+@deprecate MeshData(md::MeshData, rd::RefElemData, xyz...) MeshData(rd, md, xyz...)
 
 function recompute_geometry(rd::RefElemData{Dim}, xyz) where {Dim}
     # compute new quad and plotting points

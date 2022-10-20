@@ -9,6 +9,21 @@ struct HybridMesh{T}
     end
 end
 
+function HybridMeshExample()
+    # Simple hybrid mesh for testing
+    #   1  7______8______9
+    #      |      | 3  / |
+    #      |   4  |  / 5 |
+    #   0  4 ---- 5 ---- 6 
+    #      |      |      |
+    #      |   1  |   2  |
+    #   -1 1 ---- 2 ---- 3
+    #     -1      0      1
+    VX = [-1; 0; 1; -1; 0; 1; -1; 0; 1]
+    VY = [-1; -1; -1; 0; 0; 0; 1; 1; 1]
+    EToV = [[1 2 4 5], [2 3 5 6], [5 8 9], [4 5 7 8], [9 6 5]]
+    return (VX, VY), EToV
+end
 
 # Given a tuple of element types, find which element type has 
 # `num_vertices_of_target` vertices. 
@@ -60,43 +75,9 @@ function connect_mesh(EToV::AbstractVector{<:AbstractArray},
     return FToF
 end
 
-# returns back `p` such that `u[p] == v` or false
-# u = tuple of vectors containing coordinates
-function match_coordinate_vectors(u, v; tol = 100 * eps())
-    p = zeros(Int, length(first(u)))
-    for i in eachindex(first(u)), j in eachindex((first(v)))
-        if norm(getindex.(u, i) .- getindex.(v, j)) < tol
-            p[i] = j
-        end
-    end
-    return p # [findfirst(abs.(u[i] .- v) .< tol) for i in eachindex(u)]
-end
-
 # returns element type of global element `global_e`
 element_type(global_e, element_types, EToV) = 
     element_types[findfirst(length(EToV[global_e]) .== num_vertices.(element_types))]
-
-# construct node connectivity arrays for hybrid meshes. 
-# note that `rds` (the container of `RefElemData`s) must have the 
-# same ordering as the `ArrayPartition` `Xf`.
-# Here `element_ids` is a LittleDict{AbstractElemShape, "indices of elements"}.
-function build_node_maps(rds::LittleDict{AbstractElemShape, <:RefElemData{2}}, 
-                         EToV, FToF, Xf::NTuple{2}; tol = 1e-12)
-               
-    # TODO: this part assumes all faces have the same number of points (valid in 2D)
-    rd = first(values(rds))
-    num_points_per_face = rd.Nfq ÷ num_faces(rd.element_type)
-
-    # TODO: fix, repeated code
-    element_types = (keys(rds)..., ) # convert to tuple for indexing
-    element_ids = LittleDict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
-    num_elements_of_type(elem) = length(element_ids[elem])
-
-    num_total_faces = length(first(Xf)) ÷ num_points_per_face
-    xf, yf = reshape.(Xf, num_points_per_face, num_total_faces)
-
-    return build_node_maps(FToF, xf, yf)
-end
 
 # computes geometric terms from nodal coordinates
 function compute_geometric_data(xyz, rd::RefElemData{2})
@@ -188,7 +169,7 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:Re
     J = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :J))))
     Jf = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :Jf))))
 
-    mapM, mapP, mapB = vec.(build_node_maps(rds, EToV, FToF, xyzf))       
+    mapM, mapP, mapB = vec.(build_node_maps(FToF, xyzf))
 
     return MeshData(HybridMesh(Tuple(element_types)), (VX, VY), EToV, FToF, 
                     xyz, xyzf, xyzq, wJq,

@@ -1,4 +1,4 @@
-@testset "Hybrid meshes" begin 
+@testset "Hybrid meshes" begin
     @testset "Hybrid mesh utilities" begin
         u = (1:3, 3:-1:1)
         v = (3:-1:1, 1:3)
@@ -16,7 +16,6 @@
         #      |1     2|7  5
         #      |   3   |  /  
         #  -1  1 ----- 2        1
-
         VX = [-1; 0; -1; 0; 1]
         VY = [-1; -1; 1; 1; 1]
         EToV = [[1 2 3 4], [2 4 5]]
@@ -64,5 +63,28 @@
         u_jump .= uP - uf
         @test mapP !== md.mapM # make sure connectivity maps aren't just the same
         @test norm(u_jump) < 10 * length(uf) * eps() # jumps should be zero for a continuous function
+    end
+
+    @testset "Curved hybrid meshes" begin
+        rds = RefElemData((Tri(), Quad()), N = 3)
+        md = MeshData(HybridMeshExample()..., rds)
+
+        @unpack x, y = md
+        @. x = x + 0.1 * sin(pi * x) * sin(pi * y)
+        @. y = y + 0.1 * sin(pi * x) * sin(pi * y)
+        md = MeshData(rds, md, x, y)
+
+        # test differentiation of a linear function 
+        u = @. 2 * x + y
+        dudr, duds = similar(u), similar(u)
+        dudr.Tri .= rds[Tri()].Dr * u.Tri
+        duds.Tri .= rds[Tri()].Ds * u.Tri
+        dudr.Quad .= rds[Quad()].Dr * u.Quad
+        duds.Quad .= rds[Quad()].Ds * u.Quad
+        dudx = @. (md.rxJ * dudr + md.sxJ * duds) / md.J
+        dudy = @. (md.ryJ * dudr + md.syJ * duds) / md.J
+
+        @test all(@. dudx ≈ 2.0)
+        @test all(@. dudy ≈ 1.0)
     end
 end

@@ -148,7 +148,7 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
     end
 
     # compute node maps between mortars
-    mapM, mapP, mapB = build_node_maps(FToF, x_mortar, y_mortar)    
+    mapM, mapP, mapB = build_node_maps(FToF, (x_mortar, y_mortar))
 
     #Compute geometric factors and surface normals
     @unpack Dr, Ds = rd
