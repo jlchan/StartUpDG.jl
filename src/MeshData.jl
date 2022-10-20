@@ -25,6 +25,7 @@ Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
     # TODO: move VXYZ, EToV into a `VertexMappedMesh` mesh_type?
     VXYZ::NTuple{Dim, VertexType}   # vertex coordinates
     EToV::EToVType                  # mesh vertex array     
+
     FToF::FToFType                  # face connectivity
 
     xyz::NTuple{Dim, VolumeType}    # physical points
