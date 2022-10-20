@@ -42,7 +42,7 @@ include("boundary_utils.jl")
 export boundary_face_centroids, tag_boundary_faces, tag_boundary_nodes
 
 include("hybrid_meshes.jl")
-export num_faces, num_vertices
+export num_faces, num_vertices, HybridMeshExample
 
 include("nonconforming.jl")
 export num_mortars_per_face, NonConformingQuadMeshExample
