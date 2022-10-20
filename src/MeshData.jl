@@ -164,7 +164,7 @@ num_elements(md) = size(getfield(md, :EToV), 1)
 Returns a MeshData struct with high order DG mesh information from the unstructured
 mesh information (VXYZ..., EToV).
 
-    MeshData(md::MeshData, rd::RefElemData, xyz...)
+    MeshData(rd::RefElemData, md::MeshData, xyz...)
 
 Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
