@@ -1,5 +1,5 @@
-@testset "Geometric terms" begin
-    @testset "Element $elem" for elem in [Tri() Quad() Hex() Tet()]
+@testset "Geometric terms" begin    
+    @testset "Geometric terms for $elem elements" for elem in [Tri() Quad() Hex() Tet()]
         tol = 5e2 * eps()
         N = 3
         rd = RefElemData(elem, N)

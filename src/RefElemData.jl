@@ -26,8 +26,7 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType,
     VDM::TVDM            # generalized Vandermonde matrix
     Fmask::FMASK         # indices of face nodes
 
-    # TODO - remove? Plotting nodes probably don't need to be in RefElemData
-    Nplot::Int  # TODO: remove. Nplot doesn't do anything IIRC...
+    Nplot::Int           # TODO: remove. Nplot doesn't do anything IIRC...
     rstp::RSTP           # plotting nodes
     Vp::VP               # interpolation matrix to plotting nodes
 
