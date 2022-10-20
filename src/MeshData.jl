@@ -172,7 +172,8 @@ and outputs a new MeshData struct. Only fields modified are the coordinate-depen
 """
 
 # splats VXYZ 
-MeshData(VXYZ::T, EToV, rd) where {NDIMS, T <: NTuple{NDIMS}} = MeshData(VXYZ..., EToV, rd)
+MeshData(VXYZ::T, EToV, other_args...) where {NDIMS, T <: NTuple{NDIMS}} = 
+    MeshData(VXYZ..., EToV, other_args...)
 
 function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
@@ -301,7 +302,7 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
                     is_periodic)
 end
 
-MeshData(md::MeshData, rd::RefElemData, xyz...) = MeshData(rd, md, xyz...)
+@deprecate MeshData(md::MeshData, rd::RefElemData, xyz...) MeshData(rd, md, xyz...)
 
 function recompute_geometry(rd::RefElemData{Dim}, xyz) where {Dim}
     # compute new quad and plotting points
