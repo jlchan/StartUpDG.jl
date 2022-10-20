@@ -48,6 +48,7 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType,
     LIFT::L              # lift matrix
 end
 
+# removing the Nplot field
 @deprecate RefElemData(element_type, approximation_type, N, fv, V1, rst, VDM, Fmask, Nplot, other_args...) RefElemData(element_type, approximation_type, N, fv, V1, rst, VDM, Fmask, other_args...)
 
 # need this to use @set outside of StartUpDG
