@@ -3,6 +3,19 @@
 # of 4.1 has been added for testing
 
 @testset "Gmsh" begin 
+
+    @testset "Gmsh reading" begin
+        VXY, EToV = readGmsh2D("squareCylinder2D.msh")
+        @test size(EToV) == (3031, 3)
+
+        # malpasset data taken from 
+        # https://github.com/li12242/NDG-FEM/blob/master/Application/SWE/SWE2d/Benchmark/%40Malpasset2d/mesh/triMesh/malpasset.msh
+        VXY, EToV = readGmsh2D("testset_mesh/malpasset.msh")
+        rd = RefElemData(Tri(), 1)
+        md = MeshData(VXY, EToV, rd)
+        @test all(md.J .> 0)
+    end
+    
     @testset "test gmsh element id remapping" begin
         testvec = [16, 15, 16, 17, 18]
         @test StartUpDG.remap_element_grouping(testvec) == [1, 2, 1, 3, 4]
