@@ -41,14 +41,15 @@ function connect_mesh(EToV, fv)
     return FToF
 end
 
+
 function build_node_maps(FToF, face_types, N, Xf...; tol = 1e-12)
     
     #TODO: There has to be a better way than this with some julia-magic
     Xf_sorted = [Vector{Float64}[], Vector{Float64}[], Vector{Float64}[]]
     dims = length(Xf)
-    mapM = Vector{Vector{eltype(first(FToF))}}[]
     
-    
+    # Construct Vector of Vectors with length number_of_faces
+    # Each Vector holds the face-vertex-coordinates
     for i in 1:dims
         number_of_passed_face_nodes = 0
         Xfi = vec(Xf[i])
@@ -58,27 +59,29 @@ function build_node_maps(FToF, face_types, N, Xf...; tol = 1e-12)
             number_of_passed_face_nodes += num_face_nodes
         end
     end
+
+    # Construct the maps that will be filled with the ids of the connected face-vertices
+    mapM = Vector{eltype(first(FToF))}[]
     number_of_passed_face_nodes = 0
+    # Initialize with identity-mapping
     for face in eachindex(face_types)
         num_face_nodes = num_nodes(face_types[face], N)
-        push!(mapM, [collect((number_of_passed_face_nodes+1):(number_of_passed_face_nodes + num_face_nodes))])
+        push!(mapM, collect((number_of_passed_face_nodes+1):(number_of_passed_face_nodes + num_face_nodes)))
         number_of_passed_face_nodes += num_face_nodes
     end
     mapP = copy(mapM);
-    
-    
-    
 
-    #D = zeros(Nfp, Nfp)
-    #idM, idP = zeros(Int, Nfp), zeros(Int, Nfp)
+    # Iterate over the Face to face connectivity and find out which
+    # vertex of face f1 corresponds to a vertex of face
     for (f1, f2) in enumerate(FToF)
+        
         Nf1 = num_nodes(face_types[f1], 1)
         Nf2 = num_nodes(face_types[f2], 1)
-        idM, idP = zeros(Int, Nf1), zeros(Int, Nf1)
         if Nf2 != Nf1
             #Debug-output. TODO: delete before merging into dev
             break
         end
+        idM, idP = zeros(Int, Nf1), zeros(Int, Nf1)
         D = zeros(Nf1, Nf2)
         fill!(D, zero(eltype(D)))
         for i in 1:dims
@@ -89,13 +92,13 @@ function build_node_maps(FToF, face_types, N, Xf...; tol = 1e-12)
         refd = maximum(D[:])
         map!(id -> id[1], idM, findall(@. D < 1e-12 * refd))
         map!(id -> id[2], idP, findall(@. D < 1e-12 * refd))
-        #This breaks
-        #@. mapP[f1][idM] = idP + (f2 - 1) * Nf1
-        println(f1, " ", f2)
-        println(idM)
-        println(idP)
+        mapP[f1] = mapM[f2][idM]
     end
+    mapB = map(x -> x[1], findall(@. mapM[:]==mapP[:]))
     display(mapM)
+    display(mapP)
+    display(mapB)
+    return mapM, mapP, mapB
 end
 
 """
