@@ -50,6 +50,11 @@ end
 function match_coordinate_vectors!(p, u, v; tol = 100 * eps())
     for (i, u_i) in enumerate(zip(u...))
         for (j, v_i) in enumerate(zip(v...))
+            println(i, " ", j)
+            display(u_i)
+            println()
+            display(v_i)
+            println()
             if norm(u_i .- v_i) < tol 
                 p[i] = j
             end
@@ -94,17 +99,11 @@ function build_node_maps(FToF, face_types, N, Xf...; tol = 1e-12)
     for (f1, f2) in enumerate(FToF)
         face_1_coords = Vector{Float64}[]
         face_2_coords = Vector{Float64}[]
-        Nfp1 = length(Xf_sorted[1][f1])
-        Nfp2 = length(Xf_sorted[1][f2])
-        if Nfp1 != Nfp2 
-            break;
-        end
         for i in 1:dims
             push!(face_1_coords, Xf_sorted[i][f1])
             push!(face_2_coords, Xf_sorted[i][f2])
         end
         p = match_coordinate_vectors(face_1_coords, face_2_coords)
-        #p = match_face_coordinate(face_1_coords, face_2_coords)
         println(p)
         mapP[f1] = mapM[f2][p]
         """

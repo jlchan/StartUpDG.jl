@@ -5,14 +5,14 @@
 Given volume nodes `r`, `s`, `t`, finds face nodes. Note that this function implicitly
 defines an ordering on the faces.
 """
-function find_face_nodes(elem::Tri, r, s, tol=50*eps())
+function find_face_nodes(::Tri, r, s, tol=50*eps())
     e1 = findall(@. abs(s + 1) < tol)
     e2 = findall(@. abs(r + s) < tol)
     e3 = findall(@. abs(r + 1) < tol)
     return e1, reverse(e2), reverse(e3)
 end
 
-function find_face_nodes(elem::Quad, r, s, tol=50*eps())
+function find_face_nodes(::Quad, r, s, tol=50*eps())
     e1 = findall(@. abs(r + 1) < tol)
     e2 = findall(@. abs(r - 1) < tol)
     e3 = findall(@. abs(s + 1) < tol)
@@ -20,7 +20,7 @@ function find_face_nodes(elem::Quad, r, s, tol=50*eps())
     return e1, e2, e3, e4
 end
 
-function find_face_nodes(elem::Hex, r, s, t, tol=50*eps())
+function find_face_nodes(::Hex, r, s, t, tol=50*eps())
     fv1 = findall(@. abs(r + 1) < tol)
     fv2 = findall(@. abs(r - 1) < tol)
     fv3 = findall(@. abs(s + 1) < tol)
@@ -30,7 +30,7 @@ function find_face_nodes(elem::Hex, r, s, t, tol=50*eps())
     return fv1, fv2, fv3, fv4, fv5, fv6
 end
 
-function find_face_nodes(elem::Tet, r, s, t, tol=50*eps())
+function find_face_nodes(::Tet, r, s, t, tol=50*eps())
     fv1 = findall(@. abs(s +1) < tol)
     fv2 = findall(@. abs(r + s + t + 1) < tol)
     fv3 = findall(@. abs(r + 1) < tol)
@@ -38,18 +38,19 @@ function find_face_nodes(elem::Tet, r, s, t, tol=50*eps())
     return fv1, fv2, fv3, fv4
 end
 
-# Faces are ordered as described in https://arxiv.org/pdf/1611.02929.pdf
-function find_face_nodes(elem::Wedge, r, s, t, tol=50*eps())
-    fv1 = findall(@. abs(s + 1) < tol)  #first quad face
-    fv2 = findall(@. abs(r + s) < tol)  #second quad face
-    fv3 = findall(@. abs(r + 1) < tol)  #third quad face
-    fv4 = findall(@. abs(t + 1) < tol)  #buttom tri face
-    fv5 = findall(@. abs(t - 1) < tol)  #top tri face
+# Faces are ordered as described in "Coarse mesh partitioning for tree based AMR" 
+# by Burstedde and Holke (2018). https://arxiv.org/pdf/1611.02929.pdf
+function find_face_nodes(::Wedge, r, s, t, tol=50*eps())
+    fv1 = findall(@. abs(s + 1) < tol)  # first quad face
+    fv2 = findall(@. abs(r + s) < tol)  # second quad face
+    fv3 = findall(@. abs(r + 1) < tol)  # third quad face
+    fv4 = findall(@. abs(t + 1) < tol)  # bottom tri face
+    fv5 = findall(@. abs(t - 1) < tol)  # top tri face
     return fv1, fv2, fv3, fv4, fv5
 end
 
 # face vertices = face nodes of degree 1
-face_vertices(elem::Line) = 1, 2
+face_vertices(::Line) = 1, 2
 face_vertices(elem) = find_face_nodes(elem, nodes(elem, 1)...)
 
 
@@ -57,7 +58,7 @@ face_vertices(elem) = find_face_nodes(elem, nodes(elem, 1)...)
 ##### face data for diff elements
 #####
 
-function map_face_nodes(elem::Tri, face_nodes)
+function map_face_nodes(::Tri, face_nodes)
     r1D = face_nodes
     e = ones(size(r1D)) # vector of all ones
     rf = [r1D; -r1D; -e];
@@ -65,7 +66,7 @@ function map_face_nodes(elem::Tri, face_nodes)
     return rf, sf
 end
 
-function map_face_nodes(elem::Quad, face_nodes)
+function map_face_nodes(::Quad, face_nodes)
     r1D = face_nodes
     e = ones(size(r1D))
     rf = [-e; e; r1D; r1D]
@@ -73,7 +74,7 @@ function map_face_nodes(elem::Quad, face_nodes)
     return rf, sf
 end
 
-function map_face_nodes(elem::Hex, face_nodes...)
+function map_face_nodes(::Hex, face_nodes...)
     r, s = face_nodes
     e = ones(size(r))
     rf = [-e; e; r; r; r; r]
@@ -82,7 +83,7 @@ function map_face_nodes(elem::Hex, face_nodes...)
     return rf, sf, tf
 end
 
-function map_face_nodes(elem::Tet, face_nodes...)
+function map_face_nodes(::Tet, face_nodes...)
     r, s = face_nodes
     e = ones(size(r))
     rf = [r; r; -e; r]
@@ -108,10 +109,13 @@ inverse_trace_constant(rd::RefElemData{2, Quad, SBP{TensorProductLobatto}}) = rd
 inverse_trace_constant(rd::RefElemData{3, Hex, SBP{TensorProductLobatto}}) = 3 * rd.N * (rd.N + 1) / 2
 
 # precomputed
-_inverse_trace_constants(rd::RefElemData{2, Tri, Polynomial}) = (6.0, 10.898979485566365, 16.292060161853993, 23.999999999999808, 31.884512140579055, 42.42373503225737, 52.88579066878113, 66.25284319164409, 79.3535377715693, 95.53911875636945)
-_inverse_trace_constants(rd::RefElemData{3, Tet, Polynomial}) = (10., 16.892024376045097, 23.58210016200093, 33.828424659883034, 43.40423356477473, 56.98869932201791, 69.68035962892684)
-inverse_trace_constant(rd::RefElemData{2, Tri, Polynomial}) where {Dim} = _inverse_trace_constants(rd)[rd.N]
-inverse_trace_constant(rd::RefElemData{3, Tet, Polynomial}) where {Dim} = _inverse_trace_constants(rd)[rd.N]
+_inverse_trace_constants(rd::RefElemData{2, Tri, Polynomial})   = (6.0, 10.898979485566365, 16.292060161853993, 23.999999999999808, 31.884512140579055, 42.42373503225737, 52.88579066878113, 66.25284319164409, 79.3535377715693, 95.53911875636945)
+_inverse_trace_constants(rd::RefElemData{3, Tet, Polynomial})   = (10., 16.892024376045097, 23.58210016200093, 33.828424659883034, 43.40423356477473, 56.98869932201791, 69.68035962892684)
+_inverse_trace_constants(rd::RefElemData{3, Wedge, Polynomial}) = (9.92613593327531, 18.56357670538197, 29.030325215439625, 42.98834597283998, 58.802145509223536, 78.00615833786019, 99.27149051377008, 123.76230676427465, 150.48304574455943)
+
+inverse_trace_constant(rd::RefElemData{2, Tri, Polynomial}) where {Dim}   = _inverse_trace_constants(rd)[rd.N]
+inverse_trace_constant(rd::RefElemData{3, Tet, Polynomial}) where {Dim}   = _inverse_trace_constants(rd)[rd.N]
+inverse_trace_constant(rd::RefElemData{3, Wedge, Polynomial}) where {Dim} = _inverse_trace_constants(rd)[rd.N]
 
 # generic fallback
 function inverse_trace_constant(rd::RefElemData)

@@ -26,8 +26,7 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType,
     VDM::TVDM            # generalized Vandermonde matrix
     Fmask::FMASK         # indices of face nodes
 
-    # TODO - remove? Plotting nodes probably don't need to be in RefElemData
-    Nplot::Int  # TODO: remove. Nplot doesn't do anything IIRC...
+    Nplot::Int           # TODO: remove. Nplot doesn't do anything IIRC...
     rstp::RSTP           # plotting nodes
     Vp::VP               # interpolation matrix to plotting nodes
 
@@ -183,13 +182,14 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 @inline face_type(::Hex) = Quad()
 @inline face_type(::Tet) = Tri()
 
-
+# generic fallback 
+@inline face_type(elem::AbstractElemShape, id) = face_type(elem)
 
 # Wedges have different types of faces depending on the face. 
 # We define the first three faces to be quadrilaterals and the 
 # last two faces are triangles.
-@inline face_type(elem::AbstractElemShape, id) = face_type(elem)
-@inline face_type(::Wedge, id) = (id < 3) ? Quad() : Tri()
+@inline face_type(::Wedge, id) = (id <= 3) ? Quad() : Tri()
+
 
 # ====================================================
 #          RefElemData approximation types

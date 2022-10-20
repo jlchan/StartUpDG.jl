@@ -136,17 +136,25 @@
         @test rd.Np == length(rd.r)  
         @test rd.Nq == length(rd.rq)
         
-        # 3 * quad_face + 2 * tri_face
-        @test abs(sum(rd.wf)) - (3*4 + 2*2) < tol
-
         @test abs(sum(rd.wf .* rd.nrJ)) < tol
         @test abs(sum(rd.wf .* rd.nsJ)) < tol
         @test abs(sum(rd.wf .* rd.ntJ)) < tol
 
+        @unpack node_ids_by_face = rd.element_type
+        @test sum(rd.wf[node_ids_by_face[1]]) ≈ 4
+        # Note: this is not the true area of face 2. Because we map 
+        # all faces back to the reference face, there is a factor of 
+        # sqrt(2) difference from the true area. 
+        @test sum(rd.wf[node_ids_by_face[2]]) ≈ 4 
+        @test sum(rd.wf[node_ids_by_face[3]]) ≈ 4
+        @test sum(rd.wf[node_ids_by_face[4]]) ≈ 2
+        @test sum(rd.wf[node_ids_by_face[5]]) ≈ 2
+
+
         @test rd.Pq * rd.Vq ≈ I
         
-        #1/2 of a hex
-        @test abs(sum(rd.wq)) ≈ 4
+        # 1/2 of a hex
+        @test sum(rd.wq) ≈ 4
         
         @test StartUpDG.num_faces(Wedge()) == 5
         @test StartUpDG.num_vertices(Wedge()) == 6
