@@ -26,7 +26,6 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType,
     VDM::TVDM            # generalized Vandermonde matrix
     Fmask::FMASK         # indices of face nodes
 
-    Nplot::Int           # TODO: remove. Nplot doesn't do anything IIRC...
     rstp::RSTP           # plotting nodes
     Vp::VP               # interpolation matrix to plotting nodes
 
@@ -49,6 +48,8 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType,
     LIFT::L              # lift matrix
 end
 
+@deprecate RefElemData(element_type, approximation_type, N, fv, V1, rst, VDM, Fmask, Nplot, other_args...) RefElemData(element_type, approximation_type, N, fv, V1, rst, VDM, Fmask, other_args...)
+
 # need this to use @set outside of StartUpDG
 function ConstructionBase.setproperties(rd::RefElemData, patch::NamedTuple)
     fields = (haskey(patch, symbol) ? getproperty(patch, symbol) : getproperty(rd, symbol) for symbol in fieldnames(typeof(rd)))         
@@ -57,7 +58,7 @@ end
 
 ConstructionBase.getproperties(rd::RefElemData) = 
     (; elementType=rd.elementType, approximation_type=rd.approximation_type, N=rd.N, fv=rd.fv, V1=rd.V1, 
-       rst=rd.rst, VDM=rd.VDM, Fmask=rd.Fmask, Nplot=rd.Nplot, rstp=rd.rstp, Vp=rd.Vp, 
+       rst=rd.rst, VDM=rd.VDM, Fmask=rd.Fmask, rstp=rd.rstp, Vp=rd.Vp, 
        rstq=rd.rstq, wq=rd.wq, Vq=rd.Vq, rstf=rd.rstf, wf=rd.wf, Vf=rd.Vf, nrstJ=rd.nrstJ, 
        M=rd.M, Pq=rd.Pq, Drst=rd.Drst, LIFT=rd.LIFT)
 

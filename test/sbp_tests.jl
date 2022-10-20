@@ -1,6 +1,6 @@
 @testset "SBP elements" begin
 
-    tol = 200*eps()
+    tol = 200 * eps()
 
     N = 3
     f(N,r,s) = r^N + s^N # function for testing differentiation
@@ -25,9 +25,9 @@
         @test norm(rd.Dr*rd.s + rd.Ds*rd.r) < tol
     end
     
-    @testset "Warning for N=6 Kubatko Lobatto SBP nodes" begin
-        @test_logs (:warn,"N=6 SBP operators with quadrature strength 2N-1 and Lobatto face nodes may require very small timesteps.") RefElemData(Tri(),SBP{Kubatko{LobattoFaceNodes}}(),6)
-    end 
+    # @testset "Warning for N=6 Kubatko Lobatto SBP nodes" begin
+    #     @test_logs (:warn,"N=6 SBP operators with quadrature strength 2N-1 and Lobatto face nodes may require very small timesteps.") RefElemData(Tri(), SBP{Kubatko{LobattoFaceNodes}}(),6)
+    # end 
 
     @testset "TensorProductLobatto quad" begin
         rd = RefElemData(Quad(),SBP(),N)
