@@ -43,7 +43,7 @@ include("boundary_utils.jl")
 export boundary_face_centroids, tag_boundary_faces, tag_boundary_nodes
 
 include("hybrid_meshes.jl")
-export num_faces, num_vertices
+export num_faces, num_vertices, HybridMeshExample
 
 include("physical_frame_basis.jl")
 include("cut_cell_meshes.jl")

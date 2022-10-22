@@ -1,24 +1,12 @@
 mean(x) = sum(x) / length(x)
 
-@testset "Mesh, timestep, and Triangulate utils" begin
+@testset "Timestep and Triangulate utils" begin
     tol = 5e2 * eps()
     @testset "Timestep utils" begin
         rk4a, rk4b, rk4c = ck45()
         @test rk4c[1] ≈ 0.0 && rk4c[end] ≈ 1.0
         @test rk4a[1] ≈ 0.0
         @test all(rk4b .> 0)
-    end
-
-    @testset "Gmsh reading" begin
-        VXY, EToV = readGmsh2D("squareCylinder2D.msh")
-        @test size(EToV) == (3031, 3)
-
-        # malpasset data taken from 
-        # https://github.com/li12242/NDG-FEM/blob/master/Application/SWE/SWE2d/Benchmark/%40Malpasset2d/mesh/triMesh/malpasset.msh
-        VXY, EToV = readGmsh2D("testset_mesh/malpasset.msh")
-        rd = RefElemData(Tri(), 1)
-        md = MeshData(VXY, EToV, rd)
-        @test all(md.J .> 0)
     end
 
     @testset "Triangulate utils/example meshes" begin

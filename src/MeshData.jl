@@ -25,6 +25,7 @@ Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
     # TODO: move VXYZ, EToV into a `VertexMappedMesh` mesh_type?
     VXYZ::NTuple{Dim, VertexType}   # vertex coordinates
     EToV::EToVType                  # mesh vertex array     
+
     FToF::FToFType                  # face connectivity
 
     xyz::NTuple{Dim, VolumeType}    # physical points
@@ -49,6 +50,9 @@ Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
     is_periodic::NTuple{Dim, Bool}
 end
 
+# enable use of @set and setproperties(...) for MeshData
+ConstructionBase.constructorof(::Type{MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}}) where {T1, T2, T3, T4, T5, T6, T7, T8, T9} = MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}
+
 function ConstructionBase.setproperties(md::MeshData, patch::NamedTuple)
     fields = (haskey(patch, symbol) ? getproperty(patch, symbol) : getproperty(md, symbol) for symbol in fieldnames(typeof(md)))
     return MeshData(fields...)
@@ -68,11 +72,6 @@ function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, MeshType}) wher
     @nospecialize md
     print(io,"$MeshType MeshData of dimension $DIM with $(md.num_elements) elements")
 end
-
-# enable use of @set and setproperties(...) for MeshData
-ConstructionBase.constructorof(::Type{MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}}) where {T1, T2, T3, T4, T5, T6, T7, T8, T9} = 
-    MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}
-
 
 function Base.propertynames(x::MeshData{1}, private::Bool = false)
     return (fieldnames(MeshData)...,
@@ -169,14 +168,15 @@ num_elements(md) = size(getfield(md, :EToV), 1)
 Returns a MeshData struct with high order DG mesh information from the unstructured
 mesh information (VXYZ..., EToV).
 
-    MeshData(md::MeshData, rd::RefElemData, xyz...)
+    MeshData(rd::RefElemData, md::MeshData, xyz...)
 
 Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
 # splats VXYZ 
-MeshData(VXYZ::T, EToV, rd) where {NDIMS, T <: NTuple{NDIMS}} = MeshData(VXYZ..., EToV, rd)
+MeshData(VXYZ::T, EToV, other_args...) where {NDIMS, T <: NTuple{NDIMS}} = 
+    MeshData(VXYZ..., EToV, other_args...)
 
 function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
@@ -241,7 +241,7 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2})
     @unpack Vf = rd
     xf = Vf * x
     yf = Vf * y
-    mapM, mapP, mapB = build_node_maps(FToF, xf, yf)
+    mapM, mapP, mapB = build_node_maps(FToF, (xf, yf))
     Nfp = size(Vf, 1) ÷ Nfaces
     mapM = reshape(mapM, Nfp * Nfaces, K)
     mapP = reshape(mapP, Nfp * Nfaces, K)
@@ -280,7 +280,7 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
     @unpack r, s, t, Vf = rd
     xf, yf, zf = (x -> Vf * x).((x, y, z))
-    mapM, mapP, mapB = build_node_maps(FToF, xf, yf, zf)
+    mapM, mapP, mapB = build_node_maps(FToF, (xf, yf, zf))
     Nfp = convert(Int, size(Vf, 1) / Nfaces)
     mapM = reshape(mapM, Nfp * Nfaces, K)
     mapP = reshape(mapP, Nfp * Nfaces, K)
@@ -304,23 +304,18 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
                     is_periodic)
 end
 
-MeshData(md::MeshData, rd::RefElemData, xyz...) = MeshData(rd, md, xyz...)
+@deprecate MeshData(md::MeshData, rd::RefElemData, xyz...) MeshData(rd, md, xyz...)
 
-"""
-    MeshData(md::MeshData, rd::RefElemData, xyz...)
-
-Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
-and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
-    `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
-"""
-function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
-
+function recompute_geometry(rd::RefElemData{Dim}, xyz) where {Dim}
     # compute new quad and plotting points
     xyzf = map(x -> rd.Vf * x, xyz)
     xyzq = map(x -> rd.Vq * x, xyz)
 
     #Compute geometric factors and surface normals
     geo = geometric_factors(xyz..., rd.Drst...)
+    J = last(geo)
+    wJq = diagm(rd.wq) * (rd.Vq * J)
+
     if Dim==1
         rstxyzJ = SMatrix{Dim, Dim}(geo[1])
     elseif Dim==2
@@ -332,13 +327,17 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
                                     geo[3], geo[6], geo[9])
     end
     geof = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
+    nxyzJ = geof[1:Dim]
+    Jf = last(geof)
+    return xyzf, xyzq, rstxyzJ, J, wJq, nxyzJ, Jf
+end
 
-    J = last(geo)
-    wJq = diagm(rd.wq) * (rd.Vq * J)
+function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
+
+    xyzf, xyzq, rstxyzJ, J, wJq, nxyzJ, Jf = recompute_geometry(rd, xyz)
 
     # TODO: should we warp VXYZ as well? Or just set it to nothing since it no longer determines geometric terms?
-    setproperties(md, (xyz, xyzq, xyzf, rstxyzJ, J, wJq,
-                       nxyzJ=geof[1:Dim], Jf=last(geof)))
+    return setproperties(md, (; xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyzJ, Jf))
 end
 
 
