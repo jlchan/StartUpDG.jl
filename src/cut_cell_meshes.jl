@@ -557,76 +557,85 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
             end            
             e += 1
         end
-    end 
+    end  
 
-    # xq_list, yq_list, wq_list = ntuple(_ -> typeof(w1D)[], 3)
-    # @time begin 
-    #     # aim to integrate degree 2N basis 
-    #     e = 1
-    #     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
-    #         if is_cut(region_flags[ex, ey])
-    #             face_node_ids = (1:(num_points_per_face * cut_faces_per_cell[e])) .+ 
-    #                              cut_face_offsets[e] * num_points_per_face
+    # The minimum number of cut cell quadrature points is `Np_cut(2 * rd.N)`. However, 
+    # oversampling by 1 seems to improve the conditioning of the quadrature weights.
+    num_cut_quad_points = Np_cut(2 * rd.N) + 1 
+    xq, yq, wJq = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nq, num_cartesian_cells), 
+                                             cut=zeros(num_cut_quad_points, num_cut_cells)), 3)    
 
-    #             xf_element, yf_element, nx_element, ny_element, wJf_element = 
-    #                 map(x -> view(x, face_node_ids), (xf, yf, nx, ny, wJf))
-                         
-    #             # compute volume integrals using numerical Green's theorem and surface integrals
-    #             Vf = vandermonde(physical_frame_elements[e], 2 * rd.N + 1, xf_element, yf_element)
-    #             b = 0.5 * ((Vf * Ix)' * (wJf_element .* nx_element) + 
-    #                        (Vf * Iy)' * (wJf_element .* ny_element)) 
-                
-    #             # compute basis matrix at sampled points
-    #             x_sampled, y_sampled = generate_sampling_points(rd, first(curves), Np_cut(4 * rd.N), 
-    #                                                             vx[ex:ex+1], vy[ey:ey+1]; 
-    #                                                             N_sampled = 5 * rd.N)          
-    #             Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)
-                
-    #             # naive approach; no guarantees of positivity
-    #             QR = qr(Vq', ColumnNorm())
-    #             ids = QR.p[1:min(size(Vq, 1), Np_cut(4 * rd.N))] # oversample candidate quadrature nodes
-    #             wq = Vq[ids,:]' \ b
-    #             quadrature_error = norm(Vq[ids,:]' * wq - b)
-                
-    #             # # this seems to produce a sparse solution
-    #             # wq = nonneg_lsq(Vq', b; alg=:fnnls)                
-    #             # ids = findall(@. abs(wq) > 100 * eps())
-    #             # quadrature_error = norm(Vq' * wq - b)
+    # compute quadrature rules for the Cartesian cells
+    e = 1
+    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
+        if is_Cartesian(region_flags[ex, ey])
+            dx = vx[ex+1] - vx[ex]
+            dy = vy[ey+1] - vy[ey]
+            J = dx * dy / sum(rd.wq) 
+            @. xq.cartesian[:, e] = dx * 0.5 * (1 + rd.rq) + vx[ex]
+            @. yq.cartesian[:, e] = dy * 0.5 * (1 + rd.sq) + vy[ey]
+            @. wJq.cartesian[:, e] = rd.wq * J
+            e += 1
+        end
+    end
 
-    #             # ids = findall(@. abs(wq) > 100 * eps())            
-    #             if quadrature_error > 1e-12
-    #                 println("Warning: quadrature error on element $e is $quadrature_error.")
-    #             end
+    # refine the surface quadrature rule to compute a more accurate volume quadrature
+    e = 1
+    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
+        if is_cut(region_flags[ex, ey])
+            face_node_ids = cut_face_node_ids[e]
+            
+            # map(x->reshape(x, :, cut_faces_per_cell[e]), 
 
-    #             # push!(xq_list, x_sampled[ids])
-    #             # push!(yq_list, y_sampled[ids])
-    #             # push!(wq_list, wq[ids])
+            e += 1
+        end
+    end
+    
+    # compute quadrature rules for the cut cells
+    @time begin 
+    # aim to integrate degree 2N basis 
+    e = 1
+    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
+        if is_cut(region_flags[ex, ey])
+            face_node_ids = cut_face_node_ids[e]
 
-    #             e += 1
-    #         end
-    #     end
-    # end
+            xf_element, yf_element, nx_element, ny_element, wJf_element = 
+                map(x -> view(x, face_node_ids), (xf.cut, yf.cut, nx.cut, ny.cut, wJf.cut))
+                        
+            # compute volume integrals using numerical Green's theorem and surface integrals
+            scaling = physical_frame_elements[e].scaling
+            Vf = vandermonde(physical_frame_elements[e], 2 * rd.N + 1, xf_element, yf_element)
+            b = 0.5 * ((Vf * Ix)' * (wJf_element .* nx_element) ./ scaling[1] + 
+                       (Vf * Iy)' * (wJf_element .* ny_element) ./ scaling[2]) 
+            
+            # compute basis matrix at sampled points
+            x_sampled, y_sampled = generate_sampling_points(rd, first(curves), Np_cut(4 * rd.N), 
+                                                            vx[ex:ex+1], vy[ey:ey+1]; N_sampled = 5 * rd.N)          
+            Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)
+            
+            # naive approach; no guarantees of positivity
+            QR = qr(Vq', ColumnNorm())
+            ids = QR.p[1:num_cut_quad_points]
+            wq = Vq[ids,:]' \ b
+            
+            quadrature_error = norm(Vq[ids,:]' * wq - b)
+            quadrature_condition_number = sum(abs.(wq)) / sum(wq)
+            if quadrature_condition_number > 10 || quadrature_error > 1e-13
+                println("Quadrature error on element $e is $quadrature_error, " * 
+                        "quadrature condition number = $quad_cond.")
+            end
 
+            view(xq.cut, :, e)  .= view(x_sampled, ids)
+            view(yq.cut, :, e)  .= view(y_sampled, ids)
+            view(wJq.cut, :, e) .= wq
 
-    # xq, yq, wJq = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nq, num_cartesian_cells), 
-    #                                          cut=zeros(num_cut_quad_points)), 3)    
-    # cut_quad_points_per_cell = length.(wq_list)
-    # num_cut_quad_points = sum(cut_quad_points_per_cell)
-    # cut_quad_point_offsets = [0; cumsum(cut_quad_points_per_cell)[1:end-1]]
-    # for e in eachindex(cut_quad_points_per_cell)        
-    #     ids = (1:cut_quad_points_per_cell[e]) .+ cut_quad_point_offsets[e]
-    #     xq.cut[ids] .= xq_list[e]
-    #     yq.cut[ids] .= yq_list[e]
-    #     wJq.cut[ids] .= wq_list[e]
-    # end
+            e += 1
+        end
+    end
+    end # @time 
 
     VXYZ = ntuple(_ -> nothing, 2)
     EToV = nothing # dummy field for cut cells
-
-    # Nq_cut = Np_cut(3 * rd.N)
-    # xq, yq, wJq = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nq, num_cartesian_cells), 
-    #                                          cut=zeros(Nq_cut, num_cut_cells)), 3)
-    xq, yq, wJq = nothing, nothing, nothing # TODO: fix and remove
 
     # default to non-periodic 
     is_periodic = (false, false)
@@ -634,7 +643,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     # !!! fix this so Christina can run the wave solver. 
     # !!! Needs (at minimum) LIFT matrices
     cut_cell_operators = (; cut_mass_matrices)
-
+    
     return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, cut_cell_operators), 
                     VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, 
                     mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
