@@ -10,12 +10,15 @@ The field `cut_face_nodes` is a container whose elements are indices of face nod
 cut element. In other words, `md.xf.cut[cut_face_nodes[1]]` returns the face nodes of the 
 first element. 
 
-The field `cut_cell_operators` contains matrices which are precomputed for a cut-cell mesh. 
+We assume all cut elements have the same number of volume quadrature points (which is at 
+least the dimension of a degree 2N polynomial space). 
+
+The field `cut_cell_data` contains additional data from PathIntersections.
 """
 struct CutCellMesh{T1, T2, T3}
     physical_frame_elements::T1
     cut_face_nodes::T2
-    cut_cell_operators::T3
+    cut_cell_data::T3
 end
 
 function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, <:CutCellMesh}) where {DIM}
@@ -155,6 +158,46 @@ function generate_sampling_points(rd, curve, Np_target, cell_vertices_x, cell_ve
     return x_sampled[ids_in_element], y_sampled[ids_in_element]
 end
 
+# returns points (xf, yf), scaled normals (nxJ, nyJ), and face Jacobian (Jf) 
+# for a curve returned from PathIntersections. 
+# `out` should hold `xf, yf, nxJ, nyJ, Jf = ntuple(_ -> similar(points, (length(points), num_faces)), 5)`
+function map_points_to_cut_cell_faces(points, curve)
+    
+    num_faces = length(curve.subcurves)
+    out = ntuple(_ -> similar(points, (length(points) * num_faces)), 5)
+    return map_points_to_cut_cell_faces!(out, points, curve)
+end
+
+function map_points_to_cut_cell_faces!(out, points, curve)
+    xf, yf, nxJ, nyJ, Jf = out
+    stop_points = curve.stop_pts
+    r1D = points
+    for f in 1:length(stop_points)-1
+        for i in eachindex(r1D)
+            fid = i + (f-1) * length(r1D)
+
+            s = map_to_interval(r1D[i], stop_points[f], stop_points[f+1])
+            
+            # compute tangent vector at a node, face Jacobian, and normals
+            x_node, y_node = curve(s)
+            xf[fid], yf[fid] = x_node, y_node                    
+            tangent_vector = PathIntersections.ForwardDiff.derivative(curve, s)
+
+            # the face Jacobian involves scaling between mapped and reference face
+            # reference face = [-1, 1]
+            scaling = (stop_points[f+1] - stop_points[f]) / 2
+            Jf[fid] = norm(tangent_vector) * scaling
+
+            # we have to flip the sign to get the outward normal. 
+            # note: we compute the scaled normal nxJ for consistency with other meshes. 
+            normal_node = SVector{2}(tangent_vector[2], -tangent_vector[1])
+            nxJ[fid], nyJ[fid] = (-normal_node / norm(normal_node)) .* Jf[fid] 
+        end
+    end
+    return vec.((xf, yf, nxJ, nyJ, Jf))
+end
+
+
 # Computes face geometric terms from a RefElemData, `quad_rule_face = (r1D, w1D)`, 
 # the vectors of the 1D vertex nodes `vx` and `vy`, and named tuple 
 # `cutcell_data is a NamedTuple containing `region_flags`, `stop_pts``, `cutcells`. 
@@ -221,34 +264,18 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
 
     e = 1
     fid = 1
+    offset = 0
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
         if is_cut(region_flags[ex, ey])
 
             curve = cutcells[e]
-            stop_points = curve.stop_pts
 
-            for f in 1:length(stop_points)-1
-                for i in eachindex(r1D)
-                    s = map_to_interval(r1D[i], stop_points[f], stop_points[f+1])
-
-                    # compute the tangent vector at a node, use it to compute the face 
-                    # Jacobian and normals
-                    x_node, y_node = curve(s)                
-                    xf.cut[fid], yf.cut[fid] = x_node, y_node                    
-                    tangent_vector = PathIntersections.ForwardDiff.derivative(curve, s)
-
-                    # the face Jacobian involves scaling between mapped and reference face
-                    scaling = (stop_points[f+1] - stop_points[f]) / sum(w1D)
-                    Jf.cut[fid] = norm(tangent_vector) * scaling
-
-                    # we have to flip the sign to get the outward normal. 
-                    # note: we compute the scaled normal nxJ for consistency with other meshes. 
-                    normal_node = SVector{2}(tangent_vector[2], -tangent_vector[1])
-                    nxJ.cut[fid], nyJ.cut[fid] = (-normal_node / norm(normal_node)) .* Jf.cut[fid] 
-
-                    fid += 1
-                end
-            end
+            # map 1D quadrature points to faces
+            num_cut_faces = length(curve.subcurves)
+            fids = (1:(length(r1D) * num_cut_faces)) .+ offset
+            out = map(x->view(x, fids), (xf.cut, yf.cut, nxJ.cut, nyJ.cut, Jf.cut))
+            map_points_to_cut_cell_faces!(out, r1D, curve)
+            offset += length(fids)
 
             # find points inside element
             @unpack curves = cutcell_data        
@@ -404,10 +431,8 @@ is_cut(flag) = flag > 0
 
 # returns the 1D quadrature used to build a RefElemData surface quadrature 
 function get_1d_quadrature(rd::RefElemData{2, Quad})
-    nfaces = num_faces(rd.element_type)
-    num_points_per_face = length(rd.wf) ÷ nfaces
-    rf = reshape(rd.rf, num_points_per_face, nfaces)
-    wf = reshape(rd.wf, num_points_per_face, nfaces)
+    rf = reshape(rd.rf, :, num_faces(rd.element_type))
+    wf = reshape(rd.wf, :, num_faces(rd.element_type))
     
     # face ordering on a quad is -/+ x, -/+ y. face 3 = -y
     return rf[:, 3], wf[:, 3]
@@ -497,8 +522,8 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     wJf = similar(Jf)
 
     # ComponentArray components are views, so assignment instead of .= should be OK
-    wJf.cartesian = Diagonal(w1D) * reshape(Jf.cartesian, length(w1D), length(Jf.cartesian) ÷ length(w1D))
-    wJf.cut = Diagonal(w1D) * reshape(Jf.cut, length(w1D), length(Jf.cut) ÷ length(w1D))
+    wJf.cartesian = Diagonal(w1D) * reshape(Jf.cartesian, length(w1D), :)
+    wJf.cut = Diagonal(w1D) * reshape(Jf.cut, length(w1D), :)
     nx, ny = nxJ ./ Jf, nyJ ./ Jf
 
     num_cartesian_cells = sum(region_flags .== 0)
@@ -508,56 +533,9 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     face_ids(e) = (1:(num_points_per_face * cut_faces_per_cell[e])) .+ 
                     cut_face_offsets[e] * num_points_per_face
     cut_face_node_ids = [face_ids(e) for e in 1:num_cut_cells]
-    
-    # pre-compute and factorize cut-cell mass matrices 
-    cut_mass_matrices = [zeros(Np_cut(rd.N), Np_cut(rd.N)) for _ in 1:num_cut_cells]
+
+    # polynomial antidifferentiation operators
     Ix, Iy = StartUpDG.antidiff_operators(2 * rd.N)
-    e = 1
-    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
-        if is_cut(region_flags[ex, ey])
-            face_node_ids = cut_face_node_ids[e]
-
-            xf_element, yf_element, nx_element, ny_element, wJf_element = 
-                map(x -> view(x, face_node_ids), (xf.cut, yf.cut, nx.cut, ny.cut, wJf.cut))
-                        
-            ## compute volume integrals using numerical Green's theorem and surface integrals                
-
-            # generate over-sampling points 
-            x_sampled, y_sampled = generate_sampling_points(rd, first(curves), Np_cut(2 * rd.N), 
-                                                            vx[ex:ex+1], vy[ey:ey+1]; 
-                                                            N_sampled = 5 * rd.N)
-
-            # evaluate the degree N nodal basis at over-sampled points 
-            VDM = vandermonde(physical_frame_elements[e], rd.N, view(x.cut, :, e), view(y.cut, :, e))
-            V = vandermonde(physical_frame_elements[e], rd.N, x_sampled, y_sampled) / VDM
-
-            # higher degree bases for computing integrals
-            V2N = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled) 
-            Vf = vandermonde(physical_frame_elements[e], 2 * rd.N + 1, xf_element, yf_element)
-            
-            for i in 1:Np_cut(rd.N), j in 1:Np_cut(rd.N)
-                # exploit symmetry
-                if i >= j 
-                    # the mass matrix integrands are L_i * L_j. We represent them in the physical frame basis                    
-                    integrand = V2N \ (V[:, i] .* V[:, j])
-
-                    # incorporate scaling of coordinates into integral
-                    scaling = physical_frame_elements[e].scaling
-                    x_integrand = (Ix * integrand) ./ scaling[1]
-                    y_integrand = (Iy * integrand) ./ scaling[2]
-
-                    # ∫_vol f = ∫_vol ∇⋅ (0.5 * [Ix; Iy] * f) = 
-                    #           ∫_surf 0.5 * ((Ix * f) * nx + (Iy * f) * ny
-                    M_ij = 0.5 * ((Vf * x_integrand)' * (wJf_element .* nx_element) + 
-                                  (Vf * y_integrand)' * (wJf_element .* ny_element)) 
-
-                    cut_mass_matrices[e][i,j] = M_ij
-                    cut_mass_matrices[e][j,i] = M_ij
-                end
-            end            
-            e += 1
-        end
-    end  
 
     # The minimum number of cut cell quadrature points is `Np_cut(2 * rd.N)`. However, 
     # oversampling by 1 seems to improve the conditioning of the quadrature weights.
@@ -578,29 +556,25 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
             e += 1
         end
     end
-
-    # refine the surface quadrature rule to compute a more accurate volume quadrature
-    e = 1
-    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
-        if is_cut(region_flags[ex, ey])
-            face_node_ids = cut_face_node_ids[e]
-            
-            # map(x->reshape(x, :, cut_faces_per_cell[e]), 
-
-            e += 1
-        end
-    end
-    
+   
     # compute quadrature rules for the cut cells
     @time begin 
     # aim to integrate degree 2N basis 
     e = 1
+
+    # refine the surface rule used to compute the volume quadrature 
+    if length(quad_rule_face[1]) < 4 * rd.N + 1
+        r1D, w1D = gauss_quad(0, 0, 4 * rd.N)
+    end
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
         if is_cut(region_flags[ex, ey])
-            face_node_ids = cut_face_node_ids[e]
 
-            xf_element, yf_element, nx_element, ny_element, wJf_element = 
-                map(x -> view(x, face_node_ids), (xf.cut, yf.cut, nx.cut, ny.cut, wJf.cut))
+            # compute a higher accuracy surface quadrature rule 
+            xf_element, yf_element, nxJ_element, nyJ_element, Jf_element = 
+                map_points_to_cut_cell_faces(r1D, cutcells[e])
+            nx_element = nxJ_element ./ Jf_element                
+            ny_element = nyJ_element ./ Jf_element                
+            wJf_element = vec(Diagonal(w1D) * reshape(Jf_element, length(w1D), :))
                         
             # compute volume integrals using numerical Green's theorem and surface integrals
             scaling = physical_frame_elements[e].scaling
@@ -608,7 +582,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
             b = 0.5 * ((Vf * Ix)' * (wJf_element .* nx_element) ./ scaling[1] + 
                        (Vf * Iy)' * (wJf_element .* ny_element) ./ scaling[2]) 
             
-            # compute basis matrix at sampled points
+            # compute degree 2N basis matrix at sampled points
             x_sampled, y_sampled = generate_sampling_points(rd, first(curves), Np_cut(4 * rd.N), 
                                                             vx[ex:ex+1], vy[ey:ey+1]; N_sampled = 5 * rd.N)          
             Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)
@@ -622,7 +596,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
             quadrature_condition_number = sum(abs.(wq)) / sum(wq)
             if quadrature_condition_number > 10 || quadrature_error > 1e-13
                 println("Quadrature error on element $e is $quadrature_error, " * 
-                        "quadrature condition number = $quad_cond.")
+                        "quadrature condition number = $quadrature_condition_number.")
             end
 
             view(xq.cut, :, e)  .= view(x_sampled, ids)
@@ -640,11 +614,10 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     # default to non-periodic 
     is_periodic = (false, false)
 
-    # !!! fix this so Christina can run the wave solver. 
-    # !!! Needs (at minimum) LIFT matrices
-    cut_cell_operators = (; cut_mass_matrices)
+    # TODO: remove
+    cut_cell_data = (; region_flags, cutcells)
     
-    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, cut_cell_operators), 
+    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, cut_cell_data), 
                     VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, 
                     mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
 
