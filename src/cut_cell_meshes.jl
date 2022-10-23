@@ -136,8 +136,9 @@ function generate_sampling_points(rd, curve, Np_target, cell_vertices_x, cell_ve
     x_sampled = @. dx * 0.5 * (1 + r_sampled) + cell_vertices_x[1]
     y_sampled = @. dy * 0.5 * (1 + s_sampled) + cell_vertices_y[1]
 
-    is_in_element = is_contained.(curve, zip(x_sampled, y_sampled)) .== false
+    is_in_element = .!(is_contained.(curve, zip(x_sampled, y_sampled)))
 
+    # increase number of background points until we are left with `Np_target` sampling points 
     while sum(is_in_element) < Np_target
         is_in_element = is_contained.(curve, zip(x_sampled, y_sampled)) .== false
         if sum(is_in_element) < Np_target
@@ -450,11 +451,11 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     # sort the vector of cut cells so that they match the ordering when 
     # iterating through Cartesian mesh indices via (ex, ey).
     cutcell_ordering = zeros(Int, length(cutcells))
-    sk = 1
+    e = 1
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y 
         if is_cut(region_flags[ex, ey])
-            cutcell_ordering[sk] = cutcell_indices[ex, ey] 
-            sk += 1
+            cutcell_ordering[e] = cutcell_indices[ex, ey] 
+            e += 1
         end        
     end
     permute!(cutcells, cutcell_ordering)
@@ -533,9 +534,6 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
             # higher degree bases for computing integrals
             V2N = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled) 
             Vf = vandermonde(physical_frame_elements[e], 2 * rd.N + 1, xf_element, yf_element)
-
-            # display(yf_element)
-            # display(Vf)
             
             for i in 1:Np_cut(rd.N), j in 1:Np_cut(rd.N)
                 # exploit symmetry
