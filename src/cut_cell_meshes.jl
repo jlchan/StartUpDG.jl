@@ -538,8 +538,8 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     Ix, Iy = StartUpDG.antidiff_operators(2 * rd.N)
 
     # The minimum number of cut cell quadrature points is `Np_cut(2 * rd.N)`. However, 
-    # oversampling by 1 seems to improve the conditioning of the quadrature weights.
-    num_cut_quad_points = Np_cut(2 * rd.N) + 1 
+    # oversampling slightly seems to improve the conditioning of the quadrature weights.
+    num_cut_quad_points = Np_cut(2 * rd.N) + 1
     xq, yq, wJq = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nq, num_cartesian_cells), 
                                              cut=zeros(num_cut_quad_points, num_cut_cells)), 3)    
 
@@ -613,9 +613,9 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
 
     # default to non-periodic 
     is_periodic = (false, false)
-
-    # TODO: remove
-    cut_cell_data = (; region_flags, cutcells)
+    
+    cells_per_dimension = (cells_per_dimension_x, cells_per_dimension_y)
+    cut_cell_data = (; cells_per_dimension, region_flags, cutcells)
     
     return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, cut_cell_data), 
                     VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, 
