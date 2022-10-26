@@ -12,6 +12,7 @@ using NodesAndModes: meshgrid
 @reexport using NodesAndModes # for basis functions
 using OrderedCollections: LittleDict # fast ordered dict for a small number of entries
 using PathIntersections
+@reexport using PathIntersections: PresetGeometries
 using RecipesBase
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)

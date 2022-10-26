@@ -1,5 +1,3 @@
-using PathIntersections
-
 @testset "Cut meshes" begin
     
     cells_per_dimension = 4
