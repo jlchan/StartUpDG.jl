@@ -9,7 +9,7 @@
 
     @test_throws ErrorException("Face index f = 5 > 4; too large.") StartUpDG.neighbor_across_face(5, nothing, nothing)
 
-    @test num_cartesian_elements(md) + num_cut_elements(md) == md.num_elements
+    @test StartUpDG.num_cartesian_elements(md) + StartUpDG.num_cut_elements(md) == md.num_elements
 
     @test (@capture_out Base.show(stdout, MIME"text/plain"(), md)) == "Cut-cell MeshData of dimension 2 with 16 elements (12 Cartesian, 4 cut)"
 
