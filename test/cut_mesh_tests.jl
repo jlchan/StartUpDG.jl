@@ -7,6 +7,15 @@
     rd = RefElemData(Quad(), N=3)
     md = MeshData(rd, (circle, ), cells_per_dimension_x, cells_per_dimension_y)
 
+    @test_throws ErrorException("Face index f = 5 > 4; too large.") StartUpDG.neighbor_across_face(5, nothing, nothing)
+
+    @test num_cartesian_elements(md) + num_cut_elements(md) == md.num_elements
+
+    @test (@capture_out Base.show(stdout, MIME"text/plain"(), md)) == "Cut-cell MeshData of dimension 2 with 16 elements (12 Cartesian, 4 cut)"
+
+    # test constructor with only one "cells_per_dimension" argument
+    @test_nowarn MeshData(rd, (circle, ), cells_per_dimension_x)
+
     # check the volume of the domain
     A = 4 - pi * .33^2
     @test sum(md.wJq) ≈ A

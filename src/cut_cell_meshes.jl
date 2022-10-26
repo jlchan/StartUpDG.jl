@@ -23,10 +23,8 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, <:CutCellMesh}) where {DIM}
     @nospecialize md
-    num_cartesian_elements = size(md.x.cartesian, 2)
-    num_cut_elements = size(md.x.cut, 2)
     print(io,"Cut-cell MeshData of dimension $DIM with $(md.num_elements) elements " * 
-             "($(num_cartesian_elements) Cartesian, $(num_cut_elements) cut)")
+             "($(num_cartesian_elements(md)) Cartesian, $(num_cut_elements(md)) cut)")
 end
 
 # maps x ∈ [-1,1] to [a,b]
@@ -624,8 +622,11 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
 
 end
 
+num_cartesian_elements(md::MeshData{DIM, <:CutCellMesh}) where {DIM} = size(md.x.cartesian, 2) 
+num_cut_elements(md::MeshData{DIM, <:CutCellMesh}) where {DIM} = size(md.x.cut, 2) 
+
 # this is used in src/MeshData.jl in `getproperty` 
 function num_elements(md::MeshData{DIM, <:CutCellMesh}) where {DIM}
     # the number of elements is given by the number of columns of each component of x
-    return size(md.x.cartesian, 2) + size(md.x.cut, 2)
+    return num_cartesian_elements(md) + num_cut_elements(md)
 end
