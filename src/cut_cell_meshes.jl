@@ -558,7 +558,8 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     end
    
     # compute quadrature rules for the cut cells
-    @time begin 
+    begin # begin loop if we want to @time this
+
     # aim to integrate degree 2N basis 
     e = 1
 
