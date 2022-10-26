@@ -7,10 +7,12 @@ using Colors
 using ConstructionBase: ConstructionBase
 using HDF5 # read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
-using LinearAlgebra: diagm, eigvals, Diagonal, I, mul!, norm
+using LinearAlgebra: cond, diagm, eigvals, Diagonal, I, mul!, norm, qr, ColumnNorm
 using NodesAndModes: meshgrid
 @reexport using NodesAndModes # for basis functions
 using OrderedCollections: LittleDict # fast ordered dict for a small number of entries
+using PathIntersections
+@reexport using PathIntersections: PresetGeometries
 using RecipesBase
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
@@ -28,7 +30,7 @@ export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...
 export hybridized_SBP_operators, inverse_trace_constant, face_type
 
 include("MeshData.jl")
-export MeshData 
+export MeshData, num_elements
 
 include("geometric_functions.jl")
 export geometric_factors, estimate_h
@@ -43,6 +45,10 @@ export boundary_face_centroids, tag_boundary_faces, tag_boundary_nodes
 
 include("hybrid_meshes.jl")
 export num_faces, num_vertices, HybridMeshExample
+
+include("physical_frame_basis.jl")
+include("cut_cell_meshes.jl")
+export PhysicalFrame
 
 include("nonconforming.jl")
 export num_mortars_per_face, NonConformingQuadMeshExample
