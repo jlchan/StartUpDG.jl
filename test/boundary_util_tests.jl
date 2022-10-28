@@ -37,13 +37,13 @@
         
         VXY, EToV,g = readGmsh2D_v4("testset_mesh/periodicity_mesh_v4.msh",true);
         md = MeshData(VXY, EToV, rd);
-        md_test = make_periodic(md)
+        md_test = make_periodic(md,tol=4e-12)
         @test md_test.xf[md_test.mapB]!=md.xf[md.mapB]
         @test md_test.yf[md_test.mapB]!=md.yf[md.mapB]
         
         VXY, EToV = readGmsh2D("testset_mesh/periodicity_mesh_v2.msh");
         md = MeshData(VXY, EToV, rd);
-        md_test = make_periodic(md)
+        md_test = make_periodic(md,tol=4e-12)
         @test md_test.xf[md_test.mapB]!=md.xf[md.mapB]
         @test md_test.yf[md_test.mapB]!=md.yf[md.mapB]
     end
