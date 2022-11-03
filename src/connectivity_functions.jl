@@ -63,72 +63,8 @@ function match_coordinate_vectors!(p, u, v; tol = 100 * eps())
     return p 
 end
 
-
-function build_node_maps(FToF, face_types, N, Xf...; tol = 1e-12)
-    
-    #TODO: There has to be a better way than this with some julia-magic
-    Xf_sorted = [Vector{Float64}[], Vector{Float64}[], Vector{Float64}[]]
-    dims = length(Xf)
-    
-    # Construct Vector of Vectors with length number_of_faces
-    # Each Vector holds the face-vertex-coordinates
-    for i in 1:dims
-        number_of_passed_face_nodes = 0
-        Xfi = vec(Xf[i])
-        for face in eachindex(face_types)
-            num_face_nodes = num_nodes(face_types[face], N)
-            push!(Xf_sorted[i], Xfi[(number_of_passed_face_nodes + 1):(number_of_passed_face_nodes + num_face_nodes)])
-            number_of_passed_face_nodes += num_face_nodes
-        end
-    end
-
-    # Construct the maps that will be filled with the ids of the connected face-vertices
-    mapM = Vector{eltype(first(FToF))}[]
-    number_of_passed_face_nodes = 0
-    # Initialize with identity-mapping
-    for face in eachindex(face_types)
-        num_face_nodes = num_nodes(face_types[face], N)
-        push!(mapM, collect((number_of_passed_face_nodes+1):(number_of_passed_face_nodes + num_face_nodes)))
-        number_of_passed_face_nodes += num_face_nodes
-    end
-    mapP = copy(mapM);
-
-    display(FToF)
-    # Iterate over the Face to face connectivity and find out which
-    # vertex of face f1 corresponds to a vertex of face
-    for (f1, f2) in enumerate(FToF)
-        face_1_coords = Vector{Float64}[]
-        face_2_coords = Vector{Float64}[]
-        for i in 1:dims
-            push!(face_1_coords, Xf_sorted[i][f1])
-            push!(face_2_coords, Xf_sorted[i][f2])
-        end
-        p = match_coordinate_vectors(face_1_coords, face_2_coords)
-        println(p)
-        mapP[f1] = mapM[f2][p]
-        """
-        Nf1 = num_nodes(face_types[f1], 1)
-        Nf2 = num_nodes(face_types[f2], 1)
-        if Nf2 != Nf1
-            #Debug-output. TODO: delete before merging into dev
-            break
-        end
-        idM, idP = zeros(Int, Nf1), zeros(Int, Nf1)
-        D = zeros(Nf1, Nf2)
-        fill!(D, zero(eltype(D)))
-        for i in 1:dims
-            for j in 1:Nf1, k in 1:Nf2
-                D[j,k] +=abs(Xf_sorted[i][f1][j] - Xf_sorted[i][f2][k])
-            end
-        end
-        refd = maximum(D[:])
-        map!(id -> id[1], idM, findall(@. D < 1e-12 * refd))
-        map!(id -> id[2], idP, findall(@. D < 1e-12 * refd))
-        mapP[f1] = mapM[f2][idM]
-        """
-    end
-    mapB = map(x -> x[1], findall(@. mapM[:]==mapP[:]))
-    return mapM, mapP, mapB
+function n_face_nodes(rd::RefElemData, face)
+    return (last(rd.element_type.node_ids_by_face[face]) - first(rd.element_type.node_ids_by_face[face]) + 1)
 end
 
 """
@@ -170,6 +106,68 @@ function build_node_maps(FToF, Xf; tol = 1e-12)
         @. mapP[:, f1] = mapM[p, f2]
     end
     mapB = findall(vec(mapM) .== vec(mapP))
+    return mapM, mapP, mapB
+end
+
+function build_node_maps(FToF, EToV, rd, Xf...; tol = 1e-12)
+    if rd.element_type ∈ [Line(), Tri(), Quad(), Tet(), Hex()]
+        return build_node_maps(FToF, Xf)
+    end
+    Xf_sorted = [Vector{Float64}[], Vector{Float64}[], Vector{Float64}[]]
+    dims = length(Xf)
+    elem_types = [Tri(), Quad(), Tet(), Hex(), Wedge(), Pyr()]
+    @unpack N = rd
+
+    num_elements = size(EToV, 1)
+    
+    
+    # Construct Vector of Vectors with length number_of_faces
+    # Each Vector holds the face-vertex-coordinates
+
+    #Todo: These two loops can be merged into one
+    for i in 1:dims
+        number_of_passed_face_nodes = 0
+        Xfi = vec(Xf[i])
+        for elem in 1:num_elements
+            element_type = element_type_from_num_vertices(elem_types, length(EToV[elem, :]))
+            n_faces = num_faces(element_type)
+            for face in 1:n_faces
+                num_face_nodes = n_face_nodes(rd, face)
+                push!(Xf_sorted[i], Xfi[(number_of_passed_face_nodes + 1):(number_of_passed_face_nodes + num_face_nodes)])
+                number_of_passed_face_nodes += num_face_nodes
+            end
+        end
+    end
+    
+    # Construct the maps that will be filled with the ids of the connected face-vertices
+    mapM = Vector{eltype(first(FToF))}[]
+    number_of_passed_face_nodes = 0
+    # Initialize with identity-mapping
+    for elem in 1:num_elements
+        element_type = element_type_from_num_vertices(elem_types, length(EToV[elem, :]))
+        n_faces = num_faces(element_type)
+        for face in 1:n_faces
+            num_face_nodes = n_face_nodes(rd, face)
+            push!(mapM, collect((number_of_passed_face_nodes+1):(number_of_passed_face_nodes + num_face_nodes)))
+            number_of_passed_face_nodes += num_face_nodes
+        end
+    end
+
+    mapP = copy(mapM);
+
+    # Iterate over the Face to face connectivity and find out which
+    # vertex of face f1 corresponds to a vertex of face
+    for (f1, f2) in enumerate(FToF)
+        face_1_coords = Vector{Float64}[]
+        face_2_coords = Vector{Float64}[]
+        for i in 1:dims
+            push!(face_1_coords, Xf_sorted[i][f1])
+            push!(face_2_coords, Xf_sorted[i][f2])
+        end
+        p = match_coordinate_vectors(face_1_coords, face_2_coords)
+        mapP[f1] = mapM[f2][p]
+    end
+    mapB = map(x -> x[1], findall(@. mapM[:]==mapP[:]))
     return mapM, mapP, mapB
 end
 
