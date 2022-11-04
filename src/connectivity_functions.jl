@@ -50,11 +50,6 @@ end
 function match_coordinate_vectors!(p, u, v; tol = 100 * eps())
     for (i, u_i) in enumerate(zip(u...))
         for (j, v_i) in enumerate(zip(v...))
-            println(i, " ", j)
-            display(u_i)
-            println()
-            display(v_i)
-            println()
             if norm(u_i .- v_i) < tol 
                 p[i] = j
             end
@@ -110,20 +105,27 @@ function build_node_maps(FToF, Xf; tol = 1e-12)
 end
 
 function build_node_maps(FToF, EToV, rd, Xf...; tol = 1e-12)
+    # If the element has uniform surface elements, one can use the
+    # original implementation
+    # TODO: This can be done more beautiful/better with some Julia-magic
     if rd.element_type ∈ [Line(), Tri(), Quad(), Tet(), Hex()]
         return build_node_maps(FToF, Xf)
     end
+
+    # Store the coordinates of the nodes of every vertex for each face seperatly
+    # Each dimension gets its own vector
     Xf_sorted = [Vector{Float64}[], Vector{Float64}[], Vector{Float64}[]]
     dims = length(Xf)
+
+    # Possible types of elements used in a mesh
     elem_types = [Tri(), Quad(), Tet(), Hex(), Wedge(), Pyr()]
+
+    # Degree of the polynomial
     @unpack N = rd
 
+    # Get the number of elements
     num_elements = size(EToV, 1)
     
-    
-    # Construct Vector of Vectors with length number_of_faces
-    # Each Vector holds the face-vertex-coordinates
-
     #Todo: These two loops can be merged into one
     for i in 1:dims
         number_of_passed_face_nodes = 0
@@ -156,14 +158,16 @@ function build_node_maps(FToF, EToV, rd, Xf...; tol = 1e-12)
     mapP = copy(mapM);
 
     # Iterate over the Face to face connectivity and find out which
-    # vertex of face f1 corresponds to a vertex of face
+    # vertex of face f1 corresponds to a vertex of face2 (face1•p = face2)
     for (f1, f2) in enumerate(FToF)
         face_1_coords = Vector{Float64}[]
         face_2_coords = Vector{Float64}[]
+        # Get the coordinates of the faces
         for i in 1:dims
             push!(face_1_coords, Xf_sorted[i][f1])
             push!(face_2_coords, Xf_sorted[i][f2])
         end
+        # Compute the permutation of nodes (face )
         p = match_coordinate_vectors(face_1_coords, face_2_coords)
         mapP[f1] = mapM[f2][p]
     end
