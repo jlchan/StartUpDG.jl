@@ -128,6 +128,8 @@ function build_node_maps(FToF, EToV, rd, Xf...; tol = 1e-12)
    
     # Construct the maps that will be filled with the ids of the connected face-vertices
     mapM = Vector{eltype(first(FToF))}[]
+
+    # Helper variable to keep track of number of nodes.
     number_of_passed_face_nodes = 0
     # Initialize with identity-mapping
     for elem in 1:num_elements
@@ -139,7 +141,9 @@ function build_node_maps(FToF, EToV, rd, Xf...; tol = 1e-12)
                 push!(Xf_sorted[i], Xf[i][first_face_node: last_face_node, elem])
             end
             num_face_nodes = last_face_node - first_face_node + 1
+            # Initialize maps as identity maps
             push!(mapM, collect((number_of_passed_face_nodes+1):(number_of_passed_face_nodes + num_face_nodes)))
+            # Update to number of passed nodes
             number_of_passed_face_nodes += num_face_nodes
         end
     end
