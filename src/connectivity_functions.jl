@@ -58,8 +58,8 @@ function match_coordinate_vectors!(p, u, v; tol = 100 * eps())
     return p 
 end
 
-function n_face_nodes(rd::RefElemData, face)
-    return (last(rd.element_type.node_ids_by_face[face]) - first(rd.element_type.node_ids_by_face[face]) + 1)
+@inline function n_face_nodes(rd::RefElemData, face)
+    return first(rd.element_type.node_ids_by_face[face]), last(rd.element_type.node_ids_by_face[face])
 end
 
 """
@@ -125,22 +125,7 @@ function build_node_maps(FToF, EToV, rd, Xf...; tol = 1e-12)
 
     # Get the number of elements
     num_elements = size(EToV, 1)
-    
-    #Todo: These two loops can be merged into one
-    for i in 1:dims
-        number_of_passed_face_nodes = 0
-        Xfi = vec(Xf[i])
-        for elem in 1:num_elements
-            element_type = element_type_from_num_vertices(elem_types, length(EToV[elem, :]))
-            n_faces = num_faces(element_type)
-            for face in 1:n_faces
-                num_face_nodes = n_face_nodes(rd, face)
-                push!(Xf_sorted[i], Xfi[(number_of_passed_face_nodes + 1):(number_of_passed_face_nodes + num_face_nodes)])
-                number_of_passed_face_nodes += num_face_nodes
-            end
-        end
-    end
-    
+   
     # Construct the maps that will be filled with the ids of the connected face-vertices
     mapM = Vector{eltype(first(FToF))}[]
     number_of_passed_face_nodes = 0
@@ -149,7 +134,11 @@ function build_node_maps(FToF, EToV, rd, Xf...; tol = 1e-12)
         element_type = element_type_from_num_vertices(elem_types, length(EToV[elem, :]))
         n_faces = num_faces(element_type)
         for face in 1:n_faces
-            num_face_nodes = n_face_nodes(rd, face)
+            first_face_node, last_face_node = n_face_nodes(rd, face)
+            for i in 1:dims
+                push!(Xf_sorted[i], Xf[i][first_face_node: last_face_node, elem])
+            end
+            num_face_nodes = last_face_node - first_face_node + 1
             push!(mapM, collect((number_of_passed_face_nodes+1):(number_of_passed_face_nodes + num_face_nodes)))
             number_of_passed_face_nodes += num_face_nodes
         end
