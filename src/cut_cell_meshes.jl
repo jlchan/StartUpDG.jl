@@ -614,7 +614,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     is_periodic = (false, false)
     
     cells_per_dimension = (cells_per_dimension_x, cells_per_dimension_y)
-    cut_cell_data = (; cells_per_dimension, region_flags, cutcells)
+    cut_cell_data = (; cutcells, region_flags, cells_per_dimension)
     
     return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, cut_cell_data), 
                     VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, 
