@@ -12,23 +12,32 @@ Stores fields `shifting` and `scaling` to shift/scale physical coordinates so th
 they are on the reference element. 
 
     PhysicalFrame()
-    PhysicalFrame(CutCell(), x, y)
+    PhysicalFrame(x, y)
 
 Constructors for a PhysicalFrame object (optionally uses arrays of points `x`, `y` on a cut element).
-
 """
-struct PhysicalFrame{Shifting <: Union{<:SVector, <:NTuple}, Scaling <: Union{<:SVector, <:NTuple}} <: AbstractElemShape
+struct PhysicalFrame{Shifting <: Union{<:SVector, <:NTuple}, Scaling <: Union{<:SVector, <:NTuple}, VXYZ} <: AbstractElemShape
     shifting::Shifting
     scaling::Scaling
+    vxyz::VXYZ # coordinates of background Cartesian cell
 end
 
-# default shifting and scaling
-PhysicalFrame() = PhysicalFrame(SVector(0.0, 0.0), SVector(1.0, 1.0))
+# default shifting and scaling, restricted to 2D for now
+function PhysicalFrame()     
+    return PhysicalFrame(SVector(0.0, 0.0), SVector(1.0, 1.0), 
+                         (SVector(-1., 1.), SVector(-1., 1.))) # set background coordinates to reference cell
+end
 
 function PhysicalFrame(x, y)
     shifting = (mean(x), mean(y))
     scaling = map(x -> 2 / (x[2] - x[1]), (extrema(x), extrema(y)))
-    return PhysicalFrame(shifting, scaling)
+    return PhysicalFrame(shifting, scaling, nothing)
+end
+
+function PhysicalFrame(x, y, vx, vy)
+    shifting = (mean(x), mean(y))
+    scaling = map(x -> 2 / (x[2] - x[1]), (extrema(x), extrema(y)))
+    return PhysicalFrame(shifting, scaling, (vx, vy))
 end
 
 function shift_and_scale(elem::PhysicalFrame, x, y)
@@ -106,4 +115,16 @@ function antidiff_operators(N)
     @assert norm(Dr * Ir - I) + norm(Ds * Is - I) < 100 * eps() * size(Ir, 1)
 
     return Ir, Is
+end
+
+import NodesAndModes: equi_nodes
+function NodesAndModes.equi_nodes(elem::PhysicalFrame, curve, N)
+    @unpack vxyz = elem
+    vx, vy = vxyz
+    r, s = equi_nodes(Quad(), N)
+    dx, dy = diff(vx), diff(vy)
+    x = @. 0.5 * (1 + r) * dx + vx[1]
+    y = @. 0.5 * (1 + s) * dy + vy[1]
+    ids = .!is_contained.(curve, zip(x, y))
+    return x[ids], y[ids]
 end

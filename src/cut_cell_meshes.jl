@@ -285,8 +285,11 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
             cut_face_node_ids = (1:num_points_per_face * cut_faces_per_cell[e]) .+ 
                                  num_points_per_face * cut_face_offsets[e]
 
+            # store face nodes (extremal) and coordinates of background Cartesian cell
             physical_frame_element = 
-                PhysicalFrame(xf.cut[cut_face_node_ids], yf.cut[cut_face_node_ids])
+                PhysicalFrame(xf.cut[cut_face_node_ids], yf.cut[cut_face_node_ids], 
+                              SVector(vx[ex], vx[ex+1]), SVector(vy[ey], vy[ey+1]))
+
             push!(physical_frame_elements, physical_frame_element)
                     
             x_sampled, y_sampled = 

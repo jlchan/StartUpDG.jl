@@ -48,7 +48,7 @@ export num_faces, num_vertices, HybridMeshExample
 
 include("physical_frame_basis.jl")
 include("cut_cell_meshes.jl")
-export PhysicalFrame
+export PhysicalFrame, equi_nodes
 
 include("nonconforming.jl")
 export num_mortars_per_face, NonConformingQuadMeshExample
