@@ -1,3 +1,5 @@
+using PathIntersections
+
 @testset "Cut meshes" begin
     
     cells_per_dimension = 4
@@ -38,6 +40,13 @@
         uf.cut[ids] .= Vf * u.cut[:, e]
     end
     @test all(uf .≈ vec(uf[md.mapP]))
+
+    # test creation of equispaced nodes on cut cells
+    x, y = equi_nodes(physical_frame_elements[1], circle, 10)
+    # shouldn't have more points than equispaced points on a quad
+    @test 0 < length(x) <= length(first(equi_nodes(Quad(), 10))) 
+    # no points should be contained in the circle
+    @test !all(is_contained.(circle, zip(x, y))) 
 
     # TODO: add tests on taking derivatives 
 end
