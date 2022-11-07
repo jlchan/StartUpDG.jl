@@ -565,7 +565,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     e = 1
 
     # refine the surface rule used to compute the volume quadrature 
-    if length(quad_rule_face[1]) < 4 * rd.N + 1
+    if length(quad_rule_face[1]) < 4 * rd.N + 1        
         r1D, w1D = gauss_quad(0, 0, 4 * rd.N)
     end
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
@@ -585,20 +585,22 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
                        (Vf * Iy)' * (wJf_element .* ny_element) ./ scaling[2]) 
             
             # compute degree 2N basis matrix at sampled points
-            x_sampled, y_sampled = generate_sampling_points(rd, first(curves), Np_cut(4 * rd.N), 
-                                                            vx[ex:ex+1], vy[ey:ey+1]; N_sampled = 5 * rd.N)          
+            x_sampled, y_sampled = generate_sampling_points(rd, first(curves), Np_cut(6 * rd.N), 
+                                                            vx[ex:ex+1], vy[ey:ey+1]; N_sampled = 8 * rd.N)          
             Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)
             
             # naive approach; no guarantees of positivity
             QR = qr(Vq', ColumnNorm())
             ids = QR.p[1:num_cut_quad_points]
+            
             wq = Vq[ids,:]' \ b
             
             quadrature_error = norm(Vq[ids,:]' * wq - b)
             quadrature_condition_number = sum(abs.(wq)) / sum(wq)
             if quadrature_condition_number > 10 || quadrature_error > 1e-13
                 println("Quadrature error on element $e is $quadrature_error, " * 
-                        "quadrature condition number = $quadrature_condition_number.")
+                        "quadrature condition number = $quadrature_condition_number. " * 
+                        "Condition number of quadrature VDM is $(cond(Vq[ids,:]')).")
             end
 
             view(xq.cut, :, e)  .= view(x_sampled, ids)
@@ -617,7 +619,9 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     is_periodic = (false, false)
     
     cells_per_dimension = (cells_per_dimension_x, cells_per_dimension_y)
-    cut_cell_data = (; cutcells, region_flags, cells_per_dimension)
+    cut_cell_data = (; cutcells, 
+                       region_flags, cells_per_dimension, vxyz=(vx, vy), # background Cartesian grid info
+                    )
     
     return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, cut_cell_data), 
                     VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, 
