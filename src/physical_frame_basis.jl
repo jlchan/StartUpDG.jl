@@ -118,6 +118,12 @@ function antidiff_operators(N)
 end
 
 import NodesAndModes: equi_nodes
+"""
+    function NodesAndModes.equi_nodes(elem::PhysicalFrame, curve, N)
+
+Returns back `Np(N)` equally spaced nodes on the background quadrilateral corresponding 
+to `elem`, with points inside of `curve` removed.
+"""
 function NodesAndModes.equi_nodes(elem::PhysicalFrame, curve, N)
     @unpack vxyz = elem
     vx, vy = vxyz
