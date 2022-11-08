@@ -291,17 +291,38 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     Flist = 1:length(FToF)
     Bfaces = findall(vec(FToF) .== Flist)
 
-    xb,yb,zb = xf[mapB],yf[mapB],zf[mapB]
-    Nfp = length(xf) ÷ NfacesTotal
-    Nbfaces = length(xb) ÷ Nfp
-    xb, yb, zb = (x->reshape(x, Nfp, Nbfaces)).((xb, yb, zb))
+    mapMB = mapM[mapB]
+    mapPB = mapP[mapB] 
+
+    #xb,yb,zb = xf[mapMB],yf[mapMB],zf[mapMB]
+    #display(xb)
+    Nbfaces = length(mapB)
+    #Nfp = length(xf) ÷ NfacesTotal
+    #Nbfaces = length(xb) ÷ Nfp
+    #xb, yb, zb = (x->reshape(x, Nfp, Nbfaces)).((xb, yb, zb))
 
     # compute centroids of faces
-    xc = vec(sum(xb, dims=1) / Nfp)
-    yc = vec(sum(yb, dims=1) / Nfp)
-    zc = vec(sum(zb, dims=1) / Nfp)
-    mapMB = reshape(mapM[mapB], Nfp, Nbfaces)
-    mapPB = reshape(mapP[mapB], Nfp, Nbfaces)
+    xc = Vector{eltype(first(xf))}(undef, length(mapMB))
+    yc = Vector{eltype(first(xf))}(undef, length(mapMB))
+    zc = Vector{eltype(first(xf))}(undef, length(mapMB))
+    D = Vector{eltype(first(xf))}[]
+    ids = Vector{Int64}[]
+    for face in 1:length(mapB)
+        xc[face] = sum(xf[mapMB[face]]) / length(mapMB[face])
+        yc[face] = sum(yf[mapMB[face]]) / length(mapMB[face])
+        zc[face] = sum(zf[mapMB[face]]) / length(mapMB[face])
+        push!(D, zeros(eltype(first(xf)), length(mapMB[face])))
+        push!(ids, zeros(Int64, length(mapMB[face])))
+    end
+    #xc = vec(sum(xb, dims=1) / Nfp)
+    #yc = vec(sum(yb, dims=1) / Nfp)
+    #zc = vec(sum(zb, dims=1) / Nfp)
+
+
+    #mapMB = reshape(mapM[mapB], Nfp, Nbfaces)
+    #mapPB = reshape(mapP[mapB], Nfp, Nbfaces)
+
+    
 
     xmin, xmax = extrema(xc)
     ymin, ymax = extrema(yc)
@@ -324,18 +345,20 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     yfaces = map(x -> x[1], findall(@. (@. abs(yc - ymax) < NODETOL * LY) | (@. abs(yc - ymin) < NODETOL * LY)))
     zfaces = map(x -> x[1], findall(@. (@. abs(zc - zmax) < NODETOL * LZ) | (@. abs(zc - zmin) < NODETOL * LZ)))
 
-    D = zeros(eltype(xb), size(xb,1), size(xb,1))
-    ids = zeros(Int, size(xb, 1))
+    #D = zeros(eltype(xb), size(xb,1), size(xb,1))
+
     if is_periodic_x # find matches in x faces
         for i in xfaces, j in xfaces
             if i!=j
-                if abs(yc[i] - yc[j]) < NODETOL * LY && abs(zc[i] - zc[j]) < NODETOL * LZ && abs(abs(xc[i] - xc[j]) - LX) < NODETOL * LX
-                    # create distance matrix
-                    @. D = abs(yb[:,i] - yb[:,j]') + abs(zb[:,i] - zb[:,j]')
-                    map!(x->x[1], ids, findall(@. D < NODETOL * LY))
-                    @. mapPB[:,i] = mapMB[ids,j]
-
-                    FToF[Bfaces[i]] = Bfaces[j]
+                D = zeros(eltype(xf), length(mapMB[i]), length(mapMB[i]))
+                if length(mapMB[i]) == length(mapMB[j])
+                    if abs(yc[i] - yc[j]) < NODETOL * LY && abs(zc[i] - zc[j]) < NODETOL * LZ && abs(abs(xc[i] - xc[j]) - LX) < NODETOL * LX
+                        # create distance matrix
+                        @. D = abs(yf[mapMB[i]] - yf[mapMB[j]]) + abs(zf[mapMB[i]] - zf[mapMB[j]])
+                        map!(x->x[1], ids[i], findall(@. D < NODETOL * LY))
+                        mapPB[i] = mapMB[j][ids[i]]
+                        FToF[Bfaces[i]] = Bfaces[j]
+                    end
                 end
             end
         end
@@ -345,11 +368,11 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     if is_periodic_y
         for i in yfaces, j = yfaces
             if i!=j
+                D = zeros(eltype(xf), length(mapMB[i]), length(mapMB[i]))
                 if abs(xc[i] - xc[j]) < NODETOL * LX && abs(zc[i] - zc[j]) < NODETOL * LZ && abs(abs(yc[i] - yc[j]) - LY) < NODETOL * LY
-                    @. D = abs(xb[:,i] - xb[:,j]') + abs(zb[:,i] - zb[:,j]')
-                    map!(x->x[1], ids, findall(@. D < NODETOL * LX))
-                    @. mapPB[:,i] = mapMB[ids,j]
-
+                    @. D = abs(xf[mapMB[i]] - xf[mapMB[j]]) + abs(zf[mapMB[i]] - zf[mapMB[j]])
+                    map!(x->x[1], ids[i], findall(@. D < NODETOL * LX))
+                    mapPB[i] = mapMB[j][ids[i]]
                     FToF[Bfaces[i]] = Bfaces[j]
                 end
             end
@@ -360,10 +383,11 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     if is_periodic_z
         for i in zfaces, j in zfaces
             if i!=j
+                D = zeros(eltype(xf), length(mapMB[i]), length(mapMB[i]))
                 if abs(xc[i] - xc[j]) < NODETOL * LX && abs(yc[i] - yc[j]) < NODETOL * LY && abs(abs(zc[i] - zc[j]) - LZ) < NODETOL * LZ
-                    @. D = abs(xb[:,i] - xb[:,j]') + abs(yb[:,i] - yb[:,j]')
-                    map!(x->x[1], ids, findall(@. D < NODETOL * LX))
-                    @. mapPB[:,i] = mapMB[ids,j]
+                    @. D = abs(xf[mapMB[i]] - xf[mapMB[j]]) + abs(yf[mapMB[i]] - yf[mapMB[j]])
+                    map!(x->x[1], ids[i], findall(@. D < NODETOL * LX))
+                    mapPB[i] = mapMB[j][ids[i]]
 
                     FToF[Bfaces[i]] = Bfaces[j]
                 end
