@@ -162,8 +162,7 @@ end
 # returns points (xf, yf), scaled normals (nxJ, nyJ), and face Jacobian (Jf) 
 # for a curve returned from PathIntersections. 
 # `out` should hold `xf, yf, nxJ, nyJ, Jf = ntuple(_ -> similar(points, (length(points), num_faces)), 5)`
-function map_points_to_cut_cell_faces(points, curve)
-    
+function map_points_to_cut_cell_faces(points, curve)    
     num_faces = length(curve.subcurves)
     out = ntuple(_ -> similar(points, (length(points) * num_faces)), 5)
     return map_points_to_cut_cell_faces!(out, points, curve)
@@ -357,7 +356,6 @@ function connect_mesh(rd, face_centroids, cutcell_data; tol = 1e2 * eps())
 
     # compute face centroids for making face matches
     face_centroids_x, face_centroids_y = face_centroids
-
     
     # To determine face-to-face matches, we work with each background Cartesian element 
     # and search through the 4 neighboring background Cartesian elements for a match in 
