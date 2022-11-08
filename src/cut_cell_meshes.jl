@@ -128,29 +128,29 @@ function is_inside_domain(ex, ey, regions)
     end
 end
 
+# generalize `is_contained` to multiple curves
+# TODO: move to PathIntersections
+import PathIntersections: is_contained
+is_contained(curves::Tuple, pt; kwargs...) = all(map(c -> is_contained(c, pt; kwargs...), curves))
+
 # generates at least Np_target sampling points within a cut cell defined by `curve`
 # returns both x_sampled, y_sampled (physical points inside the cut cell), as well as 
 # r_sampled, y_sampled (reference points which correspond to x_sampled, y_sampled).
-function generate_sampling_points(rd, curve, Np_target, cell_vertices_x, cell_vertices_y; 
-                                  N_sampled = 4 * rd.N)
+function generate_sampling_points(curves, elem, rd, Np_target; N_sampled = 4 * rd.N)
+
     r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
 
     # map sampled points to the background Cartesian cell
-    dx, dy = cell_vertices_x[2] - cell_vertices_x[1], cell_vertices_y[2] - cell_vertices_y[1]
-    x_sampled = @. dx * 0.5 * (1 + r_sampled) + cell_vertices_x[1]
-    y_sampled = @. dy * 0.5 * (1 + s_sampled) + cell_vertices_y[1]
-
-    is_in_element = .!(is_contained.(curve, zip(x_sampled, y_sampled)))
+    x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
+    is_in_element = .!(is_contained.(curves, zip(x_sampled, y_sampled)))
 
     # increase number of background points until we are left with `Np_target` sampling points 
     while sum(is_in_element) < Np_target
-        is_in_element = is_contained.(curve, zip(x_sampled, y_sampled)) .== false
+        is_in_element = is_contained.(curves, zip(x_sampled, y_sampled)) .== false
         if sum(is_in_element) < Np_target
             N_sampled += rd.N
             r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
-            dx, dy = cell_vertices_x[2] - cell_vertices_x[1], cell_vertices_y[2] - cell_vertices_y[1]
-            x_sampled = @. dx * 0.5 * (1 + r_sampled) + cell_vertices_x[1]
-            y_sampled = @. dy * 0.5 * (1 + s_sampled) + cell_vertices_y[1]        
+            x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
         end
     end
 
@@ -295,8 +295,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
             push!(physical_frame_elements, physical_frame_element)
                     
             x_sampled, y_sampled = 
-                generate_sampling_points(rd, first(curves), 2 * Np_cut(rd.N), 
-                                         vx[ex:ex+1], vy[ey:ey+1])
+                generate_sampling_points(curves, physical_frame_element, rd, 2 * Np_cut(rd.N))
             V = vandermonde(physical_frame_element, rd.N, x_sampled, y_sampled) 
 
             # use pivoted QR to find good interpolation points
@@ -309,9 +308,8 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
                 @warn "Conditioning of VDM for element $e is $(cond(V[ids,:]));" * 
                       "recomputing with a finer set of samples."
                 x_sampled, y_sampled = 
-                    generate_sampling_points(rd, first(curves), 2 * Np_cut(rd.N), 
-                                            vx[ex:ex+1], vy[ey:ey+1]; 
-                                            N_sampled = 100)
+                    generate_sampling_points(curves, physical_frame_element, rd, 2 * Np_cut(rd.N); 
+                                             N_sampled = 100)
                 V = vandermonde(physical_frame_element, rd.N, x_sampled, y_sampled) 
             end
 
@@ -586,9 +584,9 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
             b = 0.5 * ((Vf * Ix)' * (wJf_element .* nx_element) ./ scaling[1] + 
                        (Vf * Iy)' * (wJf_element .* ny_element) ./ scaling[2]) 
             
-            # compute degree 2N basis matrix at sampled points
-            x_sampled, y_sampled = generate_sampling_points(rd, first(curves), Np_cut(6 * rd.N), 
-                                                            vx[ex:ex+1], vy[ey:ey+1]; N_sampled = 8 * rd.N)          
+            # compute degree 2N basis matrix at sampled points            
+            x_sampled, y_sampled = generate_sampling_points(curves, physical_frame_elements[e], 
+                                                            rd, Np_cut(6 * rd.N); N_sampled = 8 * rd.N)          
             Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)
             
             # naive approach to computing quadrature weights; no guarantees of positivity
@@ -624,7 +622,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
                        region_flags, cells_per_dimension, vxyz=(vx, vy), # background Cartesian grid info
                     )
     
-    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, cut_cell_data), 
+    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, curves, cut_cell_data), 
                     VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, 
                     mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
 
