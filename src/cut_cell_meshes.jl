@@ -261,7 +261,6 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     fill!(J.cut, one(eltype(J)))
 
     e = 1
-    fid = 1
     offset = 0
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
         if is_cut(region_flags[ex, ey])
