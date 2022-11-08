@@ -13,12 +13,15 @@ first element.
 We assume all cut elements have the same number of volume quadrature points (which is at 
 least the dimension of a degree 2N polynomial space). 
 
+The field `curves` contains a tuple of the curves used to define the cut region.
+
 The field `cut_cell_data` contains additional data from PathIntersections.
 """
-struct CutCellMesh{T1, T2, T3}
+struct CutCellMesh{T1, T2, T3, T4}
     physical_frame_elements::T1
     cut_face_nodes::T2
-    cut_cell_data::T3
+    curves::T3
+    cut_cell_data::T4
 end
 
 function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, <:CutCellMesh}) where {DIM}
