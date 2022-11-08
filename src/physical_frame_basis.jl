@@ -126,11 +126,17 @@ to `elem`, with points inside of `curve` removed.
 """
 function NodesAndModes.equi_nodes(elem::PhysicalFrame, curve, N)
     @unpack vxyz = elem
-    vx, vy = vxyz
     r, s = equi_nodes(Quad(), N)
+    x, y = map_nodes_to_background(elem, r, s)
+    ids = .!is_contained.(curve, zip(x, y))
+    return x[ids], y[ids]
+end
+
+function map_nodes_to_background_cell(elem::PhysicalFrame, r, s)
+    @unpack vxyz = elem
+    vx, vy = vxyz
     dx, dy = diff(vx), diff(vy)
     x = @. 0.5 * (1 + r) * dx + vx[1]
     y = @. 0.5 * (1 + s) * dy + vy[1]
-    ids = .!is_contained.(curve, zip(x, y))
-    return x[ids], y[ids]
+    return x, y
 end

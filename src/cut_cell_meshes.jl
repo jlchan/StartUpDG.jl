@@ -588,10 +588,9 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
                                                             vx[ex:ex+1], vy[ey:ey+1]; N_sampled = 8 * rd.N)          
             Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)
             
-            # naive approach; no guarantees of positivity
+            # naive approach to computing quadrature weights; no guarantees of positivity
             QR = qr(Vq', ColumnNorm())
-            ids = QR.p[1:num_cut_quad_points]
-            
+            ids = QR.p[1:num_cut_quad_points]            
             wq = Vq[ids,:]' \ b
             
             quadrature_error = norm(Vq[ids,:]' * wq - b)
