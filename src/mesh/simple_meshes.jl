@@ -362,33 +362,35 @@ function uniform_mesh(elem::Tri, Kx, Ky)
     return (VX[:], VY[:]), EToV
 end
 
-function uniform_mesh(elem::Wedge, Kx, Ky)
-    #Todo: Introduce Kz
-    (VY, VX, VZ) = meshgrid(LinRange(-1, 1, Ky + 1), LinRange(-1, 1, Kx + 1), LinRange(-1, 1, 2))
+function uniform_mesh(elem::Wedge, Kx, Ky, Kz)
+    (VY, VX, VZ) = meshgrid(LinRange(-1, 1, Ky + 1), LinRange(-1, 1, Kx + 1), LinRange(-1, 1, Kz + 1))
     sk = 1
     shift = (Kx+1)*(Ky+1)
-    EToV = zeros(Int, 2 * Kx * Ky, 6)
+    EToV = zeros(Int, 2 * Kx * Ky * Kz, 6)
     for ey = 1:Ky
         for ex = 1:Kx
-            id(ex, ey) = ex + (ey - 1) * (Kx + 1) # index function
-            id1 = id(ex, ey)
-            id2 = id(ex + 1, ey)
-            id3 = id(ex, ey + 1)
-            id4 = id(ex + 1, ey + 1)
-            id5 = id1 + shift
-            id6 = id2 + shift
-            id7 = id3 + shift
-            id8 = id4 + shift
-            EToV[2*sk-1, :] = [id1 id5 id4 id8 id2 id6]
-            EToV[2*sk, :] = [id1 id5 id3 id7 id4 id8]
-            sk += 1
+            for ez = 1:Kz
+                id(ex, ey, ez) = ex + (ey - 1) * (Kx + 1)  + (ez - 1) * (shift)# index function
+                id1 = id(ex, ey, ez)
+                id2 = id(ex + 1, ey, ez)
+                id3 = id(ex, ey + 1, ez)
+                id4 = id(ex + 1, ey + 1, ez)
+                id5 = id(ex, ey, ez + 1)
+                id6 = id(ex + 1, ey, ez + 1)
+                id7 = id(ex, ey + 1, ez + 1)
+                id8 = id(ex + 1, ey + 1, ez + 1)
+                EToV[2*sk-1, :] = [id1 id5 id4 id8 id2 id6]
+                EToV[2*sk, :] = [id1 id5 id3 id7 id4 id8]
+                sk += 1
+            end
         end
     end
     return (VX[:], VY[:], VZ[:]), EToV
 end
 
 uniform_mesh(elem::Union{Tri,Quad}, Kx) = uniform_mesh(elem, Kx, Kx)
-uniform_mesh(elem::Hex, Kx) = uniform_mesh(elem, Kx, Kx, Kx)
+uniform_mesh(elem::Union{Hex, Wedge}, Kx) = uniform_mesh(elem, Kx, Kx, Kx)
+
 
 function uniform_mesh(elem::Quad, Nx, Ny)
 
