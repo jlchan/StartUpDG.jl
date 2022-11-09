@@ -128,11 +128,6 @@ function is_inside_domain(ex, ey, regions)
     end
 end
 
-# generalize `is_contained` to multiple curves
-# TODO: move to PathIntersections
-import PathIntersections: is_contained
-is_contained(curves::Tuple, pt; kwargs...) = all(map(c -> is_contained(c, pt; kwargs...), curves))
-
 # generates at least Np_target sampling points within a cut cell defined by `curve`
 # returns both x_sampled, y_sampled (physical points inside the cut cell), as well as 
 # r_sampled, y_sampled (reference points which correspond to x_sampled, y_sampled).
