@@ -51,7 +51,7 @@ include("cut_cell_meshes.jl")
 export PhysicalFrame, equi_nodes
 
 include("state_redistribution.jl")
-export StateRedistribution
+export StateRedistribution, apply!
 
 include("nonconforming.jl")
 export num_mortars_per_face, NonConformingQuadMeshExample

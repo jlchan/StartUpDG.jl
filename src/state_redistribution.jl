@@ -114,6 +114,9 @@ function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCell
                                projection_indices_by_element, overlap_counts, u_tmp)
 end
 
+# functor syntax, e.g., `srd(u)` applies state redistribution
+(srd::StateRedistribution)(u) = apply!(u, srd::StateRedistribution)
+
 function apply!(u, srd::StateRedistribution)
     (; projection_operators, overlap_counts, u_tmp) = srd
     (; projection_indices, projection_indices_by_element) = srd
