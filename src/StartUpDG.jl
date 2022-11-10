@@ -16,7 +16,7 @@ using PathIntersections
 using RecipesBase
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
-using SparseArrays: sparse, droptol!
+using SparseArrays: sparse, droptol!, blockdiag
 @reexport using UnPack  # for getting values in RefElemData and MeshData
 
 # reference element utility functions
@@ -49,6 +49,9 @@ export num_faces, num_vertices, HybridMeshExample
 include("physical_frame_basis.jl")
 include("cut_cell_meshes.jl")
 export PhysicalFrame, equi_nodes
+
+include("state_redistribution.jl")
+export StateRedistribution
 
 include("nonconforming.jl")
 export num_mortars_per_face, NonConformingQuadMeshExample

@@ -609,9 +609,9 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
 
     # default to non-periodic 
     is_periodic = (false, false)
-    
+
     cells_per_dimension = (cells_per_dimension_x, cells_per_dimension_y)
-    cut_cell_data = (; cutcells, 
+    cut_cell_data = (; cutcells, cartesian_to_linear_element_indices = compute_element_indices(region_flags), 
                        region_flags, cells_per_dimension, vxyz=(vx, vy), # background Cartesian grid info
                     )
     
