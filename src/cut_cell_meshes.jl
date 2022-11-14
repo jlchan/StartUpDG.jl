@@ -611,7 +611,23 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     is_periodic = (false, false)
 
     cells_per_dimension = (cells_per_dimension_x, cells_per_dimension_y)
-    cut_cell_data = (; cutcells, cartesian_to_linear_element_indices = compute_element_indices(region_flags), 
+    
+    # compute mapping from linear element indices to Cartesian element indices
+    cartesian_to_linear_element_indices = compute_element_indices(region_flags)
+    linear_to_cartesian_element_indices = (; cut=zeros(SVector{2,Int}, num_cut_cells), 
+                                             cartesian=zeros(SVector{2,Int}, num_cartesian_cells))
+    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
+        e = cartesian_to_linear_element_indices[ex, ey]
+        if is_cut(region_flags[ex, ey])
+            linear_to_cartesian_element_indices.cut[e] = SVector(ex, ey)
+        elseif is_Cartesian(region_flags[ex, ey])
+            linear_to_cartesian_element_indices.cartesian[e] = SVector(ex, ey)
+        end
+    end
+
+    cut_cell_data = (; cutcells, 
+                       cartesian_to_linear_element_indices, 
+                       linear_to_cartesian_element_indices,
                        region_flags, cells_per_dimension, vxyz=(vx, vy), # background Cartesian grid info
                     )
     
