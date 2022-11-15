@@ -612,10 +612,11 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
 
     cells_per_dimension = (cells_per_dimension_x, cells_per_dimension_y)
     
-    # compute mapping from linear element indices to Cartesian element indices
     cartesian_to_linear_element_indices = compute_element_indices(region_flags)
-    linear_to_cartesian_element_indices = (; cut=zeros(SVector{2,Int}, num_cut_cells), 
-                                             cartesian=zeros(SVector{2,Int}, num_cartesian_cells))
+    
+    # compute mapping from linear element indices to Cartesian element indices
+    linear_to_cartesian_element_indices = (; cut=zeros(SVector{2, Int}, num_cut_cells), 
+                                             cartesian=zeros(SVector{2, Int}, num_cartesian_cells))
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
         e = cartesian_to_linear_element_indices[ex, ey]
         if is_cut(region_flags[ex, ey])
