@@ -28,16 +28,17 @@ struct StateRedistribution{TP, TN, TE, TO, TU}
     u_tmp::TU # temporary storage for operations
 end
 
-# !!! WARNING: hardcoded for "cells_per_dimension = 4; circle = PresetGeometries.Circle(R=0.6, x0=0, y0=0)"
-function compute_neighbor_list(md)
-    (; cells_per_dimension, region_flags, cartesian_to_linear_element_indices) = md.mesh_type.cut_cell_data
-    cells_per_dimension_x, cells_per_dimension_y = cells_per_dimension
+# # !!! WARNING: hardcoded for "cells_per_dimension = 4; circle = PresetGeometries.Circle(R=0.6, x0=0, y0=0)"
+# function compute_neighbor_list(md)
+#     (; cells_per_dimension, region_flags, cartesian_to_linear_element_indices) = md.mesh_type.cut_cell_data
+#     cells_per_dimension_x, cells_per_dimension_y = cells_per_dimension
 
-    neighbor_list = Vector{CellIndex}[[CellIndex{Cut}(e)] for e in 1:num_cut_elements(md)]
-    push!(neighbor_list[4], CellIndex{Cut}(1))
-    push!(neighbor_list[4], CellIndex{Cartesian}(1))   
-    return neighbor_list
-end
+#     neighbor_list = Vector{CellIndex}[[CellIndex{Cut}(e)] for e in 1:num_cut_elements(md)]
+#     push!(neighbor_list[4], CellIndex{Cut}(1))
+#     push!(neighbor_list[4], CellIndex{Cartesian}(1))   
+#     return neighbor_list
+# end
+include("merge_neighborhoods.jl")
 
 function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCellMesh})
     (; physical_frame_elements) = md.mesh_type
