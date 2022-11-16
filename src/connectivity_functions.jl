@@ -101,7 +101,7 @@ function build_node_maps(FToF, Xf; tol = 1e-12)
         @. mapP[:, f1] = mapM[p, f2]
     end
     mapB = findall(vec(mapM) .== vec(mapP))
-    return mapM, mapP, mapB
+    return mapM[:], mapP[:], mapB[:]
 end
 
 function build_node_maps(FToF, EToV, rd, Xf...; tol = 1e-12)
@@ -165,7 +165,13 @@ function build_node_maps(FToF, EToV, rd, Xf...; tol = 1e-12)
         mapP[f1] = mapM[f2][p]
     end
     mapB = map(x -> x[1], findall(@. mapM[:]==mapP[:]))
-    return mapM, mapP, mapB
+    mapM_flat = []
+    mapP_flat = []
+    for i in eachindex(mapM)
+        append!(mapM_flat, mapM[i])
+        append!(mapP_flat, mapP[i])
+    end
+    return mapM_flat, mapP_flat, mapB
 end
 
 """
@@ -177,25 +183,26 @@ Returns new MeshData such that the node maps `mapP` and face maps `FToF` are now
 Here, `is_periodic` is a tuple of `Bool` indicating whether or not to impose periodic
 BCs in the `x`,`y`, or `z` coordinate.
 """
-make_periodic(md::MeshData{Dim}, is_periodic::Bool = true) where {Dim} = 
-    make_periodic(md, ntuple(_->is_periodic, Dim)) 
+make_periodic(md::MeshData{Dim}, rd::RefElemData, is_periodic::Bool = true) where {Dim} = 
+    make_periodic(md, rd, ntuple(_->is_periodic, Dim)) 
 
-function make_periodic(md::MeshData{Dim}, is_periodic::NTuple{Dim, Bool}) where {Dim, Bool}
-
+function make_periodic(md::MeshData{Dim}, rd::RefElemData, is_periodic::NTuple{Dim, Bool}) where {Dim, Bool}
     @unpack mapM, mapP, mapB, xyzf, FToF = md
     NfacesTotal = length(FToF)
     FToF_periodic = copy(FToF)
-    mapPB = build_periodic_boundary_maps!(xyzf...,is_periodic...,NfacesTotal,
-                                          mapM, mapP, mapB, FToF_periodic)
-    mapP_periodic = copy(mapP)
-    mapP_periodic[mapB] = mapPB
-    mapB_periodic = mapB[mapPB .== mapP[mapB]] # keep only non-periodic boundary nodes
+    mapP_periodic, mapB_periodic = build_periodic_boundary_maps!(xyzf...,is_periodic...,NfacesTotal,
+                                          mapM, mapP, mapB, FToF_periodic, rd)
+    #display(mapP_periodic)
+    #mapP_periodic = copy(mapP)
+    #mapP_periodic[mapB] = mapPB
+    #mapB_periodic = mapB[mapPB .== mapP[mapB]] # keep only non-periodic boundary nodes
+    #display(mapB_periodic)
     return setproperties(md, (; mapB=mapB_periodic, mapP = mapP_periodic, 
                                 FToF = FToF_periodic, is_periodic = is_periodic)) # from Setfield.jl    
 end
 
 # specializes to 1D - periodic = find min/max indices of xf and reverse their order
-function make_periodic(md::MeshData{1, Tv, Ti}, is_periodic::Bool = true) where {Tv, Ti}
+function make_periodic(md::MeshData{1, Tv, Ti}, rd::RefElemData, is_periodic::Bool = true) where {Tv, Ti}
 
     if is_periodic == true
         @unpack mapP, mapB, xf, FToF = md
@@ -212,7 +219,7 @@ end
 
 # Helper functions for `make_nodemaps_periodic!`, 2D version which modifies FToF.
 function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
-                                       NfacesTotal, mapM, mapP, mapB, FToF)
+                                       NfacesTotal, mapM, mapP, mapB, FToF, rd)
 
     # find boundary faces (e.g., when FToF[f] = f)
     Flist = 1:length(FToF)
@@ -282,54 +289,59 @@ function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
     return mapPB[:]
 end
 
+
 # 3D version of build_periodic_boundary_maps, modifies FToF
 function build_periodic_boundary_maps!(xf, yf, zf,
                                        is_periodic_x, is_periodic_y, is_periodic_z,
-                                       NfacesTotal, mapM, mapP, mapB, FToF)
+                                       NfacesTotal, mapM, mapP, mapB, FToF, rd)
 
     # find boundary faces (e.g., when FToF[f] = f)
     Flist = 1:length(FToF)
     Bfaces = findall(vec(FToF) .== Flist)
 
-    mapMB = mapM[mapB]
-    mapPB = mapP[mapB] 
+    # Get the local node ids for each face of a prism
+    (; node_ids_by_face) = rd.element_type
+    # Total number of prisms in the mesh
+    # length mapM = total number of face quadrature points
+    # rd.Nfq number of face quadrature points per elemet
+    num_elem = Int(length(mapM)/rd.Nfq)
 
-    #xb,yb,zb = xf[mapMB],yf[mapMB],zf[mapMB]
-    #display(xb)
-    Nbfaces = length(mapB)
-    #Nfp = length(xf) ÷ NfacesTotal
-    #Nbfaces = length(xb) ÷ Nfp
-    #xb, yb, zb = (x->reshape(x, Nfp, Nbfaces)).((xb, yb, zb))
+    # map each face to an element
+    face_to_elem = Int.(ceil.(mapB/5))
 
-    # compute centroids of faces
-    xc = Vector{eltype(first(xf))}(undef, length(mapMB))
-    yc = Vector{eltype(first(xf))}(undef, length(mapMB))
-    zc = Vector{eltype(first(xf))}(undef, length(mapMB))
-    D = Vector{eltype(first(xf))}[]
-    ids = Vector{Int64}[]
-    for face in 1:length(mapB)
-        xc[face] = sum(xf[mapMB[face]]) / length(mapMB[face])
-        yc[face] = sum(yf[mapMB[face]]) / length(mapMB[face])
-        zc[face] = sum(zf[mapMB[face]]) / length(mapMB[face])
-        push!(D, zeros(eltype(first(xf)), length(mapMB[face])))
-        push!(ids, zeros(Int64, length(mapMB[face])))
-    end
-    #xc = vec(sum(xb, dims=1) / Nfp)
-    #yc = vec(sum(yb, dims=1) / Nfp)
-    #zc = vec(sum(zb, dims=1) / Nfp)
+    # reshape mapM and mapP into matrices to make it more easy to access the 
+    # face quadrature points of each element
+    mat_mapM = reshape(mapM, rd.Nfq, num_elem)
+    mat_mapP = reshape(mapP, rd.Nfq, num_elem)
+
+    # map the globale face_id to the face number of each prism
+    local_face_ids = [((mapB[i]-1)%5 + 1) for i in eachindex(mapB)]
+    # for each boundary face store the face quadrature nodes
+    Bface_node_ids_local = [node_ids_by_face[local_face_ids[i]] for i in eachindex(mapB)]
+    # store the coords of each quadrature point on the boundary faces
+    xb = [xf[Bface_node_ids_local[i], face_to_elem[i]] for i in eachindex(mapB)]
+    yb = [yf[Bface_node_ids_local[i], face_to_elem[i]] for i in eachindex(mapB)]
+    zb = [zf[Bface_node_ids_local[i], face_to_elem[i]] for i in eachindex(mapB)]
+
+    mapMB = [mat_mapM[Bface_node_ids_local[i], face_to_elem[i]] for i in eachindex(mapB)]
+    mapPB = [mat_mapP[Bface_node_ids_local[i], face_to_elem[i]] for i in eachindex(mapB)]
 
 
-    #mapMB = reshape(mapM[mapB], Nfp, Nbfaces)
-    #mapPB = reshape(mapP[mapB], Nfp, Nbfaces)
+    # centroids of each boundary face
+    xc = sum.(xb) ./ length.(xb)
+    yc = sum.(yb) ./ length.(yb)
+    zc = sum.(zb) ./ length.(zb)
 
-    
-
+    # max and min coordiantes of the centroids
     xmin, xmax = extrema(xc)
     ymin, ymax = extrema(yc)
     zmin, zmax = extrema(zc)
 
+    # distance between the extrema
     LX, LY, LZ = map((x -> x[2] - x[1]) ∘ extrema, (xf, yf, zf))
     NODETOL = 100 * max(eps.((LX, LY, LZ))...)
+
+    # Check if the construction of the periodicity is possible.
     if abs(abs(xmax - xmin) - LX) > NODETOL && is_periodic_x
         error("periodicity requested in x, but LX = $LX while abs(xmax-xmin) for centroids = $(abs(xmax-xmin))")
     end
@@ -345,20 +357,16 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     yfaces = map(x -> x[1], findall(@. (@. abs(yc - ymax) < NODETOL * LY) | (@. abs(yc - ymin) < NODETOL * LY)))
     zfaces = map(x -> x[1], findall(@. (@. abs(zc - zmax) < NODETOL * LZ) | (@. abs(zc - zmin) < NODETOL * LZ)))
 
-    #D = zeros(eltype(xb), size(xb,1), size(xb,1))
-
     if is_periodic_x # find matches in x faces
         for i in xfaces, j in xfaces
             if i!=j
-                D = zeros(eltype(xf), length(mapMB[i]), length(mapMB[i]))
-                if length(mapMB[i]) == length(mapMB[j])
-                    if abs(yc[i] - yc[j]) < NODETOL * LY && abs(zc[i] - zc[j]) < NODETOL * LZ && abs(abs(xc[i] - xc[j]) - LX) < NODETOL * LX
-                        # create distance matrix
-                        @. D = abs(yf[mapMB[i]] - yf[mapMB[j]]) + abs(zf[mapMB[i]] - zf[mapMB[j]])
-                        map!(x->x[1], ids[i], findall(@. D < NODETOL * LY))
-                        mapPB[i] = mapMB[j][ids[i]]
-                        FToF[Bfaces[i]] = Bfaces[j]
-                    end
+                if abs(yc[i] - yc[j]) < NODETOL * LY && abs(zc[i] - zc[j]) < NODETOL * LZ && abs(abs(xc[i] - xc[j]) - LX) < NODETOL * LX
+                    # Compute the permutation of the points
+                    f1_coords = [yb[i], zb[i]]
+                    f2_coords = [yb[j], zb[j]]
+                    p = match_coordinate_vectors(f1_coords, f2_coords, tol = NODETOL * LY)
+                    mapPB[i] = mapMB[j][p]
+                    FToF[Bfaces[i]] = Bfaces[j]
                 end
             end
         end
@@ -368,11 +376,12 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     if is_periodic_y
         for i in yfaces, j = yfaces
             if i!=j
-                D = zeros(eltype(xf), length(mapMB[i]), length(mapMB[i]))
                 if abs(xc[i] - xc[j]) < NODETOL * LX && abs(zc[i] - zc[j]) < NODETOL * LZ && abs(abs(yc[i] - yc[j]) - LY) < NODETOL * LY
-                    @. D = abs(xf[mapMB[i]] - xf[mapMB[j]]) + abs(zf[mapMB[i]] - zf[mapMB[j]])
-                    map!(x->x[1], ids[i], findall(@. D < NODETOL * LX))
-                    mapPB[i] = mapMB[j][ids[i]]
+                    # Compute the permutation of the points
+                    f1_coords = [xb[i], zb[i]]
+                    f2_coords = [xb[j], zb[j]]
+                    p = match_coordinate_vectors(f1_coords, f2_coords, tol = NODETOL * LX)
+                    mapPB[i] = mapMB[j][p]
                     FToF[Bfaces[i]] = Bfaces[j]
                 end
             end
@@ -383,17 +392,26 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     if is_periodic_z
         for i in zfaces, j in zfaces
             if i!=j
-                D = zeros(eltype(xf), length(mapMB[i]), length(mapMB[i]))
                 if abs(xc[i] - xc[j]) < NODETOL * LX && abs(yc[i] - yc[j]) < NODETOL * LY && abs(abs(zc[i] - zc[j]) - LZ) < NODETOL * LZ
-                    @. D = abs(xf[mapMB[i]] - xf[mapMB[j]]) + abs(yf[mapMB[i]] - yf[mapMB[j]])
-                    map!(x->x[1], ids[i], findall(@. D < NODETOL * LX))
-                    mapPB[i] = mapMB[j][ids[i]]
-
+                    # Compute the permutation of the points
+                    f1_coords = [xb[i], yb[i]]
+                    f2_coords = [xb[j], yb[j]]
+                    p = match_coordinate_vectors(f1_coords, f2_coords, tol = NODETOL * LX)
+                    mapPB[i] = mapMB[j][p]
                     FToF[Bfaces[i]] = Bfaces[j]
                 end
             end
-        end
+        end 
     end
 
-    return mapPB[:]
+    
+
+    for i in eachindex(mapPB)
+        elem = face_to_elem[i]
+        mat_mapP[Bface_node_ids_local[i], face_to_elem[i]] = mapPB[i]
+    end
+
+    mapB = map(x -> x[1], findall(@. mat_mapP[:]==mat_mapM[:]))
+
+    return mat_mapP[:], mapB
 end

@@ -1,14 +1,11 @@
 @testset "$N degree MeshData init" for N = [ 2, 3, 4]
     @testset "Wedge mesh initialization " begin
         tol = 5e2 * eps()
-        K1D = 1
+        K1D = 2
         rd = RefElemData(Wedge(), N)
-        VXYZ = ([-1, 1, -1, 1, -1, 1, -1, 1], [-1, -1, 1, 1, -1, -1, 1, 1], [-1, -1, -1, -1, 1, 1, 1, 1])
+        
 
-
-        EToV = [1 5 4 8 2 6; 1 5 3 7 4 8]
-
-        md = MeshData(VXYZ, EToV, rd)
+        md = MeshData(uniform_mesh(Wedge(), K1D)..., rd)
     
 
         @unpack wq, Dr, Ds, Dt, Vq, Vf, wf = rd
@@ -53,18 +50,21 @@
         @test abs(sum(diagm(wf) * nzJ)) < tol
 
 
+        #md = make_periodic(md, (true, true, true))
         # check connectivity and boundary maps
         u = @. (1 - x) * (1 + x) * (1 - y) * (1 + y) * (1 - z) * (1 + z)
         uf = Vf * u
 
         #@test norm(uf[mapB]) < tol
-
+        
         @unpack mapP = md
-        for (f1, f2) in enumerate(md.FToF)
-            if f1 != f2
-                @test norm(uf[mapM[f1]] - uf[mapP[f2]]) < tol
-            end
-        end
+        #for (f1, f2) in enumerate(md.FToF)
+        #    if f1 != f2
+        #        @test norm(uf[mapM[f1]] - uf[mapP[f2]]) < tol
+        #    end
+        #end
+        
+        @test vec(uf) ≈ uf[mapP]
 
         @test md.mesh_type == rd.element_type
         @test md.x == md.xyz[1]
@@ -110,25 +110,23 @@
 
         #@test norm(uf[mapB]) < tol
 
-        
-
-        for (f1, f2) in enumerate(md.FToF)
-            if f1 != f2
-                @test norm(uf[mapM[f1]] - uf[mapP[f2]]) < tol
-            end
-        end
-
-        md = make_periodic(md, (true, true, true))
-
         @unpack mapP = md
-        u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y)) * sin(pi * (.5 + z))
-        for (f1, f2) in enumerate(md.FToF)
-            if f1 != f2
-                @test norm(uf[mapM[f1]] - uf[mapP[f2]]) < tol
-            end
-        end
+        #@test abs(sum(xq .* wJq)) < tol
+        #@test abs(sum(yq .* wJq)) < tol
+        #@test abs(sum(zq .* wJq)) < tol
+        @test vec(uf) ≈ uf[mapP]
+
+        
+        #u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y)) * sin(pi * (.5 + z))
+        #for (f1, f2) in enumerate(md.FToF)
+        #    if f1 != f2
+        #        @test norm(uf[mapM[f1]] - uf[mapP[f2]]) < tol
+        #    end
+        #end
+
         @test md.mesh_type == rd.element_type
         @test md.x == md.xyz[1]
+        @test md.y == md.xyz[2]
     end
 end
 
@@ -167,6 +165,7 @@ end
             @test Vq * x ≈ xq
             @test diagm(wq) * (Vq * J) ≈ wJq
             @test abs(sum(xq .* wJq)) < tol
+
 
             # check surface integration
             @test Vf * x ≈ xf
