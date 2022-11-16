@@ -9,16 +9,16 @@ end
 property_name(::CellIndex{Cut}) = :cut
 property_name(::CellIndex{Cartesian}) = :cartesian
 
-
+# TODO: enable "nice" indexing with CellIndex, e.g., md.x[:, e] instead of getcolumns(md.x, e)
 import Base: getindex
 getindex(x::ComponentArray, i::CellIndex) = getindex(getproperty(x, property_name(i)), i.index)
 getcolumns(x::ComponentArray, i::CellIndex) = view(getproperty(x, property_name(i)), :, i.index)
+getcolumns(x::ComponentArray, indices::AbstractVector{<:CellIndex}) = (getcolumns(x, i.index) for i in indices)
+
+vcat_columns(x::ComponentArray, list::AbstractVector{<:CellIndex}) = vcat((vec(getcolumns(x, i)) for i in list)...)
 
 get_face_nodes(x::ComponentArray, i::CellIndex{Cartesian}, args...) = view(x.cartesian, :, i.index)
 get_face_nodes(x::ComponentArray, i::CellIndex{Cut}, md::MeshData) = view(x.cut, md.mesh_type.cut_face_nodes[i.index])
-
-getcolumns(x::ComponentArray, indices::AbstractVector{<:CellIndex}) = (getcolumns(x, i.index) for i in indices)
-vcat_columns(x::ComponentArray, list::AbstractVector{<:CellIndex}) = vcat((vec(getcolumns(x, i)) for i in list)...)
 
 struct StateRedistribution{TP, TN, TE, TO, TU}
     projection_operators::TP
@@ -27,18 +27,6 @@ struct StateRedistribution{TP, TN, TE, TO, TU}
     overlap_counts::TO
     u_tmp::TU # temporary storage for operations
 end
-
-# # !!! WARNING: hardcoded for "cells_per_dimension = 4; circle = PresetGeometries.Circle(R=0.6, x0=0, y0=0)"
-# function compute_neighbor_list(md)
-#     (; cells_per_dimension, region_flags, cartesian_to_linear_element_indices) = md.mesh_type.cut_cell_data
-#     cells_per_dimension_x, cells_per_dimension_y = cells_per_dimension
-
-#     neighbor_list = Vector{CellIndex}[[CellIndex{Cut}(e)] for e in 1:num_cut_elements(md)]
-#     push!(neighbor_list[4], CellIndex{Cut}(1))
-#     push!(neighbor_list[4], CellIndex{Cartesian}(1))   
-#     return neighbor_list
-# end
-include("merge_neighborhoods.jl")
 
 function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCellMesh})
     (; physical_frame_elements) = md.mesh_type

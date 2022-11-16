@@ -50,6 +50,7 @@ include("physical_frame_basis.jl")
 include("cut_cell_meshes.jl")
 export PhysicalFrame, equi_nodes
 
+include("merge_neighborhoods.jl")
 include("state_redistribution.jl")
 export StateRedistribution, apply!
 
