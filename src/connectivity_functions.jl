@@ -416,7 +416,7 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     return mat_mapP[:], mapB
 end
 
-"""
+#=
 # 3D version of build_periodic_boundary_maps, modifies FToF
 function build_periodic_boundary_maps!(xf, yf, zf,
                                        is_periodic_x, is_periodic_y, is_periodic_z,
@@ -507,4 +507,4 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     end
     return mapPB[:]
 end
-"""
+=#
