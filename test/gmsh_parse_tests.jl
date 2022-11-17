@@ -3,7 +3,6 @@
 # of 4.1 has been added for testing
 
 @testset "Gmsh" begin 
-
     @testset "Gmsh reading" begin
         VXY, EToV = readGmsh2D("squareCylinder2D.msh")
         @test size(EToV) == (3031, 3)
@@ -22,8 +21,6 @@
     end
 
     @testset "$approxType MeshData initialization with gmsh import" for approxType = [Polynomial(), SBP()]
-        io = open("stderr.txt","w")
-        redirect_stderr(io)
         @testset "2D tri gmsh import verison $version" for version = [2.2, 4.1] 
             file = "pert_mesh"
             tol = 5e7*eps() # higher tolerance due to floating point issues?
@@ -99,13 +96,9 @@
                 @test all(md2.xyzf .≈ (x->x .+ 1).(md.xyzf))
             end
         end
-        close(io)
-        rm("stderr.txt")
     end
 
     @testset "gmsh version 4.1 file with one data grouping" begin
-        io = open("stderr.txt","w")
-        redirect_stderr(io)
         file = "testset_mesh/one_group_v4.msh"
         if isfile(file)
             VXY_1, EToV_1 = readGmsh2D_v4(file)
@@ -117,17 +110,13 @@
             num_elements = StartUpDG.get_num_elements(lines)
             @test length(unique(group_2))==1
         else
-            @info "file for this test is missing"
+            @warn "file for this test is missing"
         end
-        close(io)
-        rm("stderr.txt")
     end;
 
     @testset "gmsh version 4.1 file with no grouping data" begin
         # test promps for grouping data from the file. 
         # suppose such grouping data however is not in the file
-        io = open("stderr.txt","w")
-        redirect_stderr(io)
         file = "testset_mesh/no_group_v4.msh"
         if isfile(file)
             VXY_1, EToV_1 = readGmsh2D_v4(file)
@@ -139,10 +128,8 @@
             num_elements = StartUpDG.get_num_elements(lines)
             @test group_2 == zeros(Int, num_elements)
         else
-            @info "file for this test is missing"
+            @warn "file for this test is missing"
         end
-        close(io)
-        rm("stderr.txt")
     end;
 
     @testset "Compare output between v2.2 and v4.1" begin
