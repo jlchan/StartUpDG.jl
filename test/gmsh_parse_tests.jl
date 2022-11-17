@@ -98,6 +98,8 @@
         end
     end
 
+    # TODO: avoid the use of stderr.txt, causes issues on Windows
+    
     @testset "gmsh version 4.1 file with one data grouping" begin
         file = "testset_mesh/one_group_v4.msh"
         if isfile(file)

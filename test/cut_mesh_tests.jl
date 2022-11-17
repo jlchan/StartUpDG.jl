@@ -1,3 +1,5 @@
+using PathIntersections
+
 @testset "Cut meshes" begin
     
     cells_per_dimension = 4
@@ -39,5 +41,34 @@
     end
     @test all(uf .≈ vec(uf[md.mapP]))
 
+    # test creation of equispaced nodes on cut cells
+    x, y = equi_nodes(physical_frame_elements[1], circle, 10)
+    # shouldn't have more points than equispaced points on a quad
+    @test 0 < length(x) <= length(first(equi_nodes(Quad(), 10))) 
+    # no points should be contained in the circle
+    @test !all(is_contained.(circle, zip(x, y))) 
+
     # TODO: add tests on taking derivatives 
+
+end
+    
+@testset "State redistribution" begin     
+    # test state redistribution 
+    cells_per_dimension = 4
+    circle = PresetGeometries.Circle(R=0.6, x0=0, y0=0)
+    rd = RefElemData(Quad(), N=4)
+    md = MeshData(rd, (circle, ), cells_per_dimension, cells_per_dimension)
+
+    srd = StateRedistribution(rd, md)
+    e = @. 0 * md.x + 1 # constant
+    u = @. md.x + md.x^3 .* md.y # degree 4 polynomial
+    ecopy, ucopy = copy.((e, u))
+
+    # two ways of applying SRD
+    apply!(u, srd)
+    srd(e) # in-place application of SRD functor
+
+    # test exactness
+    @test norm(e .- ecopy) < 1e3 * eps()
+    @test norm(u .- ucopy) < 1e3 * eps()
 end
