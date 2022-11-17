@@ -111,6 +111,7 @@
             lines = readlines(f)
             num_elements = StartUpDG.get_num_elements(lines)
             @test length(unique(group_2))==1
+			close(f)
         else
             @warn "file for this test is missing"
         end
@@ -129,6 +130,7 @@
             lines = readlines(f)
             num_elements = StartUpDG.get_num_elements(lines)
             @test group_2 == zeros(Int, num_elements)
+			close(f)
         else
             @warn "file for this test is missing"
         end
