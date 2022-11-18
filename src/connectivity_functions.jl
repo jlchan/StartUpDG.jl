@@ -40,23 +40,22 @@ end
 
 # returns back `p` such that `u[p] == v` or false
 # u = tuple of vectors containing coordinates
-function match_coordinate_vectors(u, v; tol = 100 * eps())
+function match_coordinate_vectors(u, v; tol = 10 * eps())
     p = zeros(Int, length(first(u)))
-    return match_coordinate_vectors!(p, u, v)
+    return match_coordinate_vectors!(p, u, v; tol)
 end
-function match_coordinate_vectors!(p, u, v; tol = 100 * eps())
+function match_coordinate_vectors!(p, u, v; tol = 10 * eps())    
     for (i, u_i) in enumerate(zip(u...))
         for (j, v_i) in enumerate(zip(v...))
-            if norm(u_i .- v_i) < tol 
+            # Checks if the points are close relative to the magnitude of the coordinates.
+            # Scaling by length(first(u)) relaxes this bound for high degree polynomials, 
+            # which incur slightly more roundoff error. 
+            if norm(u_i .- v_i) < tol * length(first(u)) * max(norm(u_i), norm(v_i))
                 p[i] = j
             end
         end
     end
     return p 
-end
-
-@inline function n_face_nodes(rd::RefElemData, face)
-    return first(rd.element_type.node_ids_by_face[face]), last(rd.element_type.node_ids_by_face[face])
 end
 
 """
@@ -74,7 +73,7 @@ elements. `mapM` - map minus (interior). `mapP` - map plus (exterior).
 julia> mapM, mapP, mapB = build_node_maps(FToF, (xf, yf))
 ```
 """
-function build_node_maps(FToF, Xf; tol = 1e-12)
+function build_node_maps(FToF, Xf; tol = 100 * eps())
 
     # total number of faces 
     num_faces_total = length(FToF)    
@@ -100,85 +99,49 @@ function build_node_maps(FToF, Xf; tol = 1e-12)
     return mapM, mapP, mapB
 end
 
-# specialized version for the Wedge
-"""
-    build_node_maps(FToF, EToV, rd, Xf)
+# Calls the simpler version of `build_node_maps` for element types that 
+# have only one type of face (e.g., Tet has only Tri faces). 
+build_node_maps(rd::RefElemData{3, <:Union{Tet, Hex}}, args...) = 
+    build_node_maps(args...) 
 
-Intialize the connectivity table along all edges and boundary node tables of all
-elements. `mapM` - map minus (interior). `mapP` - map plus (exterior).
+# Specialized for elements with multiple types of faces such as the Wedge and Pyramid. 
+# We need to pass in `rd::RefElemData` because it contains information necessary to 
+# distinguish what nodes lie on a triangular face vs a quadrilateral face (contained 
+# in rd.element_type.node_ids_by_face.
+# !!! note: this version infers `num_elements` from the dimensions of `FToF::Matrix`. 
+# !!! this will not work for adaptive meshes, where `FToF` will be a `Vector`.
+function build_node_maps(rd::RefElemData{3, <:Union{Wedge, Pyr}}, FToF, Xf; tol = 100 * eps())    
 
-`Xf = (xf, yf, zf)` and `FToF` is size `(Nfaces * K)` and `FToF[face]` = face neighbor
+    _, num_elements = size(FToF)
+    @unpack node_ids_by_face = rd.element_type
 
-`mapM`, `mapP` are Vectors of Vectors, of the length Nfaces, where each Vector
-is of length Nfp of the corresponding
-
-# Examples
-```julia
-julia> mapM, mapP, mapB = build_node_maps(FToF, (xf, yf))
-```
-"""
-function build_node_maps(FToF, EToV, rd::RefElemData{3, <:Wedge}, Xf...; tol = 1e-12)    
-
-    # Store the coordinates of the nodes of every vertex for each face seperatly
-    # Each dimension gets its own vector
-    Xf_sorted = [Vector{Float64}[], Vector{Float64}[], Vector{Float64}[]]
-    dims = length(Xf)
-
-    # Possible types of elements used in a mesh
-    elem_types = [Tri(), Quad(), Tet(), Hex(), Wedge(), Pyr()]
-
-    # Degree of the polynomial
-    @unpack N = rd
-
-    # Get the number of elements
-    num_elements = size(EToV, 1)
-   
-    # Construct the maps that will be filled with the ids of the connected face-vertices
-    mapM = Vector{eltype(first(FToF))}[]
-
-    # Helper variable to keep track of number of nodes.
-    number_of_passed_face_nodes = 0
-    # Initialize with identity-mapping
-    for elem in 1:num_elements
-        element_type = element_type_from_num_vertices(elem_types, length(EToV[elem, :]))
-        n_faces = num_faces(element_type)
-        for face in 1:n_faces
-            first_face_node, last_face_node = n_face_nodes(rd, face)
-            for i in 1:dims
-                push!(Xf_sorted[i], Xf[i][first_face_node: last_face_node, elem])
-            end
-            num_face_nodes = last_face_node - first_face_node + 1
-            # Initialize maps as identity maps
-            push!(mapM, collect((number_of_passed_face_nodes+1):(number_of_passed_face_nodes + num_face_nodes)))
-            # Update to number of passed nodes
-            number_of_passed_face_nodes += num_face_nodes
+    mapM = Vector{eltype(FToF)}[]
+    offset = zero(eltype(FToF))
+    for e in 1:num_elements
+        for f in 1:rd.num_faces
+            push!(mapM, node_ids_by_face[f] .+ offset)
         end
+        offset += rd.Nfq
+    end
+    mapP = copy(mapM)    
+
+    # create list of face indices
+    for (f, fnbr) in enumerate(FToF)
+        face_indices = mapM[f]
+        nbr_face_indices = mapM[fnbr]
+
+        # TODO: can preallocate `face_coordinates`, etc.
+        face_coordinates = map(x->getindex(x, face_indices), Xf)
+        nbr_face_coordinates = map(x->getindex(x, nbr_face_indices), Xf)
+
+        p = match_coordinate_vectors(face_coordinates, nbr_face_coordinates; tol)
+        mapP[f][p] .= nbr_face_indices
     end
 
-    mapP = copy(mapM);
-
-    # Iterate over the Face to face connectivity and find out which
-    # vertex of face f1 corresponds to a vertex of face2 (face1•p = face2)
-    for (f1, f2) in enumerate(FToF)
-        face_1_coords = Vector{Float64}[]
-        face_2_coords = Vector{Float64}[]
-        # Get the coordinates of the faces
-        for i in 1:dims
-            push!(face_1_coords, Xf_sorted[i][f1])
-            push!(face_2_coords, Xf_sorted[i][f2])
-        end
-        # Compute the permutation of nodes (face )
-        p = match_coordinate_vectors(face_1_coords, face_2_coords)
-        mapP[f1] = mapM[f2][p]
-    end
-    mapB = map(x -> x[1], findall(@. mapM[:]==mapP[:]))
-    mapM_flat = []
-    mapP_flat = []
-    for i in eachindex(mapM)
-        append!(mapM_flat, mapM[i])
-        append!(mapP_flat, mapP[i])
-    end
-    return mapM_flat, mapP_flat, mapB
+    mapM = vcat(mapM...)
+    mapP = vcat(mapP...)
+    mapB = findall(vec(mapM) .== vec(mapP))
+    return mapM, mapP, mapB
 end
 
 """
