@@ -68,7 +68,7 @@ rd = RefElemData(Tri(),  SBP{Hicken}(), N)
 rd = RefElemData(Tri(),  SBP{Kubatko{LobattoFaceNodes}}(), N) 
 rd = RefElemData(Tri(),  SBP{Kubatko{LegendreFaceNodes}}(), N) 
 ```
-Quadrature rules of both degree `2*N-1` (up to `N = 6`) and `2*N` (up to `N = 4`) are supported on triangles. For `Line`, `Quad`, and `Hex` elements, `RefElemData(..., SBP(), N)` is the same as the `RefElemData` for a DG-SEM discretization, though some fields are specialized for the SBP type. These SBP-based `RefElemData` objects can also be used to initialize a mesh (for example, `md = MeshData(uniform_mesh(rd.elementType, 4)..., rd)`). 
+Quadrature rules of both degree `2*N-1` (up to `N = 6`) and `2*N` (up to `N = 4`) are supported on triangles. For `Line`, `Quad`, and `Hex` elements, `RefElemData(..., SBP(), N)` is the same as the `RefElemData` for a DG-SEM discretization, though some fields are specialized for the SBP type. These SBP-based `RefElemData` objects can also be used to initialize a mesh (for example, `md = MeshData(uniform_mesh(rd.element_type, 4)..., rd)`). 
 
 On triangles, we have the following SBP types with the following properties:
 * `SBP{Kubatko{LobattoFaceNodes}}`: degree `2N-1` accurate quadrature rules with `N+2` Lobatto nodes on each face. Nodes for `N=4`: 
