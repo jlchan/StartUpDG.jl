@@ -14,14 +14,12 @@ Output: `FToF`, `length(fv)` by `K` index array containing face-to-face connecti
 function connect_mesh(EToV, fv)
     Nfaces = length(fv)
     K = size(EToV, 1)
-    elem_types = [Tri(), Quad(), Tet(), Hex(), Wedge(), Pyr()]
+
     # sort and find matches
     fnodes = Vector{eltype(first(EToV))}[]
     for e in 1:K
-        vertex_ids = EToV[e, :]
-        element_type = element_type_from_num_vertices(elem_types, length(vertex_ids))
-        for face in 1:num_faces(element_type)
-            push!(fnodes, EToV[e, fv[face]])
+        for face_indices in fv
+            push!(fnodes, EToV[e, face_indices])
         end
     end
     
