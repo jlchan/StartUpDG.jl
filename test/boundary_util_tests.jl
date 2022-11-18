@@ -31,20 +31,5 @@
 
         boundary_nodes = tag_boundary_nodes(rd, md, Dict(:bottom => on_bottom_boundary, :top => on_top_boundary))
         @test all(on_bottom_boundary.(zip(md.xf[boundary_nodes[:bottom]], md.yf[boundary_nodes[:bottom]])))
-
-        #test build_periodic_boundary_maps
-        rd = RefElemData(Tri(),3);
-        
-        VXY, EToV,g = readGmsh2D_v4("testset_mesh/periodicity_mesh_v4.msh",true);
-        md = MeshData(VXY, EToV, rd);
-        md_test = make_periodic(md,tol=4e-12)
-        @test md_test.xf[md_test.mapB]!=md.xf[md.mapB]
-        @test md_test.yf[md_test.mapB]!=md.yf[md.mapB]
-        
-        VXY, EToV = readGmsh2D("testset_mesh/periodicity_mesh_v2.msh");
-        md = MeshData(VXY, EToV, rd);
-        md_test = make_periodic(md,tol=4e-12)
-        @test md_test.xf[md_test.mapB]!=md.xf[md.mapB]
-        @test md_test.yf[md_test.mapB]!=md.yf[md.mapB]
     end
 end
