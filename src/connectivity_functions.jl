@@ -18,7 +18,7 @@ function connect_mesh(EToV, fv)
     fnodes = Vector{eltype(first(EToV))}[]
     for e in 1:num_elements
         for face_indices in fv
-            push!(fnodes, EToV[e, face_indices])
+            push!(fnodes, sort(EToV[e, face_indices]))
         end
     end
     
