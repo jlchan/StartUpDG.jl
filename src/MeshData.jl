@@ -267,18 +267,10 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2})
 end
 
 function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
-    elem_types = [Tri(), Quad(), Tet(), Hex(), Wedge(), Pyr()]
+
     @unpack fv = rd
     FToF = connect_mesh(EToV, fv)
     Nfaces, K = size(FToF)
-    faces = Vector{AbstractElemShape}()
-    for e in 1:K
-        vertex_ids = EToV[e, :]
-        element_type = element_type_from_num_vertices(elem_types, length(vertex_ids))
-        for i in 1:num_faces(element_type)
-            push!(faces, element_type_from_num_vertices(elem_types, length(EToV[e, fv[i]])))
-        end
-    end
 
     #Construct global coordinates
     @unpack V1 = rd
@@ -287,15 +279,8 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
     @unpack r, s, t, Vf = rd
     xf, yf, zf = (x -> Vf * x).((x, y, z))
+    mapM, mapP, mapB = build_node_maps(rd, FToF, (xf, yf, zf))
     
-    #mapM, mapP, mapB = build_node_maps(FToF, rd.N, xf, yf, zf)
-    mapM, mapP, mapB = build_node_maps(FToF, EToV, rd, xf, yf, zf)
-    if rd.element_type ∈ [Line(), Tri(), Quad(), Tet(), Hex()]
-        Nfp = convert(Int, size(Vf, 1) / Nfaces)
-        mapM = reshape(mapM, Nfp * Nfaces, K)
-        mapP = reshape(mapP, Nfp * Nfaces, K)
-    end
-
     #Compute geometric factors and surface normals
     @unpack Dr, Ds, Dt = rd
     rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J = geometric_factors(x, y, z, Dr, Ds, Dt)
