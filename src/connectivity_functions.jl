@@ -1,23 +1,22 @@
 """
     connect_mesh(EToV,fv)
 
-Initialize element connectivity matrices, element to element and element to face
-connectivity.
-
 Inputs:
-- `EToV` is a `K` by `Nv` matrix whose rows identify the `Nv` vertices
-which make up an element.
+- `EToV` is a `num_elements` by `Nv` matrix whose rows identify the `Nv` vertices
+which make up one of the `num_elements` elements.
 - `fv` (an array of arrays containing unordered indices of face vertices).
 
-Output: `FToF`, `length(fv)` by `K` index array containing face-to-face connectivity.
+Output: `FToF`, an `length(fv)` by `num_elements` index array containing 
+face-to-face connectivity.
 """
 function connect_mesh(EToV, fv)
-    Nfaces = length(fv)
-    K = size(EToV, 1)
+    num_faces = length(fv)
+    num_elements = size(EToV, 1) 
 
-    # sort and find matches
+    # create list of faces. Each face is identified by the 
+    # vertex nodes indices associated with that face.
     fnodes = Vector{eltype(first(EToV))}[]
-    for e in 1:K
+    for e in 1:num_elements
         for face_indices in fv
             push!(fnodes, EToV[e, face_indices])
         end
@@ -27,7 +26,7 @@ function connect_mesh(EToV, fv)
     p = sortperm(fnodes) # sorts by lexicographic ordering by default
     fnodes = fnodes[p, :]
 
-    FToF = reshape(collect(1:Nfaces * K), Nfaces, K)
+    FToF = reshape(collect(1:num_faces * num_elements), num_faces, num_elements)
     for f = 1:size(fnodes, 1) - 1
         if fnodes[f, :]==fnodes[f + 1, :]
             f1 = FToF[p[f]]
