@@ -174,6 +174,7 @@ Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometr
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
 """
+
 # splats VXYZ 
 MeshData(VXYZ::T, EToV, other_args...) where {NDIMS, T <: NTuple{NDIMS}} = 
     MeshData(VXYZ..., EToV, other_args...)
@@ -280,10 +281,10 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
     @unpack r, s, t, Vf = rd
     xf, yf, zf = (x -> Vf * x).((x, y, z))
-    mapM, mapP, mapB = build_node_maps(FToF, (xf, yf, zf))
+    mapM, mapP, mapB = build_node_maps(rd, FToF, (xf, yf, zf))
     mapM = reshape(mapM, :, K)
     mapP = reshape(mapP, :, K)
-
+    
     #Compute geometric factors and surface normals
     @unpack Dr, Ds, Dt = rd
     rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J = geometric_factors(x, y, z, Dr, Ds, Dt)
