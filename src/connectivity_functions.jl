@@ -1,26 +1,32 @@
 """
     connect_mesh(EToV,fv)
 
-Initialize element connectivity matrices, element to element and element to face
-connectivity.
-
 Inputs:
-- `EToV` is a `K` by `Nv` matrix whose rows identify the `Nv` vertices
-which make up an element.
+- `EToV` is a `num_elements` by `Nv` matrix whose rows identify the `Nv` vertices
+which make up one of the `num_elements` elements.
 - `fv` (an array of arrays containing unordered indices of face vertices).
 
-Output: `FToF`, `length(fv)` by `K` index array containing face-to-face connectivity.
+Output: `FToF`, an `length(fv)` by `num_elements` index array containing 
+face-to-face connectivity.
 """
 function connect_mesh(EToV, fv)
-    Nfaces = length(fv)
-    K = size(EToV, 1)
+    num_faces = length(fv)
+    num_elements = size(EToV, 1) 
 
-    # sort and find matches
-    fnodes = [[sort(EToV[e, ids]) for ids in fv, e in 1:K]...]
+    # create list of faces. Each face is identified by the 
+    # vertex nodes indices associated with that face.
+    fnodes = Vector{eltype(first(EToV))}[]
+    for e in 1:num_elements
+        for face_indices in fv
+            push!(fnodes, sort(EToV[e, face_indices]))
+        end
+    end
+    
+    #sort and find matches
     p = sortperm(fnodes) # sorts by lexicographic ordering by default
     fnodes = fnodes[p, :]
 
-    FToF = reshape(collect(1:Nfaces * K), Nfaces, K)
+    FToF = reshape(collect(1:num_faces * num_elements), num_faces, num_elements)
     for f = 1:size(fnodes, 1) - 1
         if fnodes[f, :]==fnodes[f + 1, :]
             f1 = FToF[p[f]]
@@ -34,14 +40,17 @@ end
 
 # returns back `p` such that `u[p] == v` or false
 # u = tuple of vectors containing coordinates
-function match_coordinate_vectors(u, v; tol = 100 * eps())
+function match_coordinate_vectors(u, v; tol = 10 * eps())
     p = zeros(Int, length(first(u)))
-    return match_coordinate_vectors!(p, u, v)
+    return match_coordinate_vectors!(p, u, v; tol)
 end
-function match_coordinate_vectors!(p, u, v; tol = 100 * eps())
+function match_coordinate_vectors!(p, u, v; tol = 10 * eps())    
     for (i, u_i) in enumerate(zip(u...))
         for (j, v_i) in enumerate(zip(v...))
-            if norm(u_i .- v_i) < tol 
+            # Checks if the points are close relative to the magnitude of the coordinates.
+            # Scaling by length(first(u)) relaxes this bound for high degree polynomials, 
+            # which incur slightly more roundoff error. 
+            if norm(u_i .- v_i) < tol * length(first(u)) * max(one(eltype(u_i)), norm(u_i), norm(v_i))
                 p[i] = j
             end
         end
@@ -64,7 +73,7 @@ elements. `mapM` - map minus (interior). `mapP` - map plus (exterior).
 julia> mapM, mapP, mapB = build_node_maps(FToF, (xf, yf))
 ```
 """
-function build_node_maps(FToF, Xf; tol = 1e-12)
+function build_node_maps(FToF, Xf; tol = 100 * eps())
 
     # total number of faces 
     num_faces_total = length(FToF)    
@@ -86,6 +95,51 @@ function build_node_maps(FToF, Xf; tol = 1e-12)
         match_coordinate_vectors!(p, face_1_coordinates, face_2_coordinates, tol=tol)
         @. mapP[:, f1] = mapM[p, f2]
     end
+    mapB = findall(vec(mapM) .== vec(mapP))
+    return mapM, mapP, mapB
+end
+
+# Calls the simpler version of `build_node_maps` for element types that 
+# have only one type of face (e.g., Tet has only Tri faces). 
+build_node_maps(rd::RefElemData{3, <:Union{Tet, Hex}}, FToF, Xf; kwargs...) = 
+    build_node_maps(FToF, Xf; kwargs...) 
+
+# Specialized for elements with multiple types of faces such as the Wedge and Pyramid. 
+# We need to pass in `rd::RefElemData` because it contains information necessary to 
+# distinguish what nodes lie on a triangular face vs a quadrilateral face (contained 
+# in rd.element_type.node_ids_by_face.
+# !!! note: this version infers `num_elements` from the dimensions of `FToF::Matrix`. 
+# !!! this will not work for adaptive meshes, where `FToF` will be a `Vector`.
+function build_node_maps(rd::RefElemData{3, <:Union{Wedge, Pyr}}, FToF, Xf; tol = 100 * eps())    
+
+    _, num_elements = size(FToF)
+    @unpack node_ids_by_face = rd.element_type
+
+    mapM = Vector{eltype(FToF)}[]
+    offset = zero(eltype(FToF))
+    for e in 1:num_elements
+        for f in 1:rd.num_faces
+            push!(mapM, node_ids_by_face[f] .+ offset)
+        end
+        offset += rd.Nfq
+    end
+    mapP = copy(mapM)    
+
+    # create list of face indices
+    for (f, fnbr) in enumerate(FToF)
+        face_indices = mapM[f]
+        nbr_face_indices = mapM[fnbr]
+
+        # TODO: can preallocate `face_coordinates`, etc.
+        face_coordinates = map(x->getindex(x, face_indices), Xf)
+        nbr_face_coordinates = map(x->getindex(x, nbr_face_indices), Xf)
+
+        p = match_coordinate_vectors(face_coordinates, nbr_face_coordinates; tol)
+        mapP[f][p] .= nbr_face_indices
+    end
+
+    mapM = vcat(mapM...)
+    mapP = vcat(mapP...)
     mapB = findall(vec(mapM) .== vec(mapP))
     return mapM, mapP, mapB
 end
