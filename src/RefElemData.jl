@@ -71,7 +71,7 @@ function Base.show(io::IO, rd::RefElemData)
     print(io,"RefElemData{N=$(rd.N),$(rd.approximation_type),$(rd.elementType)}.")
 end
 
-_propertynames(::Type{RefElemData}, private::Bool = false) = (:Nfaces, :Np, :Nq, :Nfq)
+_propertynames(::Type{RefElemData}, private::Bool = false) = (:num_faces, :Np, :Nq, :Nfq)
 function Base.propertynames(x::RefElemData{1}, private::Bool=false) 
     return (fieldnames(RefElemData)..., _propertynames(RefElemData)...,
             :r, :rq, :rf, :rp, :nrJ, :Dr)
@@ -141,6 +141,8 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbo
 
     # CamlCase will be deprecated in a future release
     elseif s==:elemShape || s==:elementType 
+        @warn "RefElemData properties `elemShape` and `elementType`" * 
+              "are deprecated. Please use `element_type`."
         return getfield(x, :element_type)
     elseif s==:approximationType
         return getfield(x, :approximation_type)
