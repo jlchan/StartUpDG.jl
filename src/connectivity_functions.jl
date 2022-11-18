@@ -67,8 +67,7 @@ elements. `mapM` - map minus (interior). `mapP` - map plus (exterior).
 
 `Xf = (xf, yf, zf)` and `FToF` is size `(Nfaces * K)` and `FToF[face]` = face neighbor
 
-`mapM`, `mapP` are Vectors of Vectors, of the length Nfaces, where each Vector
-is of length Nfp of the corresponding
+`mapM`, `mapP` are size `Nfp` x `(Nfaces*K)`
 
 # Examples
 ```julia
@@ -98,16 +97,27 @@ function build_node_maps(FToF, Xf; tol = 1e-12)
         @. mapP[:, f1] = mapM[p, f2]
     end
     mapB = findall(vec(mapM) .== vec(mapP))
-    return mapM[:], mapP[:], mapB[:]
+    return mapM, mapP, mapB
 end
 
-function build_node_maps(FToF, EToV, rd, Xf...; tol = 1e-12)
-    # If the element has uniform surface elements, one can use the
-    # original implementation
-    # TODO: This can be done more beautiful/better with some Julia-magic
-    if rd.element_type ∈ [Line(), Tri(), Quad(), Tet(), Hex()]
-        return build_node_maps(FToF, Xf)
-    end
+# specialized version for the Wedge
+"""
+    build_node_maps(FToF, EToV, rd, Xf)
+
+Intialize the connectivity table along all edges and boundary node tables of all
+elements. `mapM` - map minus (interior). `mapP` - map plus (exterior).
+
+`Xf = (xf, yf, zf)` and `FToF` is size `(Nfaces * K)` and `FToF[face]` = face neighbor
+
+`mapM`, `mapP` are Vectors of Vectors, of the length Nfaces, where each Vector
+is of length Nfp of the corresponding
+
+# Examples
+```julia
+julia> mapM, mapP, mapB = build_node_maps(FToF, (xf, yf))
+```
+"""
+function build_node_maps(FToF, EToV, rd::RefElemData{3, <:Wedge}, Xf...; tol = 1e-12)    
 
     # Store the coordinates of the nodes of every vertex for each face seperatly
     # Each dimension gets its own vector
