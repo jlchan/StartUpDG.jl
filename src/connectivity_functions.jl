@@ -50,7 +50,7 @@ function match_coordinate_vectors!(p, u, v; tol = 10 * eps())
             # Checks if the points are close relative to the magnitude of the coordinates.
             # Scaling by length(first(u)) relaxes this bound for high degree polynomials, 
             # which incur slightly more roundoff error. 
-            if norm(u_i .- v_i) < tol * length(first(u)) * max(norm(u_i), norm(v_i))
+            if norm(u_i .- v_i) < tol * length(first(u)) * max(one(eltype(u_i)), norm(u_i), norm(v_i))
                 p[i] = j
             end
         end
@@ -101,8 +101,8 @@ end
 
 # Calls the simpler version of `build_node_maps` for element types that 
 # have only one type of face (e.g., Tet has only Tri faces). 
-build_node_maps(rd::RefElemData{3, <:Union{Tet, Hex}}, args...) = 
-    build_node_maps(args...) 
+build_node_maps(rd::RefElemData{3, <:Union{Tet, Hex}}, FToF, Xf; kwargs...) = 
+    build_node_maps(FToF, Xf; kwargs...) 
 
 # Specialized for elements with multiple types of faces such as the Wedge and Pyramid. 
 # We need to pass in `rd::RefElemData` because it contains information necessary to 
@@ -477,4 +477,3 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     end
     return mapPB[:]
 end
-=#

@@ -56,22 +56,22 @@ function ConstructionBase.setproperties(rd::RefElemData, patch::NamedTuple)
 end
 
 ConstructionBase.getproperties(rd::RefElemData) = 
-    (; elementType=rd.elementType, approximation_type=rd.approximation_type, N=rd.N, fv=rd.fv, V1=rd.V1, 
+    (; element_type=rd.element_type, approximation_type=rd.approximation_type, N=rd.N, fv=rd.fv, V1=rd.V1, 
        rst=rd.rst, VDM=rd.VDM, Fmask=rd.Fmask, Nplot=rd.Nplot, rstp=rd.rstp, Vp=rd.Vp, 
        rstq=rd.rstq, wq=rd.wq, Vq=rd.Vq, rstf=rd.rstf, wf=rd.wf, Vf=rd.Vf, nrstJ=rd.nrstJ, 
        M=rd.M, Pq=rd.Pq, Drst=rd.Drst, LIFT=rd.LIFT)
 
 function Base.show(io::IO, ::MIME"text/plain", rd::RefElemData)
     @nospecialize rd
-    print(io,"RefElemData for a degree $(rd.N) $(rd.approximation_type) approximation on $(rd.elementType) element.")
+    print(io,"RefElemData for a degree $(rd.N) $(rd.approximation_type) approximation on $(rd.element_type) element.")
 end
 
 function Base.show(io::IO, rd::RefElemData)
     @nospecialize basis # reduce precompilation time
-    print(io,"RefElemData{N=$(rd.N),$(rd.approximation_type),$(rd.elementType)}.")
+    print(io,"RefElemData{N=$(rd.N),$(rd.approximation_type),$(rd.element_type)}.")
 end
 
-_propertynames(::Type{RefElemData}, private::Bool = false) = (:Nfaces, :Np, :Nq, :Nfq)
+_propertynames(::Type{RefElemData}, private::Bool = false) = (:num_faces, :Np, :Nq, :Nfq)
 function Base.propertynames(x::RefElemData{1}, private::Bool=false) 
     return (fieldnames(RefElemData)..., _propertynames(RefElemData)...,
             :r, :rq, :rf, :rp, :nrJ, :Dr)
@@ -141,6 +141,8 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbo
 
     # CamlCase will be deprecated in a future release
     elseif s==:elemShape || s==:elementType 
+        @warn "RefElemData properties `elemShape` and `elementType`" * 
+              "are deprecated. Please use `element_type`."
         return getfield(x, :element_type)
     elseif s==:approximationType
         return getfield(x, :approximation_type)

@@ -280,6 +280,8 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
     @unpack r, s, t, Vf = rd
     xf, yf, zf = (x -> Vf * x).((x, y, z))
     mapM, mapP, mapB = build_node_maps(rd, FToF, (xf, yf, zf))
+    mapM = reshape(mapM, :, K)
+    mapP = reshape(mapP, :, K)
     
     #Compute geometric factors and surface normals
     @unpack Dr, Ds, Dt = rd
@@ -290,13 +292,13 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
     xq, yq, zq = (x -> Vq * x).((x, y, z))
     wJq = diagm(wq) * (Vq * J)
 
-    nxJ,nyJ,nzJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
+    nxJ,nyJ,nzJ,Jf = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
 
     is_periodic = (false, false, false)
     return MeshData(rd.element_type, tuple(VX, VY, VZ), EToV, FToF,
                     tuple(x, y, z), tuple(xf, yf, zf), tuple(xq, yq, zq), wJq,
                     mapM, mapP, mapB,
-                    rstxyzJ, J, tuple(nxJ, nyJ, nzJ), sJ,
+                    rstxyzJ, J, tuple(nxJ, nyJ, nzJ), Jf,
                     is_periodic)
 end
 
