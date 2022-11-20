@@ -195,8 +195,6 @@ function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
     Flist = 1:length(FToF)
     Bfaces = findall(vec(FToF) .== Flist)
 
-    xb = xf[mapB]
-
     xb, yb = xf[mapB], yf[mapB]
     Nfp = convert(Int, length(xf) / NfacesTotal)
     Nbfaces = convert(Int, length(xb) / Nfp)
