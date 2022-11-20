@@ -102,7 +102,7 @@
         @test StartUpDG.num_vertices(Tet()) == 4
         @test StartUpDG.num_faces(Tet()) == 4
 
-        @test face_type(Tet(), 3) = face_type(Tet())
+        @test StartUpDG.face_type(Tet(), 3) == StartUpDG.face_type(Tet())
     end
 
     @testset "Wedge" begin
