@@ -113,17 +113,16 @@ build_node_maps(rd::RefElemData{3, <:Union{Tet, Hex}}, FToF, Xf; kwargs...) =
 function build_node_maps(rd::RefElemData{3, <:Union{Wedge, Pyr}}, FToF, Xf; tol = 100 * eps())    
 
     _, num_elements = size(FToF)
-    @unpack node_ids_by_face = rd.element_type
+    (; element_type) = rd
+    (; node_ids_by_face) = element_type
 
-    mapM = Vector{eltype(FToF)}[]
-    offset = zero(eltype(FToF))
-    for e in 1:num_elements
-        for f in 1:rd.num_faces
-            push!(mapM, node_ids_by_face[f] .+ offset)
-        end
-        offset += rd.Nfq
-    end
-    mapP = deepcopy(mapM)    
+    # create `mapM` as a matrix of `UnitRange`s
+    face_nodes_per_element = maximum(maximum.(node_ids_by_face))
+    mapM = [node_ids_by_face[f] .+ (e-1) * face_nodes_per_element 
+            for f in 1:num_faces(element_type), e in 1:num_elements]
+
+    # convert mapP to Vector{Int64} so we can use `setindex!`
+    mapP = collect.(deepcopy(mapM))
 
     # create list of face indices
     for (f, fnbr) in enumerate(FToF)
@@ -138,9 +137,9 @@ function build_node_maps(rd::RefElemData{3, <:Union{Wedge, Pyr}}, FToF, Xf; tol 
         mapP[f][p] .= nbr_face_indices
     end
 
-    mapM = vcat(mapM...)
+    # mapM = vcat(mapM...)
     mapP = vcat(mapP...)
-    mapB = findall(vec(mapM) .== vec(mapP))
+    mapB = findall(vec(vcat(mapM...)) .== vec(mapP))
     return mapM, mapP, mapB
 end
 

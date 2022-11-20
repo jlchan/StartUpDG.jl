@@ -16,7 +16,7 @@ md = MeshElemData(VXY, EToV, rd)
 Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
                             VertexType, EToVType, FToFType, 
                             VolumeWeightType, VolumeGeofacsType, VolumeJType,
-                            ConnectivityType, BoundaryMapType}
+                            ConnectivityTypeM, ConnectivityTypeP, BoundaryMapType}
 
     # this field defaults to the element shape, but can be 
     # used to specify cut-cell, hybrid, non-conforming meshes. 
@@ -35,8 +35,8 @@ Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
 
     # TODO: move mapP, mapB into a "conforming mesh type"?
     # arrays of connectivity indices between face nodes
-    mapM::ConnectivityType
-    mapP::ConnectivityType
+    mapM::ConnectivityTypeM
+    mapP::ConnectivityTypeP
     mapB::BoundaryMapType
 
     # volume geofacs Gij = dx_i/dxhat_j
