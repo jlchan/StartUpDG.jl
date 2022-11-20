@@ -161,10 +161,7 @@
         @test StartUpDG.num_vertices(Wedge()) == 6
 
         @test face_type(Wedge(), 3) = Quad()
-<<<<<<< HEAD
         @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
-=======
->>>>>>> dev_wedge
     end
 
     @testset "Misc Pyr" begin
