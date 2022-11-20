@@ -1,10 +1,8 @@
 # gmsh test files are located in StartUpDG/test/testset_mesh/
 # malpasset.msh was previously a 2.2 file. Exported version 
 # of 4.1 has been added for testing
-@testset "Gmsh tests" begin 
 
 @testset "Gmsh" begin 
-
     @testset "Gmsh reading" begin
         VXY, EToV = readGmsh2D("squareCylinder2D.msh")
         @test size(EToV) == (3031, 3)
@@ -23,8 +21,6 @@
     end
 
     @testset "$approxType MeshData initialization with gmsh import" for approxType = [Polynomial(), SBP()]
-        io = open("stderr.txt","w")
-        redirect_stderr(io)
         @testset "2D tri gmsh import verison $version" for version = [2.2, 4.1] 
             file = "pert_mesh"
             tol = 5e7*eps() # higher tolerance due to floating point issues?
@@ -83,7 +79,6 @@
                 @test uf ≈ uf[mapP]        
                 #@test norm(uf[mapB]) < tol skip=true
             end
-<<<<<<< HEAD
 
             @testset "check periodic node connectivity maps" begin
                 md = make_periodic(md, (true, true))
@@ -101,13 +96,11 @@
                 @test all(md2.xyzf .≈ (x->x .+ 1).(md.xyzf))
             end
         end
-        close(io)
-        rm("stderr.txt")
     end
 
+    # TODO: avoid the use of stderr.txt, causes issues on Windows
+    
     @testset "gmsh version 4.1 file with one data grouping" begin
-        io = open("stderr.txt","w")
-        redirect_stderr(io)
         file = "testset_mesh/one_group_v4.msh"
         if isfile(file)
             VXY_1, EToV_1 = readGmsh2D_v4(file)
@@ -118,18 +111,15 @@
             lines = readlines(f)
             num_elements = StartUpDG.get_num_elements(lines)
             @test length(unique(group_2))==1
+	    close(f)
         else
-            @info "file for this test is missing"
+            @warn "file for this test is missing"
         end
-        close(io)
-        rm("stderr.txt")
     end;
 
     @testset "gmsh version 4.1 file with no grouping data" begin
         # test promps for grouping data from the file. 
         # suppose such grouping data however is not in the file
-        io = open("stderr.txt","w")
-        redirect_stderr(io)
         file = "testset_mesh/no_group_v4.msh"
         if isfile(file)
             VXY_1, EToV_1 = readGmsh2D_v4(file)
@@ -140,97 +130,10 @@
             lines = readlines(f)
             num_elements = StartUpDG.get_num_elements(lines)
             @test group_2 == zeros(Int, num_elements)
+	    close(f)
         else
-            @info "file for this test is missing"
+            @warn "file for this test is missing"
         end
-        close(io)
-        rm("stderr.txt")
-=======
-
-            @testset "check periodic node connectivity maps" begin
-                md = make_periodic(md, (true, true))
-                @unpack mapP = md
-                u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y))
-                uf = Vf * u
-                #@test uf ≈ uf[mapP]
-            end
-
-            @testset "check MeshData struct copying" begin
-                xyz = (x->x .+ 1).(md.xyz) # affine shift
-                md2 = MeshData(rd, md, xyz...)
-                @test sum(norm.(md2.rstxyzJ .- md.rstxyzJ)) < tol
-                @test sum(norm.(md2.nxyzJ .- md.nxyzJ)) < tol
-                @test all(md2.xyzf .≈ (x->x .+ 1).(md.xyzf))
-            end
-        end
-        close(io)
-        rm("stderr.txt")
-    end
-
-    @testset "gmsh version 4.1 file with one data grouping" begin
-        io = open("stderr.txt","w")
-        redirect_stderr(io)
-        file = "testset_mesh/one_group_v4.msh"
-        if isfile(file)
-            VXY_1, EToV_1 = readGmsh2D_v4(file)
-            VXY_2, EToV_2, group_2 = readGmsh2D_v4(file,true) 
-            @test VXY_1 == VXY_2 
-            @test EToV_1 == EToV_2 
-            f = open(file)
-            lines = readlines(f)
-            num_elements = StartUpDG.get_num_elements(lines)
-            @test length(unique(group_2))==1
-        else
-            @info "file for this test is missing"
-        end
-        close(io)
-        rm("stderr.txt")
-    end;
-
-    @testset "gmsh version 4.1 file with no grouping data" begin
-        # test promps for grouping data from the file. 
-        # suppose such grouping data however is not in the file
-        io = open("stderr.txt","w")
-        redirect_stderr(io)
-        file = "testset_mesh/no_group_v4.msh"
-        if isfile(file)
-            VXY_1, EToV_1 = readGmsh2D_v4(file)
-            VXY_2, EToV_2, group_2 = readGmsh2D_v4(file, true) 
-            @test VXY_1 == VXY_2 
-            @test EToV_1 == EToV_2 
-            f = open(file)
-            lines = readlines(f)
-            num_elements = StartUpDG.get_num_elements(lines)
-            @test group_2 == zeros(Int, num_elements)
-        else
-            @info "file for this test is missing"
-        end
-        close(io)
-        rm("stderr.txt")
->>>>>>> main
-    end;
-
-    @testset "gmsh version 4.1 file with no grouping data" begin
-        # test promps for grouping data from the file. 
-        # suppose such grouping data however is not in the file
-        io = open("stderr.txt","w")
-        redirect_stderr(io)
-        file = "testset_mesh/no_group_v4.msh"
-        if isfile(file)
-            VXY_1, EToV_1 = readGmsh2D_v4(file)
-            VXY_2, EToV_2, group_2 = readGmsh2D_v4(file, true) 
-            @test VXY_1 == VXY_2 
-            @test EToV_1 == EToV_2 
-            f = open(file)
-            lines = readlines(f)
-            num_elements = StartUpDG.get_num_elements(lines)
-            @test group_2 == zeros(Int, num_elements)
-        else
-            @info "file for this test is missing"
-        end
-        close(io)
-        rm("stderr.txt")
->>>>>>> main
     end;
 
     @testset "Compare output between v2.2 and v4.1" begin

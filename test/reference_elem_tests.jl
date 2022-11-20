@@ -2,7 +2,7 @@
 @testset "Reference elements" begin
     tol = 5e2*eps()
 
-    N = 3
+    N = 2
     @testset "Interval" begin
         rd = RefElemData(Line(),N)
         @test rd.r == rd.rst[1]
