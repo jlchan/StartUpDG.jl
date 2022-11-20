@@ -123,7 +123,7 @@ function build_node_maps(rd::RefElemData{3, <:Union{Wedge, Pyr}}, FToF, Xf; tol 
         end
         offset += rd.Nfq
     end
-    mapP = copy(mapM)    
+    mapP = deepcopy(mapM)    
 
     # create list of face indices
     for (f, fnbr) in enumerate(FToF)
