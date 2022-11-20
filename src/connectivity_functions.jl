@@ -161,7 +161,7 @@ function make_periodic(md::MeshData{Dim}, is_periodic::NTuple{Dim, Bool}; kwargs
     @unpack mapM, mapP, mapB, xyzf, FToF = md
     NfacesTotal = length(FToF)
     FToF_periodic = copy(FToF)
-    mapPB = build_periodic_boundary_maps!(xyzf...,is_periodic...,NfacesTotal,
+    mapPB = build_periodic_boundary_maps!(xyzf..., is_periodic..., NfacesTotal,
                                           mapM, mapP, mapB, FToF_periodic; kwargs...)
     mapP_periodic = copy(mapP)
     mapP_periodic[mapB] = mapPB
@@ -175,7 +175,7 @@ function make_periodic(md::MeshData{1, Tv, Ti}, is_periodic::Bool = true; kwargs
 
     if is_periodic == true
         @unpack mapP, mapB, xf, FToF = md
-        mapPB = argmax(vec(xf)),argmin(vec(xf))
+        mapPB = argmax(vec(xf)), argmin(vec(xf))
         mapP_periodic = copy(mapP)
         mapP_periodic[mapB] .= mapPB
         FToF_periodic = copy(FToF)
@@ -270,7 +270,7 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     Flist = 1:length(FToF)
     Bfaces = findall(vec(FToF) .== Flist)
 
-    xb,yb,zb = xf[mapB],yf[mapB],zf[mapB]
+    xb, yb, zb = xf[mapB], yf[mapB], zf[mapB]
     Nfp = length(xf) ÷ NfacesTotal
     Nbfaces = length(xb) ÷ Nfp
     xb, yb, zb = (x->reshape(x, Nfp, Nbfaces)).((xb, yb, zb))

@@ -151,7 +151,6 @@
         @test sum(rd.wf[node_ids_by_face[4]]) ≈ 2
         @test sum(rd.wf[node_ids_by_face[5]]) ≈ 2
 
-
         @test rd.Pq * rd.Vq ≈ I
         
         # 1/2 of a hex
