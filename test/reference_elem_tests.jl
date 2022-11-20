@@ -101,6 +101,8 @@
 
         @test StartUpDG.num_vertices(Tet()) == 4
         @test StartUpDG.num_faces(Tet()) == 4
+
+        @test face_type(Tet(), 3) = face_type(Tet())
     end
 
     @testset "Wedge" begin
@@ -157,6 +159,9 @@
         
         @test StartUpDG.num_faces(Wedge()) == 5
         @test StartUpDG.num_vertices(Wedge()) == 6
+
+        @test face_type(Wedge(), 3) = Quad()
+        @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
     end
 
     @testset "Misc Pyr" begin
