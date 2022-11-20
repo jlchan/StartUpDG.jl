@@ -13,7 +13,6 @@
         @test rd.r[rd.Fmask[:]] ≈ rd.rf
         @test invoke(inverse_trace_constant, Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
         @test propertynames(rd)[1] == :element_type
-        @test rd.elementType == rd.element_type
 
         # test for deprecated CamlCase approximationType usage
         @test rd.approximationType == rd.approximation_type

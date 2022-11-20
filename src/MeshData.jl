@@ -67,9 +67,10 @@ function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
     @nospecialize md
     print(io,"MeshData{$DIM}")
 end
-function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM}) where {DIM}
+
+function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, MeshType}) where {DIM, MeshType}
     @nospecialize md
-    print(io,"MeshData of dimension $DIM with $(md.K) elements")
+    print(io,"$MeshType MeshData of dimension $DIM with $(md.num_elements) elements")
 end
 
 function Base.propertynames(x::MeshData{1}, private::Bool = false)
@@ -143,7 +144,9 @@ function Base.getproperty(x::MeshData, s::Symbol)
         return getfield(x, :rstxyzJ)[3,2]
     elseif s==:tzJ
         return getfield(x, :rstxyzJ)[3,3]
-    elseif s==:K || s==:num_elements # old behavior where K = num_elements
+        
+    # old behavior where K = num_elements        
+    elseif s==:K || s==:num_elements 
         return num_elements(x)
 
     # old notation in the NDG book where sJ (surface Jacobian) is 
@@ -180,39 +183,39 @@ function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
     # Construct global coordinates
     @unpack V1 = rd
-    x = V1*VX[transpose(EToV)]
-    K = size(EToV,1)
+    x = V1 * VX[transpose(EToV)]
+    K = size(EToV, 1)
     Nfaces = 2
 
-    FToF = zeros(Int,Nfaces,K)
+    FToF = zeros(Int, Nfaces, K)
     sk = 1
     for e = 1:K
-        l = 2*e-1
-        r = 2*e
-        FToF[1:2,e] .= [l-1; r+1]
+        l = 2 * e-1
+        r = 2 * e
+        FToF[1:2, e] .= [l-1; r+1]
         sk += 1
     end
-    FToF[1,1] = 1
-    FToF[Nfaces,K] = Nfaces*K
+    FToF[1, 1] = 1
+    FToF[Nfaces, K] = Nfaces * K
 
     # Connectivity maps
     @unpack Vf = rd
-    xf = Vf*x
-    mapM = reshape(1:2*K,2,K)
+    xf = Vf * x
+    mapM = reshape(1:2*K, 2, K)
     mapP = copy(mapM)
-    mapP[1,2:end] .= mapM[2,1:end-1]
-    mapP[2,1:end-1] .= mapM[1,2:end]
-    mapB = findall(@. mapM[:]==mapP[:])
+    mapP[1, 2:end] .= mapM[2, 1:end-1]
+    mapP[2, 1:end-1] .= mapM[1, 2:end]
+    mapB = findall(@. mapM[:] == mapP[:])
 
     # Geometric factors and surface normals
-    J = repeat(transpose(diff(VX)/2),length(rd.r),1)
+    J = repeat(transpose(diff(VX) / 2), length(rd.r), 1)
     rxJ = one.(J)
-    nxJ = repeat([-1.0; 1.0],1,K)
-    sJ = abs.(nxJ)
+    nxJ = repeat([-1.0; 1.0], 1, K)
+    Jf = abs.(nxJ)
 
-    @unpack Vq,wq = rd
-    xq = Vq*x
-    wJq = diagm(wq)*(Vq*J)
+    @unpack Vq, wq = rd
+    xq = Vq * x
+    wJq = diagm(wq) * (Vq * J)
 
     is_periodic = (false,)
 
@@ -220,9 +223,8 @@ function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
                     tuple(x), tuple(xf), tuple(xq), wJq,
                     collect(mapM), mapP, mapB,
                     SMatrix{1,1}(tuple(rxJ)), J,
-                    tuple(nxJ), sJ,
+                    tuple(nxJ), Jf,
                     is_periodic)
-
 end
 
 function MeshData(VX, VY, EToV, rd::RefElemData{2})
@@ -279,11 +281,10 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
     @unpack r, s, t, Vf = rd
     xf, yf, zf = (x -> Vf * x).((x, y, z))
-    mapM, mapP, mapB = build_node_maps(FToF, (xf, yf, zf))
-    Nfp = convert(Int, size(Vf, 1) / Nfaces)
-    mapM = reshape(mapM, Nfp * Nfaces, K)
-    mapP = reshape(mapP, Nfp * Nfaces, K)
-
+    mapM, mapP, mapB = build_node_maps(rd, FToF, (xf, yf, zf))
+    mapM = reshape(mapM, :, K)
+    mapP = reshape(mapP, :, K)
+    
     #Compute geometric factors and surface normals
     @unpack Dr, Ds, Dt = rd
     rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J = geometric_factors(x, y, z, Dr, Ds, Dt)
@@ -293,13 +294,13 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
     xq, yq, zq = (x -> Vq * x).((x, y, z))
     wJq = diagm(wq) * (Vq * J)
 
-    nxJ,nyJ,nzJ,sJ = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
+    nxJ,nyJ,nzJ,Jf = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
 
     is_periodic = (false, false, false)
     return MeshData(rd.element_type, tuple(VX, VY, VZ), EToV, FToF,
                     tuple(x, y, z), tuple(xf, yf, zf), tuple(xq, yq, zq), wJq,
                     mapM, mapP, mapB,
-                    rstxyzJ, J, tuple(nxJ, nyJ, nzJ), sJ,
+                    rstxyzJ, J, tuple(nxJ, nyJ, nzJ), Jf,
                     is_periodic)
 end
 
@@ -340,12 +341,12 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
 end
 
 
-# physical normals are computed via G*nhatJ, G = matrix of geometric terms
+# physical normals are computed via G * nhatJ, where G = matrix of geometric terms
 function compute_normals(geo::SMatrix{Dim, Dim}, Vf, nrstJ...) where {Dim}
     nxyzJ = ntuple(x -> zeros(size(Vf, 1), size(first(geo), 2)), Dim)
     for i = 1:Dim, j = 1:Dim
         nxyzJ[i] .+= (Vf * geo[i,j]) .* nrstJ[j]
     end
-    sJ = sqrt.(sum(map(x -> x.^2, nxyzJ)))
-    return nxyzJ..., sJ
+    Jf = sqrt.(sum(map(x -> x.^2, nxyzJ)))
+    return nxyzJ..., Jf
 end
