@@ -253,13 +253,12 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         @test uf ≈ uf[mapP]
         @test norm(uf[mapB]) < tol
 
-        if element_type !== Wedge()
-            # check periodic node connectivity maps
-            md = make_periodic(md, (true, true, true))
-            @unpack mapP = md
-            u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y)) * sin(pi * (.5 + z))
-            uf = Vf * u
-            @test uf ≈ uf[mapP] 
-        end       
+        # check periodic node connectivity maps
+        md = make_periodic(md, (true, true, true))
+        @unpack mapP = md
+        u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y)) * sin(pi * (.5 + z))
+        uf = Vf * u
+        @test uf ≈ uf[mapP] 
+        
     end
 end

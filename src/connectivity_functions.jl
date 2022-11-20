@@ -257,6 +257,21 @@ function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
     return mapPB[:]
 end
 
+# specialize on 3D elements with the same types of faces
+function make_periodic(md::MeshData{3, <:Union{Tet, Hex}}, is_periodic::NTuple{3}; kwargs...)
+
+    @unpack mapM, mapP, mapB, xyzf, FToF = md
+    NfacesTotal = length(FToF)
+    FToF_periodic = copy(FToF)
+    mapPB = build_periodic_boundary_maps!(xyzf..., is_periodic..., NfacesTotal,
+                                          mapM, mapP, mapB, FToF_periodic; kwargs...)
+    mapP_periodic = copy(mapP)
+    mapP_periodic[mapB] = mapPB
+    mapB_periodic = mapB[mapPB .== mapP[mapB]] # keep only non-periodic boundary nodes
+    return setproperties(md, (; mapB=mapB_periodic, mapP = mapP_periodic, 
+                                FToF = FToF_periodic, is_periodic = is_periodic)) # from Setfield.jl    
+end
+
 # 3D version of build_periodic_boundary_maps, modifies FToF
 function build_periodic_boundary_maps!(xf, yf, zf,
                                        is_periodic_x, is_periodic_y, is_periodic_z,
@@ -267,6 +282,7 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     Flist = 1:length(FToF)
     Bfaces = findall(vec(FToF) .== Flist)
 
+    # xc, yc, zc = compute_boundary_centroids(xf, yf, zf)
     xb, yb, zb = xf[mapB], yf[mapB], zf[mapB]
     Nfp = length(xf) ÷ NfacesTotal
     Nbfaces = length(xb) ÷ Nfp
@@ -349,3 +365,91 @@ function build_periodic_boundary_maps!(xf, yf, zf,
 
     return mapPB[:]
 end
+
+function compute_boundary_face_centroids(md::MeshData{NDIMS, <:Union{Wedge, Pyr}}) where {NDIMS}
+    element_type = md.mesh_type
+    (; node_ids_by_face) = element_type
+
+    face_nodes_per_element = maximum(maximum.(node_ids_by_face))
+    boundary_faces = findall(eachindex(md.FToF) .== vec(md.FToF))
+
+    # compute face centroids
+    face_centroids = ntuple(_ -> similar(md.xf, (length(boundary_faces), )), NDIMS)
+    sk = 1    
+    for e in 1:md.num_elements
+        for f in 1:num_faces(element_type)
+            fid = f + (e-1) * num_faces(element_type)
+            face_node_ids = node_ids_by_face[f] .+ (e-1) * face_nodes_per_element
+            if fid == md.FToF[fid] # then it's a boundary face            
+                centroid = map(x -> mean(view(x, face_node_ids)), md.xyzf)
+                for i in 1:NDIMS
+                    face_centroids[i][sk] = centroid[i]
+                end
+                sk += 1
+            end
+        end
+    end
+    return face_centroids, boundary_faces
+end
+
+# specialize on 3D elements with different types of faces
+function make_periodic(md::MeshData{3, <:Union{Wedge, Pyr}}, is_periodic::NTuple{3}; tol=1e-12, kwargs...)
+
+    NDIMS = 3
+    (; mapM) = md
+    FToF_periodic = copy(md.FToF)
+    mapP_periodic = copy(md.mapP)
+
+    face_centroids, boundary_faces = compute_boundary_face_centroids(md)
+
+    domain_extrema = extrema.(face_centroids)
+    domain_lengths = map(x->x[2] - x[1], domain_extrema)
+
+    # sort boundary faces into faces on the x-boundaries, y-boundaries, etc.
+    periodic_boundary_face_indices = 
+        [findall(@. face_centroids[dim] ≈ domain_extrema[dim][1] || 
+                    face_centroids[dim] ≈ domain_extrema[dim][2]) for dim in 1:NDIMS]
+    
+    # find periodic face matches in each coordinate direction
+    for dim in 1:NDIMS
+        println("On dim $dim")
+        if is_periodic[dim]
+            for f1 in periodic_boundary_face_indices[dim], f2 in periodic_boundary_face_indices[dim]
+                if f1 !== f2 # find periodic face matches 
+                    face_coords_1 = SVector{NDIMS}(getindex.(face_centroids, f1))
+                    face_coords_2 = SVector{NDIMS}(getindex.(face_centroids, f2))
+
+                    tangent_dims = setdiff(1:NDIMS, dim)
+                    tangent_coords_1 = face_coords_1[tangent_dims]
+                    tangent_coords_2 = face_coords_2[tangent_dims]
+
+                    if norm(face_coords_1 - face_coords_2) ≈ domain_lengths[dim] && 
+                        norm(tangent_coords_1 - tangent_coords_2) < tol * domain_lengths[dim]
+
+                        face_nodes_1 = mapM[boundary_faces[f1]]
+                        face_nodes_2 = mapM[boundary_faces[f2]]
+
+                        # remove the coordinate in the normal direction, since it 
+                        # won't coincide on periodic faces.
+                        face_coords_1 = map(x->x[face_nodes_1], md.xyzf)
+                        face_coords_2 = map(x->x[face_nodes_2], md.xyzf)
+                        fill!(face_coords_1[dim], zero(eltype(face_coords_1[dim])))
+                        fill!(face_coords_2[dim], zero(eltype(face_coords_2[dim])))
+
+                        p = match_coordinate_vectors(face_coords_1, face_coords_2)
+
+                        mapP_periodic[face_nodes_1][p] .= face_nodes_2
+                        FToF_periodic[f1] = f2
+                    end
+                end
+            end
+        end
+    end
+
+    # keep only non-periodic boundary nodes
+    mapB_periodic = findall(vec(vcat(mapM...)) .== vec(mapP_periodic)) 
+
+    return setproperties(md, (; mapB=mapB_periodic, mapP = mapP_periodic, 
+                                FToF = FToF_periodic, is_periodic = is_periodic)) # from Setfield.jl    
+end
+
