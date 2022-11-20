@@ -35,6 +35,19 @@ function init_face_data(elem::Hex; quad_rule_face=quad_nodes(Quad(), N))
     return rf, sf, tf, wf, nrJ, nsJ, ntJ
 end
 
+# The number of nodes 
+@inline num_nodes(::Tri, N) = (N+1) * (N+2) ÷ 2
+@inline num_nodes(::Quad, N) = (N+1) * (N+1)
+@inline num_nodes(::Line, N) = (N+1)
+
+@inline num_face_nodes(::Line, N) = 2
+@inline num_face_nodes(::Tri, N) = 3 * num_nodes(Line(), N)
+@inline num_face_nodes(::Quad, N) = 4 * num_nodes(Line, N)
+@inline num_face_nodes(::Tet, N) = 4 * num_nodes(Tri(), N)
+@inline num_face_nodes(::Hex, N) = 6 * num_nodes(Quad(), N)
+@inline num_face_nodes(::Wedge, N) = 3 * num_nodes(Quad(), N) + 2 * num_nodes(Tri(), N)
+
+
 function init_face_data(elem::Tet; quad_rule_face=quad_nodes(Tri(), N))
     rquad, squad, wquad = quad_rule_face
     e = ones(size(rquad))
@@ -279,8 +292,8 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
     # build face quadrature nodes
     rquad, squad, wquad = quad_rule_face[1]
     rtri, stri, wtri = quad_rule_face[2]
-    rf = vcat( rquad,         rquad,   -one.(wquad),  rtri      , rtri)
-    sf = vcat(-one.(wquad),  -rquad,    rquad      ,  stri      , stri)
+    rf = vcat( rquad,         -rquad,   -one.(wquad),  rtri      , rtri)
+    sf = vcat(-one.(wquad),   rquad,    rquad      ,  stri      , stri)
     tf = vcat( squad,         squad,    squad      , -one.(wtri), one.(wtri))
     wf = vcat(wquad, wquad, wquad, wtri, wtri)
 
@@ -296,6 +309,7 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
     # for nrJ and nsJ normal on face 1-3 coincide with the triangular normals
     zt, zq = zeros(length(wtri)), zeros(length(wquad))
     et, eq = ones(length(wtri)), ones(length(wquad))
+
     nrJ = [zq; eq; -eq; zt; zt]
     nsJ = [-eq; eq; zq; zt; zt]
     ntJ = [zq; zq; zq; -et; et]

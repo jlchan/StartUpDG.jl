@@ -1,3 +1,135 @@
+@testset "$N degree MeshData init" for N = [ 2, 3, 4]
+    @testset "Wedge mesh initialization " begin
+        tol = 5e2 * eps()
+        K1D = 2
+        rd = RefElemData(Wedge(), N)
+        
+
+        md = MeshData(uniform_mesh(Wedge(), K1D)..., rd)
+    
+
+        @unpack wq, Dr, Ds, Dt, Vq, Vf, wf = rd
+        @unpack x, y, z, xq, yq, zq, xf, yf, zf, K = md
+        @unpack rxJ, ryJ, rzJ, sxJ, syJ, szJ, txJ, tyJ, tzJ, J = md
+        @unpack nxJ, nyJ, nzJ, wJq = md
+        @unpack mapM, mapP, mapB = md
+
+        # check positivity of Jacobian
+        @test all(J .> 0)
+        
+        #check differentiation
+        u = @. x^2 + 2 * x * y - y^2 + x * y * z
+        dudx_exact = @. 2*x + 2*y + y*z
+        dudy_exact = @. 2*x - 2*y + x*z
+        dudz_exact = @. x*y
+        dudr,duds,dudt = (D->D*u).((Dr, Ds, Dt))
+        dudx = @. (rxJ * dudr + sxJ * duds + txJ * dudt) / J
+        dudy = @. (ryJ * dudr + syJ * duds + tyJ * dudt) / J
+        dudz = @. (rzJ * dudr + szJ * duds + tzJ * dudt) / J
+
+        @test dudx ≈ dudx_exact
+        @test dudy ≈ dudy_exact
+        @test dudz ≈ dudz_exact
+
+        
+        # check volume integration
+        @test Vq * x ≈ xq
+        @test Vq * y ≈ yq
+        @test Vq * z ≈ zq
+        @test diagm(wq) * (Vq * J) ≈ wJq
+        @test abs(sum(xq .* wJq)) < tol
+        @test abs(sum(yq .* wJq)) < tol
+        @test abs(sum(zq .* wJq)) < tol
+
+        # check surface integration
+        @test Vf * x ≈ xf
+        @test Vf * y ≈ yf
+        @test Vf * z ≈ zf
+        @test abs(sum(diagm(wf) * nxJ)) < tol
+        @test abs(sum(diagm(wf) * nyJ)) < tol
+        @test abs(sum(diagm(wf) * nzJ)) < tol
+
+
+        #md = make_periodic(md, (true, true, true))
+        # check connectivity and boundary maps
+        u = @. (1 - x) * (1 + x) * (1 - y) * (1 + y) * (1 - z) * (1 + z)
+        uf = Vf * u
+
+        #@test norm(uf[mapB]) < tol
+        
+        @unpack mapP = md
+        #for (f1, f2) in enumerate(md.FToF)
+        #    if f1 != f2
+        #        @test norm(uf[mapM[f1]] - uf[mapP[f2]]) < tol
+        #    end
+        #end
+        
+        @test vec(uf) ≈ uf[mapP]
+
+        @test md.mesh_type == rd.element_type
+        @test md.x == md.xyz[1]
+    end
+    @testset "Wedge mesh tri connectivity" begin
+        tol = 5e2 * eps()
+        K1D = 1
+        rd = RefElemData(Wedge(), N)
+        VXYZ = ([-1., 1., -1., -1., 1., -1., -1., 1., -1., -1., 1., -1.], [-1., -1., 1., -1., -1., 1., -1., -1., 1., -1., -1., 1.], [-1., -1., -1., -1.0/3.0, -1.0/3.0, -1.0/3.0, 1.0/3.0, 1.0/3.0, 1.0/3.0, 1., 1., 1.])
+
+        EToV = [1 4 3 6 2 5; 4 7 6 9 5 8; 7 10 9 12 8 11]
+
+        md = MeshData(VXYZ, EToV, rd)
+    
+
+        @unpack wq, Dr, Ds, Dt, Vq, Vf, wf = rd
+        @unpack x, y, z, xq, yq, zq, xf, yf, zf, K = md
+        @unpack rxJ, ryJ, rzJ, sxJ, syJ, szJ, txJ, tyJ, tzJ, J = md
+        @unpack nxJ, nyJ, nzJ, wJq = md
+        @unpack mapM, mapP, mapB = md
+
+        # check positivity of Jacobian
+        @test all(J .> 0)
+        
+        #check differentiation
+        u = @. x^2 + 2 * x * y - y^2 + x * y * z
+        dudx_exact = @. 2*x + 2*y + y*z
+        dudy_exact = @. 2*x - 2*y + x*z
+        dudz_exact = @. x*y
+        dudr,duds,dudt = (D->D*u).((Dr, Ds, Dt))
+        dudx = @. (rxJ * dudr + sxJ * duds + txJ * dudt) / J
+        dudy = @. (ryJ * dudr + syJ * duds + tyJ * dudt) / J
+        dudz = @. (rzJ * dudr + szJ * duds + tzJ * dudt) / J
+
+        @test dudx ≈ dudx_exact
+        @test dudy ≈ dudy_exact
+        @test dudz ≈ dudz_exact
+
+        
+        # check connectivity maps
+        u = @. (1 - x) * (1 + x) * (1 - y) * (1 + y) * (1 - z) * (1 + z)
+        uf = Vf * u
+
+        #@test norm(uf[mapB]) < tol
+
+        @unpack mapP = md
+        #@test abs(sum(xq .* wJq)) < tol
+        #@test abs(sum(yq .* wJq)) < tol
+        #@test abs(sum(zq .* wJq)) < tol
+        @test vec(uf) ≈ uf[mapP]
+
+        
+        #u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y)) * sin(pi * (.5 + z))
+        #for (f1, f2) in enumerate(md.FToF)
+        #    if f1 != f2
+        #        @test norm(uf[mapM[f1]] - uf[mapP[f2]]) < tol
+        #    end
+        #end
+
+        @test md.mesh_type == rd.element_type
+        @test md.x == md.xyz[1]
+        @test md.y == md.xyz[2]
+    end
+end
+
 @testset "MeshData tests" begin 
     @testset "$approxType MeshData initialization" for approxType = [Polynomial(), SBP()]
         @testset "1D mesh initialization" begin
@@ -33,6 +165,7 @@
             @test Vq * x ≈ xq
             @test diagm(wq) * (Vq * J) ≈ wJq
             @test abs(sum(xq .* wJq)) < tol
+
 
             # check surface integration
             @test Vf * x ≈ xf
@@ -101,7 +234,7 @@
             u = @. (1-x) * (1+x) * (1-y) * (1+y)
             uf = Vf * u
             @test uf ≈ uf[mapP]
-            @test norm(uf[mapB]) < tol
+            #@test norm(uf[mapB]) < tol
 
             # check periodic node connectivity maps
             md = make_periodic(md, (true, true))
@@ -274,8 +407,8 @@
         # check positivity of Jacobian
 
         @test all(J .> 0)
-        # h = estimate_h(rd,md)
-        # @test h ≈ 2/K1D 
+        #h = estimate_h(rd,md)
+        #@test h ≈ 2/K1D 
 
         # check differentiation
         u = @. x^2 + 2 * x * y - y^2 + x * y * z
