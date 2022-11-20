@@ -69,7 +69,7 @@ function estimate_h(rd::RefElemData{DIM}, md::MeshData{DIM}) where {DIM}
 end
 
 function estimate_h(e, rd::RefElemData, md::MeshData)
-    sJ_e = reshape(view(md.sJ, :, e), rd.Nfq ÷ rd.Nfaces, rd.Nfaces)
+    sJ_e = reshape(view(md.sJ, :, e), :, rd.Nfaces)
     sJ_face = zero(eltype(md.sJ))
     for f in 1:rd.Nfaces
         sJ_face = max(sJ_face, minimum(view(sJ_e, :, f)) / face_scaling(rd, f))
@@ -78,8 +78,21 @@ function estimate_h(e, rd::RefElemData, md::MeshData)
     return h_e
 end
 
+# specialization for elements with different face types
+function estimate_h(e, rd::RefElemData{3, <:Union{Wedge, Pyr}}, md::MeshData)
+    @unpack node_ids_by_face = rd.element_type
+    sJ_e = view(md.sJ, :, e)
+    sJ_face = zero(eltype(md.sJ))
+    for f in 1:rd.num_faces
+        sJ_face = max(sJ_face, minimum(view(sJ_e, node_ids_by_face[f])) / face_scaling(rd, f))
+    end
+    h_e = minimum(view(md.J, :, e)) / sJ_face
+    return h_e
+end
+
 face_scaling(rd, f) = 1.0
 face_scaling(rd::RefElemData{2, Tri}, f) = f == 3 ? sqrt(2) : 1.0 # sJ incorporates length of long triangle edge
 face_scaling(rd::RefElemData{3, Tet}, f) = f == 2 ? sqrt(3) : 1.0 # sJ incorporates area of larger triangle face
+face_scaling(rd::RefElemData{3, Wedge}, f) = f == 2 ? sqrt(2) : 1.0 # sJ incorporates area of larger triangle face
 compute_domain_size(rd::RefElemData, md::MeshData) = sum(rd.M * md.J)
 

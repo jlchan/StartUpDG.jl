@@ -67,7 +67,7 @@ function RefElemData(elementType::Tri, approxType::SBP, N; tol = 100*eps())
     rd = RefElemData(elementType, Polynomial(), N; quad_rule_vol=quad_rule_vol, quad_rule_face=quad_rule_face)
 
     # determine Fmask = indices of face nodes among volume nodes
-    Ef,Fmask = build_Ef_Fmask(rd)
+    Ef, Fmask = build_Ef_Fmask(rd)
 
     # Build traditional SBP operators from hybridized operators. See Section 3.2 of 
     # [High-order entropy stable dG methods for the SWE](https://arxiv.org/pdf/2005.02516.pdf)

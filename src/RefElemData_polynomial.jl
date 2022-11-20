@@ -245,3 +245,80 @@ function RefElemData(elem::Hex, approxType::Polynomial, N;
 end
 
 
+"""
+    RefElemData(elem::Wedge, approximation_type::Polynomial, N;
+                quad_rule_vol=quad_nodes(elem, N),
+                quad_rule_face_quad=quad_nodes(Quad(), N), 
+                quad_rule_face_tri=quad_nodes(Tri(), N), 
+                quad_rule_face=(quad_rule_face_quad, quad_rule_face_tri),
+                Nplot=10)
+
+Builds operators for prisms/wedges
+"""
+function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
+                     quad_rule_vol=quad_nodes(elem, N),
+                     quad_rule_face_quad=quad_nodes(Quad(), N), 
+                     quad_rule_face_tri=quad_nodes(Tri(), N), 
+                     quad_rule_face=(quad_rule_face_quad, quad_rule_face_tri),
+                     Nplot=10)
+
+    #Find the vertices of the faces
+    fv = face_vertices(elem)
+
+    #Get interpolation nodes of degree N 
+    r, s, t = nodes(elem, N)
+    
+    VDM, Vr, Vs, Vt = basis(elem, N, r, s, t)
+    Dr, Ds, Dt = (A -> A/VDM).((Vr, Vs, Vt))
+    Drst = (Dr, Ds, Dt)
+    
+    Fmask = find_face_nodes(elem, r, s, t)
+
+    # low order interpolation nodes
+    r1, s1, t1 = nodes(elem, 1)
+    V1 = vandermonde(elem, 1, r, s, t) / vandermonde(elem, 1, r1, s1, t1)
+    
+    # build face quadrature nodes
+    rquad, squad, wquad = quad_rule_face[1]
+    rtri, stri, wtri = quad_rule_face[2]
+    rf = vcat( rquad,         -rquad,   -one.(wquad),  rtri      , rtri)
+    sf = vcat(-one.(wquad),   rquad,    rquad      ,  stri      , stri)
+    tf = vcat( squad,         squad,    squad      , -one.(wtri), one.(wtri))
+    wf = vcat(wquad, wquad, wquad, wtri, wtri)
+
+    # index into the face nodes     
+    quad_face_ids(f) = (1:length(wquad)) .+ (f-1) * length(wquad)
+    tri_face_ids(f) = (1:length(wtri)) .+ (f-1) * length(wtri) .+ 3 * length(wquad)
+    node_ids_by_face = (quad_face_ids(1), quad_face_ids(2), quad_face_ids(3), 
+                        tri_face_ids(1), tri_face_ids(2))
+
+    rstf = tuple(rf, sf, tf)
+    Vf = vandermonde(elem, N, rf, sf, tf) / VDM
+        
+    # for nrJ and nsJ normal on face 1-3 coincide with the triangular normals
+    zt, zq = zeros(length(wtri)), zeros(length(wquad))
+    et, eq = ones(length(wtri)), ones(length(wquad))
+
+    nrJ = [zq; eq; -eq; zt; zt]
+    nsJ = [-eq; eq; zq; zt; zt]
+    ntJ = [zq; zq; zq; -et; et]
+
+    rq, sq, tq, wq = quad_rule_vol
+    Vq = vandermonde(elem, N, rq, sq, tq) / VDM
+    M  = Vq' * diagm(wq) * Vq
+    Pq = M \ (Vq' * diagm(wq))
+
+    # plotting nodes
+    rp, sp, tp = equi_nodes(elem, Nplot)
+    Vp = vandermonde(elem, N, rp, sp, tp) / VDM
+
+    LIFT = M \ (Vf' * diagm(wf))
+
+    return RefElemData(Wedge(node_ids_by_face), approximation_type, N, fv, V1,
+                       tuple(r, s, t), VDM, Fmask,
+                       Nplot, tuple(rp, sp, tp), Vp,
+                       tuple(rq, sq, tq), wq, Vq,
+                       rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
+                       M, Pq, Drst, LIFT)
+end
+

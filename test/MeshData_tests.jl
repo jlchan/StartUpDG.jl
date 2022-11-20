@@ -191,7 +191,8 @@ end
 
 approx_elem_types_to_test = [(Polynomial(), Hex()), 
                              (SBP(), Hex()), 
-                             (Polynomial(), Tet())]
+                             (Polynomial(), Tet()),
+                             (Polynomial(), Wedge())]
 @testset "3D MeshData tests" begin 
     @testset "$approximation_type $element_type MeshData initialization" for (approximation_type, element_type) in approx_elem_types_to_test
         tol = 5e2*eps()
@@ -252,11 +253,13 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         @test uf ≈ uf[mapP]
         @test norm(uf[mapB]) < tol
 
-        # check periodic node connectivity maps
-        md = make_periodic(md, (true, true, true))
-        @unpack mapP = md
-        u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y)) * sin(pi * (.5 + z))
-        uf = Vf * u
-        @test uf ≈ uf[mapP]        
+        if element_type !== Wedge()
+            # check periodic node connectivity maps
+            md = make_periodic(md, (true, true, true))
+            @unpack mapP = md
+            u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y)) * sin(pi * (.5 + z))
+            uf = Vf * u
+            @test uf ≈ uf[mapP] 
+        end       
     end
 end
