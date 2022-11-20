@@ -210,6 +210,29 @@
 >>>>>>> main
     end;
 
+    @testset "gmsh version 4.1 file with no grouping data" begin
+        # test promps for grouping data from the file. 
+        # suppose such grouping data however is not in the file
+        io = open("stderr.txt","w")
+        redirect_stderr(io)
+        file = "testset_mesh/no_group_v4.msh"
+        if isfile(file)
+            VXY_1, EToV_1 = readGmsh2D_v4(file)
+            VXY_2, EToV_2, group_2 = readGmsh2D_v4(file, true) 
+            @test VXY_1 == VXY_2 
+            @test EToV_1 == EToV_2 
+            f = open(file)
+            lines = readlines(f)
+            num_elements = StartUpDG.get_num_elements(lines)
+            @test group_2 == zeros(Int, num_elements)
+        else
+            @info "file for this test is missing"
+        end
+        close(io)
+        rm("stderr.txt")
+>>>>>>> main
+    end;
+
     @testset "Compare output between v2.2 and v4.1" begin
         @testset "file:$file" for file in ["mesh_no_pert","pert_mesh","malpasset"]
             if isfile("testset_mesh/$file.msh") && isfile("testset_mesh/$file"*"_v4.msh")

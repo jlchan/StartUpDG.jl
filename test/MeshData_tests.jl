@@ -443,7 +443,7 @@ end
         u = @. (1 - x) * (1 + x) * (1 - y) * (1 + y) * (1 - z) * (1 + z)
         uf = Vf * u
         @test uf ≈ uf[mapP]
-        #@test norm(uf[mapB]) < tol
+        @test norm(uf[mapB]) < tol
     
         # check periodic node connectivity maps
         md = make_periodic(md, (true, true, true))
