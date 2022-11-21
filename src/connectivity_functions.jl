@@ -412,7 +412,6 @@ function make_periodic(md::MeshData{3, <:Union{Wedge, Pyr}}, is_periodic::NTuple
     
     # find periodic face matches in each coordinate direction
     for dim in 1:NDIMS
-        println("On dim $dim")
         if is_periodic[dim]
             for f1 in periodic_boundary_face_indices[dim], f2 in periodic_boundary_face_indices[dim]
                 if f1 !== f2 # find periodic face matches 
