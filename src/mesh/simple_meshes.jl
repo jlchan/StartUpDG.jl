@@ -385,6 +385,7 @@ function uniform_mesh(elem::Wedge, Kx, Ky, Kz)
             end
         end
     end
+    EToV .= EToV[:, SVector(1, 3, 5, 2, 4, 6)]
     return (VX[:], VY[:], VZ[:]), EToV
 end
 
