@@ -244,16 +244,6 @@ function RefElemData(elem::Hex, approxType::Polynomial, N;
                        M, Pq, Drst, LIFT)
 end
 
-# TODO: this should the default in NodesAndModes.jl as of v0.8.2
-import NodesAndModes: nodes
-function nodes(::Wedge, N)
-    t1D, _ = gauss_lobatto_quad(0, 0, N)
-    r_tri, s_tri = nodes(Tri(), N)
-    t, r = vec.(meshgrid(t1D, r_tri))
-    _, s = vec.(meshgrid(t1D, s_tri))    
-    return r,s,t
-end
-
 """
     RefElemData(elem::Wedge, approximation_type::Polynomial, N;
                 quad_rule_vol=quad_nodes(elem, N),
