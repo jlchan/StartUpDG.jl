@@ -630,6 +630,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
                        cartesian_to_linear_element_indices, 
                        linear_to_cartesian_element_indices,
                        region_flags, cells_per_dimension, vxyz=(vx, vy), # background Cartesian grid info
+                       wJf
                     )
     
     return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, curves, cut_cell_data), 
