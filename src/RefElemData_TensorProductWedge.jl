@@ -23,11 +23,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwa
     r1, s1, t1 = nodes(elem, 1)
     V1 = vandermonde(elem, 1, r, s, t) / vandermonde(elem, 1, r1, s1, t1)
     
-    if !isnothing(line.VDM)
-        VDM = kron(line.VDM, tri.VDM)    
-    else
-        VDM = nothing
-    end
+    VDM = isnothing(line.VDM) ? nothing : kron(line.VDM, tri.VDM)    
     Dr  = kron(I(line.Np), tri.Dr)
     Ds  = kron(I(line.Np), tri.Ds)
     Dt  = kron(line.Dr, I(tri.Np))
@@ -74,30 +70,11 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwa
     nsJ = [-eq; eq; zq; zt; zt]
     ntJ = [zq; zq; zq; -et; et] 
     
-    # create interpolation matrices 
-    Vf = zeros(length(wf), length(r))
-
-    # first 3 faces are quads, and we interpolate to each line in the quad using a 
-    # triangular interpolation matrix. 
-    @show size(Vf)
-    num_tri_nodes = size(tri.Vf, 2)
-    for f in 1:3
-        tri_face_node_ids = (1:num_tri_single_face_nodes) .+ (f-1) * num_tri_single_face_nodes * num_line_nodes
-        for i in 1:num_line_nodes
-            ids = (1:num_tri_nodes) .+ (i-1) * num_tri_nodes 
-            wedge_face_ids = node_ids_by_face[f][(1:num_tri_single_face_nodes) .+ (i-1) * num_tri_single_face_nodes]
-            @show size(Vf[wedge_face_ids, ids]), size(tri.Vf[tri_face_node_ids, :])
-            @. Vf[wedge_face_ids, ids] = tri.Vf[tri_face_node_ids, :]
-        end
-    end
-
-    # the last two faces are triangles, and we assume that a full set of triangle nodes 
-    # lies on the triangular faces.
-    Vf[node_ids_by_face[4], 1:num_tri_nodes] .= tri.Vq
-    Vf[node_ids_by_face[5], (1:num_tri_nodes) .+ (num_line_nodes-1) * num_tri_nodes] .= tri.Vq
+    # TODO: create face interpolation matrix
+    Vf = nothing
 
     # TODO: remove
-    Nplot = 10
+    Nplot = nothing
 
     # create tensor product quadrature rule
     tq, rq  = _wedge_tensor_product(line.rq, tri.rq)
@@ -105,11 +82,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwa
     wt, wrs = _wedge_tensor_product(line.wq, tri.wq)
     wq = wt .* wrs
 
-    if typeof(line.Vq) <: UniformScaling
-        Vq = kron(I(num_line_nodes), tri.Vq)
-    else
-        Vq = kron(line.Vq, tri.Vq)
-    end
+    Vq = line.Vq isa UniformScaling ? kron(I(num_line_nodes), tri.Vq) : kron(line.Vq, tri.Vq)
     M  = Vq' * diagm(wq) * Vq
     Pq = M \ (Vq' * diagm(wq))
     LIFT = M \ (Vf' * diagm(wf))
@@ -117,11 +90,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwa
     # tensor product plotting nodes
     tp, rp  = _wedge_tensor_product(line.rp, tri.rp)
     _,  sp  = _wedge_tensor_product(line.rp, tri.sp)
-    if typeof(line.Vp) <: UniformScaling
-        Vp = kron(I(num_line_nodes), tri.Vp)
-    else
-        Vp = kron(line.Vp, tri.Vp)
-    end
+    Vp = line.Vp isa UniformScaling ? kron(I(num_line_nodes), tri.Vp) : kron(line.Vp, tri.Vp)
 
     return RefElemData(Wedge(node_ids_by_face), approximation_type, N, fv, V1,
                        tuple(r, s, t), VDM, Fmask,
