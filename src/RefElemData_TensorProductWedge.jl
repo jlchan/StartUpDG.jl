@@ -74,7 +74,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwa
     Vf = nothing
 
     # TODO: remove
-    Nplot = nothing
+    Nplot = 10
 
     # create tensor product quadrature rule
     tq, rq  = _wedge_tensor_product(line.rq, tri.rq)
@@ -85,7 +85,8 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwa
     Vq = line.Vq isa UniformScaling ? kron(I(num_line_nodes), tri.Vq) : kron(line.Vq, tri.Vq)
     M  = Vq' * diagm(wq) * Vq
     Pq = M \ (Vq' * diagm(wq))
-    LIFT = M \ (Vf' * diagm(wf))
+    # LIFT = M \ (Vf' * diagm(wf))
+    LIFT = nothing
 
     # tensor product plotting nodes
     tp, rp  = _wedge_tensor_product(line.rp, tri.rp)
