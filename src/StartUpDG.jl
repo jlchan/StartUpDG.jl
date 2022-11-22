@@ -7,7 +7,7 @@ using Colors
 using ConstructionBase: ConstructionBase
 using HDF5 # used to read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
-using LinearAlgebra: cond, diagm, eigvals, Diagonal, I, mul!, norm, qr, ColumnNorm
+using LinearAlgebra: cond, diagm, eigvals, Diagonal, I, UniformScaling, mul!, norm, qr, ColumnNorm
 using NodesAndModes: meshgrid
 @reexport using NodesAndModes # for basis functions
 using OrderedCollections: LittleDict # fast ordered dict for a small number of entries
@@ -22,12 +22,16 @@ using SparseArrays: sparse, droptol!, blockdiag
 # reference element utility functions
 include("RefElemData.jl")
 include("RefElemData_polynomial.jl")
-include("RefElemData_SBP.jl")
 include("ref_elem_utils.jl")
 export RefElemData, Polynomial
+
+include("RefElemData_SBP.jl")
 export SBP, DefaultSBPType, TensorProductLobatto, Hicken, Kubatko # types for SBP node dispatch
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
 export hybridized_SBP_operators, inverse_trace_constant, face_type
+
+include("RefElemData_TensorProductWedge.jl")
+export TensorProductWedge
 
 include("MeshData.jl")
 export MeshData, num_elements
