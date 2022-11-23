@@ -93,7 +93,7 @@ function RefElemData(elem::Line, approxType::Polynomial, N;
 
     return RefElemData(elem, approxType, N, fv, V1,
                        tuple(r), VDM, vec(Fmask),
-                       Nplot, tuple(rp), Vp,
+                       tuple(rp), Vp,
                        tuple(rq), wq, Vq,
                        tuple(rf), wf, Vf, tuple(nrJ),
                        M, Pq, tuple(Dr), LIFT)
@@ -134,7 +134,7 @@ function RefElemData(elem::Union{Tri, Quad},  approxType::Polynomial, N;
 
     return RefElemData(elem, approxType, N, fv, V1,
                        tuple(r, s), VDM, vec(Fmask),
-                       Nplot, tuple(rp, sp), Vp,
+                       tuple(rp, sp), Vp,
                        tuple(rq, sq), wq, Vq,
                        tuple(rf, sf), wf, Vf, tuple(nrJ, nsJ),
                        M, Pq, (Dr, Ds), LIFT)
@@ -175,7 +175,7 @@ function RefElemData(elem::Tet, approxType::Polynomial, N;
 
     return RefElemData(elem, approxType, N, fv, V1,
                        tuple(r, s, t), VDM, vec(Fmask),
-                       Nplot, tuple(rp, sp, tp), Vp,
+                       tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        tuple(rf, sf, tf), wf, Vf, tuple(nrJ, nsJ, ntJ),
                        M, Pq, (Dr, Ds, Dt), LIFT)
@@ -238,7 +238,7 @@ function RefElemData(elem::Hex, approxType::Polynomial, N;
 
     return RefElemData(elem, approxType, N, fv, V1,
                        tuple(r, s, t), VDM, vec(Fmask),
-                       Nplot, tuple(rp, sp, tp), Vp, 
+                       tuple(rp, sp, tp), Vp, 
                        tuple(rq, sq, tq), wq, Vq,
                        tuple(rf, sf, tf), wf, Vf, tuple(nrJ, nsJ, ntJ),
                        M, Pq, Drst, LIFT)
@@ -315,7 +315,7 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
 
     return RefElemData(Wedge(node_ids_by_face), approximation_type, N, fv, V1,
                        tuple(r, s, t), VDM, Fmask,
-                       Nplot, tuple(rp, sp, tp), Vp,
+                       tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
                        M, Pq, Drst, LIFT)

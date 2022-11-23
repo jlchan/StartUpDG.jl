@@ -26,7 +26,6 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType,
     VDM::TVDM            # generalized Vandermonde matrix
     Fmask::FMASK         # indices of face nodes
 
-    Nplot::Int           # TODO: remove. Nplot doesn't do anything IIRC...
     rstp::RSTP           # plotting nodes
     Vp::VP               # interpolation matrix to plotting nodes
 
@@ -57,7 +56,7 @@ end
 
 ConstructionBase.getproperties(rd::RefElemData) = 
     (; element_type=rd.element_type, approximation_type=rd.approximation_type, N=rd.N, fv=rd.fv, V1=rd.V1, 
-       rst=rd.rst, VDM=rd.VDM, Fmask=rd.Fmask, Nplot=rd.Nplot, rstp=rd.rstp, Vp=rd.Vp, 
+       rst=rd.rst, VDM=rd.VDM, Fmask=rd.Fmask,  rstp=rd.rstp, Vp=rd.Vp, 
        rstq=rd.rstq, wq=rd.wq, Vq=rd.Vq, rstf=rd.rstf, wf=rd.wf, Vf=rd.Vf, nrstJ=rd.nrstJ, 
        M=rd.M, Pq=rd.Pq, Drst=rd.Drst, LIFT=rd.LIFT)
 
