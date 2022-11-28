@@ -425,6 +425,8 @@ function make_periodic(md::MeshData{3, <:Union{Wedge, Pyr}}, is_periodic::NTuple
                     if norm(face_coords_1 - face_coords_2) ≈ domain_lengths[dim] && 
                         norm(tangent_coords_1 - tangent_coords_2) < tol * domain_lengths[dim]
 
+                        # note that for Wedge/Pyr types, mapM is a num_faces x num_elements 
+                        # matrix of UnitRanges instead.
                         face_nodes_1 = mapM[boundary_faces[f1]]
                         face_nodes_2 = mapM[boundary_faces[f2]]
 
@@ -437,7 +439,7 @@ function make_periodic(md::MeshData{3, <:Union{Wedge, Pyr}}, is_periodic::NTuple
 
                         p = match_coordinate_vectors(face_coords_1, face_coords_2)
 
-                        mapP_periodic[face_nodes_1][p] .= face_nodes_2
+                        mapP_periodic[face_nodes_1[p]] .= face_nodes_2
                         FToF_periodic[f1] = f2
                     end
                 end
