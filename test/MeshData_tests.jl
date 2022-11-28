@@ -254,9 +254,11 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         @test norm(uf[mapB]) < tol
 
         # check periodic node connectivity maps
-        md = make_periodic(md, (true, true, true))
-        @unpack mapP = md
+        md_periodic = make_periodic(md, (true, true, true))
+        @test md_periodic.mapP != md.mapP # check that the node mapping actually changed
+
         u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y)) * sin(pi * (.5 + z))
+        @unpack mapP = md_periodic
         uf = Vf * u
         @test uf ≈ uf[mapP] 
         
