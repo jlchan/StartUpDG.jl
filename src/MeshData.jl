@@ -294,7 +294,7 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
     xq, yq, zq = (x -> Vq * x).((x, y, z))
     wJq = diagm(wq) * (Vq * J)
 
-    nxJ,nyJ,nzJ,Jf = compute_normals(rstxyzJ,rd.Vf,rd.nrstJ...)
+    nxJ, nyJ, nzJ, Jf = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
     is_periodic = (false, false, false)
     return MeshData(rd.element_type, tuple(VX, VY, VZ), EToV, FToF,
