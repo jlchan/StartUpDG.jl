@@ -203,10 +203,13 @@ function RefElemData(elem::Hex, approxType::Polynomial, N;
     M1D = Vq1D' * diagm(wq1D) * Vq1D
 
     # form kronecker products of multidimensional matrices to invert/multiply
-    M = kronecker(M1D, M1D, M1D)
     VDM = kronecker(VDM_1D, VDM_1D, VDM_1D)
     invVDM = kronecker(invVDM_1D, invVDM_1D, invVDM_1D)
     invM = kronecker(invM_1D, invM_1D, invM_1D)
+
+    # !!! WARNING: the `M` mass matrix is not necessarily a Kronecker product 
+    # if the quadrature isn't tensor product, e.g., a non-tensor product under-integrated quadrature.
+    M = kronecker(M1D, M1D, M1D)
 
     _, Vr, Vs, Vt = basis(elem, N, r, s, t)
     Dr, Ds, Dt = (A -> A * invVDM).((Vr, Vs, Vt))
