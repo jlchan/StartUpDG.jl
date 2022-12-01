@@ -1,7 +1,7 @@
 @testset "Hybrid meshes" begin
     @testset "Hybrid mesh utilities" begin
-        u = (1:3, 3:-1:1)
-        v = (3:-1:1, 1:3)
+        u = (collect(1:3), collect(3:-1:1))
+        v = (collect(3:-1:1), collect(1:3))
         @test StartUpDG.match_coordinate_vectors(u, v) == [3, 2, 1]
     end
 
