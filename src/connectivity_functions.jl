@@ -28,7 +28,7 @@ function connect_mesh(EToV, fv)
 
     FToF = reshape(collect(1:num_faces * num_elements), num_faces, num_elements)
     for f = 1:size(fnodes, 1) - 1
-        if fnodes[f, :]==fnodes[f + 1, :]
+        if view(fnodes, f, :)==view(fnodes, f + 1, :)
             f1 = FToF[p[f]]
             f2 = FToF[p[f + 1]]
             FToF[p[f]] = f2
@@ -44,13 +44,16 @@ function match_coordinate_vectors(u, v; tol = 10 * eps())
     p = zeros(Int, length(first(u)))
     return match_coordinate_vectors!(p, u, v; tol)
 end
-function match_coordinate_vectors!(p, u, v; tol = 10 * eps())    
+function match_coordinate_vectors!(p, u::T, v::T; tol = 10 * eps()) where {T <: NTuple{NDIMS}} where {NDIMS}
+    scaled_tol = tol * length(first(u))
     for (i, u_i) in enumerate(zip(u...))
+        u_i_norm = norm(SVector{NDIMS}(u_i))
         for (j, v_i) in enumerate(zip(v...))
             # Checks if the points are close relative to the magnitude of the coordinates.
             # Scaling by length(first(u)) relaxes this bound for high degree polynomials, 
             # which incur slightly more roundoff error. 
-            if norm(u_i .- v_i) < tol * length(first(u)) * max(one(eltype(u_i)), norm(u_i), norm(v_i))
+            max_u_v = max(u_i_norm, norm(SVector{NDIMS}(v_i)))
+            if norm(SVector{NDIMS}(u_i) - SVector{NDIMS}(v_i)) < scaled_tol * max(one(eltype(u_i)), max_u_v)
                 p[i] = j
             end
         end
@@ -124,16 +127,37 @@ function build_node_maps(rd::RefElemData{3, <:Union{Wedge, Pyr}}, FToF, Xf; tol 
     # convert mapP to Vector{Int64} so we can use `setindex!`
     mapP = collect.(deepcopy(mapM))
 
+    num_face_nodes = unique(length.(mapM))
+    p_cache = Dict(num_face_nodes .=> zeros.(eltype(mapM[1]), num_face_nodes))
+
+    # creates tuples of vectors for tri/quad face types    
+    create_tuple_of_coordinate_vectors(num_nodes) = ntuple(_ -> zeros.(eltype(first(Xf)), num_nodes), 3) # NDIMS=3
+    face_coordinates_cache     = Dict(num_face_nodes .=> map(create_tuple_of_coordinate_vectors, num_face_nodes))
+    nbr_face_coordinates_cache = Dict(num_face_nodes .=> map(create_tuple_of_coordinate_vectors, num_face_nodes))
+
     # create list of face indices
     for (f, fnbr) in enumerate(FToF)
         face_indices = mapM[f]
         nbr_face_indices = mapM[fnbr]
 
-        # TODO: can preallocate `face_coordinates`, etc.
-        face_coordinates = map(x->getindex(x, face_indices), Xf)
-        nbr_face_coordinates = map(x->getindex(x, nbr_face_indices), Xf)
+        num_face_nodes = length(face_indices)
 
-        p = match_coordinate_vectors(face_coordinates, nbr_face_coordinates; tol)
+        # TODO: can preallocate `face_coordinates`, etc.
+        # face_coordinates = map(x->getindex(x, face_indices), Xf)
+        # nbr_face_coordinates = map(x->getindex(x, nbr_face_indices), Xf)
+        face_coordinates     = face_coordinates_cache[num_face_nodes]
+        nbr_face_coordinates = nbr_face_coordinates_cache[num_face_nodes]
+        for dim in 1:3 # NDIMS = 3
+            for i in eachindex(face_indices, nbr_face_indices)                
+                id = face_indices[i]
+                nbr_id = nbr_face_indices[i]
+                face_coordinates[dim][i] = Xf[dim][id]
+                nbr_face_coordinates[dim][i] = Xf[dim][nbr_id]
+            end
+        end
+
+        p = p_cache[num_face_nodes]
+        match_coordinate_vectors!(p, face_coordinates, nbr_face_coordinates; tol)
         mapP[f][p] .= nbr_face_indices
     end
 
