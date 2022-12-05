@@ -41,14 +41,30 @@ using PathIntersections
     end
     @test all(uf .≈ vec(uf[md.mapP]))
 
+    # TODO: add tests on taking derivatives    
+    dudx_exact = @. rd.N * x^(rd.N-1) - y^(rd.N-1) - (rd.N-1) * x^(rd.N-2) * y
+    (; physical_frame_elements, cut_face_nodes) = md.mesh_type
+    dudx = similar(md.x)
+    dudx.cartesian .= (md.rxJ.cartesian .* (rd.Dr * u.cartesian)) ./ md.J
+    for (e, elem) in enumerate(physical_frame_elements)
+        VDM = vandermonde(elem, rd.N, x.cut[:, e], y.cut[:, e])
+        Vq, Vxq, Vyq = map(A -> A / VDM, basis(elem, rd.N, md.xq.cut[:,e], md.yq.cut[:, e]))
+    
+        M  = Vq' * diagm(md.wJq.cut[:, e]) * Vq
+        Qx = Vq' * diagm(md.wJq.cut[:, e]) * Vxq
+        Qy = Vq' * diagm(md.wJq.cut[:, e]) * Vyq   
+        Dx, Dy = M \ Qx, M \ Qy
+        dudx.cut[:, e] .= Dx * u.cut[:,e] # (md.rxJ.cut[:,e] .* (Dr * u.cut[:,e])) 
+    end
+
+    @test dudx ≈ dudx_exact
+
     # test creation of equispaced nodes on cut cells
     x, y = equi_nodes(physical_frame_elements[1], circle, 10)
     # shouldn't have more points than equispaced points on a quad
     @test 0 < length(x) <= length(first(equi_nodes(Quad(), 10))) 
     # no points should be contained in the circle
     @test !all(is_contained.(circle, zip(x, y))) 
-
-    # TODO: add tests on taking derivatives 
 
 end
     
