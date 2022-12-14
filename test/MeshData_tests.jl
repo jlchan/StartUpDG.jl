@@ -95,6 +95,8 @@
             @test Vf * y ≈ yf
             @test abs(sum(wf .* nxJ)) < tol
             @test abs(sum(wf .* nyJ)) < tol
+            @test md.nx .* md.Jf ≈ md.nxJ
+            @test md.ny .* md.Jf ≈ md.nyJ
             @test sum(@. wf * nxJ * (1 + xf) / 2) ≈ 2.0 # check sign of normals
 
             # check connectivity and boundary maps
@@ -160,6 +162,8 @@
             @test Vf * y ≈ yf
             @test abs(sum(diagm(wf) * nxJ)) < tol
             @test abs(sum(diagm(wf) * nyJ)) < tol
+            @test md.nx .* md.Jf ≈ md.nxJ
+            @test md.ny .* md.Jf ≈ md.nyJ
             @test sum(@. wf * nxJ * (1 + xf) / 2) ≈ 2.0 # check sign of normals
 
             # check connectivity and boundary maps
@@ -246,6 +250,9 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         @test abs(sum(diagm(wf) * nxJ)) < tol
         @test abs(sum(diagm(wf) * nyJ)) < tol
         @test abs(sum(diagm(wf) * nzJ)) < tol
+        @test md.nx .* md.Jf ≈ md.nxJ
+        @test md.ny .* md.Jf ≈ md.nyJ
+        @test md.nz .* md.Jf ≈ md.nzJ
 
         # check connectivity and boundary maps
         u = @. (1-x) * (1+x) * (1-y) * (1+y) * (1-z) * (1+z)
