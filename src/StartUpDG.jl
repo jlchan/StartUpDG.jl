@@ -13,10 +13,12 @@ using NodesAndModes: meshgrid
 using OrderedCollections: LittleDict # fast ordered dict for a small number of entries
 using PathIntersections
 @reexport using PathIntersections: PresetGeometries
+using Printf
 using RecipesBase
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
 using SparseArrays: sparse, droptol!, blockdiag
+using Triangulate: Triangulate, TriangulateIO, triangulate
 @reexport using UnPack  # for getting values in RefElemData and MeshData
 
 # reference element utility functions
@@ -56,7 +58,7 @@ export StateRedistribution, apply!
 include("nonconforming.jl")
 export num_mortars_per_face, NonConformingQuadMeshExample
 
-# uniform meshes + face vertex orderings are included
+# uniform meshes + face vertex orderings
 include("mesh/simple_meshes.jl")
 export readGmsh2D, uniform_mesh
 export readGmsh2D_v4, MeshImportOptions 
@@ -65,20 +67,14 @@ export readGmsh2D_v4, MeshImportOptions
 include("mesh/mesh_visualization.jl")
 export VertexMeshPlotter, MeshPlotter
 
-using Requires
-function __init__()                 
-    @require Triangulate="f7e6ffb2-c36d-4f8f-a77e-16e897189344" begin
-        using Printf
-        using .Triangulate: TriangulateIO, triangulate
-        include("mesh/triangulate_utils.jl")      
-        export refine, triangulateIO_to_VXYEToV, get_node_boundary_tags
-        export BoundaryTagPlotter
-        include("mesh/triangulate_example_meshes.jl")
-        export triangulate_domain
-        export Scramjet, SquareDomain, RectangularDomain, RectangularDomainWithHole 
-        export CircularDomain, PartialCircularDomain
-    end
-end
+# Triangulate interfaces and pre-built meshes
+include("mesh/triangulate_utils.jl")      
+export refine, triangulateIO_to_VXYEToV, get_node_boundary_tags
+export BoundaryTagPlotter
+include("mesh/triangulate_example_meshes.jl")
+export triangulate_domain
+export Scramjet, SquareDomain, RectangularDomain, RectangularDomainWithHole 
+export CircularDomain, PartialCircularDomain
 
 # simple explicit time-stepping included for conveniencea
 include("explicit_timestep_utils.jl")
