@@ -186,9 +186,11 @@
             @unpack x, y = md
             x_curved = @. x + 0.1 * sin(pi * x) * sin(pi * y)
             y_curved = @. y + 0.1 * sin(pi * x) * sin(pi * y)
-            md = MeshData(rd, md, x_curved, y_curved)
-            @test sum(@. md.wJq) ≈ 4
-            @test sum(@. md.wJq * md.xq^2) ≈ 4/3
+            md2 = MeshData(rd, md, x_curved, y_curved)
+            @test sum(@. md2.wJq) ≈ 4
+            @test sum(@. md2.wJq * md2.xq^2) ≈ 4/3
+            @test md2.nx ≈ md2.nxJ ./ md2.Jf
+            @test md2.ny ≈ md2.nyJ ./ md2.Jf
         end
     end
 end

@@ -53,7 +53,7 @@ Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
     is_periodic::NTuple{Dim, Bool}
 end
 
-# constructor where nxyz is not specified
+# MeshData constructor where we do not specify `nxyz`
 function MeshData(mesh_type, VXYZ, EToV, FToF, xyz, xyzf, xyzq, wJq, 
                   mapM, mapP, mapB, rstxyzJ, J, nxyzJ, Jf, is_periodic) 
 
@@ -353,8 +353,10 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
 
     xyzf, xyzq, rstxyzJ, J, wJq, nxyzJ, Jf = recompute_geometry(rd, xyz)
 
+    nxyz = map(n -> n ./ Jf, nxyzJ)
+
     # TODO: should we warp VXYZ as well? Or just set it to nothing since it no longer determines geometric terms?
-    return setproperties(md, (; xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyzJ, Jf))
+    return setproperties(md, (; xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyz, nxyzJ, Jf))
 end
 
 
