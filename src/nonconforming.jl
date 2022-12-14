@@ -159,7 +159,7 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
     xq, yq = (x -> Vq * x).((x, y))
     wJq = diagm(wq) * (Vq * J)
 
-    nxJ, nyJ, sJ = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
+    nxJ, nyJ, Jf = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
     is_periodic = (false, false)
 
@@ -170,6 +170,6 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
                     tuple(x, y), tuple(x_mortar, y_mortar), tuple(xq, yq), wJq,
                     mapM, mapP, mapB,
                     SMatrix{2, 2}(tuple(rxJ, ryJ, sxJ, syJ)), J,
-                    tuple(nxJ, nyJ), sJ,
+                    tuple(nxJ, nyJ), Jf,
                     is_periodic)
 end

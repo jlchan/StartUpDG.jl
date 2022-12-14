@@ -193,7 +193,7 @@ mesh information (VXYZ..., EToV).
 
 Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometric terms
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
-    `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `sJ`.
+    `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `Jf`.
 """
 
 # splats VXYZ 
@@ -277,14 +277,14 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2})
     xq, yq = (x -> Vq * x).((x, y))
     wJq = diagm(wq) * (Vq * J)
 
-    nxJ, nyJ, sJ = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
+    nxJ, nyJ, Jf = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
     is_periodic = (false, false)
     return MeshData(rd.element_type, tuple(VX, VY), EToV, FToF,
                     tuple(x, y), tuple(xf, yf), tuple(xq, yq), wJq,
                     mapM, mapP, mapB,
                     SMatrix{2, 2}(tuple(rxJ, ryJ, sxJ, syJ)), J,
-                    tuple(nxJ, nyJ), sJ,
+                    tuple(nxJ, nyJ), Jf,
                     is_periodic)
 
 end
