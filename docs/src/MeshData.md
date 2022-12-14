@@ -1,13 +1,13 @@
 # `MeshData` type
 
 [`MeshData`](@ref) includes fields such as
-* `xyz::NTuple{Dim, ...}`: nodal interpolation points mapped to physical elements. All elements of `xyz` are ``N_p \times K`` matrices, where ``N_p`` are the number of nodal points on each element.
-* `xyzq::NTuple{Dim, ...}, wJq`: volume quadrature points/weights mapped to physical elements. All elements these tuples are ``N_q \times K`` matrices, where ``N_q`` is the number of quadrature points on each element.
-* `xyzf::NTuple{Dim, ...}`: face quadrature points mapped to physical elements. All elements of `xyz` are ``N_f \times K`` matrices, where ``N_f`` is the number of face points on each element.
-* `mapP, mapB`: indexing arrays for inter-element node connectivity (`mapP`) and for extracting boundary nodes from the list of face nodes `xyzf` (`mapB`). `mapP` is a matrix of size ``N_f \times K``, while the length of `mapB` is the total number of nodes on the boundary.
-* `rstxyzJ::SMatrix{Dim, Dim}`: volume geometric terms ``G_{ij} = \frac{\partial x_i}{\partial \hat{x}_j}``. Each element of `rstxyzJ` is a matrix of size ``N_p \times K``.
-* `J, sJ`: volume and surface Jacobians evaluated at interpolation points and surface quadrature points, respectively. `J` is a matrix of size ``N_p \times K``, while `sJ` is a matrix of size ``N_f \times K``. 
-* `nxyzJ::NTuple{Dim, ...}`: scaled outward normals evaluated at surface quadrature points. Each element of `nxyzJ` is a matrix of size ``N_f\times K``. 
+* `xyz::NTuple{Dim, ...}`: nodal interpolation points mapped to physical elements. All elements of `xyz` are ``N_p \times num_elements`` matrices, where ``N_p`` are the number of nodal points on each element.
+* `xyzq::NTuple{Dim, ...}, wJq`: volume quadrature points/weights mapped to physical elements. All elements these tuples are ``N_q \times num_elements`` matrices, where ``N_q`` is the number of quadrature points on each element.
+* `xyzf::NTuple{Dim, ...}`: face quadrature points mapped to physical elements. All elements of `xyz` are ``N_f \times num_elements`` matrices, where ``N_f`` is the number of face points on each element.
+* `mapP, mapB`: indexing arrays for inter-element node connectivity (`mapP`) and for extracting boundary nodes from the list of face nodes `xyzf` (`mapB`). `mapP` is a matrix of size ``N_f \times num_elements``, while the length of `mapB` is the total number of nodes on the boundary.
+* `rstxyzJ::SMatrix{Dim, Dim}`: volume geometric terms ``G_{ij} = \frac{\partial x_i}{\partial \hat{x}_j}``. Each element of `rstxyzJ` is a matrix of size ``N_p \times num_elements``.
+* `J, sJ`: volume and surface Jacobians evaluated at interpolation points and surface quadrature points, respectively. `J` is a matrix of size ``N_p \times num_elements``, while `sJ` is a matrix of size ``N_f \times num_elements``. 
+* `nxyzJ::NTuple{Dim, ...}`: scaled outward normals evaluated at surface quadrature points. Each element of `nxyzJ` is a matrix of size ``N_f\times num_elements``. 
 
 These are the main quantities used to construct a DG solver. 
 
@@ -62,11 +62,9 @@ md_curved = MeshData(rd, md, x, y)
 
 More generally, one can create a copy of a `MeshData` with certain fields modified by using `@set` or `setproperties` from `Setfield.jl`.
 
-## Unstructured triangular meshes using Triangulate
+## Unstructured (and pre-defined) triangular meshes using Triangulate
 
 If `Triangulate` is also loaded, then StartUpDG will include additional utilities for creating and visualizing meshes. 
-
-## Pre-defined meshes
 
 Several pre-defined geometries are included in StartUpDG.jl. A few examples are `SquareDomain`, `RectangularDomainWithHole`, `Scramjet`, and `CircularDomain`. See `triangulate_example_meshes.jl` for a more complete list and field arguments. These can each be called using `triangulate_domain`, for example the following code will create a mesh of a scramjet:
 ```julia
