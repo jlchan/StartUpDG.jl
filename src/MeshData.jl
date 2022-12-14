@@ -90,17 +90,17 @@ end
 
 function Base.propertynames(x::MeshData{1}, private::Bool = false)
     return (fieldnames(MeshData)...,
-            :num_elements, :VX, :x, :xq, :xf, :nxJ, :rxJ)
+            :num_elements, :VX, :x, :xq, :xf, :nx, :rxJ)
 end
 function Base.propertynames(x::MeshData{2}, private::Bool = false) 
     return (fieldnames(MeshData)...,
             :num_elements, :VX, :VY, :x, :y, :xq, :yq, :xf, :yf, 
-            :nxJ, :nyJ, :rxJ, :sxJ, :ryJ, :syJ)
+            :nx, :ny, :rxJ, :sxJ, :ryJ, :syJ)
 end
 function Base.propertynames(x::MeshData{3}, private::Bool = false) 
     return (fieldnames(MeshData)...,
             :num_elements, :VX, :VY, :VZ, :x, :y, :z, :xq, :yq, :zq, :xf, :yf, :zf, 
-            :nxJ, :nyJ, :nzJ, :rxJ, :sxJ, :txJ, :ryJ, :syJ, :tyJ, :rzJ, :szJ, :tzJ)
+            :nx, :ny, :nz, :rxJ, :sxJ, :txJ, :ryJ, :syJ, :tyJ, :rzJ, :szJ, :tzJ)
 end
 
 # convenience routines for unpacking individual tuple entries
@@ -176,7 +176,6 @@ function Base.getproperty(x::MeshData, s::Symbol)
     elseif s==:sJ 
         return getfield(x, :Jf)
 
-    # return getfield(x,:num_elements) # num rows in EToV = num elements
     else
         return getfield(x, s)
     end
