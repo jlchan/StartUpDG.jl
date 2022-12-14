@@ -43,6 +43,9 @@ Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
     rstxyzJ::VolumeGeofacsType
     J::VolumeJType
 
+    # normalized surface geofacs
+    nxyz::NTuple{Dim, FaceType}
+
     # surface geofacs
     nxyzJ::NTuple{Dim, FaceType}
     Jf::FaceType
@@ -50,8 +53,20 @@ Base.@kwdef struct MeshData{Dim, MeshType, VolumeType, FaceType, VolumeQType,
     is_periodic::NTuple{Dim, Bool}
 end
 
+# constructor where nxyz is not specified
+function MeshData(mesh_type, VXYZ, EToV, FToF, xyz, xyzf, xyzq, wJq, 
+                  mapM, mapP, mapB, rstxyzJ, J, nxyzJ, Jf, is_periodic) 
+
+    nxyz = map(nJ -> nJ ./ Jf, nxyzJ)        
+                         
+    return MeshData(mesh_type, VXYZ, EToV, FToF, 
+                    xyz, xyzf, xyzq, wJq, mapM, mapP, mapB,
+                    rstxyzJ, J, nxyz, nxyzJ, Jf, is_periodic)
+end
+
 # enable use of @set and setproperties(...) for MeshData
-ConstructionBase.constructorof(::Type{MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}}) where {T1, T2, T3, T4, T5, T6, T7, T8, T9} = MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9}
+ConstructionBase.constructorof(::Type{MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10}}) where {T1, T2, T3, T4, T5, T6, T7, T8, T9, T10} = 
+    MeshData{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10}
 
 function ConstructionBase.setproperties(md::MeshData, patch::NamedTuple)
     fields = (haskey(patch, symbol) ? getproperty(patch, symbol) : getproperty(md, symbol) for symbol in fieldnames(typeof(md)))
@@ -60,7 +75,7 @@ end
 
 ConstructionBase.getproperties(md::MeshData) = 
     (; mesh_type=md.mesh_type, VXYZ=md.VXYZ, EToV=md.EToV, FToF=md.FToF, xyz=md.xyz, xyzf=md.xyzf, xyzq=md.xyzq, wJq=md.wJq,
-       mapM=md.mapM, mapP=md.mapP, mapB=md.mapB, rstxyzJ=md.rstxyzJ, J=md.J, nxyzJ=md.nxyzJ, Jf=md.Jf,
+       mapM=md.mapM, mapP=md.mapP, mapB=md.mapB, rstxyzJ=md.rstxyzJ, J=md.J, nxyz = md.nxyz, nxyzJ=md.nxyzJ, Jf=md.Jf,
        is_periodic=md.is_periodic)
 
 function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
@@ -125,6 +140,13 @@ function Base.getproperty(x::MeshData, s::Symbol)
         return getfield(x, :nxyzJ)[2]
     elseif s==:nzJ
         return getfield(x, :nxyzJ)[3]
+
+    elseif s==:nx
+        return getfield(x, :nxyz)[1]
+    elseif s==:ny
+        return getfield(x, :nxyz)[2]
+    elseif s==:nz
+        return getfield(x, :nxyz)[3]        
 
     elseif s==:rxJ
         return getfield(x, :rstxyzJ)[1,1]
@@ -238,7 +260,7 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2})
     x = V1 * VX[transpose(EToV)]
     y = V1 * VY[transpose(EToV)]
 
-    #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
+    # Compute connectivity maps: uP = exterior value used in DG numerical fluxes
     @unpack Vf = rd
     xf = Vf * x
     yf = Vf * y
