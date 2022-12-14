@@ -6,8 +6,8 @@
 * `xyzf::NTuple{Dim, ...}`: face quadrature points mapped to physical elements. All elements of `xyz` are ``N_f \times num_elements`` matrices, where ``N_f`` is the number of face points on each element.
 * `mapP, mapB`: indexing arrays for inter-element node connectivity (`mapP`) and for extracting boundary nodes from the list of face nodes `xyzf` (`mapB`). `mapP` is a matrix of size ``N_f \times num_elements``, while the length of `mapB` is the total number of nodes on the boundary.
 * `rstxyzJ::SMatrix{Dim, Dim}`: volume geometric terms ``G_{ij} = \frac{\partial x_i}{\partial \hat{x}_j}``. Each element of `rstxyzJ` is a matrix of size ``N_p \times num_elements``.
-* `J, sJ`: volume and surface Jacobians evaluated at interpolation points and surface quadrature points, respectively. `J` is a matrix of size ``N_p \times num_elements``, while `sJ` is a matrix of size ``N_f \times num_elements``. 
-* `nxyzJ::NTuple{Dim, ...}`: scaled outward normals evaluated at surface quadrature points. Each element of `nxyzJ` is a matrix of size ``N_f\times num_elements``. 
+* `J, Jf`: volume and surface Jacobians evaluated at interpolation points and surface quadrature points, respectively. `J` is a matrix of size ``N_p \times num_elements``, while `Jf` is a matrix of size ``N_f \times num_elements``. 
+* `nxyz::NTuple{Dim, ...}` and `nxyzJ::NTuple{Dim, ...}`: normalized and `Jf` scaled outward normals evaluated at surface quadrature points. Each element of `nxyzJ` is a matrix of size ``N_f\times num_elements``. 
 
 These are the main quantities used to construct a DG solver. 
 
