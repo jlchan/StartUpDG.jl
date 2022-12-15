@@ -63,5 +63,6 @@ inverse_trace_constant(rd::RefElemData{3, <:Wedge, Polynomial}) = _inverse_trace
 
 # generic fallback
 function inverse_trace_constant(rd::RefElemData)
+    @warn "Computing the inverse trace constant using an eigenvalue problem; this may be expensive."
     return maximum(eigvals(Matrix(rd.Vf' * diagm(rd.wf) * rd.Vf), Matrix(rd.Vq' * diagm(rd.wq) * rd.Vq)))
 end
