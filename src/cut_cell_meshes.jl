@@ -205,7 +205,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     
     r1D, w1D = quad_rule_face
 
-    @unpack region_flags, stop_pts, cutcells, cut_faces_per_cell = cutcell_data
+    @unpack region_flags, cutcells, cut_faces_per_cell = cutcell_data
 
     # count number of cells and cut face nodes
     num_cartesian_cells = sum(region_flags .== 0)
@@ -432,6 +432,32 @@ function get_1d_quadrature(rd::RefElemData{2, Quad})
     return rf[:, 3], wf[:, 3]
 end
 
+function calculate_cutcells(vx, vy, curves, ds = 1e-3, arc_tol = 1e-10, corner_tol = 1e-10)
+    stop_pts = find_mesh_intersections((vx, vy), curves, ds, arc_tol, corner_tol,
+    closed_list=true, closure_tol=1e-12)
+
+    # Calculate cutcells
+    region_flags, cutcell_indices, cutcells = 
+        define_regions((vx, vy), curves, stop_pts, binary_regions=false)
+
+    cells_per_dimension_x = length(vx) - 1
+    cells_per_dimension_y = length(vy) - 1
+
+    # sort the vector of cut cells so that they match the ordering when 
+    # iterating through Cartesian mesh indices via (ex, ey).
+    cutcell_ordering = zeros(Int, length(cutcells))
+    e = 1
+    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y 
+        if is_cut(region_flags[ex, ey])
+            cutcell_ordering[e] = cutcell_indices[ex, ey] 
+            e += 1
+        end        
+    end
+    permute!(cutcells, cutcell_ordering)
+
+    return region_flags, cutcells
+end
+
 """
     function MeshData(rd, geometry, vxyz...)
 
@@ -448,62 +474,44 @@ MeshData(rd::RefElemData, curves, cells_per_dimension;  kwargs...) =
 
 function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dimension_y; 
                   quad_rule_face = get_1d_quadrature(rd), 
-                  coordinates_min=(-1.0, -1.0), coordinates_max=(1.0, 1.0), 
-                  ds = 1e-3, arc_tol = 1e-10, corner_tol = 1e-10)
+                  coordinates_min=(-1.0, -1.0), coordinates_max=(1.0, 1.0))
 
     # compute intersections of curve with a background Cartesian grid.
     vx = LinRange(coordinates_min[1], coordinates_max[1], cells_per_dimension_x + 1)
     vy = LinRange(coordinates_min[2], coordinates_max[2], cells_per_dimension_y + 1)    
 
+    # compute mesh intersections and cut cell elements.
     # `regions` is a matrix of dimensions `(cells_per_dimension_x, cells_per_dimension_y)` with 3 values:
     #   *  1: cut cell
     #   *  0: Cartesian cell
     #   * -1: excluded cells (in the cut-out region)
-    # 1) Get mesh intersections and curve stop points
-    stop_pts = find_mesh_intersections((vx, vy), curves, ds, arc_tol, corner_tol,
-                                        closed_list=true, closure_tol=1e-12)
-
-    # 2) Calculate cutcells
-    region_flags, cutcell_indices, cutcells = 
-        define_regions((vx, vy), curves, stop_pts, binary_regions=false)
-
-    # sort the vector of cut cells so that they match the ordering when 
-    # iterating through Cartesian mesh indices via (ex, ey).
-    cutcell_ordering = zeros(Int, length(cutcells))
-    e = 1
-    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y 
-        if is_cut(region_flags[ex, ey])
-            cutcell_ordering[e] = cutcell_indices[ex, ey] 
-            e += 1
-        end        
-    end
-    permute!(cutcells, cutcell_ordering)
+    region_flags, cutcells = calculate_cutcells(vx, vy, curves)
 
     # pack useful cut cell information together. 
+    num_cartesian_cells = sum(region_flags .== 0)
+    num_cut_cells = sum(region_flags .== 1)
     cut_faces_per_cell = count_cut_faces(cutcells)
     cut_face_offsets = [0; cumsum(cut_faces_per_cell)[1:end-1]] 
-    cutcell_data = (; curves, region_flags, stop_pts, cutcells, cut_faces_per_cell, cut_face_offsets)
+    cutcell_data = (; curves, region_flags, cutcells, cut_faces_per_cell, cut_face_offsets)
 
-    # 3) Compute volume, face points, and physical frame element scalings
+    # Compute volume, face points, and physical frame element scalings
     physical_frame_elements, x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf = 
         compute_geometric_data(rd, quad_rule_face, vx, vy, cutcell_data)
 
-    # 4) Compute face-to-face connectivity by matching face centroids
+    # Compute face-to-face connectivity by matching face centroids
     face_centroids = compute_face_centroids(rd, xf, yf, cutcell_data)
     FToF = connect_mesh(rd, face_centroids, cutcell_data)
 
-    # 5) Compute node-to-node mappings
+    # Compute node-to-node mappings
+    # !!! Warning: this only works if the same quadrature rule is used for all faces! 
     num_total_faces = length(FToF)
     num_points_per_face = length(rd.rf) ÷ num_faces(rd.element_type)
-
-    # !!! Warning: this only works if the same quadrature rule is used for all faces! 
     mapM = collect(reshape(1:num_points_per_face * num_total_faces, 
                            num_points_per_face, num_total_faces))
     mapP = copy(mapM)
     p = zeros(Int, num_points_per_face) # temp storage for a permutation vector
     for f in eachindex(FToF)
-        idM = view(mapM, :, f)
-        idP = view(mapM, :, FToF[f])
+        idM, idP = view(mapM, :, f), view(mapM, :, FToF[f])
         xyzM = (view(xf, idM), view(yf, idM))
         xyzP = (view(xf, idP), view(yf, idP))
         StartUpDG.match_coordinate_vectors!(p, xyzM, xyzP)
@@ -511,26 +519,12 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     end
     mapB = findall(vec(mapM) .== vec(mapP)) # determine boundary nodes
 
-    # compute cut-cell quadratures
+    # compute cut-cell surface quadrature
     _, w1D = quad_rule_face
     wJf = similar(Jf)
-
-    # ComponentArray components are views, so assignment instead of .= should be OK
     wJf.cartesian = Diagonal(w1D) * reshape(Jf.cartesian, length(w1D), :)
     wJf.cut = Diagonal(w1D) * reshape(Jf.cut, length(w1D), :)
-    nx, ny = nxJ ./ Jf, nyJ ./ Jf
-
-    num_cartesian_cells = sum(region_flags .== 0)
-    num_cut_cells = sum(region_flags .== 1)
-       
-    # get indices of cut face nodes 
-    face_ids(e) = (1:(num_points_per_face * cut_faces_per_cell[e])) .+ 
-                    cut_face_offsets[e] * num_points_per_face
-    cut_face_node_ids = [face_ids(e) for e in 1:num_cut_cells]
-
-    # polynomial antidifferentiation operators
-    Ix, Iy = StartUpDG.antidiff_operators(2 * rd.N)
-
+    
     # The minimum number of cut cell quadrature points is `Np_cut(2 * rd.N)`. However, 
     # oversampling slightly seems to improve the conditioning of the quadrature weights.
     num_cut_quad_points = Np_cut(2 * rd.N) + 1
@@ -551,16 +545,16 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
         end
     end
    
-    # compute quadrature rules for the cut cells
-    begin # begin loop if we want to @time this
-
-    # aim to integrate degree 2N basis 
-    e = 1
-
     # refine the surface rule used to compute the volume quadrature 
-    if length(quad_rule_face[1]) < 4 * rd.N + 1        
-        r1D, w1D = gauss_quad(0, 0, 4 * rd.N)
+    if length(quad_rule_face[1]) < 3 * rd.N + 1        
+        r1D, w1D = gauss_quad(0, 0, 3 * rd.N)
     end
+
+    # polynomial antidifferentiation operators for computing volume integrals
+    Ix, Iy = StartUpDG.antidiff_operators(2 * rd.N)
+
+    # compute quadrature rules for the cut cells. integrate exactly degree 2N basis 
+    e = 1
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
         if is_cut(region_flags[ex, ey])
 
@@ -583,9 +577,9 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
             Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)
             
             # naive approach to computing quadrature weights; no guarantees of positivity
-            QR = qr(Vq', ColumnNorm())
+            QR  = qr(Vq', ColumnNorm())
             ids = QR.p[1:num_cut_quad_points]            
-            wq = Vq[ids,:]' \ b
+            wq  = Vq[ids,:]' \ b
             
             quadrature_error = norm(Vq[ids,:]' * wq - b)
             quadrature_condition_number = sum(abs.(wq)) / sum(wq)
@@ -602,19 +596,15 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
             e += 1
         end
     end
-    end # @time 
 
     VXYZ = ntuple(_ -> nothing, 2)
     EToV = nothing # dummy field for cut cells
 
     # default to non-periodic 
-    is_periodic = (false, false)
-
-    cells_per_dimension = (cells_per_dimension_x, cells_per_dimension_y)
-    
-    cartesian_to_linear_element_indices = compute_element_indices(region_flags)
-    
+    is_periodic = (false, false)   
+   
     # compute mapping from linear element indices to Cartesian element indices
+    cartesian_to_linear_element_indices = compute_element_indices(region_flags)
     linear_to_cartesian_element_indices = (; cut=zeros(SVector{2, Int}, num_cut_cells), 
                                              cartesian=zeros(SVector{2, Int}, num_cartesian_cells))
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
@@ -626,13 +616,17 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
         end
     end
 
-    cut_cell_data = (; cutcells, 
+    cut_cell_data = (; cutcells, region_flags, wJf,
                        cartesian_to_linear_element_indices, 
-                       linear_to_cartesian_element_indices,
-                       region_flags, cells_per_dimension, vxyz=(vx, vy), # background Cartesian grid info
-                       wJf
+                       linear_to_cartesian_element_indices,                       
+                       vxyz=(vx, vy), cells_per_dimension=(cells_per_dimension_x, cells_per_dimension_y), # background Cartesian grid info                       
                     )
-    
+
+    # get indices of cut face nodes 
+    face_ids(e) = (1:(num_points_per_face * cut_faces_per_cell[e])) .+ 
+                   cut_face_offsets[e] * num_points_per_face
+    cut_face_node_ids = [face_ids(e) for e in 1:num_cut_cells]
+                        
     return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, curves, cut_cell_data), 
                     VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, 
                     mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)

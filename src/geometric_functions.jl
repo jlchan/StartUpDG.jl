@@ -17,9 +17,10 @@ function geometric_factors(x, y, Dr, Ds)
     xr, xs = Dr * x, Ds * x
     yr, ys = Dr * y, Ds * y
 
-    J = @. -xs * yr + xr * ys
     rxJ, sxJ =  ys, -yr
     ryJ, syJ = -xs,  xr
+
+    J = @. -xs * yr + xr * ys
 
     return rxJ, sxJ, ryJ, syJ, J
 end
