@@ -41,11 +41,12 @@ using PathIntersections
     end
     @test all(uf .≈ vec(uf[md.mapP]))
 
-    # TODO: add tests on taking derivatives    
     dudx_exact = @. rd.N * x^(rd.N-1) - y^(rd.N-1) - (rd.N-1) * x^(rd.N-2) * y
+    dudy_exact = @. -(rd.N-1) * x * y^(rd.N-2) - x^(rd.N-1) + rd.N * y^(rd.N-1)
     (; physical_frame_elements, cut_face_nodes) = md.mesh_type
-    dudx = similar(md.x)
+    dudx, dudy = similar(md.x), similar(md.x)     
     dudx.cartesian .= (md.rxJ.cartesian .* (rd.Dr * u.cartesian)) ./ md.J
+    dudy.cartesian .= (md.syJ.cartesian .* (rd.Ds * u.cartesian)) ./ md.J
     for (e, elem) in enumerate(physical_frame_elements)
         VDM = vandermonde(elem, rd.N, x.cut[:, e], y.cut[:, e])
         Vq, Vxq, Vyq = map(A -> A / VDM, basis(elem, rd.N, md.xq.cut[:,e], md.yq.cut[:, e]))
@@ -54,10 +55,15 @@ using PathIntersections
         Qx = Vq' * diagm(md.wJq.cut[:, e]) * Vxq
         Qy = Vq' * diagm(md.wJq.cut[:, e]) * Vyq   
         Dx, Dy = M \ Qx, M \ Qy
+        # LIFT = M \ (Vf' * diagm(wJf))
+
+        # TODO: add interface flux terms into test
         dudx.cut[:, e] .= Dx * u.cut[:,e] # (md.rxJ.cut[:,e] .* (Dr * u.cut[:,e])) 
+        dudy.cut[:, e] .= Dy * u.cut[:,e] # (md.rxJ.cut[:,e] .* (Dr * u.cut[:,e])) 
     end
 
     @test dudx ≈ dudx_exact
+    @test dudy ≈ dudy_exact
 
     # test creation of equispaced nodes on cut cells
     x, y = equi_nodes(physical_frame_elements[1], circle, 10)

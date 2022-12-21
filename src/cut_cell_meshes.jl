@@ -205,7 +205,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     
     r1D, w1D = quad_rule_face
 
-    @unpack region_flags, cutcells, cut_faces_per_cell = cutcell_data
+    @unpack curves, region_flags, cutcells, cut_faces_per_cell = cutcell_data
 
     # count number of cells and cut face nodes
     num_cartesian_cells = sum(region_flags .== 0)
@@ -213,27 +213,75 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     nodes_per_face = length(r1D)
     num_cut_face_nodes = nodes_per_face * sum(cut_faces_per_cell)
 
-    x, y, J = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Np, num_cartesian_cells), 
-                                         cut=zeros(Np_cut(rd.N), num_cut_cells)), 3)
+    # compute face data
+    xf, yf, nxJ, nyJ, Jf = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nfq, num_cartesian_cells), 
+                                                      cut=zeros(num_cut_face_nodes)), 5)
 
-    rxJ, sxJ, ryJ, syJ = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Np, num_cartesian_cells), 
-                                                    cut=zeros(Np_cut(rd.N), num_cut_cells)), 4)
+    # compute face data
+    e = 1
+    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
+        if is_Cartesian(region_flags[ex, ey])
+            vx_element = SVector(vx[ex], vx[ex + 1], vx[ex], vx[ex + 1])
+            vy_element = SVector(vy[ey], vy[ey], vy[ey + 1], vy[ey + 1])
+            x_element, y_element = map(x -> rd.V1 * x, (vx_element, vy_element))
+            mul!(view(xf.cartesian, :, e), rd.Vf, x_element)
+            mul!(view(yf.cartesian, :, e), rd.Vf, y_element)
+            view(nxJ.cartesian, :, e) .= rd.nrJ .* view(Jf.cartesian, :, e)
+            view(nyJ.cartesian, :, e) .= rd.nsJ .* view(Jf.cartesian, :, e)
+            e = e + 1
+        end
+    end    
 
-    xf, yf, nxJ, nyJ, Jf = 
-        ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nfq, num_cartesian_cells), 
-                                cut=zeros(num_cut_face_nodes)), 5)
-
-    # 3) compute Cartesian face points and geometric factors
+    # the face Jacobian involves scaling between mapped and reference domain    
     face_ids_left_right = 1:(length(rd.rf) ÷ 2)
     face_ids_top_bottom = ((length(rd.rf) ÷ 2) + 1):length(rd.rf)
-
-    # the face Jacobian involves scaling between mapped and reference domain
-    rxJ.cartesian .= LX / (2 * cells_per_dimension_x)
-    sxJ.cartesian .= LY / (2 * cells_per_dimension_y)
-    J.cartesian .= (LX / cells_per_dimension_x) * (LY / cells_per_dimension_y) / 4 # 4 = reference volume
     Jf.cartesian[face_ids_top_bottom, :] .= LX / (cells_per_dimension_x * sum(w1D))
     Jf.cartesian[face_ids_left_right, :] .= LY / (cells_per_dimension_y * sum(w1D))
 
+    e = 1
+    offset = 0
+    for (e, curve) in enumerate(cutcells)
+        # map 1D quadrature points to faces
+        num_cut_faces = length(curve.subcurves)
+        fids = (1:length(r1D) * num_cut_faces) .+ offset
+        out = map(x->view(x, fids), (xf.cut, yf.cut, nxJ.cut, nyJ.cut, Jf.cut))
+        map_points_to_cut_cell_faces!(out, r1D, curve)
+        offset += length(fids)             
+    end                                        
+
+    # compute face points + shifting/scaling coefficients for physical frame cut elements.
+    physical_frame_elements = PhysicalFrame[] # populate this as we iterate through cut cells
+
+    # store cut-cell scaling/shifting coefficients
+    # TODO: replace cut_face_node_ids computation with precomputed, or vice versa
+    @unpack cut_faces_per_cell, cut_face_offsets = cutcell_data
+    num_points_per_face = length(r1D)
+
+    e = 1
+    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
+        if is_cut(region_flags[ex, ey])
+
+            # here, we evaluate a PhysicalFrame basis by shifting and scaling the 
+            # coordinates on an element back to the reference element [-1, 1]^2.
+            cut_face_node_ids = (1:num_points_per_face * cut_faces_per_cell[e]) .+ 
+                                 num_points_per_face * cut_face_offsets[e]
+
+            # store face nodes (extremal) and coordinates of background Cartesian cell
+            physical_frame_element = 
+                PhysicalFrame(xf.cut[cut_face_node_ids], yf.cut[cut_face_node_ids], 
+                                SVector(vx[ex], vx[ex+1]), SVector(vy[ey], vy[ey+1]))
+
+            push!(physical_frame_elements, physical_frame_element)
+
+            e += 1
+        end
+    end
+
+    # interpolation points
+    x, y = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Np, num_cartesian_cells), 
+                                      cut=zeros(Np_cut(rd.N), num_cut_cells)), 2)
+
+    # compute interpolation points on cartesian elements
     e = 1
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
         if is_Cartesian(region_flags[ex, ey])
@@ -242,84 +290,54 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
             x_element, y_element = map(x -> rd.V1 * x, (vx_element, vy_element))
             view(x.cartesian, :, e) .= x_element
             view(y.cartesian, :, e) .= y_element
-            mul!(view(xf.cartesian, :, e), rd.Vf, x_element)
-            mul!(view(yf.cartesian, :, e), rd.Vf, y_element)
-            view(nxJ.cartesian, :, e) .= rd.nrJ .* view(Jf.cartesian, :, e)
-            view(nyJ.cartesian, :, e) .= rd.nsJ .* view(Jf.cartesian, :, e)
             e = e + 1
         end
-    end        
-   
-    # 4) compute cut-cell face points
-    physical_frame_elements = PhysicalFrame[] # populate this as we iterate through cut cells
+    end
+     
+    # Compute interpolation points on cut elements
+    for e in eachindex(physical_frame_elements)
 
-    # The volume Jacobian for cut elements is 1 since the "reference element" 
-    # is the cut element itself. 
-    fill!(J.cut, one(eltype(J)))
+        physical_frame_element = physical_frame_elements[e]
+        
+        x_sampled, y_sampled = 
+            generate_sampling_points(curves, physical_frame_element, rd, 2 * Np_cut(rd.N))
+        V = vandermonde(physical_frame_element, rd.N, x_sampled, y_sampled) 
 
-    e = 1
-    offset = 0
-    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
-        if is_cut(region_flags[ex, ey])
+        # use pivoted QR to find good interpolation points
+        QRfac = qr(V', ColumnNorm())
+        ids = QRfac.p[1:Np_cut(rd.N)]
 
-            curve = cutcells[e]
-
-            # map 1D quadrature points to faces
-            num_cut_faces = length(curve.subcurves)
-            fids = (1:(length(r1D) * num_cut_faces)) .+ offset
-            out = map(x->view(x, fids), (xf.cut, yf.cut, nxJ.cut, nyJ.cut, Jf.cut))
-            map_points_to_cut_cell_faces!(out, r1D, curve)
-            offset += length(fids)
-
-            # find points inside element
-            @unpack curves = cutcell_data        
-               
-            # here, we evaluate a PhysicalFrame basis by shifting and scaling the 
-            # coordinates on an element back to the reference element [-1, 1]^2.
-            @unpack cut_faces_per_cell, cut_face_offsets = cutcell_data
-            num_points_per_face = length(r1D)
-            cut_face_node_ids = (1:num_points_per_face * cut_faces_per_cell[e]) .+ 
-                                 num_points_per_face * cut_face_offsets[e]
-
-            # store face nodes (extremal) and coordinates of background Cartesian cell
-            physical_frame_element = 
-                PhysicalFrame(xf.cut[cut_face_node_ids], yf.cut[cut_face_node_ids], 
-                              SVector(vx[ex], vx[ex+1]), SVector(vy[ey], vy[ey+1]))
-
-            push!(physical_frame_elements, physical_frame_element)
-                    
+        # if the condition number of the VDM is really bad, then increase the 
+        # number of sampled points. 
+        if cond(V[ids,:]) > 1e8
+            @warn "Conditioning of VDM for element $e is $(cond(V[ids,:]));" * 
+                    "recomputing with a finer set of samples."
             x_sampled, y_sampled = 
-                generate_sampling_points(curves, physical_frame_element, rd, 2 * Np_cut(rd.N))
+                generate_sampling_points(curves, physical_frame_element, rd, 2 * Np_cut(rd.N); 
+                                            N_sampled = 100)
             V = vandermonde(physical_frame_element, rd.N, x_sampled, y_sampled) 
+        end
 
-            # use pivoted QR to find good interpolation points
-            QRfac = qr(V', ColumnNorm())
-            ids = QRfac.p[1:Np_cut(rd.N)]
-
-            # if the condition number of the VDM is really bad, 
-            # then crank up the number of samples. 
-            if cond(V[ids,:]) > 1e10
-                @warn "Conditioning of VDM for element $e is $(cond(V[ids,:]));" * 
-                      "recomputing with a finer set of samples."
-                x_sampled, y_sampled = 
-                    generate_sampling_points(curves, physical_frame_element, rd, 2 * Np_cut(rd.N); 
-                                             N_sampled = 100)
-                V = vandermonde(physical_frame_element, rd.N, x_sampled, y_sampled) 
-            end
-
-            view(x.cut, :, e) .= x_sampled[ids]
-            view(y.cut, :, e) .= y_sampled[ids]
-
-            # geometric terms depend on the shifting and scaling
-            view(rxJ.cut, :, e) .= physical_frame_element.scaling[1]
-            view(syJ.cut, :, e) .= physical_frame_element.scaling[2]
-
-            e += 1
-
-        end # is_cut
+        view(x.cut, :, e) .= x_sampled[ids]
+        view(y.cut, :, e) .= y_sampled[ids]
     end
 
-    rstxyzJ = SMatrix{2, 2}(rxJ, sxJ, ryJ, syJ)
+    # volume geometric terms
+    rxJ, sxJ, ryJ, syJ, J = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Np, num_cartesian_cells), 
+                                                       cut=zeros(Np_cut(rd.N), num_cut_cells)), 5)
+    rstxyzJ = SMatrix{2, 2}(rxJ, sxJ, ryJ, syJ) # pack geometric terms together
+
+    rxJ.cartesian .= LX / (2 * cells_per_dimension_x)
+    syJ.cartesian .= LY / (2 * cells_per_dimension_y)
+    J.cartesian .= (LX / cells_per_dimension_x) * (LY / cells_per_dimension_y) / 4 # 4 = reference volume
+
+    # Note: the volume Jacobian for cut elements is 1 since the "reference element" is the 
+    # cut element itself. Similarly, geometric terms should be 1 since `basis` computes 
+    # physical derivatives accounting for element scaling
+    fill!(rxJ.cut, one(eltype(rxJ)))
+    fill!(syJ.cut, one(eltype(syJ)))
+    fill!(J.cut, one(eltype(J)))
+
     return physical_frame_elements, x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf
 end
 
@@ -433,6 +451,7 @@ function get_1d_quadrature(rd::RefElemData{2, Quad})
 end
 
 function calculate_cutcells(vx, vy, curves, ds = 1e-3, arc_tol = 1e-10, corner_tol = 1e-10)
+
     stop_pts = find_mesh_intersections((vx, vy), curves, ds, arc_tol, corner_tol,
     closed_list=true, closure_tol=1e-12)
 
@@ -497,7 +516,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     # Compute volume, face points, and physical frame element scalings
     physical_frame_elements, x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf = 
         compute_geometric_data(rd, quad_rule_face, vx, vy, cutcell_data)
-
+            
     # Compute face-to-face connectivity by matching face centroids
     face_centroids = compute_face_centroids(rd, xf, yf, cutcell_data)
     FToF = connect_mesh(rd, face_centroids, cutcell_data)
@@ -518,7 +537,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
         mapP[p, f] .= idP
     end
     mapB = findall(vec(mapM) .== vec(mapP)) # determine boundary nodes
-
+        
     # compute cut-cell surface quadrature
     _, w1D = quad_rule_face
     wJf = similar(Jf)
@@ -545,56 +564,49 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
         end
     end
    
+    # polynomial antidifferentiation operators for computing volume integrals
+    Ix, Iy = StartUpDG.antidiff_operators(2 * rd.N)
+
     # refine the surface rule used to compute the volume quadrature 
     if length(quad_rule_face[1]) < 3 * rd.N + 1        
         r1D, w1D = gauss_quad(0, 0, 3 * rd.N)
     end
-
-    # polynomial antidifferentiation operators for computing volume integrals
-    Ix, Iy = StartUpDG.antidiff_operators(2 * rd.N)
-
     # compute quadrature rules for the cut cells. integrate exactly degree 2N basis 
-    e = 1
-    for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
-        if is_cut(region_flags[ex, ey])
-
-            # compute a higher accuracy surface quadrature rule 
-            xf_element, yf_element, nxJ_element, nyJ_element, Jf_element = 
-                map_points_to_cut_cell_faces(r1D, cutcells[e])
-            nx_element = nxJ_element ./ Jf_element                
-            ny_element = nyJ_element ./ Jf_element                
-            wJf_element = vec(Diagonal(w1D) * reshape(Jf_element, length(w1D), :))
-                        
-            # compute volume integrals using numerical Green's theorem and surface integrals
-            scaling = physical_frame_elements[e].scaling
-            Vf = vandermonde(physical_frame_elements[e], 2 * rd.N + 1, xf_element, yf_element)
-            b = 0.5 * ((Vf * Ix)' * (wJf_element .* nx_element) ./ scaling[1] + 
-                       (Vf * Iy)' * (wJf_element .* ny_element) ./ scaling[2]) 
-            
-            # compute degree 2N basis matrix at sampled points            
-            x_sampled, y_sampled = generate_sampling_points(curves, physical_frame_elements[e], 
-                                                            rd, Np_cut(6 * rd.N); N_sampled = 8 * rd.N)          
-            Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)
-            
-            # naive approach to computing quadrature weights; no guarantees of positivity
-            QR  = qr(Vq', ColumnNorm())
-            ids = QR.p[1:num_cut_quad_points]            
-            wq  = Vq[ids,:]' \ b
-            
-            quadrature_error = norm(Vq[ids,:]' * wq - b)
-            quadrature_condition_number = sum(abs.(wq)) / sum(wq)
-            if quadrature_condition_number > 10 || quadrature_error > 1e-13
-                println("Quadrature error on element $e is $quadrature_error, " * 
-                        "quadrature condition number = $quadrature_condition_number. " * 
-                        "Condition number of quadrature VDM is $(cond(Vq[ids,:]')).")
-            end
-
-            view(xq.cut, :, e)  .= view(x_sampled, ids)
-            view(yq.cut, :, e)  .= view(y_sampled, ids)
-            view(wJq.cut, :, e) .= wq
-
-            e += 1
+    for e in eachindex(cutcells)
+        # compute these quantities using a higher accuracy surface quadrature rule 
+        xf_element, yf_element, nxJ_element, nyJ_element, Jf_element = 
+            map_points_to_cut_cell_faces(r1D, cutcells[e])                            
+        nx_element = nxJ_element ./ Jf_element                
+        ny_element = nyJ_element ./ Jf_element                
+        wJf_element = vec(Diagonal(w1D) * reshape(Jf_element, length(w1D), :))
+                    
+        # compute volume integrals using numerical Green's theorem and surface integrals
+        scaling = physical_frame_elements[e].scaling
+        Vf = vandermonde(physical_frame_elements[e], 2 * rd.N + 1, xf_element, yf_element)
+        b = 0.5 * ((Vf * Ix)' * (wJf_element .* nx_element) ./ scaling[1] + 
+                   (Vf * Iy)' * (wJf_element .* ny_element) ./ scaling[2]) 
+        
+        # compute degree 2N basis matrix at sampled points            
+        x_sampled, y_sampled = generate_sampling_points(curves, physical_frame_elements[e], 
+                                                        rd, Np_cut(6 * rd.N); N_sampled = 8 * rd.N)          
+        Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)
+        
+        # naive approach to computing quadrature weights; no guarantees of positivity
+        QR  = qr(Vq', ColumnNorm())
+        ids = view(QR.p, 1:num_cut_quad_points)
+        wq  = Vq[ids,:]' \ b
+        
+        quadrature_error = norm(Vq[ids,:]' * wq - b)
+        quadrature_condition_number = sum(abs.(wq)) / sum(wq)
+        if quadrature_condition_number > 10 || quadrature_error > 1e-13
+            println("Quadrature error on element $e is $quadrature_error, " * 
+                    "quadrature condition number = $quadrature_condition_number. " * 
+                    "Condition number of quadrature VDM is $(cond(Vq[ids,:]')).")
         end
+
+        view(xq.cut, :, e)  .= view(x_sampled, ids)
+        view(yq.cut, :, e)  .= view(y_sampled, ids)
+        view(wJq.cut, :, e) .= wq
     end
 
     VXYZ = ntuple(_ -> nothing, 2)
