@@ -121,6 +121,9 @@ function diagE_sbp_nodes(elem::Tri, approxType::SBP{Kubatko{LobattoFaceNodes}}, 
     if N==6
         @warn "N=6 SBP operators with quadrature strength 2N-1 and Lobatto face nodes may require very small timesteps."
     end
+    if N > 6
+        @error "N > 6 triangular `SBP{Kubatko{LobattoFaceNodes}}` operators are not available."
+    end
 
     # from Ethan Kubatko, private communication
     vars = h5open((@__DIR__) * "/data/sbp_nodes/KubatkoQuadratureRules.h5", "r")
@@ -133,6 +136,10 @@ function diagE_sbp_nodes(elem::Tri, approxType::SBP{Kubatko{LobattoFaceNodes}}, 
 end
 
 function diagE_sbp_nodes(elem::Tri, approxType::SBP{Kubatko{LegendreFaceNodes}}, N)    
+
+    if N > 6
+        @error "N > 6 triangular `SBP{Kubatko{LegendreFaceNodes}}` operators are not available."
+    end
 
     # from Ethan Kubatko, private communication
     vars = h5open((@__DIR__) * "/data/sbp_nodes/KubatkoQuadratureRules.h5", "r")
@@ -150,6 +157,10 @@ parsevec(type, str) = str |>
   
 function diagE_sbp_nodes(elem::Tri, approxType::SBP{Hicken}, N)    
     
+    if N > 4
+        @error "N > 4 triangular `SBP{Hicken}` operators are not available."
+    end
+
     # from Jason Hicken https://github.com/OptimalDesignLab/SummationByParts.jl/tree/work
     lines = readlines((@__DIR__)*"/data/sbp_nodes/tri_diage_p$N.dat") 
     r = parsevec(Float64,lines[11])

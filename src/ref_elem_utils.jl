@@ -56,8 +56,12 @@ inverse_trace_constant(rd::RefElemData{3, Hex, SBP{TensorProductLobatto}}) = 3 *
 _inverse_trace_constants(rd::RefElemData{2, Tri, Polynomial}) = (6.0, 10.898979485566365, 16.292060161853993, 23.999999999999808, 31.884512140579055, 42.42373503225737, 52.88579066878113, 66.25284319164409, 79.3535377715693, 95.53911875636945)
 _inverse_trace_constants(rd::RefElemData{3, Tet, Polynomial}) = (10., 16.892024376045097, 23.58210016200093, 33.828424659883034, 43.40423356477473, 56.98869932201791, 69.68035962892684)
 _inverse_trace_constants(rd::RefElemData{3, <:Wedge, Polynomial}) = (9.92613593327531, 18.56357670538197, 29.030325215439625, 42.98834597283998, 58.802145509223536, 78.00615833786019, 99.27149051377008, 123.76230676427465, 150.48304574455943)
+_inverse_trace_constants(rd::RefElemData{2, Tri, SBP{Kubatko{LegendreFaceNodes}}}) = (3.0, 6.6666666666667105, 11.519123865805936, 17.945430732284063, 25.73017849975611, 47.67304311231776)
+_inverse_trace_constants(rd::RefElemData{2, Tri, SBP{Kubatko{LobattoFaceNodes}}}) = (4.0, 10.0, 13.606721028333366, 17.948880228130577, 41.14350198287034, 340.3588047925354)
+_inverse_trace_constants(rd::RefElemData{2, Tri, SBP{Hicken}}) = (6.666666666666666, 13.309638971217003, 21.905170262973158, 30.569992349262947)
 
 inverse_trace_constant(rd::RefElemData{2, Tri, Polynomial})     = _inverse_trace_constants(rd)[rd.N]
+inverse_trace_constant(rd::RefElemData{2, Tri, <:SBP})          = _inverse_trace_constants(rd)[rd.N]
 inverse_trace_constant(rd::RefElemData{3, Tet, Polynomial})     = _inverse_trace_constants(rd)[rd.N]
 inverse_trace_constant(rd::RefElemData{3, <:Wedge, Polynomial}) = _inverse_trace_constants(rd)[rd.N]
 
