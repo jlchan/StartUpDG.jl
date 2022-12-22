@@ -195,7 +195,7 @@ end
 
 # Computes face geometric terms from a RefElemData, `quad_rule_face = (r1D, w1D)`, 
 # the vectors of the 1D vertex nodes `vx` and `vy`, and named tuple 
-# `cutcell_data is a NamedTuple containing `region_flags`, `stop_pts``, `cutcells`. 
+# `cutcell_data is a NamedTuple containing `curves`, `region_flags`, `stop_pts``, `cutcells`. 
 function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face, 
                                 vx, vy, cutcell_data; tol=100 * eps())
 
