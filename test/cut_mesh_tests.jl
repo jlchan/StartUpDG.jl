@@ -65,6 +65,9 @@ using PathIntersections
     @test dudx ≈ dudx_exact
     @test dudy ≈ dudy_exact
 
+    # test normals are unit and non-zero
+    @test all(@. md.nx^2 + md.ny^2 ≈ 1)
+
     # test creation of equispaced nodes on cut cells
     x, y = equi_nodes(physical_frame_elements[1], circle, 10)
     # shouldn't have more points than equispaced points on a quad
