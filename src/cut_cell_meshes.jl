@@ -217,6 +217,13 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     xf, yf, nxJ, nyJ, Jf = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nfq, num_cartesian_cells), 
                                                       cut=zeros(num_cut_face_nodes)), 5)
 
+    # the face Jacobian involves scaling between mapped and reference domain    
+    # this is precomputed here since it's needed to compute the normals
+    face_ids_left_right = 1:(length(rd.rf) ÷ 2)
+    face_ids_top_bottom = ((length(rd.rf) ÷ 2) + 1):length(rd.rf)
+    Jf.cartesian[face_ids_top_bottom, :] .= LX / (cells_per_dimension_x * sum(w1D))
+    Jf.cartesian[face_ids_left_right, :] .= LY / (cells_per_dimension_y * sum(w1D))
+
     # compute face data
     e = 1
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y    
@@ -231,12 +238,6 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
             e = e + 1
         end
     end    
-
-    # the face Jacobian involves scaling between mapped and reference domain    
-    face_ids_left_right = 1:(length(rd.rf) ÷ 2)
-    face_ids_top_bottom = ((length(rd.rf) ÷ 2) + 1):length(rd.rf)
-    Jf.cartesian[face_ids_top_bottom, :] .= LX / (cells_per_dimension_x * sum(w1D))
-    Jf.cartesian[face_ids_left_right, :] .= LY / (cells_per_dimension_y * sum(w1D))
 
     e = 1
     offset = 0
