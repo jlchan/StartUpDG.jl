@@ -57,7 +57,7 @@
 
         # compute jumps
         @unpack mapP = md
-        uf = ComponentArray(Tri=rds[Tri()].Vf * u.Tri, Quad=rds[Quad()].Vf * u.Quad)
+        uf = NamedArrayPartition(Tri=rds[Tri()].Vf * u.Tri, Quad=rds[Quad()].Vf * u.Quad)
         uP = uf[mapP]    
         u_jump = similar(uf)
         u_jump .= uP - uf
