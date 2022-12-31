@@ -28,9 +28,11 @@ end
 # fields except through `getfield` and accessor functions.
 ArrayPartition(x::NamedArrayPartition) = getfield(x, :array_partition)
 
+Base.Array(x::NamedArrayPartition) = Array(ArrayPartition(x))
+
 Base.propertynames(x::NamedArrayPartition) = propertynames(getfield(x, :names_to_indices))
 Base.getproperty(x::NamedArrayPartition, s::Symbol) =
-    return getindex(ArrayPartition(x).x, getproperty(getfield(x, :names_to_indices), s))
+    getindex(ArrayPartition(x).x, getproperty(getfield(x, :names_to_indices), s))
 
 # !!! this won't work if `v` isn't the same size as 
 @inline function Base.setproperty!(x::NamedArrayPartition, s::Symbol, v) 
@@ -75,6 +77,10 @@ function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{NamedArrayP
     x = find_NamedArrayPartition(bc)
     return NamedArrayPartition(similar(ArrayPartition(x)), getfield(x, :names_to_indices))
 end
+
+# when broadcasting with ArrayPartition + another array type, the output is the other array tupe
+Base.BroadcastStyle(::Broadcast.ArrayStyle{NamedArrayPartition}, ::Broadcast.DefaultArrayStyle{1}) = 
+    Broadcast.DefaultArrayStyle{1}()
 
 # hook into ArrayPartition broadcasting routines
 @inline RecursiveArrayTools.npartitions(x::NamedArrayPartition) = npartitions(ArrayPartition(x))
