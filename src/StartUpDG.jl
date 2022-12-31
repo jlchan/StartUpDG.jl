@@ -45,6 +45,10 @@ export make_periodic
 include("boundary_utils.jl")
 export boundary_face_centroids, tag_boundary_faces, tag_boundary_nodes
 
+# helper array type for cut cell and hybrid meshes
+include("named_array_partition.jl")
+export NamedArrayPartition
+
 include("hybrid_meshes.jl")
 export num_faces, num_vertices, HybridMeshExample
 
