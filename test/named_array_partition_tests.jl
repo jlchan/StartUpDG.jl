@@ -5,6 +5,8 @@
     @test x.a ≈ ones(10)
     @test typeof(x .+ x[1:end]) <: Vector # test broadcast precedence 
     @test all(x .== x[1:end]) 
+    y = copy(x)
+    @test (y .*= 2).a[1] ≈ 2 # test in-place bcast
 
     @test length(Array(x))==30
     @test typeof(Array(x)) <: Array
