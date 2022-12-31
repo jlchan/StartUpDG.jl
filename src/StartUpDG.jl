@@ -3,7 +3,6 @@ module StartUpDG
 using Reexport 
 
 using Colors 
-@reexport using ComponentArrays: ComponentArray
 using ConstructionBase: ConstructionBase
 using HDF5 # used to read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
