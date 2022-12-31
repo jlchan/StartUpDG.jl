@@ -149,8 +149,8 @@ function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCell
 
     # indexing by elements is a little tricky. for consistency, we store overlap counts
     # separately for cut and cartesian cells. 
-    overlap_counts = ComponentArray(cartesian=ones(Int, num_cartesian_elements(md)), 
-                                    cut=zeros(Int, num_cut_elements(md)))
+    overlap_counts = NamedArrayPartition(cartesian=ones(Int, num_cartesian_elements(md)), 
+                                         cut=zeros(Int, num_cut_elements(md)))
     for neighbors in neighbor_list
         for e in neighbors
             # equivalent to `overlap_counts.cut[e] +=1` (similarly for `cartesian`)
@@ -160,8 +160,8 @@ function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCell
 
     # cartesian first, then cut     
     cut_indices = (1:length(md.x.cut)) .+ length(md.x.cartesian)
-    indices = ComponentArray(cartesian=reshape(1:length(md.x.cartesian), size(md.x.cartesian)),
-                             cut=reshape(cut_indices, size(md.x.cut)))
+    indices = NamedArrayPartition(cartesian=reshape(1:length(md.x.cartesian), size(md.x.cartesian)),
+                                  cut=reshape(cut_indices, size(md.x.cut)))
 
     # scale weights by overlap counts
     wJq = copy(md.wJq)
