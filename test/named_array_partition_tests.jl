@@ -1,9 +1,18 @@
 @testset "NamedArrayPartition tests" begin
     x = NamedArrayPartition(a = ones(10), b = rand(20))
     @test typeof(@. sin(x * x^2 / x - 1)) <: NamedArrayPartition
+    @test typeof(x.^2) <: NamedArrayPartition
     @test x.a ≈ ones(10)
     @test typeof(x .+ x[1:end]) <: Vector # test broadcast precedence 
     @test all(x .== x[1:end]) 
+
+    @test length(Array(x))==30
+    @test typeof(Array(x)) <: Array
+    @test propertynames(x) == (:a, :b)
+
+    x = NamedArrayPartition(a = ones(1), b = 2*ones(1))
+    @test Base.summary(x) == "NamedArrayPartition{Float64, RecursiveArrayTools.ArrayPartition{Float64, Tuple{Vector{Float64}, Vector{Float64}}}, NamedTuple{(:a, :b), Tuple{Int64, Int64}}} with arrays:"
+    @test (@capture_out Base.show(stdout, MIME"text/plain"(), x)) == "(a = [1.0], b = [2.0])"
 
     # TODO: get FillArrays broadcast working
     # using FillArrays
