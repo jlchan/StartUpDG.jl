@@ -1,4 +1,4 @@
-# convenience extractors for `MeshData{2, CutCellMesh}` fields, which are `ComponentArrays`. 
+# convenience extractors for `MeshData{2, CutCellMesh}` fields, which have `cartesian` and `cut` properties. 
 struct Cut end
 struct Cartesian end
 # create a typed index, e.g., CellIndex{Cut}(e)
@@ -11,14 +11,14 @@ property_name(::CellIndex{Cartesian}) = :cartesian
 
 # TODO: enable "nice" indexing with CellIndex, e.g., md.x[:, e] instead of getcolumns(md.x, e)
 import Base: getindex
-getindex(x::Union{ComponentArray, NamedArrayPartition}, i::CellIndex) = getindex(getproperty(x, property_name(i)), i.index)
-getcolumns(x::Union{ComponentArray, NamedArrayPartition}, i::CellIndex) = view(getproperty(x, property_name(i)), :, i.index)
-getcolumns(x::Union{ComponentArray, NamedArrayPartition}, indices::AbstractVector{<:CellIndex}) = (getcolumns(x, i.index) for i in indices)
+getindex(x, i::CellIndex) = getindex(getproperty(x, property_name(i)), i.index)
+getcolumns(x, i::CellIndex) = view(getproperty(x, property_name(i)), :, i.index)
+getcolumns(x, indices::AbstractVector{<:CellIndex}) = (getcolumns(x, i.index) for i in indices)
 
-vcat_columns(x::Union{ComponentArray, NamedArrayPartition}, list::AbstractVector{<:CellIndex}) = vcat((vec(getcolumns(x, i)) for i in list)...)
+vcat_columns(x, list::AbstractVector{<:CellIndex}) = vcat((vec(getcolumns(x, i)) for i in list)...)
 
-get_face_nodes(x::Union{ComponentArray, NamedArrayPartition}, i::CellIndex{Cartesian}, args...) = view(x.cartesian, :, i.index)
-get_face_nodes(x::Union{ComponentArray, NamedArrayPartition}, i::CellIndex{Cut}, md::MeshData) = view(x.cut, md.mesh_type.cut_face_nodes[i.index])
+get_face_nodes(x, i::CellIndex{Cartesian}, args...) = view(x.cartesian, :, i.index)
+get_face_nodes(x, i::CellIndex{Cut}, md::MeshData) = view(x.cut, md.mesh_type.cut_face_nodes[i.index])
 
 # ================== neighborhood computation code ================
 struct VolumeScore end

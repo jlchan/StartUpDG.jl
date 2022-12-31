@@ -214,8 +214,8 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     num_cut_face_nodes = nodes_per_face * sum(cut_faces_per_cell)
 
     # compute face data
-    xf, yf, nxJ, nyJ, Jf = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nfq, num_cartesian_cells), 
-                                                      cut=zeros(num_cut_face_nodes)), 5)
+    xf, yf, nxJ, nyJ, Jf = ntuple(_ -> NamedArrayPartition(cartesian=zeros(rd.Nfq, num_cartesian_cells), 
+                                                           cut=zeros(num_cut_face_nodes)), 5)
 
     # the face Jacobian involves scaling between mapped and reference domain    
     # this is precomputed here since it's needed to compute the normals
