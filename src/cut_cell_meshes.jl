@@ -324,20 +324,22 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     end
 
     # volume geometric terms
-    rxJ, sxJ, ryJ, syJ, J = ntuple(_ -> NamedArrayPartition(cartesian=zeros(rd.Np, num_cartesian_cells), 
-                                                            cut=zeros(Np_cut(rd.N), num_cut_cells)), 5)
-    rstxyzJ = SMatrix{2, 2}(rxJ, sxJ, ryJ, syJ) # pack geometric terms together
-
-    rxJ.cartesian .= LX / (2 * cells_per_dimension_x)
-    syJ.cartesian .= LY / (2 * cells_per_dimension_y)
-    J.cartesian .= (LX / cells_per_dimension_x) * (LY / cells_per_dimension_y) / 4 # 4 = reference volume
+    rxJ_cartesian = LX / (2 * cells_per_dimension_x)
+    syJ_cartesian = LY / (2 * cells_per_dimension_y)
+    J_cartesian = (LX / cells_per_dimension_x) * (LY / cells_per_dimension_y) / 4                                               
 
     # Note: the volume Jacobian for cut elements is 1 since the "reference element" is the 
     # cut element itself. Similarly, geometric terms should be 1 since `basis` computes 
     # physical derivatives accounting for element scaling
-    fill!(rxJ.cut, one(eltype(rxJ)))
-    fill!(syJ.cut, one(eltype(syJ)))
-    fill!(J.cut, one(eltype(J)))
+    rxJ = NamedArrayPartition(cartesian=Fill(rxJ_cartesian, rd.Np, num_cartesian_cells), 
+                              cut=Ones(Np_cut(rd.N), num_cut_cells))
+    syJ = NamedArrayPartition(cartesian=Fill(syJ_cartesian, rd.Np, num_cartesian_cells), 
+                              cut=Ones(Np_cut(rd.N), num_cut_cells))
+    sxJ, ryJ = ntuple(_ -> NamedArrayPartition(cartesian=Zeros(rd.Np, num_cartesian_cells), 
+                                               cut=Zeros(Np_cut(rd.N), num_cut_cells)), 2) 
+    J = NamedArrayPartition(cartesian = Fill(J_cartesian, rd.Np, num_cartesian_cells), 
+                            cut = Ones(Np_cut(rd.N), num_cut_cells))
+    rstxyzJ = SMatrix{2, 2}(rxJ, sxJ, ryJ, syJ) # pack geometric terms together
 
     return physical_frame_elements, x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf
 end
