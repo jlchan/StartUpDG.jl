@@ -168,7 +168,7 @@ function Base.getproperty(x::MeshData, s::Symbol)
         return num_elements(x)
 
     # old notation in the NDG book where sJ (surface Jacobian) is 
-    # used instead of Jf (Jacobian for the face)                
+    # used instead of Jf (Jacobian for the face)
     elseif s==:sJ 
         return getfield(x, :Jf)
 
