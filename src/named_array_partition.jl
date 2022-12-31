@@ -40,8 +40,10 @@ Base.getproperty(x::NamedArrayPartition, s::Symbol) =
     ArrayPartition(x).x[index] .= v
 end
 
-Base.summary(x::NamedArrayPartition) = summary(ArrayPartition(x))
-Base.show(io::IO, m::MIME"text/plain", x::NamedArrayPartition) = show(io, m, ArrayPartition(x))
+# print out NamedArrayPartition as a NamedTuple
+Base.summary(x::NamedArrayPartition) = string(typeof(x), " with arrays:")
+Base.show(io::IO, m::MIME"text/plain", x::NamedArrayPartition) = 
+    show(io, m, NamedTuple(Pair.(keys(getfield(x, :names_to_indices)), ArrayPartition(x).x)))
 
 Base.size(x::NamedArrayPartition) = size(ArrayPartition(x))
 Base.length(x::NamedArrayPartition) = length(ArrayPartition(x))
@@ -50,33 +52,33 @@ Base.getindex(x::NamedArrayPartition, args...) = getindex(ArrayPartition(x), arg
 Base.setindex!(x::NamedArrayPartition, args...) = setindex!(ArrayPartition(x), args...)
 Base.map(f, x::NamedArrayPartition) = NamedArrayPartition(map(f, ArrayPartition(x)), getfield(x, :names_to_indices))
 Base.mapreduce(f, op, x::NamedArrayPartition) = mapreduce(f, op, ArrayPartition(x))
-Base.filter(f, x::NamedArrayPartition) = filter(f, ArrayPartition(x))
+# Base.filter(f, x::NamedArrayPartition) = filter(f, ArrayPartition(x))
 
 Base.similar(x::NamedArrayPartition{T, S, NT}) where {T, S, NT} = 
     NamedArrayPartition{T, S, NT}(similar(ArrayPartition(x)), getfield(x, :names_to_indices))
 
-# return NamedArrayPartition when possible, otherwise next best thing of the correct size
-function Base.similar(x::ArrayPartition, dims::NTuple{N,Int}) where {N}
-    if dims == size(x)
-        return similar(x)
-    else
-        return similar(ArrayPartition(x).x[1], eltype(x), dims)
-    end
-end
+# # return NamedArrayPartition when possible, otherwise next best thing of the correct size
+# function Base.similar(x::ArrayPartition, dims::NTuple{N,Int}) where {N}
+#     if dims == size(x)
+#         return similar(x)
+#     else
+#         return similar(ArrayPartition(x).x[1], eltype(x), dims)
+#     end
+# end
 
-# similar array partition of common type
-@inline function Base.similar(A::ArrayPartition, ::Type{T}) where {T}
-    N = npartitions(A)
-    ArrayPartition(i->similar(A.x[i], T), N)
-end
+# # similar array partition of common type
+# @inline function Base.similar(A::ArrayPartition, ::Type{T}) where {T}
+#     N = npartitions(A)
+#     ArrayPartition(i->similar(A.x[i], T), N)
+# end
 
 # broadcasting
 Base.BroadcastStyle(::Type{<:NamedArrayPartition}) = Broadcast.ArrayStyle{NamedArrayPartition}()
-function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{NamedArrayPartition}},
-                      ::Type{ElType}) where {ElType}
-    x = find_NamedArrayPartition(bc)
-    return NamedArrayPartition(similar(ArrayPartition(x)), getfield(x, :names_to_indices))
-end
+# function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{NamedArrayPartition}},
+#                       ::Type{ElType}) where {ElType}
+#     x = find_NamedArrayPartition(bc)
+#     return NamedArrayPartition(similar(ArrayPartition(x)), getfield(x, :names_to_indices))
+# end
 
 # when broadcasting with ArrayPartition + another array type, the output is the other array tupe
 Base.BroadcastStyle(::Broadcast.ArrayStyle{NamedArrayPartition}, ::Broadcast.DefaultArrayStyle{1}) = 
