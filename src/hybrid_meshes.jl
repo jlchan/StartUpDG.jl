@@ -37,7 +37,7 @@ end
 
 # if EToV is an array of arrays, treat it as a "ragged" index array for a hybrid mesh.
 function connect_mesh(EToV::AbstractVector{<:AbstractArray}, 
-                      face_vertex_indices::LittleDict{AbstractElemShape})
+                      face_vertex_indices::LittleDict{<:AbstractElemShape})
 
     elem_types = (keys(face_vertex_indices)...,)
 
@@ -116,7 +116,7 @@ typename(x) = typeof(x).name.name
 
 # constructs MeshData for a hybrid mesh given a LittleDict of `RefElemData` 
 # with element type keys (e.g., `Tri()` or `Quad`). 
-function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:RefElemData};
+function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{<:AbstractElemShape, <:RefElemData};
                   is_periodic = (false, false))
 
     # sort EToV so that elements of the same type are contiguous
@@ -178,7 +178,7 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:Re
                     is_periodic)
 end
 
-function MeshData(rds::LittleDict{AbstractElemShape, <:RefElemData{Dim}}, 
+function MeshData(rds::LittleDict{<:AbstractElemShape, <:RefElemData{Dim}}, 
                   md::MeshData{Dim}, xyz_curved...) where {Dim}
 
     # TODO: can this be made type stable?
