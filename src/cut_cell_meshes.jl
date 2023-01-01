@@ -251,7 +251,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     end                                        
 
     # compute face points + shifting/scaling coefficients for physical frame cut elements.
-    physical_frame_elements = PhysicalFrame[] # populate this as we iterate through cut cells
+    physical_frame_elements = PhysicalFrame{2}[] # populate this as we iterate through cut cells
 
     # store cut-cell scaling/shifting coefficients
     # TODO: replace cut_face_node_ids computation with precomputed, or vice versa
@@ -270,7 +270,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
             # store face nodes (extremal) and coordinates of background Cartesian cell
             physical_frame_element = 
                 PhysicalFrame(xf.cut[cut_face_node_ids], yf.cut[cut_face_node_ids], 
-                                SVector(vx[ex], vx[ex+1]), SVector(vy[ey], vy[ey+1]))
+                              SVector(vx[ex], vx[ex+1]), SVector(vy[ey], vy[ey+1]))
 
             push!(physical_frame_elements, physical_frame_element)
 
