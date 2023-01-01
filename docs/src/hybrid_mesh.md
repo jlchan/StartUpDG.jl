@@ -39,9 +39,9 @@ duds.Tri .= rds[Tri()].Ds * u.Tri
 @show norm(@. dudx - (rxJ * dudr + sxJ * duds) / J) # should be O(1e-14)
 ```
 
-The main difference in the representation of hybrid meshes compared with standard `MeshData` objects
-is the use of [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl) as storage for the
-geometric coordinates. These arrays have "fields" corresponding to the element type, for example
+The main difference in the representation of hybrid meshes compared with standard `MeshData` objects 
+is the use of `NamedArrayPartition` arrays as storage for the geometric coordinates. These arrays have 
+"fields" corresponding to the element type, for example
 ```julia
 md.x.Tri
 md.x.Quad
