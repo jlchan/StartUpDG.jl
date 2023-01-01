@@ -66,8 +66,8 @@ function compute_face_centroids(rd, xf, yf, cutcell_data)
 
     num_points_per_face = length(rd.rf) ÷ num_faces(rd.element_type)
     
-    face_centroids_x = ComponentArray(cartesian=zeros(num_faces(rd.element_type), num_cartesian_cells), 
-                                      cut=zeros(num_cut_faces))
+    face_centroids_x = NamedArrayPartition(cartesian=zeros(num_faces(rd.element_type), num_cartesian_cells), 
+                                           cut=zeros(num_cut_faces))
     face_centroids_y = similar(face_centroids_x)
 
     for e in 1:num_cartesian_cells
@@ -214,8 +214,8 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     num_cut_face_nodes = nodes_per_face * sum(cut_faces_per_cell)
 
     # compute face data
-    xf, yf, nxJ, nyJ, Jf = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nfq, num_cartesian_cells), 
-                                                      cut=zeros(num_cut_face_nodes)), 5)
+    xf, yf, nxJ, nyJ, Jf = ntuple(_ -> NamedArrayPartition(cartesian=zeros(rd.Nfq, num_cartesian_cells), 
+                                                           cut=zeros(num_cut_face_nodes)), 5)
 
     # the face Jacobian involves scaling between mapped and reference domain    
     # this is precomputed here since it's needed to compute the normals
@@ -279,8 +279,8 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     end
 
     # interpolation points
-    x, y = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Np, num_cartesian_cells), 
-                                      cut=zeros(Np_cut(rd.N), num_cut_cells)), 2)
+    x, y = ntuple(_ -> NamedArrayPartition(cartesian=zeros(rd.Np, num_cartesian_cells), 
+                                           cut=zeros(Np_cut(rd.N), num_cut_cells)), 2)
 
     # compute interpolation points on cartesian elements
     e = 1
@@ -324,20 +324,22 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     end
 
     # volume geometric terms
-    rxJ, sxJ, ryJ, syJ, J = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Np, num_cartesian_cells), 
-                                                       cut=zeros(Np_cut(rd.N), num_cut_cells)), 5)
-    rstxyzJ = SMatrix{2, 2}(rxJ, sxJ, ryJ, syJ) # pack geometric terms together
-
-    rxJ.cartesian .= LX / (2 * cells_per_dimension_x)
-    syJ.cartesian .= LY / (2 * cells_per_dimension_y)
-    J.cartesian .= (LX / cells_per_dimension_x) * (LY / cells_per_dimension_y) / 4 # 4 = reference volume
+    rxJ_cartesian = LX / (2 * cells_per_dimension_x)
+    syJ_cartesian = LY / (2 * cells_per_dimension_y)
+    J_cartesian = (LX / cells_per_dimension_x) * (LY / cells_per_dimension_y) / 4                                               
 
     # Note: the volume Jacobian for cut elements is 1 since the "reference element" is the 
     # cut element itself. Similarly, geometric terms should be 1 since `basis` computes 
     # physical derivatives accounting for element scaling
-    fill!(rxJ.cut, one(eltype(rxJ)))
-    fill!(syJ.cut, one(eltype(syJ)))
-    fill!(J.cut, one(eltype(J)))
+    rxJ = NamedArrayPartition(cartesian=Fill(rxJ_cartesian, rd.Np, num_cartesian_cells), 
+                              cut=Ones(Np_cut(rd.N), num_cut_cells))
+    syJ = NamedArrayPartition(cartesian=Fill(syJ_cartesian, rd.Np, num_cartesian_cells), 
+                              cut=Ones(Np_cut(rd.N), num_cut_cells))
+    sxJ, ryJ = ntuple(_ -> NamedArrayPartition(cartesian=Zeros(rd.Np, num_cartesian_cells), 
+                                               cut=Zeros(Np_cut(rd.N), num_cut_cells)), 2) 
+    J = NamedArrayPartition(cartesian = Fill(J_cartesian, rd.Np, num_cartesian_cells), 
+                            cut = Ones(Np_cut(rd.N), num_cut_cells))
+    rstxyzJ = SMatrix{2, 2}(rxJ, sxJ, ryJ, syJ) # pack geometric terms together
 
     return physical_frame_elements, x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf
 end
@@ -542,14 +544,14 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     # compute cut-cell surface quadrature
     _, w1D = quad_rule_face
     wJf = similar(Jf)
-    wJf.cartesian = Diagonal(w1D) * reshape(Jf.cartesian, length(w1D), :)
-    wJf.cut = Diagonal(w1D) * reshape(Jf.cut, length(w1D), :)
+    wJf.cartesian = reshape(Diagonal(w1D) * reshape(Jf.cartesian, length(w1D), :), size(Jf.cartesian))
+    wJf.cut = reshape(Diagonal(w1D) * reshape(Jf.cut, length(w1D), :), size(Jf.cut))
     
     # The minimum number of cut cell quadrature points is `Np_cut(2 * rd.N)`. However, 
     # oversampling slightly seems to improve the conditioning of the quadrature weights.
     num_cut_quad_points = Np_cut(2 * rd.N) + 1
-    xq, yq, wJq = ntuple(_ -> ComponentArray(cartesian=zeros(rd.Nq, num_cartesian_cells), 
-                                             cut=zeros(num_cut_quad_points, num_cut_cells)), 3)    
+    xq, yq, wJq = ntuple(_ -> NamedArrayPartition(cartesian=zeros(rd.Nq, num_cartesian_cells), 
+                                                  cut=zeros(num_cut_quad_points, num_cut_cells)), 3)    
 
     # compute quadrature rules for the Cartesian cells
     e = 1

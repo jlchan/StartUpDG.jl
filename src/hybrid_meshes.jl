@@ -156,18 +156,18 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:Re
     geo = compute_geometric_data.(values(xyz_hybrid), values(rds))
 
     n_dims = 2
-    xyz = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(values(xyz_hybrid), i)))), n_dims)
-    xyzf = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzf), i)))), n_dims)
-    xyzq = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzq), i)))), n_dims)
+    xyz = ntuple(i -> NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getindex.(values(xyz_hybrid), i)))), n_dims)
+    xyzf = ntuple(i -> NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzf), i)))), n_dims)
+    xyzq = ntuple(i -> NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzq), i)))), n_dims)
 
     # 4 entries in the geometric term matrix for 2D hybrid meshes
-    rstxyzJ = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :rstxyzJ), i)))), n_dims * n_dims)
+    rstxyzJ = ntuple(i -> NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :rstxyzJ), i)))), n_dims * n_dims)
     rstxyzJ = SMatrix{2, 2}(rstxyzJ...)
 
-    nxyzJ = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :nxyzJ), i)))), n_dims)
-    wJq = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :wJq))))
-    J = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :J))))
-    Jf = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :Jf))))
+    nxyzJ = ntuple(i -> NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :nxyzJ), i)))), n_dims)
+    wJq = NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :wJq))))
+    J = NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :J))))
+    Jf = NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :Jf))))
 
     mapM, mapP, mapB = vec.(build_node_maps(FToF, xyzf))
 
@@ -197,15 +197,15 @@ function MeshData(rds::LittleDict{AbstractElemShape, <:RefElemData{Dim}},
 
     element_type_names = Symbol.(typename.(keys(rds)))
 
-    xyz   = Tuple(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyz)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
-    xyzf  = Tuple(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyzf)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
-    xyzq  = Tuple(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyzq)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
-    nxyzJ = Tuple(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :nxyzJ)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
-    rstxyzJ = SMatrix{Dim, Dim}(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :rstxyzJ)[dim] for element_type in keys(rds))))) for dim in 1:Dim * Dim)
+    xyz   = Tuple(NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyz)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
+    xyzf  = Tuple(NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyzf)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
+    xyzq  = Tuple(NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyzq)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
+    nxyzJ = Tuple(NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :nxyzJ)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
+    rstxyzJ = SMatrix{Dim, Dim}(NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :rstxyzJ)[dim] for element_type in keys(rds))))) for dim in 1:Dim * Dim)
 
-    J = ComponentArray(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :J) for element_type in keys(rds)))))
-    wJq = ComponentArray(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :wJq) for element_type in keys(rds)))))
-    Jf = ComponentArray(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :Jf) for element_type in keys(rds)))))
+    J = NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :J) for element_type in keys(rds)))))
+    wJq = NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :wJq) for element_type in keys(rds)))))
+    Jf = NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :Jf) for element_type in keys(rds)))))
 
     return setproperties(md, (; xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyzJ, Jf))
 end
