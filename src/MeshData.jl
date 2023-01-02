@@ -96,12 +96,6 @@ function Base.propertynames(x::MeshData{3}, private::Bool = false)
             :nx, :ny, :nz, :rxJ, :sxJ, :txJ, :ryJ, :syJ, :tyJ, :rzJ, :szJ, :tzJ)
 end
 
-struct VertexMappedMesh{TE <: AbstractElemShape, TV, TEV}
-    element_type::TE
-    VXYZ::TV
-    EToV::TEV
-end
-
 # seems like we need to use @inline to ensure type stability
 @inline function meshdata_getproperty(x::MeshData, s::Symbol)
     if s==:x
@@ -175,7 +169,25 @@ end
 # generic fallback
 Base.getproperty(x::MeshData, s::Symbol) = meshdata_getproperty(x, s)
 
-# convenience routines for VertexMappedMeshes
+"""
+    struct VertexMappedMesh
+
+The default `MeshData` mesh type, represents a mesh which is defined purely by 
+vertex locations and element-to-vertex connectivities. For example, these include 
+affine triangular meshes or bilinear quadrilateral or trilinear hexahedral meshes.
+
+# Fields
+element_type :: TE <: AbstractElemShape \\
+VXYZ :: TV \\
+EToV :: TEV
+"""
+struct VertexMappedMesh{TE <: AbstractElemShape, TV, TEV}
+    element_type::TE
+    VXYZ::TV
+    EToV::TEV
+end
+
+# convenience accessor routines for `VertexMappedMesh` types (lets you do `md.VX` instead of `md.mesh_type.VX`)
 function Base.getproperty(x::MeshData{Dim, <:VertexMappedMesh}, s::Symbol) where {Dim}
 
     if s===:VX
