@@ -30,6 +30,11 @@ ArrayPartition(x::NamedArrayPartition) = getfield(x, :array_partition)
 
 Base.Array(x::NamedArrayPartition) = Array(ArrayPartition(x))
 
+Base.zero(x::NamedArrayPartition{T, S, TN}) where {T, S, TN} = 
+    NamedArrayPartition{T, S, TN}(zero(ArrayPartition(x)), getfield(x, :names_to_indices))
+Base.zero(A::NamedArrayPartition, dims::NTuple{N, Int}) where {N} = zero(A) # ignore dims since named array partitions are vectors
+
+
 Base.propertynames(x::NamedArrayPartition) = propertynames(getfield(x, :names_to_indices))
 Base.getproperty(x::NamedArrayPartition, s::Symbol) =
     getindex(ArrayPartition(x).x, getproperty(getfield(x, :names_to_indices), s))
@@ -74,11 +79,11 @@ Base.similar(x::NamedArrayPartition{T, S, NT}) where {T, S, NT} =
 
 # broadcasting
 Base.BroadcastStyle(::Type{<:NamedArrayPartition}) = Broadcast.ArrayStyle{NamedArrayPartition}()
-# function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{NamedArrayPartition}},
-#                       ::Type{ElType}) where {ElType}
-#     x = find_NamedArrayPartition(bc)
-#     return NamedArrayPartition(similar(ArrayPartition(x)), getfield(x, :names_to_indices))
-# end
+function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{NamedArrayPartition}},
+                      ::Type{ElType}) where {ElType}
+    x = find_NamedArrayPartition(bc)
+    return NamedArrayPartition(similar(ArrayPartition(x)), getfield(x, :names_to_indices))
+end
 
 # when broadcasting with ArrayPartition + another array type, the output is the other array tupe
 Base.BroadcastStyle(::Broadcast.ArrayStyle{NamedArrayPartition}, ::Broadcast.DefaultArrayStyle{1}) = 
