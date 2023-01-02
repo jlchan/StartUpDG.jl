@@ -2,7 +2,7 @@ using Test
 using Suppressor
 using LinearAlgebra
 using RecipesBase
-using Triangulate # load before StartUpDG b/c of @require
+using Triangulate 
 using StartUpDG
 
 include("named_array_partition_tests.jl")
