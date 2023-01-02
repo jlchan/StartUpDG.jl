@@ -102,81 +102,78 @@ struct VertexMappedMesh{TE <: AbstractElemShape, TV, TEV}
     EToV::TEV
 end
 
-# generic `getproperty` specializations. uses a macro to avoid type instability. for more detail, see 
-#   https://discourse.julialang.org/t/type-stable-specializations-of-getproperty-without-code-duplication/92404/6)
-macro meshdata_getproperty(x, s) 
-    return :(
-        if $(esc(s))===:x
-            return getfield($(esc(x)), :xyz)[1]
-        elseif $(esc(s))===:y
-            return getfield($(esc(x)), :xyz)[2]
-        elseif $(esc(s))===:z
-            return getfield($(esc(x)), :xyz)[3]
+# seems like we need to use @inline to ensure type stability
+@inline function meshdata_getproperty(x::MeshData, s::Symbol)
+    if s==:x
+        return getfield(x, :xyz)[1]
+    elseif s==:y
+        return getfield(x, :xyz)[2]
+    elseif s==:z
+        return getfield(x, :xyz)[3]
 
-        elseif $(esc(s))===:xq
-            return getfield($(esc(x)), :xyzq)[1]
-        elseif $(esc(s))===:yq
-            return getfield($(esc(x)), :xyzq)[2]
-        elseif $(esc(s))===:zq
-            return getfield($(esc(x)), :xyzq)[3]
+    elseif s==:xq
+        return getfield(x, :xyzq)[1]
+    elseif s==:yq
+        return getfield(x, :xyzq)[2]
+    elseif s==:zq
+        return getfield(x, :xyzq)[3]
 
-        elseif $(esc(s))===:xf
-            return getfield($(esc(x)), :xyzf)[1]
-        elseif $(esc(s))===:yf
-            return getfield($(esc(x)), :xyzf)[2]
-        elseif $(esc(s))===:zf
-            return getfield($(esc(x)), :xyzf)[3]
+    elseif s==:xf
+        return getfield(x, :xyzf)[1]
+    elseif s==:yf
+        return getfield(x, :xyzf)[2]
+    elseif s==:zf
+        return getfield(x, :xyzf)[3]
 
-        elseif $(esc(s))===:nxJ
-            return getfield($(esc(x)), :nxyzJ)[1]
-        elseif $(esc(s))===:nyJ
-            return getfield($(esc(x)), :nxyzJ)[2]
-        elseif $(esc(s))===:nzJ
-            return getfield($(esc(x)), :nxyzJ)[3]
+    elseif s==:nxJ
+        return getfield(x, :nxyzJ)[1]
+    elseif s==:nyJ
+        return getfield(x, :nxyzJ)[2]
+    elseif s==:nzJ
+        return getfield(x, :nxyzJ)[3]
 
-        elseif $(esc(s))===:nx
-            return getfield($(esc(x)), :nxyz)[1]
-        elseif $(esc(s))===:ny
-            return getfield($(esc(x)), :nxyz)[2]
-        elseif $(esc(s))===:nz
-            return getfield($(esc(x)), :nxyz)[3]        
+    elseif s==:nx
+        return getfield(x, :nxyz)[1]
+    elseif s==:ny
+        return getfield(x, :nxyz)[2]
+    elseif s==:nz
+        return getfield(x, :nxyz)[3]        
 
-        elseif $(esc(s))===:rxJ
-            return getfield($(esc(x)), :rstxyzJ)[1,1]
-        elseif $(esc(s))===:sxJ
-            return getfield($(esc(x)), :rstxyzJ)[1,2]
-        elseif $(esc(s))===:txJ
-            return getfield($(esc(x)), :rstxyzJ)[1,3]
-        elseif $(esc(s))===:ryJ
-            return getfield($(esc(x)), :rstxyzJ)[2,1]
-        elseif $(esc(s))===:syJ
-            return getfield($(esc(x)), :rstxyzJ)[2,2]
-        elseif $(esc(s))===:tyJ
-            return getfield($(esc(x)), :rstxyzJ)[2,3]
-        elseif $(esc(s))===:rzJ
-            return getfield($(esc(x)), :rstxyzJ)[3,1]
-        elseif $(esc(s))===:szJ
-            return getfield($(esc(x)), :rstxyzJ)[3,2]
-        elseif $(esc(s))===:tzJ
-            return getfield($(esc(x)), :rstxyzJ)[3,3]
-            
-        # old behavior where K = num_elements        
-        elseif $(esc(s))===:K || $(esc(s))===:num_elements 
-            return num_elements($(esc(x)))
+    elseif s==:rxJ
+        return getfield(x, :rstxyzJ)[1,1]
+    elseif s==:sxJ
+        return getfield(x, :rstxyzJ)[1,2]
+    elseif s==:txJ
+        return getfield(x, :rstxyzJ)[1,3]
+    elseif s==:ryJ
+        return getfield(x, :rstxyzJ)[2,1]
+    elseif s==:syJ
+        return getfield(x, :rstxyzJ)[2,2]
+    elseif s==:tyJ
+        return getfield(x, :rstxyzJ)[2,3]
+    elseif s==:rzJ
+        return getfield(x, :rstxyzJ)[3,1]
+    elseif s==:szJ
+        return getfield(x, :rstxyzJ)[3,2]
+    elseif s==:tzJ
+        return getfield(x, :rstxyzJ)[3,3]
+        
+    # old behavior where K = num_elements        
+    elseif s==:K || s==:num_elements 
+        return num_elements(x)
 
-        # old notation in the NDG book where sJ (surface Jacobian) is 
-        # used instead of Jf (Jacobian for the face)
-        elseif $(esc(s))===:sJ 
-            return getfield($(esc(x)), :Jf)
+    # old notation in the NDG book where sJ (surface Jacobian) is 
+    # used instead of Jf (Jacobian for the face)
+    elseif s==:sJ 
+        return getfield(x, :Jf)
 
-        else
-            return getfield($(esc(x)), $(esc(s)))
-        end
-    ) # end quote
+    else
+        return getfield(x, s)
+    end
 end
 
 # generic fallback
-Base.getproperty(x::MeshData, s::Symbol) = @meshdata_getproperty(x, s)
+Base.getproperty(x::MeshData, s::Symbol) = meshdata_getproperty(x, s)
 
 # convenience routines for VertexMappedMeshes
 function Base.getproperty(x::MeshData{Dim, <:VertexMappedMesh}, s::Symbol) where {Dim}
@@ -190,7 +187,7 @@ function Base.getproperty(x::MeshData{Dim, <:VertexMappedMesh}, s::Symbol) where
     elseif s===:EToV
         return getfield(getfield(x, :mesh_type), s)
     else
-        @meshdata_getproperty(x, s)
+        meshdata_getproperty(x, s)
     end
 end
 
