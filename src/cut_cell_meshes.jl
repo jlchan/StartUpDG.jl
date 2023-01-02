@@ -612,9 +612,6 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
         view(wJq.cut, :, e) .= wq
     end
 
-    VXYZ = ntuple(_ -> nothing, 2)
-    EToV = nothing # dummy field for cut cells
-
     # default to non-periodic 
     is_periodic = (false, false)   
    
@@ -643,7 +640,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     cut_face_node_ids = [face_ids(e) for e in 1:num_cut_cells]
                         
     return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, curves, cut_cell_data), 
-                    VXYZ, EToV, FToF, (x, y), (xf, yf), (xq, yq), wJq, 
+                    FToF, (x, y), (xf, yf), (xq, yq), wJq, 
                     mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
 
 end
