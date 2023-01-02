@@ -36,7 +36,7 @@
         EToV = [[1 2 4 5], [2 3 5 6], [5 8 9], [4 5 7 8], [9 6 5]]
 
         md = MeshData(VX, VY, EToV, rds)
-        @test md.mesh_type == StartUpDG.HybridMesh((Quad(), Tri()))
+        @test typeof(md.mesh_type) <: typeof(StartUpDG.HybridMesh((Quad(), Tri()), (VX, VY), EToV))
 
         # test if all nodes on boundary are ±1
         @test all(@. abs(max(abs(md.xf[md.mapB]), abs(md.yf[md.mapB])) - 1) < 100 * eps() )
