@@ -15,13 +15,17 @@ least the dimension of a degree 2N polynomial space).
 
 The field `curves` contains a tuple of the curves used to define the cut region.
 
+The field `cut_cell_operators` contains optionally precomputed operators (mass, differntiation, 
+face interpolation, and lifting operators). 
+
 The field `cut_cell_data` contains additional data from PathIntersections.
 """
-struct CutCellMesh{T1, T2, T3, T4}
+struct CutCellMesh{T1, T2, T3, T4, T5}
     physical_frame_elements::T1
     cut_face_nodes::T2
     curves::T3
-    cut_cell_data::T4
+    cut_cell_operators::T4
+    cut_cell_data::T5
 end
 
 function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, <:CutCellMesh}) where {DIM}
@@ -482,20 +486,22 @@ end
 """
     function MeshData(rd, geometry, vxyz...)
 
-Creates a cut-cell mesh where the boundary is given by `curve`. Here, `coordinates_min`, 
-`coordinates_max` contain `(smallest value of x, smallest value of y)` and 
-`(largest value of x, largest value of y)`, and `cells_per_dimension_x/y` is the number 
-of grid cells placed along each dimension.
-
-Additional keywords:
-- `ds`, `arc_tol`, `corner_tol`: see PathIntersections.jl docs
+Creates a cut-cell mesh where the boundary is given by `geometry`, which should be a tuple of functions. 
+These functions can be generated using PathIntersections.PresetGeometries, for example:
+```julia
+julia> geometry = (PresetGeometries.Circle(R=0.33, x0=0, y0=0), )
+```
+Here, `coordinates_min`, `coordinates_max` contain `(smallest value of x, smallest value of y)` and 
+`(largest value of x, largest value of y)`, and `cells_per_dimension_x/y` is the number of Cartesian grid 
+cells placed along each dimension. 
 """
 MeshData(rd::RefElemData, curves, cells_per_dimension;  kwargs...) = 
     MeshData(rd::RefElemData, curves, cells_per_dimension, cells_per_dimension;  kwargs...)
 
 function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dimension_y; 
                   quad_rule_face = get_1d_quadrature(rd), 
-                  coordinates_min=(-1.0, -1.0), coordinates_max=(1.0, 1.0))
+                  coordinates_min=(-1.0, -1.0), coordinates_max=(1.0, 1.0),
+                  precompute_operators=false)
 
     # compute intersections of curve with a background Cartesian grid.
     vx = LinRange(coordinates_min[1], coordinates_max[1], cells_per_dimension_x + 1)
@@ -637,8 +643,45 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     face_ids(e) = (1:(num_points_per_face * cut_faces_per_cell[e])) .+ 
                    cut_face_offsets[e] * num_points_per_face
     cut_face_node_ids = [face_ids(e) for e in 1:num_cut_cells]
+
+    if precompute_operators == true
+
+        # precompute cut-cell operators and store them in the `md.mesh_type.cut_cell_operators` field
+        cut_face_nodes = cut_face_node_ids
+        face_interpolation_matrices = Matrix{eltype(x)}[]
+        LIFT_matrices = Matrix{eltype(x)}[]
+        differentiation_matrices = Tuple{Matrix{eltype(x)}, Matrix{eltype(x)}}[]
+        mass_matrices = Matrix{eltype(x)}[]
+        for (e, elem) in enumerate(physical_frame_elements)
+
+            VDM = vandermonde(elem, rd.N, x.cut[:, e], y.cut[:, e])
+            Vq, Vrq, Vsq = map(A -> A / VDM, basis(elem, rd.N, xq.cut[:,e], yq.cut[:, e]))
+        
+            M  = Vq' * diagm(wJq.cut[:, e]) * Vq
+            Qr = Vq' * diagm(wJq.cut[:, e]) * Vrq
+            Qs = Vq' * diagm(wJq.cut[:, e]) * Vsq    
+            Dx_e, Dy_e = M \ Qr, M \ Qs
+            
+            Vf = vandermonde(elem, rd.N, xf.cut[cut_face_nodes[e]], yf.cut[cut_face_nodes[e]]) / VDM
+
+            # don't include jacobian scaling in LIFT matrix (for consistency with the Cartesian mesh)            
+            num_cut_faces = length(cut_face_nodes[e]) ÷ length(w1D)
+            wf = repeat(w1D, 1, num_cut_faces)    
+
+            push!(LIFT_matrices, M \ (Vf' * diagm(vec(wf))))
+            push!(face_interpolation_matrices, Vf)
+            push!(differentiation_matrices, (Dx_e, Dy_e))
+            push!(mass_matrices, M)
+        end
+        cut_cell_operators = (; differentiation_matrices, face_interpolation_matrices, 
+                                mass_matrices, LIFT_matrices)
+
+    else
+
+        cut_cell_operators = nothing
+    end
                         
-    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, curves, cut_cell_data), 
+    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, curves, cut_cell_operators, cut_cell_data), 
                     FToF, (x, y), (xf, yf), (xq, yq), wJq, 
                     mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
 
