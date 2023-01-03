@@ -13,7 +13,7 @@
             @unpack rxJ, J, nxJ, wJq = md
             @unpack mapM, mapP, mapB = md
 
-            @test md.mesh_type==rd.element_type
+            @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
 
             @test md.x == md.xyz[1]
 
@@ -65,7 +65,7 @@
             @unpack rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq = md
             @unpack FToF, mapM, mapP, mapB = md
 
-            @test md.mesh_type==rd.element_type
+            @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
             @test md.x == md.xyz[1]
 
             # check positivity of Jacobian
@@ -132,7 +132,7 @@
             @unpack rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq = md
             @unpack FToF, mapM, mapP, mapB = md
 
-            @test md.mesh_type==rd.element_type
+            @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
             @test md.x == md.xyz[1]
 
             # check positivity of Jacobian
@@ -215,7 +215,7 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         @unpack nxJ, nyJ, nzJ, sJ = md
         @unpack FToF, mapM, mapP, mapB = md
 
-        @test md.mesh_type==rd.element_type
+        @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
         @test md.x == md.xyz[1]
 
         # check positivity of Jacobian
