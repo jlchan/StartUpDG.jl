@@ -191,6 +191,7 @@
             @test sum(@. md2.wJq * md2.xq^2) ≈ 4/3
             @test md2.nx ≈ md2.nxJ ./ md2.Jf
             @test md2.ny ≈ md2.nyJ ./ md2.Jf
+            @test typeof(md2) <: MeshData{2, <:StartUpDG.CurvedMesh}
         end
     end
 end
