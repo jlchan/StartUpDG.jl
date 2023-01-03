@@ -8,7 +8,7 @@ StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https:
 
 * the `NamedArrayPartition` array type, which is similar to `ComponentArrays` but with the storage structure of `ArrayPartition`. This is used for the storage of `MeshData` fields in hybrid and cut-cell meshes, and can be used for the storage of solutions compatible with the OrdinaryDiffEq.jl framework. 
 * Added a `CurvedMesh` type for `MeshData` constructed from modified nodal coordinates, e.g., using the constructor `MeshData(rd, md, xyz...)`. `CurvedMesh` stores the original mesh type as a field. 
-* added precomputed operators for `CutCellMesh` types. These are specified using `md = MeshData(...; precompute_operators=true)`, and are stored in `md.mesh_type.cut_cell_operators`. 
+* added precomputed differentiation, face interpolation, mass, and lifting matrices for `CutCellMesh` types. These are specified using `md = MeshData(...; precompute_operators=true)`, and are stored in `md.mesh_type.cut_cell_operators`. 
 
 #### Changed
 
@@ -27,6 +27,6 @@ StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https:
 
 #### Deprecated
 
-* the old constructor for `MeshData` with fields `VXYZ` and `EToV` has been deprecated and will be removed in the next breaking release. 
-* the old constructor for `RefElemData` with field `Nplot` has been deprecated and will be removed in the next breaking release. 
+* the constructor for `MeshData` with all fields as well as `VXYZ`, `EToV` as arguments has been deprecated and will be removed in the next breaking release. This would only be used when extending `MeshData`. The standard `MeshData` constructor involving `VXYZ`, `EToV`, and `rd::RefElemData` is unchanged. 
+* the constructor for `RefElemData` with all fields as well as `Nplot` has been deprecated and will be removed in the next breaking release. This is only used if extending `RefElemData`. 
 
