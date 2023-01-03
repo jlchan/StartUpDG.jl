@@ -1,11 +1,13 @@
 # mesh_type identifier for hybrid meshes
-struct HybridMesh{T}
+struct HybridMesh{T, TV, TE}
     element_types::T
+    VXYZ::TV
+    EToV::TE
     # This is an inner constructor for HybridMesh. It sorts tuples of element types alphabetically 
     # so that `HybridMesh.element_types` always yields the same ordering of element types.
-    function HybridMesh(element_types::T) where {T <: Tuple}
+    function HybridMesh(element_types::T, VXYZ, EToV) where {T <: Tuple}
         p = sortperm(collect(typeof.(element_types)); by=string)
-        return new{typeof(Tuple(element_types[p]))}(Tuple(element_types[p]))
+        return new{typeof(Tuple(element_types[p])), typeof(VXYZ), typeof(EToV)}(Tuple(element_types[p]), VXYZ, EToV)
     end
 end
 
@@ -170,7 +172,7 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{<:AbstractElemShape, <:
 
     mapM, mapP, mapB = vec.(build_node_maps(FToF, xyzf))
 
-    return MeshData(HybridMesh(Tuple(element_types)), (VX, VY), EToV, FToF, 
+    return MeshData(HybridMesh(Tuple(element_types), (VX, VY), EToV), FToF, 
                     xyz, xyzf, xyzq, wJq,
                     mapM, mapP, mapB,
                     rstxyzJ, J, nxyzJ, Jf, 

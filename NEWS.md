@@ -10,15 +10,21 @@ StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https:
 
 #### Changed
 
-* Changes related to element types and `MeshData`:
+* Changes related to element types:
   * upstream change in NodesAndModes.jl: the abstract type `AbstractElemShape` is now parametrized by the dimension, e.g., `Line <: AbstractElemShape{1}`, `Tri <: AbstractElemShape{2}`. 
   * the spatial dimension `Dim` parameter in `MeshData` is now inferred from the element type through `elem <: AbstractElemShape{Dim}`
   * the `PhysicalFrame` type now has leading type parameter `PhysicalFrame{NDIMS} <: AbstractElemShape{NDIMS}`
-* the `Nplot` field has been removed from `RefElemData`
 * `PhysicalFrame`'s fields are now restricted to be type `SVector` only (instead of `Union{SVector, Tuple}`)
+* The `MeshData` fields `VXYZ` and `EToV` have been moved into a `VertexMappedMesh` type. However, they can still be accessed as a property of `MeshData` (e.g., `md.VX` will still work). 
+
+#### Removed 
+
+* the `Nplot` field has been removed from `RefElemData`
 * all usages of `ComponentArrays` have been replaced by `NamedArrayPartition`
+* the deprecated `MeshData(md::MeshData, rd::RefElemData, xyz...)` constructor has been removed
 
 #### Deprecated
 
+* the old constructor for `MeshData` with fields `VXYZ` and `EToV` has been deprecated and will be removed in the next breaking release. 
 * the old constructor for `RefElemData` with field `Nplot` has been deprecated and will be removed in the next breaking release. 
 
