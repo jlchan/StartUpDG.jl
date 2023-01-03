@@ -56,7 +56,7 @@ function MeshData(mesh_type, FToF, xyz, xyzf, xyzq, wJq, mapM, mapP, mapB, rstxy
     return MeshData(mesh_type, FToF, xyz, xyzf, xyzq, wJq, mapM, mapP, mapB, rstxyzJ, J, nxyz, nxyzJ, Jf, is_periodic)
 end
 
-# TODO: remove in next breaking release. `MeshData` constructor where `VXYZ`, `EToV` are specified 
+# TODO: remove in next breaking release after v0.15. `MeshData` constructor where `VXYZ`, `EToV` are specified 
 @deprecate MeshData(element_type, VXYZ, EToV, FToF, xyz, xyzf, xyzq, wJq, mapM, mapP, mapB, rstxyzJ, J, nxyzJ, Jf, periodicity) MeshData(VertexMappedMesh(element_type, VXYZ, EToV), FToF, xyz, xyzf, xyzq, wJq, mapM, mapP, mapB, rstxyzJ, J, nxyzJ, Jf, periodicity)
 
 function ConstructionBase.setproperties(md::MeshData, patch::NamedTuple)
