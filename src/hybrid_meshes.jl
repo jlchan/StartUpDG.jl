@@ -103,7 +103,6 @@ function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs
     rds = LittleDict((elem => RefElemData(elem, args...; kwargs...) for elem in element_types)...)
 
     # check if number of face nodes is the same 
-    # TODO: this only works in 2D
     num_face_nodes = length.(getproperty.(values(rds), :rf)) .÷ num_faces.(keys(rds))
     allequal(x) = all(y->y==x[1],x)
     if !allequal(num_face_nodes)

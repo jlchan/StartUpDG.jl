@@ -142,9 +142,6 @@ function build_node_maps(rd::RefElemData{3, <:Union{Wedge, Pyr}}, FToF, Xf; tol 
 
         num_face_nodes = length(face_indices)
 
-        # TODO: can preallocate `face_coordinates`, etc.
-        # face_coordinates = map(x->getindex(x, face_indices), Xf)
-        # nbr_face_coordinates = map(x->getindex(x, nbr_face_indices), Xf)
         face_coordinates     = face_coordinates_cache[num_face_nodes]
         nbr_face_coordinates = nbr_face_coordinates_cache[num_face_nodes]
         for dim in 1:3 # NDIMS = 3

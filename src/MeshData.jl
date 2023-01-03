@@ -355,7 +355,7 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
 
     nxyz = map(n -> n ./ Jf, nxyzJ)
 
-    # TODO: should we warp VXYZ as well? Or just set it to nothing since it no longer determines geometric terms?
+    # TODO: should we warp VXYZ as well? Or create a new mesh type?
     return setproperties(md, (; xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyz, nxyzJ, Jf))
 end
 
