@@ -7,17 +7,17 @@ StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https:
 #### Added 
 
 * the `NamedArrayPartition` array type, which is similar to `ComponentArrays` but with the storage structure of `ArrayPartition`. This is used for the storage of `MeshData` fields in hybrid and cut-cell meshes, and can be used for the storage of solutions compatible with the OrdinaryDiffEq.jl framework. 
-* Added a `CurvedMesh` type for `MeshData` constructed from modified nodal coordinates, e.g., using the constructor `MeshData(rd, md, xyz...)`. `CurvedMesh` stores the original mesh type as a field. 
 * added precomputed differentiation, face interpolation, mass, and lifting matrices for `CutCellMesh` types. These are specified using `md = MeshData(...; precompute_operators=true)`, and are stored in `md.mesh_type.cut_cell_operators`. 
 
 #### Changed
 
+* The `MeshData` fields `VXYZ` and `EToV` have been moved into a `VertexMappedMesh` type. However, they can still be accessed as a property of `MeshData` (e.g., `md.VX` will still work). 
+* Added a `CurvedMesh` type for `MeshData` constructed from modified nodal coordinates, e.g., using the constructor `MeshData(rd, md, xyz...)`. `CurvedMesh` stores the original mesh type as a field. Previously, there was no way to distinguish a curved `MeshData` from a non-curved one.
 * Changes related to element types:
   * upstream change in NodesAndModes.jl: the abstract type `AbstractElemShape` is now parametrized by the dimension, e.g., `Line <: AbstractElemShape{1}`, `Tri <: AbstractElemShape{2}`. 
   * the spatial dimension `Dim` parameter in `MeshData` is now inferred from the element type through `elem <: AbstractElemShape{Dim}`
   * the `PhysicalFrame` type now has leading type parameter `PhysicalFrame{NDIMS} <: AbstractElemShape{NDIMS}`
 * `PhysicalFrame`'s fields are now restricted to be type `SVector` only (instead of `Union{SVector, Tuple}`)
-* The `MeshData` fields `VXYZ` and `EToV` have been moved into a `VertexMappedMesh` type. However, they can still be accessed as a property of `MeshData` (e.g., `md.VX` will still work). 
 
 #### Removed 
 
