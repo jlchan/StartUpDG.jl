@@ -345,9 +345,6 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
                     is_periodic)
 end
 
-# TODO: remove with breaking change v0.15
-@deprecate MeshData(md::MeshData, rd::RefElemData, xyz...) MeshData(rd, md, xyz...)
-
 function recompute_geometry(rd::RefElemData{Dim}, xyz) where {Dim}
     # compute new quad and plotting points
     xyzf = map(x -> rd.Vf * x, xyz)
