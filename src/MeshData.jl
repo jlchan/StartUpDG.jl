@@ -374,14 +374,28 @@ function recompute_geometry(rd::RefElemData{Dim}, xyz) where {Dim}
     return xyzf, xyzq, rstxyzJ, J, wJq, nxyzJ, Jf
 end
 
+"""
+    struct CurvedMesh
+
+Mesh type indicating that the mesh has been curved. Stores the original mesh type as a field.
+
+# Fields
+original_mesh_type :: T\\
+"""
+struct CurvedMesh{T}
+    original_mesh_type::T
+end 
+
 function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
 
     xyzf, xyzq, rstxyzJ, J, wJq, nxyzJ, Jf = recompute_geometry(rd, xyz)
 
     nxyz = map(n -> n ./ Jf, nxyzJ)
 
+    mesh_type = CurvedMesh(md.mesh_type)
+
     # TODO: should we warp VXYZ as well? Or create a new mesh type?
-    return setproperties(md, (; xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyz, nxyzJ, Jf))
+    return setproperties(md, (; mesh_type, xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyz, nxyzJ, Jf))
 end
 
 
