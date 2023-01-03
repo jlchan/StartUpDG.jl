@@ -22,10 +22,6 @@ Base.@kwdef struct MeshData{Dim, MeshType,
     # different mesh types (e.g., vertex-mapped, cut-cell, hybrid, non-conforming meshes. 
     mesh_type::MeshType 
 
-    # # TODO: move VXYZ, EToV into a `VertexMappedMesh` mesh_type?
-    # VXYZ::NTuple{Dim, VertexType}   # vertex coordinates
-    # EToV::EToVType                  # mesh vertex array     
-
     FToF::FToFType                  # face connectivity
 
     xyz::NTuple{Dim, VolumeType}    # physical points
@@ -33,7 +29,6 @@ Base.@kwdef struct MeshData{Dim, MeshType,
     xyzq::NTuple{Dim, VolumeQType}  # phys quad points, Jacobian-scaled weights
     wJq::VolumeWeightType
 
-    # TODO: move mapP, mapB into a "conforming mesh type"?
     # arrays of connectivity indices between face nodes
     mapM::ConnectivityTypeM
     mapP::ConnectivityTypeP
