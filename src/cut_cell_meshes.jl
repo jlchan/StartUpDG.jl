@@ -254,7 +254,6 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     physical_frame_elements = PhysicalFrame{2}[] # populate this as we iterate through cut cells
 
     # store cut-cell scaling/shifting coefficients
-    # TODO: replace cut_face_node_ids computation with precomputed, or vice versa
     @unpack cut_faces_per_cell, cut_face_offsets = cutcell_data
     num_points_per_face = length(r1D)
 
