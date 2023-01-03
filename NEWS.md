@@ -27,6 +27,6 @@ StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https:
 
 #### Deprecated
 
-* the old constructor for `MeshData` with fields `VXYZ` and `EToV` has been deprecated and will be removed in the next breaking release. 
-* the old constructor for `RefElemData` with field `Nplot` has been deprecated and will be removed in the next breaking release. 
+* the constructor for `MeshData` with all fields as well as `VXYZ`, `EToV` as arguments has been deprecated and will be removed in the next breaking release. This would only be used when extending `MeshData`. The standard `MeshData` constructor involving `VXYZ`, `EToV`, and `rd::RefElemData` is unchanged. 
+* the constructor for `RefElemData` with all fields as well as `Nplot` has been deprecated and will be removed in the next breaking release. This is only used if extending `RefElemData`. 
 
