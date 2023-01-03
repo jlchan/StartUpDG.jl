@@ -394,14 +394,3 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
     # TODO: should we warp VXYZ as well? Or create a new mesh type?
     return setproperties(md, (; mesh_type, xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyz, nxyzJ, Jf))
 end
-
-
-# physical normals are computed via G * nhatJ, where G = matrix of geometric terms
-function compute_normals(geo::SMatrix{Dim, Dim}, Vf, nrstJ...) where {Dim}
-    nxyzJ = ntuple(x -> zeros(size(Vf, 1), size(first(geo), 2)), Dim)
-    for i = 1:Dim, j = 1:Dim
-        nxyzJ[i] .+= (Vf * geo[i,j]) .* nrstJ[j]
-    end
-    Jf = sqrt.(sum(map(x -> x.^2, nxyzJ)))
-    return nxyzJ..., Jf
-end
