@@ -11,6 +11,22 @@ struct HybridMesh{T, TV, TE}
     end
 end
 
+function Base.getproperty(x::MeshData{Dim, <:HybridMesh}, s::Symbol) where {Dim}
+
+    if s===:VX
+        return getfield(getfield(x, :mesh_type), :VXYZ)[1]
+    elseif s===:VY
+        return getfield(getfield(x, :mesh_type), :VXYZ)[2]
+    elseif s===:VZ
+        return getfield(getfield(x, :mesh_type), :VXYZ)[3]
+    elseif s===:EToV
+        return getfield(getfield(x, :mesh_type), s)
+    else
+        meshdata_getproperty(x, s)
+    end
+end
+
+
 function HybridMeshExample()
     # Simple hybrid mesh for testing
     #   1  7______8______9
