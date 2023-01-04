@@ -659,7 +659,7 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
         # precompute cut-cell operators and store them in the `md.mesh_type.cut_cell_operators` field
         cut_face_nodes = cut_face_node_ids
         face_interpolation_matrices = Matrix{eltype(x)}[]
-        LIFT_matrices = Matrix{eltype(x)}[]
+        lift_matrices = Matrix{eltype(x)}[]
         differentiation_matrices = Tuple{Matrix{eltype(x)}, Matrix{eltype(x)}}[]
         mass_matrices = Matrix{eltype(x)}[]
         for (e, elem) in enumerate(physical_frame_elements)
@@ -675,16 +675,17 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
             Vf = vandermonde(elem, rd.N, xf.cut[cut_face_nodes[e]], yf.cut[cut_face_nodes[e]]) / VDM
 
             # don't include jacobian scaling in LIFT matrix (for consistency with the Cartesian mesh)            
+            _, w1D = quad_rule_face
             num_cut_faces = length(cut_face_nodes[e]) ÷ length(w1D)
-            wf = repeat(w1D, 1, num_cut_faces)    
+            wf = vec(repeat(w1D, 1, num_cut_faces)    )
 
-            push!(LIFT_matrices, M \ (Vf' * diagm(vec(wf))))
+            push!(lift_matrices, M \ (Vf' * diagm(wf)))
             push!(face_interpolation_matrices, Vf)
             push!(differentiation_matrices, (Dx_e, Dy_e))
             push!(mass_matrices, M)
         end
         cut_cell_operators = (; differentiation_matrices, face_interpolation_matrices, 
-                                mass_matrices, LIFT_matrices)
+                                mass_matrices, lift_matrices)
 
     else
 
