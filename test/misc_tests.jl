@@ -1,3 +1,5 @@
+using Plots: plot
+
 @testset "Misc tests: show, recipes, inferrability" begin
 
     # test Base.show
@@ -14,12 +16,14 @@
     recipe = RecipesBase.apply_recipe(Dict{Symbol, Any}(), BoundaryTagPlotter(meshIO));
     @test getfield(recipe[1],1)[:label]=="1"
     @test any(isnan.(getfield(recipe[1],2)[1]))
+    @test_nowarn plot(BoundaryTagPlotter(meshIO))
 
     recipe = RecipesBase.apply_recipe(Dict{Symbol, Any}(), VertexMeshPlotter(meshIO))
     @test getfield(recipe[1],1)[:legend] == false
     @test getfield(recipe[1],1)[:aspect_ratio] == 1
     @test getfield(recipe[1],1)[:linecolor] == :black
     @test any(isnan.(getfield(recipe[1],2)[1]))
+    @test_nowarn plot(VertexMeshPlotter(meshIO))
 
     rd = RefElemData(Tri(),2)
     md = MeshData(triangulateIO_to_VXYEToV(meshIO)...,rd)
@@ -28,11 +32,12 @@
     @test getfield(recipe[1],1)[:aspect_ratio] == 1
     @test getfield(recipe[1],1)[:linecolor] == :black
     @test any(isnan.(getfield(recipe[1],2)[1]))
+    @test_nowarn plot(MeshPlotter(rd,md))
 
     rd = RefElemData(Hex(), N=1)
     md = MeshData(uniform_mesh(Hex(), 1)...,rd)
 
-    # wrap inferrability test in function 
+    # wrap inferrability test in function
     # https://discourse.julialang.org/t/unexpected-type-instability-with-getproperty-but-not-setproperty/26975/15?u=jlchan
     function foo(rd::RefElemData)
         rd.Nfq, rd.Np, rd.Nq

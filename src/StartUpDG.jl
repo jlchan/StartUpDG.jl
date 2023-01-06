@@ -1,8 +1,7 @@
 module StartUpDG
 
-using Reexport
+using Reexport: @reexport
 
-using Colors: HSV, distinguishable_colors
 @reexport using ComponentArrays: ComponentArray
 using ConstructionBase: ConstructionBase
 using HDF5: h5open # used to read in SBP triangular node data
@@ -14,12 +13,12 @@ using OrderedCollections: LittleDict # fast ordered dict for a small number of e
 using PathIntersections
 @reexport using PathIntersections: PresetGeometries
 using Printf: @sprintf
-using RecipesBase: RecipesBase, @series
+using RecipesBase: RecipesBase
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
 using SparseArrays: sparse, droptol!, blockdiag
 using Triangulate: Triangulate, TriangulateIO, triangulate
-@reexport using UnPack  # for getting values in RefElemData and MeshData
+@reexport using UnPack: @unpack  # for getting values in RefElemData and MeshData
 
 # reference element utility functions
 include("RefElemData.jl")
@@ -80,4 +79,21 @@ export CircularDomain, PartialCircularDomain
 include("explicit_timestep_utils.jl")
 export ck45 # LSERK 45
 
+# Conditional dependency for plotting Triangulate meshes using weak dependencies
+# when available (Julia v1.9 and newer) and Requires.jl otherwise
+const EXTENSIONS_SUPPORTED = isdefined(Base, :get_extension)
+
+if !EXTENSIONS_SUPPORTED
+  using Requires: @require
 end
+
+function __init__()
+  @static if !EXTENSIONS_SUPPORTED
+    @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" begin
+      include("TriangulatePlots.jl")
+    end
+  end
+end
+
+
+end # module

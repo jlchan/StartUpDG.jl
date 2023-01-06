@@ -1,6 +1,7 @@
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 PathIntersections = "4c1a95c7-462a-4a7e-b284-959c63fbf1dc"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
