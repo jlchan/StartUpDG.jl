@@ -588,6 +588,8 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     # refine the surface rule used to compute the volume quadrature 
     if length(quad_rule_face[1]) < 3 * rd.N + 1        
         r1D, w1D = gauss_quad(0, 0, 3 * rd.N)
+    else
+        r1D, w1D = quad_rule_face
     end
     # compute quadrature rules for the cut cells. integrate exactly degree 2N basis 
     for e in eachindex(cutcells)
