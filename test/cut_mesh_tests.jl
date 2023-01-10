@@ -7,7 +7,7 @@ using PathIntersections
     circle = PresetGeometries.Circle(R=0.33, x0=0, y0=0)
 
     rd = RefElemData(Quad(), N=3)
-    md = MeshData(rd, (circle, ), cells_per_dimension_x, cells_per_dimension_y)
+    md = MeshData(rd, (circle, ), cells_per_dimension_x, cells_per_dimension_y; precompute_operators=true)
 
     @test_throws ErrorException("Face index f = 5 > 4; too large.") StartUpDG.neighbor_across_face(5, nothing, nothing)
 
@@ -28,15 +28,14 @@ using PathIntersections
     @test sum(wJf[md.mapB]) ≈ (8 + 2 * pi * .33)
 
     # check continuity of a function that's in the global polynomial space
-    @unpack physical_frame_elements = md.mesh_type
-    @unpack x, y = md
+    (; physical_frame_elements) = md.mesh_type
+    (; x, y) = md
     u = @. x^rd.N - x * y^(rd.N-1) - x^(rd.N-1) * y + y^rd.N
     uf = similar(md.xf)
     uf.cartesian .= rd.Vf * u.cartesian
     for e in 1:size(md.x.cut, 2)
         ids = md.mesh_type.cut_face_nodes[e]
-        VDM = vandermonde(physical_frame_elements[e], rd.N, md.x.cut[:, e], md.y.cut[:, e])
-        Vf = vandermonde(physical_frame_elements[e], rd.N, md.xf.cut[ids], md.yf.cut[ids]) / VDM
+        Vf = md.mesh_type.cut_cell_operators.face_interpolation_matrices[e]
         uf.cut[ids] .= Vf * u.cut[:, e]
     end
     @test all(uf .≈ vec(uf[md.mapP]))

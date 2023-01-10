@@ -3,8 +3,8 @@ module StartUpDG
 using Reexport 
 
 using Colors 
-@reexport using ComponentArrays: ComponentArray
 using ConstructionBase: ConstructionBase
+using FillArrays: Ones, Zeros, Fill
 using HDF5 # used to read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
 using LinearAlgebra: cond, diagm, eigvals, Diagonal, I, mul!, norm, qr, ColumnNorm
@@ -44,6 +44,10 @@ export make_periodic
 # for tagging faces on boundaries
 include("boundary_utils.jl")
 export boundary_face_centroids, tag_boundary_faces, tag_boundary_nodes
+
+# helper array type for cut cell and hybrid meshes
+include("named_array_partition.jl")
+export NamedArrayPartition
 
 include("hybrid_meshes.jl")
 export num_faces, num_vertices, HybridMeshExample
