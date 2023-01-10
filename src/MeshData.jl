@@ -201,6 +201,7 @@ function Base.getproperty(x::MeshData{Dim, <:VertexMappedMesh}, s::Symbol) where
     end
 end
 
+num_elements(md::MeshData) = size(md.x, 2) # number of columns in the "x" coordinate array
 num_elements(md::MeshData{Dim, <:VertexMappedMesh}) where {Dim} = size(md.mesh_type.EToV, 1)
 
 """

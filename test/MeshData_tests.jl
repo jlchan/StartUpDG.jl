@@ -192,6 +192,7 @@
             @test md2.nx ≈ md2.nxJ ./ md2.Jf
             @test md2.ny ≈ md2.nyJ ./ md2.Jf
             @test typeof(md2) <: MeshData{2, <:StartUpDG.CurvedMesh}
+            @test num_elements(md) == size(md.x, 2)
         end
     end
 end
