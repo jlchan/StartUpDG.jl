@@ -1,18 +1,15 @@
-# convenience extractors for `MeshData{2, CutCellMesh}` fields, which have `cartesian` and `cut` properties. 
-struct Cut end
-struct Cartesian end
 # create a typed index, e.g., CellIndex{Cut}(e)
 struct CellIndex{CellT}
     index::Int
 end
 
-property_name(::CellIndex{Cut}) = :cut
-property_name(::CellIndex{Cartesian}) = :cartesian
+# convenience extractors for `MeshData{2, CutCellMesh}` fields, which have `cartesian` and `cut` properties. 
+struct Cut end
+struct Cartesian end
+_propertyname(::CellIndex{Cut}) = :cut
+_propertyname(::CellIndex{Cartesian}) = :cartesian
 
-# TODO: enable "nice" indexing with CellIndex, e.g., md.x[:, e] instead of getcolumns(md.x, e)
-import Base: getindex
-getindex(x, i::CellIndex) = getindex(getproperty(x, property_name(i)), i.index)
-getcolumns(x, i::CellIndex) = view(getproperty(x, property_name(i)), :, i.index)
+getcolumns(x, i::CellIndex) = view(getproperty(x, _propertyname(i)), :, i.index)
 getcolumns(x, indices::AbstractVector{<:CellIndex}) = (getcolumns(x, i.index) for i in indices)
 
 vcat_columns(x, list::AbstractVector{<:CellIndex}) = vcat((vec(getcolumns(x, i)) for i in list)...)
@@ -154,7 +151,7 @@ function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCell
     for neighbors in neighbor_list
         for e in neighbors
             # equivalent to `overlap_counts.cut[e] +=1` (similarly for `cartesian`)
-            getproperty(overlap_counts, property_name(e))[e.index] += 1
+            getproperty(overlap_counts, _propertyname(e))[e.index] += 1
         end
     end
 
@@ -186,7 +183,7 @@ function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCell
         # individual cell Vandermonde matrices
         Vq_list = typeof(Vq)[]
         for e in neighbors
-            if property_name(e) == :cut
+            if _propertyname(e) == :cut
                 VDM = vandermonde(physical_frame_elements[e.index], rd.N, 
                                 view(md.x.cut, :, e.index), view(md.y.cut, :, e.index))
                 Vq_e = vandermonde(physical_frame_elements[e.index], rd.N, 
