@@ -1,11 +1,10 @@
 module StartUpDG
 
-using Reexport 
+using Reexport: @reexport
 
-using Colors 
 using ConstructionBase: ConstructionBase
 using FillArrays: Ones, Zeros, Fill
-using HDF5 # used to read in SBP triangular node data
+using HDF5: h5open # used to read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
 using LinearAlgebra: cond, diagm, eigvals, Diagonal, I, mul!, norm, qr, ColumnNorm
 using NodesAndModes: meshgrid, find_face_nodes, face_vertices
@@ -13,13 +12,13 @@ using NodesAndModes: meshgrid, find_face_nodes, face_vertices
 using OrderedCollections: LittleDict # fast ordered dict for a small number of entries
 using PathIntersections
 @reexport using PathIntersections: PresetGeometries
-using Printf
-using RecipesBase
+using Printf: @sprintf
+using RecipesBase: RecipesBase
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
 using SparseArrays: sparse, droptol!, blockdiag
 using Triangulate: Triangulate, TriangulateIO, triangulate
-@reexport using UnPack  # for getting values in RefElemData and MeshData
+@reexport using UnPack: @unpack  # for getting values in RefElemData and MeshData
 
 # reference element utility functions
 include("RefElemData.jl")
@@ -65,23 +64,40 @@ export num_mortars_per_face, NonConformingQuadMeshExample
 # uniform meshes + face vertex orderings
 include("mesh/simple_meshes.jl")
 export readGmsh2D, uniform_mesh
-export readGmsh2D_v4, MeshImportOptions 
+export readGmsh2D_v4, MeshImportOptions
 
 # Plots.jl recipes for meshes
 include("mesh/mesh_visualization.jl")
 export VertexMeshPlotter, MeshPlotter
 
 # Triangulate interfaces and pre-built meshes
-include("mesh/triangulate_utils.jl")      
+include("mesh/triangulate_utils.jl")
 export refine, triangulateIO_to_VXYEToV, get_node_boundary_tags
 export BoundaryTagPlotter
 include("mesh/triangulate_example_meshes.jl")
 export triangulate_domain
-export Scramjet, SquareDomain, RectangularDomain, RectangularDomainWithHole 
+export Scramjet, SquareDomain, RectangularDomain, RectangularDomainWithHole
 export CircularDomain, PartialCircularDomain
 
 # simple explicit time-stepping included for conveniencea
 include("explicit_timestep_utils.jl")
-export ck45 # LSERK 45 
+export ck45 # LSERK 45
 
+# Conditional dependency for plotting Triangulate meshes using weak dependencies
+# when available (Julia v1.9 and newer) and Requires.jl otherwise
+const EXTENSIONS_SUPPORTED = isdefined(Base, :get_extension)
+
+if !EXTENSIONS_SUPPORTED
+  using Requires: @require
 end
+
+function __init__()
+  @static if !EXTENSIONS_SUPPORTED
+    @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" begin
+      include("TriangulatePlots.jl")
+    end
+  end
+end
+
+
+end # module

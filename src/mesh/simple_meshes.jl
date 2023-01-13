@@ -16,7 +16,7 @@ end
 """
     MeshImportOptions
 This struct allows the user to opt for supported features when importing
-a gmsh 4.1 .msh file. 
+a gmsh 4.1 .msh file.
 ## Support
 - grouping::Bool | On import would you like to include physical group assignements of 2D elements?
 - remap\\_group\\_name::Bool | On import would you like to maintain or remap physical group ID? Remap results in groupIds in the range 1:number\\_group\\_ids.
@@ -73,7 +73,7 @@ end
 """
  function readGmsh2D_v4(filename)
 
-reads triangular GMSH 2D .msh files. 
+reads triangular GMSH 2D .msh files.
 
 # Output
 This depends on if grouping is opted for or not
@@ -81,7 +81,7 @@ This depends on if grouping is opted for or not
 - return:(VX,VY),EToV,grouping
 
 # Supported formats and features:
-- version 4.1 
+- version 4.1
     'physical group support
     'remap group ids
 
@@ -106,7 +106,7 @@ function readGmsh2D_v4(filename::String, options::MeshImportOptions)
     @unpack grouping, remap_group_name = options
 
     if !isfile(filename)
-        @assert "file does not exist"
+        throw(ArgumentError("file $filename does not exist"))
     end
 
     f = open(filename)
@@ -133,7 +133,7 @@ function readGmsh2D_v4(filename::String, options::MeshImportOptions)
     end
 
     if grouping
-        # surface_data_dict = get_surface_tag(lines::Vector{String}) 
+        # surface_data_dict = get_surface_tag(lines::Vector{String})
 
         # For 2D Physical group data we are only interested in groupings in surface entities
         # This will extract relevent grouping data for each surface
@@ -308,13 +308,13 @@ function compute_triangle_area(tri)
 end
 
 function correct_negative_Jacobians!((VX, VY), EToV)
-    # detect negative Jacobians 
+    # detect negative Jacobians
     for e in 1:size(EToV, 1)
         v_ids = view(EToV, e, :)
         A, B, C = ((VX[v_ids[i]], VY[v_ids[i]]) for i in 1:3)
         tri = SVector{3}(A, B, C)
         area = compute_triangle_area(tri)
-        # if triangle area is negative, permute the vertices 
+        # if triangle area is negative, permute the vertices
         # so the area is positive
         if area < 0
             view(EToV, e, :) .= (v_ids[2], v_ids[1], v_ids[3])
@@ -327,12 +327,12 @@ end
     uniform_mesh(elem::Line,Kx)
     uniform_mesh(elem::Tri,Kx,Ky)
     uniform_mesh(elem::Quad,Kx,Ky)
-    uniform_mesh(elem::Hex,Kx,Ky,Kz)  
+    uniform_mesh(elem::Hex,Kx,Ky,Kz)
     uniform_mesh(elem, K)
-        
+
 Uniform `Kx` (by `Ky` by `Kz`) mesh on ``[-1,1]^d``, where `d` is the spatial dimension.
-Returns `(VX,VY,VZ)`, `EToV`. When only one `K` is specified, it assumes a uniform mesh with 
-`K` elements in each coordinate direction. 
+Returns `(VX,VY,VZ)`, `EToV`. When only one `K` is specified, it assumes a uniform mesh with
+`K` elements in each coordinate direction.
 
 `K` can also be specified using a keyword argument `K1D`, e.g., `uniform_mesh(elem; K1D = 16)`.
 """
