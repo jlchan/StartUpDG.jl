@@ -1,6 +1,3 @@
-# TODO: switch to keyword argument h = ...
-# TODO: switch API to dispatch, e.g., `example_mesh(Scramjet(), h = .1)`
-
 # predefined domains
 Base.@kwdef struct RectangularDomain{Tv, Ti}
     xlims::SVector{2,Tv} = SVector{2}(-1., 1.)

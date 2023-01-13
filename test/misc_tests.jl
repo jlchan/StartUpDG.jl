@@ -7,8 +7,8 @@ using Plots: plot
     md = MeshData(uniform_mesh(Tri(),1)...,rd)
     @test (@capture_out Base.show(stdout,MIME"text/plain"(),rd)) == "RefElemData for a degree 3 Polynomial() approximation on Tri() element."
     @test (@capture_out Base.show(stdout,rd)) == "RefElemData{N=3,Polynomial(),Tri()}."
-    @test (@capture_out Base.show(stdout,MIME"text/plain"(),md)) == "Tri MeshData of dimension 2 with 2 elements"
-    @test (@capture_out Base.show(stdout,md)) == "MeshData{2}"
+    @test (@capture_out Base.show(stdout, MIME"text/plain"(), md)) == "MeshData of dimension 2 with 2 elements"
+    @test (@capture_out Base.show(stdout, md)) == "MeshData{2}"
 
     # test recipes
     # see https://discourse.julialang.org/t/how-to-test-plot-recipes/2648/6?u=jlchan
@@ -42,10 +42,11 @@ using Plots: plot
     function foo(rd::RefElemData)
         rd.Nfq, rd.Np, rd.Nq
     end
-    function foo(md::MeshData)
-        md.VX, md.VY, md.VZ, md.num_elements, md.K
-    end
     @inferred foo(rd)
+
+    function foo(md::MeshData)
+        md.VX, md.VY, md.VZ, md.num_elements        
+    end
     @inferred foo(md)
 
     # test setproperties

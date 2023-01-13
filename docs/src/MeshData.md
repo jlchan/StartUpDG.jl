@@ -9,7 +9,8 @@
 * `J, Jf`: volume and surface Jacobians evaluated at interpolation points and surface quadrature points, respectively. `J` is a matrix of size ``N_p \times num_elements``, while `Jf` is a matrix of size ``N_f \times num_elements``. 
 * `nxyz::NTuple{Dim, ...}` and `nxyzJ::NTuple{Dim, ...}`: normalized and `Jf` scaled outward normals evaluated at surface quadrature points. Each element of `nxyzJ` is a matrix of size ``N_f\times num_elements``. 
 
-These are the main quantities used to construct a DG solver. 
+These are the main quantities used to construct a DG solver. Information specific to the type of mesh used is
+stored in the `md.mesh_type` field. 
 
 # Setting up `md::MeshData`
 
@@ -51,7 +52,7 @@ julia> md_periodic_x.is_periodic
 
 ## Creating curved meshes
 
-It is common to generate curved meshes by first generating a linear mesh, then moving high order nodes on the linear mesh. This can be done by calling [`MeshData`](@ref) again with new `x,y` coordinates:
+It is common to generate curved meshes by first generating a linear mesh, then moving high order nodes on the linear mesh. This can be done by calling [`MeshData`](@ref) again with new `x, y` coordinates:
 ```julia
 md = MeshData((VX, VY), EToV, rd)
 @unpack x, y = md
@@ -62,11 +63,9 @@ md_curved = MeshData(rd, md, x, y)
 
 More generally, one can create a copy of a `MeshData` with certain fields modified by using `@set` or `setproperties` from `Setfield.jl`.
 
-## Unstructured (and pre-defined) triangular meshes using Triangulate
+## Unstructured and pre-defined triangular meshes using Triangulate
 
-If `Triangulate` is also loaded, then StartUpDG will include additional utilities for creating and visualizing meshes. 
-
-Several pre-defined geometries are included in StartUpDG.jl. A few examples are `SquareDomain`, `RectangularDomainWithHole`, `Scramjet`, and `CircularDomain`. See `triangulate_example_meshes.jl` for a more complete list and field arguments. These can each be called using `triangulate_domain`, for example the following code will create a mesh of a scramjet:
+StartUpDG.jl also includes additional utilities based on Triangulate.jl for creating and visualizing meshes. Several pre-defined geometries are included in StartUpDG.jl. A few examples are `SquareDomain`, `RectangularDomainWithHole`, `Scramjet`, and `CircularDomain`. See `triangulate_example_meshes.jl` for a more complete list and field arguments. These can each be called using `triangulate_domain`, for example the following code will create a mesh of a scramjet:
 ```julia
 meshIO = triangulate_domain(Scramjet())
 (VX, VY), EToV = triangulateIO_to_VXYEToV(meshIO)

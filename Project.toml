@@ -1,11 +1,11 @@
 name = "StartUpDG"
 uuid = "472ebc20-7c99-4d4b-9470-8fde4e9faa0f"
 authors = ["Jesse Chan", "Yimin Lin"]
-version = "0.14.10"
+version = "0.15.2"
 
 [deps]
-ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
 ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
+FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 Kronecker = "2c470bb0-bcc8-11e8-3dad-c9649493f05e"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -14,6 +14,7 @@ OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 PathIntersections = "4c1a95c7-462a-4a7e-b284-959c63fbf1dc"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
@@ -23,15 +24,16 @@ Triangulate = "f7e6ffb2-c36d-4f8f-a77e-16e897189344"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
-ComponentArrays = "0.12, 0.13"
 ConstructionBase = "1"
+FillArrays = "0.13"
 HDF5 = "0.16"
 Kronecker = "0.5"
-NodesAndModes = "0.8"
+NodesAndModes = "0.9"
 OrderedCollections = "1"
 PathIntersections = "0.1"
 Plots = "1"
 RecipesBase = "1"
+RecursiveArrayTools = "2"
 Reexport = "1"
 Requires = "1"
 Setfield = "1"
@@ -41,7 +43,6 @@ UnPack = "1"
 julia = "1.7"
 
 [extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 
 [weakdeps]
