@@ -36,6 +36,7 @@ RecipesBase.@recipe function f(m::BoundaryTagPlotter)
           x_i,y_i
       end
   end
+  legend := nothing
 end
 
 
