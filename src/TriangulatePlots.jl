@@ -36,10 +36,6 @@ RecipesBase.@recipe function f(m::BoundaryTagPlotter)
           x_i,y_i
       end
   end
-  # we already added all shapes in @series so we don't want to return a series
-  # here (we are returning an empty series which is not added to the legend.)
-  primary := false
-  ()
 end
 
 
