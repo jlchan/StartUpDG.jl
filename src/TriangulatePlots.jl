@@ -1,12 +1,8 @@
 module TriangulatePlots
 
-using StartUpDG: EXTENSIONS_SUPPORTED, BoundaryTagPlotter, RecipesBase
+using StartUpDG: BoundaryTagPlotter, RecipesBase
 
-if EXTENSIONS_SUPPORTED
-  using Plots: Plots
-else
-  using ..Plots: Plots
-end
+using ..Plots: Plots
 
 RecipesBase.@recipe function f(m::BoundaryTagPlotter)
   triout = m.triout
