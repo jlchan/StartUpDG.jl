@@ -508,7 +508,8 @@ cells placed along each dimension.
 MeshData(rd::RefElemData, curves, cells_per_dimension;  kwargs...) = 
     MeshData(rd::RefElemData, curves, cells_per_dimension, cells_per_dimension;  kwargs...)
 
-function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dimension_y; 
+function MeshData(rd::RefElemData, curves, 
+                  cells_per_dimension_x::Int, cells_per_dimension_y::Int; 
                   quad_rule_face = get_1d_quadrature(rd), 
                   coordinates_min=(-1.0, -1.0), coordinates_max=(1.0, 1.0),
                   precompute_operators=false)
@@ -516,6 +517,17 @@ function MeshData(rd::RefElemData, curves, cells_per_dimension_x, cells_per_dime
     # compute intersections of curve with a background Cartesian grid.
     vx = LinRange(coordinates_min[1], coordinates_max[1], cells_per_dimension_x + 1)
     vy = LinRange(coordinates_min[2], coordinates_max[2], cells_per_dimension_y + 1)    
+
+    return MeshData(rd, curves, vx, vy; quad_rule_face, precompute_operators)
+end
+
+function MeshData(rd::RefElemData, curves, 
+                  vx::AbstractVector, vy::AbstractVector; 
+                  quad_rule_face=get_1d_quadrature(rd), 
+                  precompute_operators=false)
+
+    cells_per_dimension_x = length(vx) - 1
+    cells_per_dimension_y = length(vy) - 1
 
     # compute mesh intersections and cut cell elements.
     # `regions` is a matrix of dimensions `(cells_per_dimension_x, cells_per_dimension_y)` with 3 values:
