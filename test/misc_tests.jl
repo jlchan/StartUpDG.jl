@@ -15,8 +15,8 @@ using Plots: plot
     meshIO = triangulate_domain(Scramjet())
     recipe = RecipesBase.apply_recipe(Dict{Symbol, Any}(), BoundaryTagPlotter(meshIO));
     @test_nowarn plot(BoundaryTagPlotter(meshIO))
-    @test_skip getfield(recipe[1],1)[:label]=="1"
-    @test_skip any(isnan.(getfield(recipe[1],2)[1]))
+    @test getfield(recipe[1], 1)[:label]=="1"
+    @test any(isnan.(getfield(recipe[1], 2)[1]))
 
     recipe = RecipesBase.apply_recipe(Dict{Symbol, Any}(), VertexMeshPlotter(meshIO))
     @test getfield(recipe[1],1)[:legend] == false
