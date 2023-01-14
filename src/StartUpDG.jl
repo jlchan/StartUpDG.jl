@@ -83,19 +83,12 @@ export CircularDomain, PartialCircularDomain
 include("explicit_timestep_utils.jl")
 export ck45 # LSERK 45
 
-# Conditional dependency for plotting Triangulate meshes using weak dependencies
-# when available (Julia v1.9 and newer) and Requires.jl otherwise
-const EXTENSIONS_SUPPORTED = isdefined(Base, :get_extension)
 
-if !EXTENSIONS_SUPPORTED
-  using Requires: @require
-end
+using Requires: @require
 
 function __init__()
-  @static if !EXTENSIONS_SUPPORTED
-    @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" begin
-      include("TriangulatePlots.jl")
-    end
+  @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" begin
+    include("TriangulatePlots.jl")
   end
 end
 
