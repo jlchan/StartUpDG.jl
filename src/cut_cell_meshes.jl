@@ -157,7 +157,7 @@ function generate_sampling_points(curves, elem, rd, Np_target; N_sampled = 4 * r
     while sum(is_in_element) < Np_target
         is_in_element = is_contained.(curves, zip(x_sampled, y_sampled)) .== false
         if sum(is_in_element) < Np_target
-            N_sampled += rd.N
+            N_sampled *= 2 # double degree of sampling
             r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
             x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
         end
@@ -323,13 +323,18 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
 
         # if the condition number of the VDM is really bad, then increase the 
         # number of sampled points. 
-        if cond(V[ids,:]) > 1e8
-            @warn "Conditioning of VDM for element $e is $(cond(V[ids,:]));" * 
-                    "recomputing with a finer set of samples."
+        condV = cond(V[ids,:])
+        if condV > 1e8
             x_sampled, y_sampled = 
                 generate_sampling_points(curves, physical_frame_element, rd, 2 * Np_cut(rd.N); 
-                                            N_sampled = 100)
+                                         N_sampled = 20 * rd.N)
             V = vandermonde(physical_frame_element, rd.N, x_sampled, y_sampled) 
+
+            # use pivoted QR to find good interpolation points
+            QRfac = qr(V', ColumnNorm())
+            ids = QRfac.p[1:Np_cut(rd.N)]
+            @warn "Conditioning of old VDM for element $e is $condV. " * 
+                  "After recomputing with a finer set of samples: $(cond(V[ids,:]))."                   
         end
 
         view(x.cut, :, e) .= x_sampled[ids]
@@ -469,7 +474,7 @@ end
 function calculate_cutcells(vx, vy, curves, ds = 1e-3, arc_tol = 1e-10, corner_tol = 1e-10)
 
     stop_pts = find_mesh_intersections((vx, vy), curves, ds, arc_tol, corner_tol,
-    closed_list=true, closure_tol=1e-12)
+                                       closed_list=true, closure_tol=1e-12)
 
     # Calculate cutcells
     region_flags, cutcell_indices, cutcells = 
@@ -579,7 +584,7 @@ function MeshData(rd::RefElemData, curves,
     num_cut_quad_points = Np_cut(2 * rd.N) + 1
     xq, yq, wJq = ntuple(_ -> NamedArrayPartition(cartesian=zeros(rd.Nq, num_cartesian_cells), 
                                                   cut=zeros(num_cut_quad_points, num_cut_cells)), 3)    
-
+   
     # compute quadrature rules for the Cartesian cells
     e = 1
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
@@ -639,7 +644,7 @@ function MeshData(rd::RefElemData, curves,
         view(xq.cut, :, e)  .= view(x_sampled, ids)
         view(yq.cut, :, e)  .= view(y_sampled, ids)
         view(wJq.cut, :, e) .= wq
-    end
+    end    
 
     # default to non-periodic 
     is_periodic = (false, false)   
