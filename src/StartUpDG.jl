@@ -19,6 +19,7 @@ using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
 using SparseArrays: sparse, droptol!, blockdiag
 using Triangulate: Triangulate, TriangulateIO, triangulate
+using WriteVTK
 @reexport using UnPack  # for getting values in RefElemData and MeshData
 
 # reference element utility functions
@@ -39,7 +40,7 @@ export geometric_factors, estimate_h
 
 # spatial connectivity routines
 include("connectivity_functions.jl")
-export make_periodic
+export make_periodic, match_coordinate_vectors, match_coordinate_vectors!
 
 # for tagging faces on boundaries
 include("boundary_utils.jl")
@@ -64,8 +65,9 @@ export readGmsh2D, uniform_mesh
 export readGmsh2D_v4, MeshImportOptions 
 
 # Plots.jl recipes for meshes
+include("mesh/vtk_helper.jl")
 include("mesh/mesh_visualization.jl")
-export VertexMeshPlotter, MeshPlotter
+export VertexMeshPlotter, MeshPlotter, Meshdata_to_vtk
 
 # Triangulate interfaces and pre-built meshes
 include("mesh/triangulate_utils.jl")      

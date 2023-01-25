@@ -68,3 +68,32 @@ RecipesBase.@recipe function f(m::VertexMeshPlotter{2})
     return xmesh, ymesh
 end
 
+"""
+    Meshdata_to_vtk(md, rd, dim, filename)
+
+Translate the given mesh into a 
+"""
+function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, filename)
+    # Compute the permutation between the StartUpDG order of points and vtk
+    perm = SUD_to_vtk_order(rd, dim)
+    # The number of points per element
+    num_lagrange_points = size(perm)[1]
+    # Number of elements
+    num_elements = size(md.EToV)[1]
+    vtk_cell_type = type_to_vtk(rd.element_type)
+
+    # Construction of the vtkfile
+    cells = [MeshCell(vtk_cell_type, perm.+((i-1)*num_lagrange_points)) for i in 1:num_elements]
+    # Todo: Interpolate to equidstant points 
+    coords = [vec(md.xyz[i]) for i in 1:dim]
+    vtkfile = []
+    if dim == 1
+        vtkfile = vtk_grid(filename, coords[1], cells)
+    elseif dim == 2
+        vtkfile = vtk_grid(filename, coords[1], coords[2], cells)
+    else
+        vtkfile = vtk_grid(filename, coords[1], coords[2], coords[3], cells)
+    end
+    vtk_save(vtkfile)
+end
+
