@@ -151,7 +151,10 @@ function generate_sampling_points(curves, elem, rd, Np_target; N_sampled = 4 * r
 
     # map sampled points to the background Cartesian cell
     x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
-    is_in_element = .!(is_contained.(curves, zip(x_sampled, y_sampled)))
+    is_in_element = fill(true, length(x_sampled))
+    for curve in curves
+        is_in_element .= is_in_element .&& .!(map(x->is_contained(curve, x), zip(x_sampled, y_sampled)))
+    end
 
     # increase number of background points until we are left with `Np_target` sampling points 
     while sum(is_in_element) < Np_target
@@ -223,7 +226,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
 
     # count number of cells and cut face nodes
     num_cartesian_cells = sum(region_flags .== 0)
-    num_cut_cells = sum(region_flags .== 1) 
+    num_cut_cells = sum(region_flags .> 0) 
     nodes_per_face = length(r1D)
     num_cut_face_nodes = nodes_per_face * sum(cut_faces_per_cell)
 
@@ -543,7 +546,7 @@ function MeshData(rd::RefElemData, curves,
 
     # pack useful cut cell information together. 
     num_cartesian_cells = sum(region_flags .== 0)
-    num_cut_cells = sum(region_flags .== 1)
+    num_cut_cells = sum(region_flags .> 0)
     cut_faces_per_cell = count_cut_faces(cutcells)
     cut_face_offsets = [0; cumsum(cut_faces_per_cell)[1:end-1]] 
     cutcell_data = (; curves, region_flags, cutcells, cut_faces_per_cell, cut_face_offsets)
@@ -696,7 +699,7 @@ function MeshData(rd::RefElemData, curves,
             # don't include jacobian scaling in LIFT matrix (for consistency with the Cartesian mesh)            
             _, w1D = quad_rule_face
             num_cut_faces = length(cut_face_nodes[e]) ÷ length(w1D)
-            wf = vec(repeat(w1D, 1, num_cut_faces)    )
+            wf = vec(repeat(w1D, 1, num_cut_faces))
 
             push!(lift_matrices, M \ (Vf' * diagm(wf)))
             push!(face_interpolation_matrices, Vf)
