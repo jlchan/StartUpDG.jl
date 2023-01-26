@@ -96,14 +96,14 @@ function quad_vtk_order(corner_verts, order, dim, skip = false)
         end
     end
     e_x = (corner_verts[:,2] .- corner_verts[:,1])./order
-    e_y = (corner_verts[:,3] .- corner_verts[:,1])./order
+    e_y = (corner_verts[:,4] .- corner_verts[:,1])./order
     pos_y = copy(corner_verts[:,1])
     for i in 1:num_verts_on_edge
         pos_y = pos_y .+ e_y
         pos_yx = pos_y
         for j in 1:num_verts_on_edge
-            coords = hcat(coords, pos_yx)
             pos_yx = pos_yx .+ e_x
+            coords = hcat(coords, pos_yx)
         end
     end
     return coords
