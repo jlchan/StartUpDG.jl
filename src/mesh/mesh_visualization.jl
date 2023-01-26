@@ -69,7 +69,7 @@ RecipesBase.@recipe function f(m::VertexMeshPlotter{2})
 end
 
 """
-    Meshdata_to_vtk(md, rd, dim, data, dataname, datatype, filename)
+    Meshdata_to_vtk(md, rd, dim, data, dataname, datatype, filename, write_data = false, equi_dist_nodes = true)
 
 Translate the given mesh into a vtk-file.
 md holds the meshdata
@@ -77,6 +77,8 @@ rd holds the reference element data.
 dim is the dimension of the mesh
 data holds an array of arryas with data
 dataname is an array of strings with name of the associated data
+write_data, flag if data should be written or not
+equi_dist_nodes flag if points should be interpolated to equidstant nodes
 """
 function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, data, dataname, filename, write_data = false, equi_dist_nodes = true)
     # Compute the permutation between the StartUpDG order of points and vtk
