@@ -69,11 +69,16 @@ RecipesBase.@recipe function f(m::VertexMeshPlotter{2})
 end
 
 """
-    Meshdata_to_vtk(md, rd, dim, filename)
+    Meshdata_to_vtk(md, rd, dim, data, dataname, datatype, filename)
 
-Translate the given mesh into a 
+Translate the given mesh into a vtk-file.
+md holds the meshdata
+rd holds the reference element data. 
+dim is the dimension of the mesh
+data holds an array of arryas with data
+dataname is an array of strings with name of the associated data
 """
-function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, filename)
+function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, data, dataname, filename, write_data = false, equi_dist_nodes = true)
     # Compute the permutation between the StartUpDG order of points and vtk
     perm = SUD_to_vtk_order(rd, dim)
     # The number of points per element
@@ -85,7 +90,11 @@ function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, filename)
     # Construction of the vtkfile
     cells = [MeshCell(vtk_cell_type, perm.+((i-1)*num_lagrange_points)) for i in 1:num_elements]
     # Todo: Interpolate to equidstant points 
-    coords = [vec(md.xyz[i]) for i in 1:dim]
+    interpolate = diagm(ones(Float64, 10))
+    if equi_dist_nodes
+        interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
+    end
+    coords = [vec(interpolate * md.xyz[i]) for i in 1:dim]
     vtkfile = []
     if dim == 1
         vtkfile = vtk_grid(filename, coords[1], cells)
@@ -93,6 +102,11 @@ function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, filename)
         vtkfile = vtk_grid(filename, coords[1], coords[2], cells)
     else
         vtkfile = vtk_grid(filename, coords[1], coords[2], coords[3], cells)
+    end
+    if write_data
+        for i in 1:size(dataname)[1]
+            vtkfile[dataname[i]] = data[i]
+        end
     end
     vtk_save(vtkfile)
 end
