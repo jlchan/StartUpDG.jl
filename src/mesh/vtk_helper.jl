@@ -10,11 +10,7 @@ function n_verts_between(n, from, to, dim)
     if n <= 0
         return
     end
-    edge_verts = []
-    for i in 1:dim
-        #exclude the start and endpoint
-        append!(edge_verts, [LinRange(from[i], to[i], n+2)[2: 1+n]])
-    end
+    edge_verts = [LinRange(from[i], to[i], n+2)[2: 1+n] for i in 1:dim]
     return edge_verts
 end
 
@@ -77,7 +73,7 @@ Construct all node-points of a VTK_LAGRANGE_TRIANGLE of order order. The corner-
 given by the reference-triangle used by StartUpDG
 """
 function vtk_order(elem::Tri, order)
-    tri_sud_vertices = [-1 -1 -1; -1 1 -1]
+    tri_sud_vertices = [-1.0 1.0 -1.0; -1.0 -1.0 1.0]
     return triangle_vtk_order(tri_sud_vertices, order, 2)
 end
 
@@ -87,10 +83,13 @@ end
 Compute the permutation of the nodes between StartUpDG and VTK
 """
 function SUD_to_vtk_order(rd::RefElemData, dim)
+    #nodes in vtk order
     vtk_nodes = vtk_order(rd.element_type, rd.N)
     vtk_formatted = Tuple(vtk_nodes[i,:] for i in 1:dim)
+    #nodes in StartUpDG order
     interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) /rd.VDM
     equi_dist_vertices = Tuple(interpolate*rd.rst[i] for i in 1:dim)
+    #permutation
     return match_coordinate_vectors(vtk_formatted, equi_dist_vertices)
 end
 
