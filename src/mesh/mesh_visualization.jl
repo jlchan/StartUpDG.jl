@@ -82,11 +82,11 @@ equi_dist_nodes flag if points should be interpolated to equidstant nodes
 """
 function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, data, dataname, filename, write_data = false, equi_dist_nodes = true)
     # Compute the permutation between the StartUpDG order of points and vtk
-    perm = SUD_to_vtk_order(rd, dim)
+    perm = SUD_to_vtk_order(rd)
     # The number of points per element
-    num_lagrange_points = size(perm)[1]
+    num_lagrange_points = length(perm)
     # Number of elements
-    num_elements = size(md.EToV)[1]
+    num_elements = md.num_elements
     vtk_cell_type = type_to_vtk(rd.element_type)
 
     # Construction of the vtkfile
