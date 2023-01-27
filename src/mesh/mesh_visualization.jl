@@ -97,7 +97,7 @@ function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, data, dataname, fil
         interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
     end
     coords = map(x -> vec(interpolate * x), md.xyz)
-    vtkfile = []
+    vtkfile = WriteVTK.VTKFile[]
     if dim == 1
         vtkfile = vtk_grid(filename, coords[1], cells)
     elseif dim == 2
