@@ -90,9 +90,9 @@ function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, data, dataname, fil
     vtk_cell_type = type_to_vtk(rd.element_type)
 
     # Construction of the vtkfile
-    cells = [MeshCell(vtk_cell_type, perm.+((i-1)*num_lagrange_points)) for i in 1:num_elements]
+    cells = [MeshCell(vtk_cell_type, perm .+ ((i-1) * num_lagrange_points)) for i in 1:num_elements]
     # Todo: Interpolate to equidstant points 
-    interpolate = diagm(ones(Float64, 10))
+    interpolate = I(10)
     if equi_dist_nodes
         interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
     end

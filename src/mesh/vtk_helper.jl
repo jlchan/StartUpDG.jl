@@ -2,8 +2,8 @@
 """
     n_verts_between(n, from, to, dim)
 
-Compute the coordinates of n equaly distributed points between the points
-given by from and to. dim is the dimension of from and to. 
+Compute the coordinates of n equally distributed points between the points
+given by `from` and `to`. `dim` is the dimension of `from` and `to`. 
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
 """
 function n_verts_between(n, from, to, dim)
@@ -18,11 +18,11 @@ end
 """
     triangle_vtk_order(corner_verts, order, dim, skip = false)
 
-Compute the coordinates of a VTk_LAGRANGE_TRIANGLE of a triangle or order order 
-defined by the coordinates of the vertices given in corner_verts. dim is the
-dimension of the coordinates given. If skip is set to true, the coordinates
+Compute the coordinates of a `VTK_LAGRANGE_TRIANGLE` of a triangle or order `order` 
+defined by the coordinates of the vertices given in `corner_verts`. `dim` is the
+dimension of the coordinates given. If `skip` is set to true, the coordinates
 of the vertex- and edge-points aren't computed, which can be used to compute
-points of a VTK_LAGRANGE_WEDGE
+points of a `VTK_LAGRANGE_WEDGE`
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
 """
 function triangle_vtk_order(corner_verts, order, dim, skip = false)
@@ -57,9 +57,9 @@ function triangle_vtk_order(corner_verts, order, dim, skip = false)
         return coords
     end
     #faces
-    e_x = (corner_verts[:,2] .- corner_verts[:,1])./order
-    e_y = (corner_verts[:,3] .- corner_verts[:,1])./order
-    inc = [(e_x+e_y) (-2*e_x + e_y) (e_x - 2*e_y)]
+    e_x = (corner_verts[:,2] .- corner_verts[:,1]) ./ order
+    e_y = (corner_verts[:,3] .- corner_verts[:,1]) ./ order
+    inc = [(e_x + e_y) (-2*e_x + e_y) (e_x - 2*e_y)]
     if order >= 3
         coords = hcat(coords, triangle_vtk_order(corner_verts .+ inc, order - 3, dim, false))
     end
@@ -86,9 +86,11 @@ function SUD_to_vtk_order(rd::RefElemData, dim)
     #nodes in vtk order
     vtk_nodes = vtk_order(rd.element_type, rd.N)
     vtk_formatted = Tuple(vtk_nodes[i,:] for i in 1:dim)
+    
     #nodes in StartUpDG order
-    interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) /rd.VDM
-    equi_dist_vertices = Tuple(interpolate*rd.rst[i] for i in 1:dim)
+    interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
+    equi_dist_vertices = Tuple(interpolate * rd.rst[i] for i in 1:dim)
+
     #permutation
     return match_coordinate_vectors(vtk_formatted, equi_dist_vertices)
 end
