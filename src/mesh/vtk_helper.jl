@@ -90,9 +90,10 @@ function SUD_to_vtk_order(rd::RefElemData{DIM}) where {DIM}
     vtk_nodes = vtk_order(rd.element_type, rd.N)
     vtk_formatted = Tuple(vtk_nodes[i,:] for i in 1:DIM)
     
+    
     #nodes in StartUpDG order
     interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
-    equi_dist_vertices = Tuple(interpolate * rd.rst[i] for i in 1:DIM)
+    equi_dist_vertices = map(x->interpolate * x, rd.rst)
 
     #permutation
     return match_coordinate_vectors(vtk_formatted, equi_dist_vertices)

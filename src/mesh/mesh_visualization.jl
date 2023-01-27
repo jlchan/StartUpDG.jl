@@ -92,11 +92,11 @@ function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, data, dataname, fil
     # Construction of the vtkfile
     cells = [MeshCell(vtk_cell_type, perm .+ ((i-1) * num_lagrange_points)) for i in 1:num_elements]
     # Todo: Interpolate to equidstant points 
-    interpolate = I(10)
+    interpolate = I(num_lagrange_points)
     if equi_dist_nodes
         interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
     end
-    coords = [vec(interpolate * md.xyz[i]) for i in 1:dim]
+    coords = map(x -> vec(interpolate * x), md.xyz)
     vtkfile = []
     if dim == 1
         vtkfile = vtk_grid(filename, coords[1], cells)
