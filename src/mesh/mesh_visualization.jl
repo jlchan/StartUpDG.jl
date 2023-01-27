@@ -80,7 +80,7 @@ dataname is an array of strings with name of the associated data
 write_data, flag if data should be written or not
 equi_dist_nodes flag if points should be interpolated to equidstant nodes
 """
-function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, data, dataname, filename, write_data = false, equi_dist_nodes = true)
+function Meshdata_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, filename, write_data = false, equi_dist_nodes = true) where {DIM}
     # Compute the permutation between the StartUpDG order of points and vtk
     perm = SUD_to_vtk_order(rd)
     # The number of points per element
@@ -98,9 +98,9 @@ function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, data, dataname, fil
     end
     coords = map(x -> vec(interpolate * x), md.xyz)
     vtkfile = WriteVTK.VTKFile[]
-    if dim == 1
+    if DIM == 1
         vtkfile = vtk_grid(filename, coords[1], cells)
-    elseif dim == 2
+    elseif DIM == 2
         vtkfile = vtk_grid(filename, coords[1], coords[2], cells)
     else
         vtkfile = vtk_grid(filename, coords[1], coords[2], coords[3], cells)
@@ -110,6 +110,6 @@ function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, data, dataname, fil
             vtkfile[dataname[i]] = data[i]
         end
     end
-    vtk_save(vtkfile)
+    return vtk_save(vtkfile)
 end
 
