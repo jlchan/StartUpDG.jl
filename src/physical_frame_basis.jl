@@ -4,7 +4,7 @@
 @inline mean(x) = sum(x) / length(x)
 
 """
-    `PhysicalFrame <: AbstractElemShape`
+    `PhysicalFrame{NDIMS} <: AbstractElemShape{NDIMS}`
     
 `PhysicalFrame` element type. Uses a total degree N approximation space, but is 
 computed with a tensor product Legendre basis as opposed to a triangular PKDO basis.
@@ -13,41 +13,48 @@ they are on the reference element.
 
     PhysicalFrame()
     PhysicalFrame(x, y)
+    PhysicalFrame(x, y, vx, vy): stores coordinates `vx, vy` of background Cartesian cell 
 
 Constructors for a PhysicalFrame object (optionally uses arrays of points `x`, `y` on a cut element).
 """
-struct PhysicalFrame{Shifting <: Union{<:SVector, <:NTuple}, Scaling <: Union{<:SVector, <:NTuple}, VXYZ} <: AbstractElemShape
+struct PhysicalFrame{NDIMS, Shifting <: SVector{NDIMS}, Scaling <: SVector{NDIMS}, VXYZ} <: AbstractElemShape{NDIMS}
     shifting::Shifting
     scaling::Scaling
     vxyz::VXYZ # coordinates of background Cartesian cell
 end
 
-# default shifting and scaling, restricted to 2D for now
-function PhysicalFrame()     
-    return PhysicalFrame(SVector(0.0, 0.0), SVector(1.0, 1.0), 
-                         (SVector(-1., 1.), SVector(-1., 1.))) # set background coordinates to reference cell
+# defaults to 2D for now
+PhysicalFrame() = PhysicalFrame(Val{2}())
+
+# default shifting and scaling
+function PhysicalFrame(ndims::Val{2}) 
+    shifting = SVector(0.0, 0.0)
+    scaling = SVector(1.0, 1.0)
+    vxyz = (SVector(-1., 1.), SVector(-1., 1.)) # set background coordinates to reference cell
+    return PhysicalFrame(shifting, scaling, vxyz) 
 end
 
 function PhysicalFrame(x, y)
-    shifting = (mean(x), mean(y))
-    scaling = map(x -> 2 / (x[2] - x[1]), (extrema(x), extrema(y)))
+    shifting = SVector(mean(x), mean(y))
+    scaling = SVector(map(x -> 2 / (x[2] - x[1]), (extrema(x), extrema(y))))
     return PhysicalFrame(shifting, scaling, nothing)
 end
 
 function PhysicalFrame(x, y, vx, vy)
-    shifting = (mean(x), mean(y))
-    scaling = map(x -> 2 / (x[2] - x[1]), (extrema(x), extrema(y)))
-    return PhysicalFrame(shifting, scaling, (vx, vy))
+    shifting = SVector(mean(x), mean(y))
+    scaling = SVector(map(x -> 2 / (x[2] - x[1]), (extrema(x), extrema(y))))
+    vxyz = (vx, vy)
+    return PhysicalFrame(shifting, scaling, vxyz)
 end
 
-function shift_and_scale(elem::PhysicalFrame, x, y)
+function shift_and_scale(elem::PhysicalFrame{2}, x, y)
     @unpack shifting, scaling = elem
     r = @. (x - shifting[1]) * scaling[1]
     s = @. (y - shifting[2]) * scaling[2]
     return r, s
 end
 
-function NodesAndModes.basis(elem::PhysicalFrame, N, x, y)
+function NodesAndModes.basis(elem::PhysicalFrame{2}, N, x, y)
     Np = (N + 1) * (N + 2) ÷ 2
 
     r, s = shift_and_scale(elem, x, y)
@@ -124,7 +131,7 @@ import NodesAndModes: equi_nodes
 Returns back `Np(N)` equally spaced nodes on the background quadrilateral corresponding 
 to `elem`, with points inside of `curve` removed.
 """
-function NodesAndModes.equi_nodes(elem::PhysicalFrame, curve, N)
+function NodesAndModes.equi_nodes(elem::PhysicalFrame{2}, curve, N)
     @unpack vxyz = elem
     r, s = equi_nodes(Quad(), N)
     x, y = map_nodes_to_background_cell(elem, r, s)
@@ -132,7 +139,7 @@ function NodesAndModes.equi_nodes(elem::PhysicalFrame, curve, N)
     return x[ids], y[ids]
 end
 
-function map_nodes_to_background_cell(elem::PhysicalFrame, r, s)
+function map_nodes_to_background_cell(elem::PhysicalFrame{2}, r, s)
     @unpack vxyz = elem
     vx, vy = vxyz
     dx, dy = diff(vx), diff(vy)

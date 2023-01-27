@@ -1,13 +1,31 @@
 # mesh_type identifier for hybrid meshes
-struct HybridMesh{T}
+struct HybridMesh{T, TV, TE}
     element_types::T
+    VXYZ::TV
+    EToV::TE
     # This is an inner constructor for HybridMesh. It sorts tuples of element types alphabetically 
     # so that `HybridMesh.element_types` always yields the same ordering of element types.
-    function HybridMesh(element_types::T) where {T <: Tuple}
+    function HybridMesh(element_types::T, VXYZ, EToV) where {T <: Tuple}
         p = sortperm(collect(typeof.(element_types)); by=string)
-        return new{typeof(Tuple(element_types[p]))}(Tuple(element_types[p]))
+        return new{typeof(Tuple(element_types[p])), typeof(VXYZ), typeof(EToV)}(Tuple(element_types[p]), VXYZ, EToV)
     end
 end
+
+function Base.getproperty(x::MeshData{Dim, <:HybridMesh}, s::Symbol) where {Dim}
+
+    if s===:VX
+        return getfield(getfield(x, :mesh_type), :VXYZ)[1]
+    elseif s===:VY
+        return getfield(getfield(x, :mesh_type), :VXYZ)[2]
+    elseif s===:VZ
+        return getfield(getfield(x, :mesh_type), :VXYZ)[3]
+    elseif s===:EToV
+        return getfield(getfield(x, :mesh_type), s)
+    else
+        meshdata_getproperty(x, s)
+    end
+end
+
 
 function HybridMeshExample()
     # Simple hybrid mesh for testing
@@ -37,7 +55,7 @@ end
 
 # if EToV is an array of arrays, treat it as a "ragged" index array for a hybrid mesh.
 function connect_mesh(EToV::AbstractVector{<:AbstractArray}, 
-                      face_vertex_indices::LittleDict{AbstractElemShape})
+                      face_vertex_indices::LittleDict{<:AbstractElemShape})
 
     elem_types = (keys(face_vertex_indices)...,)
 
@@ -103,7 +121,6 @@ function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs
     rds = LittleDict((elem => RefElemData(elem, args...; kwargs...) for elem in element_types)...)
 
     # check if number of face nodes is the same 
-    # TODO: this only works in 2D
     num_face_nodes = length.(getproperty.(values(rds), :rf)) .÷ num_faces.(keys(rds))
     allequal(x) = all(y->y==x[1],x)
     if !allequal(num_face_nodes)
@@ -116,7 +133,7 @@ typename(x) = typeof(x).name.name
 
 # constructs MeshData for a hybrid mesh given a LittleDict of `RefElemData` 
 # with element type keys (e.g., `Tri()` or `Quad`). 
-function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:RefElemData};
+function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{<:AbstractElemShape, <:RefElemData};
                   is_periodic = (false, false))
 
     # sort EToV so that elements of the same type are contiguous
@@ -156,29 +173,29 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{AbstractElemShape, <:Re
     geo = compute_geometric_data.(values(xyz_hybrid), values(rds))
 
     n_dims = 2
-    xyz = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(values(xyz_hybrid), i)))), n_dims)
-    xyzf = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzf), i)))), n_dims)
-    xyzq = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzq), i)))), n_dims)
+    xyz = ntuple(i -> NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getindex.(values(xyz_hybrid), i)))), n_dims)
+    xyzf = ntuple(i -> NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzf), i)))), n_dims)
+    xyzq = ntuple(i -> NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :xyzq), i)))), n_dims)
 
     # 4 entries in the geometric term matrix for 2D hybrid meshes
-    rstxyzJ = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :rstxyzJ), i)))), n_dims * n_dims)
+    rstxyzJ = ntuple(i -> NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :rstxyzJ), i)))), n_dims * n_dims)
     rstxyzJ = SMatrix{2, 2}(rstxyzJ...)
 
-    nxyzJ = ntuple(i -> ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :nxyzJ), i)))), n_dims)
-    wJq = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :wJq))))
-    J = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :J))))
-    Jf = ComponentArray(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :Jf))))
+    nxyzJ = ntuple(i -> NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getindex.(getproperty.(geo, :nxyzJ), i)))), n_dims)
+    wJq = NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :wJq))))
+    J = NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :J))))
+    Jf = NamedArrayPartition(NamedTuple(Pair.(typename.(keys(rds)), getproperty.(geo, :Jf))))
 
     mapM, mapP, mapB = vec.(build_node_maps(FToF, xyzf))
 
-    return MeshData(HybridMesh(Tuple(element_types)), (VX, VY), EToV, FToF, 
+    return MeshData(HybridMesh(Tuple(element_types), (VX, VY), EToV), FToF, 
                     xyz, xyzf, xyzq, wJq,
                     mapM, mapP, mapB,
                     rstxyzJ, J, nxyzJ, Jf, 
                     is_periodic)
 end
 
-function MeshData(rds::LittleDict{AbstractElemShape, <:RefElemData{Dim}}, 
+function MeshData(rds::LittleDict{<:AbstractElemShape, <:RefElemData{Dim}}, 
                   md::MeshData{Dim}, xyz_curved...) where {Dim}
 
     # TODO: can this be made type stable?
@@ -197,15 +214,15 @@ function MeshData(rds::LittleDict{AbstractElemShape, <:RefElemData{Dim}},
 
     element_type_names = Symbol.(typename.(keys(rds)))
 
-    xyz   = Tuple(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyz)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
-    xyzf  = Tuple(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyzf)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
-    xyzq  = Tuple(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyzq)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
-    nxyzJ = Tuple(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :nxyzJ)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
-    rstxyzJ = SMatrix{Dim, Dim}(ComponentArray(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :rstxyzJ)[dim] for element_type in keys(rds))))) for dim in 1:Dim * Dim)
+    xyz   = Tuple(NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyz)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
+    xyzf  = Tuple(NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyzf)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
+    xyzq  = Tuple(NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :xyzq)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
+    nxyzJ = Tuple(NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :nxyzJ)[dim] for element_type in keys(rds))))) for dim in 1:Dim)
+    rstxyzJ = SMatrix{Dim, Dim}(NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(tuple_fields[element_type], :rstxyzJ)[dim] for element_type in keys(rds))))) for dim in 1:Dim * Dim)
 
-    J = ComponentArray(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :J) for element_type in keys(rds)))))
-    wJq = ComponentArray(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :wJq) for element_type in keys(rds)))))
-    Jf = ComponentArray(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :Jf) for element_type in keys(rds)))))
+    J = NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :J) for element_type in keys(rds)))))
+    wJq = NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :wJq) for element_type in keys(rds)))))
+    Jf = NamedArrayPartition(NamedTuple(zip(element_type_names, (getproperty(scalar_fields[element_type], :Jf) for element_type in keys(rds)))))
 
     return setproperties(md, (; xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyzJ, Jf))
 end
