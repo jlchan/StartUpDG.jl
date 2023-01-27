@@ -6,10 +6,12 @@ Compute the coordinates of n equally distributed points between the points
 given by `from` and `to`. `dim` is the dimension of `from` and `to`. 
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
 """
-function n_verts_between(n, from, to, dim)
+function n_verts_between(n, from, to)
     if n <= 0
         return
     end
+    dim = length(from)
+    @assert length(from) == length(to)
     edge_verts = [LinRange(from[i], to[i], n+2)[2: 1+n] for i in 1:dim]
     return edge_verts
 end
@@ -43,7 +45,7 @@ function triangle_vtk_order(corner_verts, order, dim, skip = false)
     edges = [(1,2), (2,3), (3,1)]
     for (frm, to) in edges
         if skip == false
-            tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to], dim)
+            tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
             tmp_vec = Vector{Float64}(undef, dim)
             for i in 1:num_verts_on_edge
                 for j in 1:dim
