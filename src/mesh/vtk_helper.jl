@@ -42,6 +42,7 @@ function triangle_vtk_order(corner_verts, order, dim, skip = false)
     end
     #edge vertices
     num_verts_on_edge = order -1 
+    # edges in vtk-order
     edges = [(1,2), (2,3), (3,1)]
     for (frm, to) in edges
         if skip == false
