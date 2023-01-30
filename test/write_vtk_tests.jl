@@ -21,3 +21,16 @@ end
 @testset "Type to vtk" begin
     @test type_to_vtk(Tri()) == VTKCellTypes.VTK_LAGRANGE_TRIANGLE
 end
+
+@testset "VTK-Node" for order=[-1, 0, 1]
+    @testset "VTK order" begin
+        tri_sud_vertices = [-1.0 1.0 -1.0; -1.0 -1.0 1.0]
+        if order == -1
+            @test triangle_vtk_order(tri_sud_vertices, order, 2) == nothing
+        elseif order == 0
+            @test triangle_vtk_order(tri_sud_vertices, order, 2) == [-1.0; -1.0]
+        else
+            @test triangle_vtk_order(tri_sud_vertices, order, 2) == tri_sud_vertices
+        end
+    end
+end

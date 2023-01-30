@@ -29,7 +29,7 @@ Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_orde
 """
 function triangle_vtk_order(corner_verts, order, dim, skip = false)
     if order < 0
-        return
+        return nothing
     end
     if order == 0
         # For recursion
