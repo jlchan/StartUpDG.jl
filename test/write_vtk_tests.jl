@@ -1,5 +1,3 @@
-using WriteVTK
-
 function quad(x, y)
     return (x + y)^2
 end

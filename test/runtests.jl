@@ -4,6 +4,8 @@ using LinearAlgebra
 using RecipesBase
 using Triangulate 
 using StartUpDG
+using WriteVTK
+
 
 include("write_vtk_tests.jl")
 include("named_array_partition_tests.jl")
