@@ -1,3 +1,5 @@
+using WriteVTK
+
 function quad(x, y)
     return (x + y)^2
 end
@@ -14,4 +16,8 @@ end
         vtu_name = Meshdata_to_vtk(md, rd, pdata, ["(x+y)^2"], filename, true)
         @test vtu_name[1] == check
     end
+end
+
+@testset "Type to vtk" begin
+    @test type_to_vtk(Tri()) == VTKCellTypes.VTK_LAGRANGE_TRIANGLE
 end
