@@ -80,27 +80,27 @@ dataname is an array of strings with name of the associated data
 write_data, flag if data should be written or not
 equi_dist_nodes flag if points should be interpolated to equidstant nodes
 """
-function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, data, dataname, filename, write_data = false, equi_dist_nodes = true)
+function Meshdata_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, filename, write_data = false, equi_dist_nodes = true) where {DIM}
     # Compute the permutation between the StartUpDG order of points and vtk
-    perm = SUD_to_vtk_order(rd, dim)
+    perm = SUD_to_vtk_order(rd)
     # The number of points per element
-    num_lagrange_points = size(perm)[1]
+    num_lagrange_points = length(perm)
     # Number of elements
-    num_elements = size(md.EToV)[1]
+    num_elements = md.num_elements
     vtk_cell_type = type_to_vtk(rd.element_type)
 
     # Construction of the vtkfile
-    cells = [MeshCell(vtk_cell_type, perm.+((i-1)*num_lagrange_points)) for i in 1:num_elements]
+    cells = [MeshCell(vtk_cell_type, perm .+ ((i-1) * num_lagrange_points)) for i in 1:num_elements]
     # Todo: Interpolate to equidstant points 
-    interpolate = diagm(ones(Float64, 10))
+    interpolate = I(num_lagrange_points)
     if equi_dist_nodes
         interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
     end
-    coords = [vec(interpolate * md.xyz[i]) for i in 1:dim]
-    vtkfile = []
-    if dim == 1
+    coords = map(x -> vec(interpolate * x), md.xyz)
+    vtkfile = WriteVTK.VTKFile[]
+    if DIM == 1
         vtkfile = vtk_grid(filename, coords[1], cells)
-    elseif dim == 2
+    elseif DIM == 2
         vtkfile = vtk_grid(filename, coords[1], coords[2], cells)
     else
         vtkfile = vtk_grid(filename, coords[1], coords[2], coords[3], cells)
@@ -110,6 +110,6 @@ function Meshdata_to_vtk(md::MeshData, rd::RefElemData, dim, data, dataname, fil
             vtkfile[dataname[i]] = data[i]
         end
     end
-    vtk_save(vtkfile)
+    return vtk_save(vtkfile)
 end
 

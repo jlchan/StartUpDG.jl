@@ -142,9 +142,6 @@ function build_node_maps(rd::RefElemData{3, <:Union{Wedge, Pyr}}, FToF, Xf; tol 
 
         num_face_nodes = length(face_indices)
 
-        # TODO: can preallocate `face_coordinates`, etc.
-        # face_coordinates = map(x->getindex(x, face_indices), Xf)
-        # nbr_face_coordinates = map(x->getindex(x, nbr_face_indices), Xf)
         face_coordinates     = face_coordinates_cache[num_face_nodes]
         nbr_face_coordinates = nbr_face_coordinates_cache[num_face_nodes]
         for dim in 1:3 # NDIMS = 3
@@ -390,14 +387,15 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     return mapPB[:]
 end
 
-function compute_boundary_face_centroids(md::MeshData{NDIMS, <:Union{Wedge, Pyr}}) where {NDIMS}
-    element_type = md.mesh_type
+function compute_boundary_face_centroids(md::MeshData{3, <:VertexMappedMesh{<:Union{<:Wedge, <:Pyr}}})
+    (; element_type) = md.mesh_type
     (; node_ids_by_face) = element_type
 
     face_nodes_per_element = maximum(maximum.(node_ids_by_face))
     boundary_faces = findall(eachindex(md.FToF) .== vec(md.FToF))
 
     # compute face centroids
+    NDIMS = 3
     face_centroids = ntuple(_ -> similar(md.xf, (length(boundary_faces), )), NDIMS)
     sk = 1    
     for e in 1:md.num_elements
@@ -417,7 +415,8 @@ function compute_boundary_face_centroids(md::MeshData{NDIMS, <:Union{Wedge, Pyr}
 end
 
 # specialize on 3D elements with different types of faces
-function make_periodic(md::MeshData{3, <:Union{Wedge, Pyr}}, is_periodic::NTuple{3}; tol=1e-12, kwargs...)
+function make_periodic(md::MeshData{3, <:VertexMappedMesh{<:Union{<:Wedge, <:Pyr}}}, 
+                       is_periodic::NTuple{3}; tol=1e-12, kwargs...)
 
     NDIMS = 3
     (; mapM) = md

@@ -75,24 +75,24 @@ function RefElemData(elementType::Tri, approxType::SBP, N; tol = 100*eps())
     (Qrh, Qsh), _ = hybridized_SBP_operators(rd)
     Nq = length(rd.wq)
     Vh_sbp = [I(Nq); Ef]
-    Qr = Vh_sbp'*Qrh*Vh_sbp
-    Qs = Vh_sbp'*Qsh*Vh_sbp
-    Dr,Ds = (x->diagm(1 ./ rd.wq) * x).((Qr,Qs))
+    Qr = Vh_sbp' * Qrh * Vh_sbp
+    Qs = Vh_sbp' * Qsh * Vh_sbp
+    Dr,Ds = (x -> diagm(1 ./ rd.wq) * x).((Qr, Qs))
     
     rd = @set rd.rst = quad_rule_vol[1:2]   # set nodes = SBP nodes
     rd = @set rd.rstq = quad_rule_vol[1:2]  # set quad nodes = SBP nodes
-    rd = @set rd.Drst = (Dr,Ds)
+    rd = @set rd.Drst = (Dr, Ds)
     rd = @set rd.Fmask = vec(Fmask)
 
-    # TODO: make these more efficient with custom operator?
-    rd = @set rd.Vf = droptol!(sparse(Ef),tol)
-    rd = @set rd.LIFT = Diagonal(rd.wq)\(rd.Vf'*Diagonal(rd.wf)) 
+    # TODO: make these more efficient with custom operators?
+    rd = @set rd.Vf = droptol!(sparse(Ef), tol)
+    rd = @set rd.LIFT = Diagonal(rd.wq) \ (rd.Vf' * Diagonal(rd.wf)) 
 
     # make V1 the interpolation matrix from triangle vertices to SBP nodal points
-    rd = @set rd.V1 = vandermonde(elementType,N,rd.rst...)/rd.VDM * rd.V1
+    rd = @set rd.V1 = vandermonde(elementType, N, rd.rst...) / rd.VDM * rd.V1
 
     # Vp operator = projects SBP nodal vector onto degree N polynomial, then interpolates to plotting points
-    rd = @set rd.Vp = vandermonde(elementType,N,rd.rstp...)/rd.VDM * rd.Pq
+    rd = @set rd.Vp = vandermonde(elementType, N, rd.rstp...) / rd.VDM * rd.Pq
 
     return _convert_RefElemData_fields_to_SBP(rd, approxType)
 end
