@@ -70,7 +70,7 @@ export readGmsh2D_v4, MeshImportOptions
 # Plots.jl recipes for meshes
 include("mesh/vtk_helper.jl")
 include("mesh/mesh_visualization.jl")
-export VertexMeshPlotter, MeshPlotter, Meshdata_to_vtk, type_to_vtk, triangle_vtk_order
+export VertexMeshPlotter, MeshPlotter, MeshData_to_vtk
 
 # Triangulate interfaces and pre-built meshes
 include("mesh/triangulate_utils.jl")
