@@ -75,7 +75,7 @@ Translate the given mesh into a vtk-file.
 md holds the meshdata
 rd holds the reference element data. 
 dim is the dimension of the mesh
-data holds an array of arryas with data
+`data` holds an array of arrays (of size `num_nodes` by `num_elements`) with plotting data
 dataname is an array of strings with name of the associated data
 write_data, flag if data should be written or not
 equi_dist_nodes flag if points should be interpolated to equidstant nodes
