@@ -74,7 +74,6 @@ end
 Translate the given mesh into a vtk-file.
 `md` holds a `MeshData` object
 `rd` holds a reference element data/`RefElemData` object. 
-dim is the dimension of the mesh
 `data` holds an array of arrays (of size `num_nodes` by `num_elements`) with plotting data
 `dataname` is an array of strings with name of the associated data
 `write_data`, flag if data should be written or not (e.g., if data is not written, only the mesh will be saved as output)
