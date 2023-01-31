@@ -72,15 +72,15 @@ end
     Meshdata_to_vtk(md, rd, dim, data, dataname, datatype, filename, write_data = false, equi_dist_nodes = true)
 
 Translate the given mesh into a vtk-file.
-md holds the meshdata
-rd holds the reference element data. 
+`md` holds a `MeshData` object
+`rd` holds a reference element data/`RefElemData` object. 
 dim is the dimension of the mesh
 `data` holds an array of arrays (of size `num_nodes` by `num_elements`) with plotting data
-dataname is an array of strings with name of the associated data
-write_data, flag if data should be written or not
-equi_dist_nodes flag if points should be interpolated to equidstant nodes
+`dataname` is an array of strings with name of the associated data
+`write_data`, flag if data should be written or not (e.g., if data is not written, only the mesh will be saved as output)
+`equi_dist_nodes` flag if points should be interpolated to equidstant nodes
 """
-function Meshdata_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, filename, write_data = false, equi_dist_nodes = true) where {DIM}
+function MeshData_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, filename, write_data = false, equi_dist_nodes = true) where {DIM}
     # Compute the permutation between the StartUpDG order of points and vtk
     perm = SUD_to_vtk_order(rd)
     # The number of points per element
