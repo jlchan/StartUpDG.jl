@@ -43,8 +43,8 @@ function triangle_vtk_order(corner_verts, order, dim, skip = false)
     #edge vertices
     num_verts_on_edge = order -1 
     # edges in vtk-order
-    edges = [(1,2), (2,3), (3,1)]
-    for (frm, to) in edges
+    vtk_edges = [(1,2), (2,3), (3,1)]
+    for (frm, to) in vtk_edges
         if skip == false
             tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
             tmp_vec = Vector{Float64}(undef, dim)
@@ -115,11 +115,11 @@ end
 """
     vtk_order(elem::Tri, order)
 
-Construct all node-points of a VTK_LAGRANGE_TRIANGLE of order order. The corner-nodes are
+Construct all node-points of a `VTK_LAGRANGE_TRIANGLE` of order `order`. The corner-nodes are
 given by the reference-triangle used by StartUpDG
 """
 function vtk_order(elem::Tri, order)
-    tri_sud_vertices = [-1.0 1.0 -1.0; -1.0 -1.0 1.0]
+    tri_sud_vertices = permutedims(hcat(nodes(Tri(), 1)...))
     return triangle_vtk_order(tri_sud_vertices, order, 2)
 end
 
