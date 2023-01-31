@@ -276,9 +276,11 @@ function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
     sorted_eigvals = sort(eigvals(L))
     @assert sorted_eigvals[2] > 100 * eps() # check that there's only one zero null vector
 
-    # compute potential 
+    # TODO: sparsify the E matrix
     E = Vf * Pq    
     Brst = (nJ -> diagm(wf .* nJ)).(nrstJ)
+
+    # compute potential 
     e = ones(size(L, 2))
     right_hand_sides = map(B -> 0.5 * sum(E' * B, dims=2), Brst)
     psi_augmented = map(b -> [L e; e' 0] \ [b; 0], right_hand_sides)
