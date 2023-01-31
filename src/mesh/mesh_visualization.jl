@@ -106,7 +106,7 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, fil
     end
     if write_data
         for i in 1:size(dataname)[1]
-            vtkfile[dataname[i]] = data[:,i]
+            vtkfile[dataname[i]] = data[i]
         end
     end
     return vtk_save(vtkfile)

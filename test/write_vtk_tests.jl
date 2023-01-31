@@ -11,7 +11,7 @@ end
         filename = "tri_md_" * string(N)
         check = filename * ".vtu"
         #Todo: Can we implement a better check?
-        vtu_name = Meshdata_to_vtk(md, rd, pdata, ["(x+y)^2"], filename, true)
+        vtu_name = MeshData_to_vtk(md, rd, pdata, ["(x+y)^2"], filename, true)
         @test vtu_name[1] == check
     end
 end
@@ -22,6 +22,7 @@ end
 
 @testset "VTK-Node" for order=[-1, 0, 1]
     @testset "VTK order" begin
+        #If the order of the tri-vertices changes in StartUpDG update this line.
         tri_sud_vertices = [-1.0 1.0 -1.0; -1.0 -1.0 1.0]
         if order == -1
             @test triangle_vtk_order(tri_sud_vertices, order, 2) == nothing
