@@ -220,3 +220,82 @@ function hybridized_SBP_operators(rd)
     VhP = Vh * Pq
     return Qrsth, VhP, Ph, Vh
 end
+
+# default to doing nothing
+map_nodes_to_symmetric_element(element_type, rst...) = rst
+
+# for triangles and tets, map to an equilateral triangle/tet
+function map_nodes_to_symmetric_element(::Tri, r, s)
+    # biunit right triangular vertices
+    v1, v2, v3 = SVector{2}.(zip(nodes(Tri(), 1)...))
+
+    denom = (v2[2] - v3[2]) * (v1[1] - v3[1]) + (v3[1] - v2[1]) * (v1[2] - v3[2])
+    L1 = @. ((v2[2] - v3[2]) * (r - v3[1]) + (v3[1] - v2[1]) * (s - v3[2])) / denom
+    L2 = @. ((v3[2] - v1[2]) * (r - v3[1]) + (v1[1] - v3[1]) * (s - v3[2])) / denom
+    L3 = @. 1 - L1 - L2
+
+    # equilateral vertices
+    v1 = SVector{2}(2 * [-.5, -sqrt(3) / 6])
+    v2 = SVector{2}(2 * [.5, -sqrt(3)/6])
+    v3 = SVector{2}(2 * [0, sqrt(3)/3])
+
+    x = @. v1[1] * L1 + v2[1] * L2 + v3[1] * L3
+    y = @. v1[2] * L1 + v2[2] * L2 + v3[2] * L3
+
+    return x, y
+end
+
+
+
+
+"""
+    function sparse_low_order_SBP_operators(rd)
+
+Constructs sparse low order SBP operators given a `RefElemData`. 
+Returns operators `Qrst..., E ≈ Vf*Pq` that satisfy the GSBP property
+        `Q_i + Q_i^T = E' * B_i * E`
+"""
+function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
+    (; Pq, Vf, rstq, wf, nrstJ) = rd
+
+    # if element is a simplex, convert nodes to an equilateral triangle for symmetry
+    rstq = map_nodes_to_symmetric_element(rd.element_type, rstq...)
+
+    # build distance and adjacency matrices
+    D = [norm(SVector{NDIMS}(getindex.(rstq, i)) - SVector{NDIMS}(getindex.(rstq, j))) 
+            for i in eachindex(first(rstq)), j in eachindex(first(rstq))]
+    A = zeros(Int, length(first(rstq)), length(first(rstq)))
+    for i in axes(D, 1)
+        dist = sort(view(D, i, :))[NDIMS + 2] # heuristic cutoff - smallest distance = 0, and we take NDIMS more
+        for j in findall(view(D, i, :) .< 1.01 * dist)
+            A[i, j] = 1
+        end
+    end
+    A = (A + A' .> 0) # symmetrize
+    L = Diagonal(vec(sum(A, dims=2))) - A
+    sorted_eigvals = sort(eigvals(L))
+    @assert sorted_eigvals[2] > 100 * eps() # check that there's only one zero null vector
+
+    # compute potential 
+    E = Vf * Pq    
+    Brst = (nJ -> diagm(wf .* nJ)).(nrstJ)
+    e = ones(size(L, 2))
+    right_hand_sides = map(B -> 0.5 * sum(E' * B, dims=2), Brst)
+    psi_augmented = map(b -> [L e; e' 0] \ [b; 0], right_hand_sides)
+    psi = map(x -> x[1:end-1], psi_augmented)
+
+    # construct sparse skew part
+    function construct_skew_matrix(ψ)
+        S = zeros(length(ψ), length(ψ))
+        for i in axes(S, 1), j in axes(S, 2)
+            if A[i,j] > 0
+                S[i,j] = ψ[j] - ψ[i]
+            end
+        end
+        return S
+    end
+    Srst = construct_skew_matrix.(psi)
+    Qrst = map((S,B) -> S + 0.5 * E' * B * E, Srst, Brst)
+    return Qrst, E
+end
+
