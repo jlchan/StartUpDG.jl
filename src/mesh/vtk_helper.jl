@@ -72,7 +72,7 @@ end
 """
     vtk_order(elem::Tri, order)
 
-Construct all node-points of a VTK_LAGRANGE_TRIANGLE of order order. The corner-nodes are
+Construct all node-points of a `VTK_LAGRANGE_TRIANGLE` of order `order`. The corner-nodes are
 given by the reference-triangle used by StartUpDG
 """
 function vtk_order(elem::Tri, order)
