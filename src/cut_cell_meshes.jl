@@ -13,7 +13,7 @@ first element.
 We assume all cut elements have the same number of volume quadrature points (which is at 
 least the dimension of a degree 2N polynomial space). 
 
-The field `curves` contains a tuple of the curves used to define the cut region.
+The field `objects` contains a tuple of the objects used to define the cut region.
 
 The field `cut_cell_operators` contains optionally precomputed operators (mass, differntiation, 
 face interpolation, and lifting operators). 
@@ -23,13 +23,13 @@ The field `cut_cell_data` contains additional data from PathIntersections.
 struct CutCellMesh{T1, T2, T3, T4, T5}
     physical_frame_elements::T1
     cut_face_nodes::T2
-    curves::T3
+    objects::T3
     cut_cell_operators::T4
     cut_cell_data::T5
 end
 
 # TODO: add isoparametric cut cell mesh with positive quadrature points
-# # This mesh type has a polynomial representation of curves, so we don't store the curve info
+# # This mesh type has a polynomial representation of objects, so we don't store the curve info
 # struct IsoparametricCutCellMesh{T1, T2, T3, T4}
 #     physical_frame_elements::T1
 #     cut_face_nodes::T2
@@ -145,20 +145,26 @@ end
 # generates at least Np_target sampling points within a cut cell defined by `curve`
 # returns both x_sampled, y_sampled (physical points inside the cut cell), as well as 
 # r_sampled, y_sampled (reference points which correspond to x_sampled, y_sampled).
-function generate_sampling_points(curves, elem, rd, Np_target; N_sampled = 4 * rd.N)
+function generate_sampling_points(objects, elem, rd, Np_target; N_sampled = 4 * rd.N)
 
     r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
 
     # map sampled points to the background Cartesian cell
     x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
     is_in_element = fill(true, length(x_sampled))
-    for curve in curves
+    for curve in objects
         is_in_element .= is_in_element .&& .!(map(x->is_contained(curve, x), zip(x_sampled, y_sampled)))
     end
 
     # increase number of background points until we are left with `Np_target` sampling points 
     while sum(is_in_element) < Np_target
-        is_in_element = is_contained.(curves, zip(x_sampled, y_sampled)) .== false
+
+        # check if all the points are in all the objects
+        is_in_element = is_contained.(objects[1], zip(x_sampled, y_sampled)) .== false
+        for _ in 2:length(objects)
+            is_in_element = is_in_element .&& (is_contained.(objects[2], zip(x_sampled, y_sampled)) .== false)
+        end
+
         if sum(is_in_element) < Np_target
             N_sampled *= 2 # double degree of sampling
             r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
@@ -212,7 +218,7 @@ end
 
 # Computes face geometric terms from a RefElemData, `quad_rule_face = (r1D, w1D)`, 
 # the vectors of the 1D vertex nodes `vx` and `vy`, and named tuple 
-# `cutcell_data is a NamedTuple containing `curves`, `region_flags`, `stop_pts``, `cutcells`. 
+# `cutcell_data is a NamedTuple containing `objects`, `region_flags`, `stop_pts``, `cutcells`. 
 function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face, 
                                 vx, vy, cutcell_data; tol=100 * eps())
 
@@ -222,7 +228,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     
     r1D, w1D = quad_rule_face
 
-    @unpack curves, region_flags, cutcells, cut_faces_per_cell = cutcell_data
+    @unpack objects, region_flags, cutcells, cut_faces_per_cell = cutcell_data
 
     # count number of cells and cut face nodes
     num_cartesian_cells = sum(region_flags .== 0)
@@ -317,7 +323,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
         physical_frame_element = physical_frame_elements[e]
         
         x_sampled, y_sampled = 
-            generate_sampling_points(curves, physical_frame_element, rd, 2 * Np_cut(rd.N))
+            generate_sampling_points(objects, physical_frame_element, rd, 2 * Np_cut(rd.N))
         V = vandermonde(physical_frame_element, rd.N, x_sampled, y_sampled) 
 
         # use pivoted QR to find good interpolation points
@@ -329,7 +335,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
         condV = cond(V[ids,:])
         if condV > 1e8
             x_sampled, y_sampled = 
-                generate_sampling_points(curves, physical_frame_element, rd, 2 * Np_cut(rd.N); 
+                generate_sampling_points(objects, physical_frame_element, rd, 2 * Np_cut(rd.N); 
                                          N_sampled = 20 * rd.N)
             V = vandermonde(physical_frame_element, rd.N, x_sampled, y_sampled) 
 
@@ -474,14 +480,14 @@ function get_1d_quadrature(rd::RefElemData{2, Quad})
     return rf[:, 3], wf[:, 3]
 end
 
-function calculate_cutcells(vx, vy, curves, ds = 1e-3, arc_tol = 1e-10, corner_tol = 1e-10)
+function calculate_cutcells(vx, vy, objects, ds = 1e-3, arc_tol = 1e-10, corner_tol = 1e-10)
 
-    stop_pts = find_mesh_intersections((vx, vy), curves, ds, arc_tol, corner_tol,
+    stop_pts = find_mesh_intersections((vx, vy), objects, ds, arc_tol, corner_tol,
                                        closed_list=true, closure_tol=1e-12)
 
     # Calculate cutcells
     region_flags, cutcell_indices, cutcells = 
-        define_regions((vx, vy), curves, stop_pts, binary_regions=false)
+        define_regions((vx, vy), objects, stop_pts, binary_regions=false)
 
     cells_per_dimension_x = length(vx) - 1
     cells_per_dimension_y = length(vy) - 1
@@ -513,10 +519,10 @@ Here, `coordinates_min`, `coordinates_max` contain `(smallest value of x, smalle
 `(largest value of x, largest value of y)`, and `cells_per_dimension_x/y` is the number of Cartesian grid 
 cells placed along each dimension. 
 """
-MeshData(rd::RefElemData, curves, cells_per_dimension;  kwargs...) = 
-    MeshData(rd::RefElemData, curves, cells_per_dimension, cells_per_dimension;  kwargs...)
+MeshData(rd::RefElemData, objects, cells_per_dimension;  kwargs...) = 
+    MeshData(rd::RefElemData, objects, cells_per_dimension, cells_per_dimension;  kwargs...)
 
-function MeshData(rd::RefElemData, curves, 
+function MeshData(rd::RefElemData, objects, 
                   cells_per_dimension_x::Int, cells_per_dimension_y::Int; 
                   quad_rule_face = get_1d_quadrature(rd), 
                   coordinates_min=(-1.0, -1.0), coordinates_max=(1.0, 1.0),
@@ -526,10 +532,10 @@ function MeshData(rd::RefElemData, curves,
     vx = LinRange(coordinates_min[1], coordinates_max[1], cells_per_dimension_x + 1)
     vy = LinRange(coordinates_min[2], coordinates_max[2], cells_per_dimension_y + 1)    
 
-    return MeshData(rd, curves, vx, vy; quad_rule_face, precompute_operators)
+    return MeshData(rd, objects, vx, vy; quad_rule_face, precompute_operators)
 end
 
-function MeshData(rd::RefElemData, curves, 
+function MeshData(rd::RefElemData, objects, 
                   vx::AbstractVector, vy::AbstractVector; 
                   quad_rule_face=get_1d_quadrature(rd), 
                   precompute_operators=false)
@@ -542,15 +548,15 @@ function MeshData(rd::RefElemData, curves,
     #   *  1: cut cell
     #   *  0: Cartesian cell
     #   * -1: excluded cells (in the cut-out region)
-    region_flags, cutcells = calculate_cutcells(vx, vy, curves)
+    region_flags, cutcells = calculate_cutcells(vx, vy, objects)
 
     # pack useful cut cell information together. 
     num_cartesian_cells = sum(region_flags .== 0)
     num_cut_cells = sum(region_flags .> 0)
     cut_faces_per_cell = count_cut_faces(cutcells)
     cut_face_offsets = [0; cumsum(cut_faces_per_cell)[1:end-1]] 
-    cutcell_data = (; curves, region_flags, cutcells, cut_faces_per_cell, cut_face_offsets)
-
+    cutcell_data = (; objects, region_flags, cutcells, cut_faces_per_cell, cut_face_offsets)
+    
     # Compute volume, face points, and physical frame element scalings
     physical_frame_elements, x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf = 
         compute_geometric_data(rd, quad_rule_face, vx, vy, cutcell_data)
@@ -587,7 +593,7 @@ function MeshData(rd::RefElemData, curves,
     num_cut_quad_points = Np_cut(2 * rd.N) + 1
     xq, yq, wJq = ntuple(_ -> NamedArrayPartition(cartesian=zeros(rd.Nq, num_cartesian_cells), 
                                                   cut=zeros(num_cut_quad_points, num_cut_cells)), 3)    
-   
+
     # compute quadrature rules for the Cartesian cells
     e = 1
     for ex in 1:cells_per_dimension_x, ey in 1:cells_per_dimension_y
@@ -627,7 +633,7 @@ function MeshData(rd::RefElemData, curves,
                    (Vf * Iy)' * (wJf_element .* ny_element) ./ scaling[2]) 
         
         # compute degree 2N basis matrix at sampled points            
-        x_sampled, y_sampled = generate_sampling_points(curves, physical_frame_elements[e], 
+        x_sampled, y_sampled = generate_sampling_points(objects, physical_frame_elements[e], 
                                                         rd, Np_cut(6 * rd.N); N_sampled = 8 * rd.N)          
         Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)
         
@@ -714,7 +720,7 @@ function MeshData(rd::RefElemData, curves,
         cut_cell_operators = nothing
     end
                         
-    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, curves, cut_cell_operators, cut_cell_data), 
+    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, objects, cut_cell_operators, cut_cell_data), 
                     FToF, (x, y), (xf, yf), (xq, yq), wJq, 
                     mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
 
