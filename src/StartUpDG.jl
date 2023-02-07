@@ -39,7 +39,7 @@ export geometric_factors, estimate_h
 
 # spatial connectivity routines
 include("connectivity_functions.jl")
-export make_periodic, match_coordinate_vectors, match_coordinate_vectors!
+export make_periodic
 
 # for tagging faces on boundaries
 include("boundary_utils.jl")
