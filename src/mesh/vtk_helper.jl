@@ -81,6 +81,9 @@ Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_orde
 """
 function quad_vtk_order(corner_verts, order, dim, skip = false)
     coords = Matrix{Float64}(undef, 0, dim)
+    if order < 0
+        return nothing
+    end
     if skip == false
         coords = copy(corner_verts)
     end
@@ -131,7 +134,7 @@ given by the reference-triangle used by StartUpDG
 """
 function vtk_order(elem::Quad, order)
     quad_sud_vertices = [-1.0 1.0 1.0 -1.0; -1.0 -1.0 1.0 1.0]
-    return quad_vtk_order(quad_sud_vertices, order, 2)
+    return quad_vtk_order(quad_sud_vertices, order, 2) 
 end
 
 """
