@@ -1,4 +1,3 @@
-
 """
     n_verts_between(n, from, to, dim)
 
@@ -179,15 +178,15 @@ function wedge_vtk_order(corner_verts, order, dim)
         end
     end
     e_z = (corner_verts[:,4] - corner_verts[:,1]) ./ order
-    pos_z = copy(corner_verts[:,1])
+    interior_tri_verts = [corner_verts[:,1] corner_verts[:,2] corner_verts[:,3]]
+    face_coords = triangle_vtk_order(interior_tri_verts, order, 3, true)
+    face_coords = sort_by_axis(face_coords)
+    println("e_z: ", e_z)
     for i in range(1,num_verts_on_edge)
         tmp_vec = Vector{Float64}(undef, dim)
-        pos_z += e_z
-        interior_tri_verts = [corner_verts[:,1] corner_verts[:,2] corner_verts[:,3]] .+ pos_z
-        face_coords = triangle_vtk_order(interior_tri_verts, order, 3,true)
-        face_coords = sort_by_axis(face_coords)
-        println(face_coords)
-        println(size(face_coords))
+        face_coords = face_coords .+ e_z
+        #println(face_coords)
+        #println(size(face_coords))
         if length(face_coords) > 0
             for k in range(1,size(face_coords)[2])
                 for j in 1:dim
@@ -200,6 +199,8 @@ function wedge_vtk_order(corner_verts, order, dim)
     end
     return coords
 end
+
+
 
 """
     vtk_order(elem::Tri, order)
@@ -249,7 +250,7 @@ function SUD_to_vtk_order(rd::RefElemData{DIM}) where {DIM}
     equi_dist_vertices = map(x->interpolate * x, rd.rst)
 
     #permutation
-    return match_coordinate_vectors(vtk_formatted, equi_dist_vertices)
+    return match_coordinate_vectors(vtk_formatted, equi_dist_vertices, tol = 100 * eps())
 end
 
 """
