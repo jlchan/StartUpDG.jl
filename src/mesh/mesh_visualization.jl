@@ -82,7 +82,6 @@ Translate the given mesh into a vtk-file.
 function MeshData_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, filename, write_data = false, equi_dist_nodes = true) where {DIM}
     # Compute the permutation between the StartUpDG order of points and vtk
     perm = SUD_to_vtk_order(rd)
-    println(perm)
     # The number of points per element
     num_lagrange_points = length(perm)
     # Number of elements
@@ -106,7 +105,6 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, fil
         vtkfile = vtk_grid(filename, coords[1], coords[2], coords[3], cells)
     end
     if write_data
-        println("I write data")
         for i in 1:size(dataname)[1]
             vtkfile[dataname[i]] = data[i]
         end

@@ -166,11 +166,9 @@ function wedge_vtk_order(corner_verts, order, dim)
             quad_nodes = hcat(quad_nodes, corner_verts[:,j])
         end
         face_coords = quad_vtk_order(quad_nodes, order, 3, true)
-        println(size(face_coords))
         if length(face_coords) > 0
             for i in 1:size(face_coords)[2]
                 for j in 1:dim
-                    println(i, " ", j)
                     tmp_vec[j] = face_coords[j,i]
                 end
                 coords = hcat(coords, tmp_vec)
@@ -181,16 +179,12 @@ function wedge_vtk_order(corner_verts, order, dim)
     interior_tri_verts = [corner_verts[:,1] corner_verts[:,2] corner_verts[:,3]]
     face_coords = triangle_vtk_order(interior_tri_verts, order, 3, true)
     face_coords = sort_by_axis(face_coords)
-    println("e_z: ", e_z)
     for i in range(1,num_verts_on_edge)
         tmp_vec = Vector{Float64}(undef, dim)
         face_coords = face_coords .+ e_z
-        #println(face_coords)
-        #println(size(face_coords))
         if length(face_coords) > 0
             for k in range(1,size(face_coords)[2])
                 for j in 1:dim
-                    println(k, " ", j)
                     tmp_vec[j] = face_coords[j,k]
                 end
                 coords = hcat(coords, tmp_vec)
