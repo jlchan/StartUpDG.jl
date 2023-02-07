@@ -4,7 +4,11 @@ using LinearAlgebra
 using RecipesBase
 using Triangulate 
 using StartUpDG
+using WriteVTK
 
+
+include("../src/mesh/vtk_helper.jl")
+include("write_vtk_tests.jl")
 include("named_array_partition_tests.jl")
 include("triangulate_tests.jl")
 include("reference_elem_tests.jl")
