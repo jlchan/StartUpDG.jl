@@ -119,22 +119,24 @@ end
     vtk_order(elem::Tri, order)
 
 Construct all node-points of a `VTK_LAGRANGE_TRIANGLE` of order `order`. The corner-nodes are
-given by the reference-triangle used by StartUpDG
+given by the reference-triangle used by StartUpDG in the order defined by vtk
 """
 function vtk_order(elem::Tri, order)
-    tri_sud_vertices = permutedims(hcat(nodes(Tri(), 1)...))
-    return triangle_vtk_order(tri_sud_vertices, order, 2)
+    tri_vtk_vertices = permutedims(hcat(nodes(Tri(), 1)...))
+    return triangle_vtk_order(tri_vtk_vertices, order, 2)
 end
 
 """
     vtk_order(elem::Quad, order)
 
 Construct all node-points of a VTK_LAGRANGE_QUAD of order `order`. The corner-nodes are
-given by the reference quadrilateral used by StartUpDG
+given by the reference quadrilateral used by StartUpDG in the order defined by vtk
 """
 function vtk_order(elem::Quad, order)
-    quad_sud_vertices = [-1.0 1.0 1.0 -1.0; -1.0 -1.0 1.0 1.0]
-    return quad_vtk_order(quad_sud_vertices, order, 2) 
+    quad_sud_vertices = permutedims(hcat(nodes(Quad(), 1)...))
+    perm = [1,2,4,3]
+    quad_vtk_vertices = quad_sud_vertices[:, perm]
+    return quad_vtk_order(quad_vtk_vertices, order, 2) 
 end
 
 """
