@@ -4,7 +4,7 @@
 [![Build status](https://github.com/jlchan/StartUpDG.jl/workflows/CI/badge.svg)](https://github.com/jlchan/StartUpDG.jl/actions)
 [![Codecov](https://codecov.io/gh/jlchan/StartUpDG.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/jlchan/StartUpDG.jl)
 
-Routines to initialize reference element operators, physical mesh arrays, and connectivity for nodal discontinuous Galerkin (DG) methods. Codes roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007). The original port from Matlab to Julia was by [Yimin Lin](https://github.com/yiminllin), with subsequent modifications by Jesse Chan. SBP nodal points were contributed by [Ethan Kubatko](https://sites.google.com/site/chilatosu/ethan-bio) and [Jason Hicken](https://doi.org/10.1007/s10915-020-01154-8). [Hendrik Ranocha](https://ranocha.de) contributed to array types used in cut-cell and hybrid meshes. 
+Routines to initialize reference element operators, physical mesh arrays, and connectivity for nodal discontinuous Galerkin (DG) methods. Codes roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007). The original port from Matlab to Julia was by [Yimin Lin](https://github.com/yiminllin), with subsequent modifications by Jesse Chan. 
 
 This package is registered and can be installed via `] add StartUpDG`.
 
@@ -33,3 +33,10 @@ u = @. 2 + .5*exp(-100*(x^2 + y^2))
 @unpack rxJ, sxJ, J = md
 dudx = (rxJ .* (Dr*u) + sxJ .* (Ds*u)) ./ J
 ```
+
+# Contributors
+
+* SBP nodal points were contributed by [Ethan Kubatko](https://sites.google.com/site/chilatosu/ethan-bio) and [Jason Hicken](https://doi.org/10.1007/s10915-020-01154-8). 
+* [Hendrik Ranocha](https://ranocha.de) contributed to array types used in cut-cell and hybrid meshes. 
+* [Mason McCallum](https://github.com/masonamccallum) contributed Gmsh reading capabilities
+* [David Knapp](https://github.com/Davknapp) contributed VTK visualization capabilities
