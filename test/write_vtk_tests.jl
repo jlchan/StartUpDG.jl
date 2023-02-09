@@ -11,6 +11,7 @@ function deg_one_order(elem)
     end
 end
 
+# test expected output of `vtk_order`
 function deg_zero_order(elem)
     #If the order of the tri-vertices changes in StartUpDG update this line.
     if elem == Tri()
