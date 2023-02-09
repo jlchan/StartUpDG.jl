@@ -2,8 +2,8 @@ function quad(x, y)
     return (x + y)^2
 end
 
+# test expected output of `vtk_order`
 function deg_one_order(elem)
-    #If the order of the tri-vertices changes in StartUpDG update this line.
     if elem == Tri()
         return permutedims(hcat(nodes(Tri(), 1)...))
     elseif elem == Quad()
