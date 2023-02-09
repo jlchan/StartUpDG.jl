@@ -91,7 +91,7 @@ function quad_vtk_order(corner_verts, order, dim, skip = false)
     edges = [(1,2), (2,3), (4,3), (1,4)]
     for (frm, to) in edges
         if skip == false
-            tmp = n_verts_between(num_verts_on_edge, corner_verts[:,frm], corner_verts[:,to])
+            tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
             tmp_vec = Vector{Float64}(undef, dim)
             for i in 1:num_verts_on_edge
                 for j in 1:dim
@@ -101,9 +101,9 @@ function quad_vtk_order(corner_verts, order, dim, skip = false)
             end
         end
     end
-    e_x = (corner_verts[:,2] .- corner_verts[:,1])./order
-    e_y = (corner_verts[:,4] .- corner_verts[:,1])./order
-    pos_y = copy(corner_verts[:,1])
+    e_x = (corner_verts[:, 2] .- corner_verts[:, 1]) ./ order
+    e_y = (corner_verts[:, 4] .- corner_verts[:, 1]) ./ order
+    pos_y = copy(corner_verts[:, 1])
     for i in 1:num_verts_on_edge
         pos_y = pos_y .+ e_y
         pos_yx = pos_y
@@ -129,8 +129,8 @@ end
 """
     vtk_order(elem::Quad, order)
 
-Construct all node-points of a VTK_LAGRANGE_TRIANGLE of order order. The corner-nodes are
-given by the reference-triangle used by StartUpDG
+Construct all node-points of a VTK_LAGRANGE_QUAD of order `order`. The corner-nodes are
+given by the reference quadrilateral used by StartUpDG
 """
 function vtk_order(elem::Quad, order)
     quad_sud_vertices = [-1.0 1.0 1.0 -1.0; -1.0 -1.0 1.0 1.0]

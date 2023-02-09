@@ -25,7 +25,7 @@ end
         @testset "Write Mesh" begin
             rd = RefElemData(elem, N)
             md = MeshData(uniform_mesh(elem, 4)..., rd)
-            interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) /rd.VDM
+            interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
             pdata = [quad.(vec(interpolate*md.x), vec(interpolate*md.y))]
             filename = replace(string(elem), "()"=>"") * "_" * string(2)
             check = filename * ".vtu"
