@@ -161,6 +161,7 @@ function build_node_maps(rd::RefElemData{3, <:Union{Wedge, Pyr}}, FToF, Xf; tol 
     # mapM = vcat(mapM...)
     mapP = vcat(mapP...)
     mapB = findall(vec(vcat(mapM...)) .== vec(mapP))
+    mapM = reshape(collect(Iterators.flatten(mapM)), face_nodes_per_element, num_elements)
     return mapM, mapP, mapB
 end
 
@@ -423,6 +424,9 @@ function make_periodic(md::MeshData{3, <:VertexMappedMesh{<:Union{<:Wedge, <:Pyr
     FToF_periodic = copy(md.FToF)
     mapP_periodic = copy(md.mapP)
 
+    node_ids_by_face = md.mesh_type.element_type.node_ids_by_face
+    faces = num_faces(md.mesh_type.element_type)
+
     face_centroids, boundary_faces = compute_boundary_face_centroids(md)
 
     domain_extrema = extrema.(face_centroids)
@@ -447,11 +451,19 @@ function make_periodic(md::MeshData{3, <:VertexMappedMesh{<:Union{<:Wedge, <:Pyr
 
                     if norm(face_coords_1 - face_coords_2) ≈ domain_lengths[dim] && 
                         norm(tangent_coords_1 - tangent_coords_2) < tol * domain_lengths[dim]
+                        
+                        # get the local face number of the face
+                        local_face_f1 = (boundary_faces[f1] - 1) % faces + 1
+                        local_face_f2 = (boundary_faces[f2] - 1) % faces + 1                    
 
-                        # note that for Wedge/Pyr types, mapM is a num_faces x num_elements 
-                        # matrix of UnitRanges instead.
-                        face_nodes_1 = mapM[boundary_faces[f1]]
-                        face_nodes_2 = mapM[boundary_faces[f2]]
+                        # get the elem of the boundary face
+                        # note: `boundary_faces[f] / faces` should yield non-integer values
+                        elem_f1 = ceil(Int, boundary_faces[f1] / faces)
+                        elem_f2 = ceil(Int, boundary_faces[f2] / faces)
+
+                        # get all global node ids of the faces
+                        face_nodes_1 = mapM[node_ids_by_face[local_face_f1], elem_f1]
+                        face_nodes_2 = mapM[node_ids_by_face[local_face_f2], elem_f2]
 
                         # remove the coordinate in the normal direction, since it 
                         # won't coincide on periodic faces.
