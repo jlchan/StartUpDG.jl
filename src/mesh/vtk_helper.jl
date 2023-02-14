@@ -28,13 +28,13 @@ points of a `VTK_LAGRANGE_WEDGE`
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
 """
 function triangle_vtk_order(corner_verts, order, dim, skip = false)
-    if order < 0
-        return nothing
+    @assert order >= 0 "`order` must be non-negative."
+
+    if order == 0 # For recursion
+        # convert to Matrix for type stability
+        return reshape(corner_verts[:, 1], size(corner_verts, 1), 1) 
     end
-    if order == 0
-        # For recursion
-        return corner_verts[:,1]
-    end
+
     #Corner vertices
     coords = Matrix{Float64}(undef, 0, dim)
     if skip == false
@@ -43,7 +43,7 @@ function triangle_vtk_order(corner_verts, order, dim, skip = false)
     #edge vertices
     num_verts_on_edge = order -1 
     # edges in vtk-order
-    vtk_edges = [(1,2), (2,3), (3,1)]
+    vtk_edges = SVector((1,2), (2,3), (3,1))
     for (frm, to) in vtk_edges
         if skip == false
             tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
@@ -80,15 +80,15 @@ points of a VTK_LAGRANGE_WEDGE
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
 """
 function quad_vtk_order(corner_verts, order, dim, skip = false)
+    
+    @assert order >= 0 "`order` must be non-negative."
+    
     coords = Matrix{Float64}(undef, 0, dim)
-    if order < 0
-        return nothing
-    end
     if skip == false
         coords = copy(corner_verts)
     end
     num_verts_on_edge = order - 1
-    edges = [(1,2), (2,3), (4,3), (1,4)]
+    edges = SVector((1,2), (2,3), (4,3), (1,4))
     for (frm, to) in edges
         if skip == false
             tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
@@ -121,7 +121,7 @@ end
 Construct all node-points of a `VTK_LAGRANGE_TRIANGLE` of order `order`. The corner-nodes are
 given by the reference-triangle used by StartUpDG in the order defined by vtk
 """
-function vtk_order(elem::Tri, order)
+function vtk_order(::Tri, order)
     tri_vtk_vertices = permutedims(hcat(nodes(Tri(), 1)...))
     return triangle_vtk_order(tri_vtk_vertices, order, 2)
 end
@@ -132,9 +132,9 @@ end
 Construct all node-points of a VTK_LAGRANGE_QUAD of order `order`. The corner-nodes are
 given by the reference quadrilateral used by StartUpDG in the order defined by vtk
 """
-function vtk_order(elem::Quad, order)
+function vtk_order(::Quad, order)
     quad_sud_vertices = permutedims(hcat(nodes(Quad(), 1)...))
-    perm = [1,2,4,3]
+    perm = SVector(1, 2, 4, 3)
     quad_vtk_vertices = quad_sud_vertices[:, perm]
     return quad_vtk_order(quad_vtk_vertices, order, 2) 
 end
@@ -147,7 +147,7 @@ Compute the permutation of the nodes between StartUpDG and VTK
 function SUD_to_vtk_order(rd::RefElemData{DIM}) where {DIM}
     #nodes in vtk order
     vtk_nodes = vtk_order(rd.element_type, rd.N)
-    vtk_formatted = Tuple(vtk_nodes[i,:] for i in 1:DIM)
+    vtk_formatted = ntuple(i -> vtk_nodes[i, :], DIM)
         
     #nodes in StartUpDG order
     interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
