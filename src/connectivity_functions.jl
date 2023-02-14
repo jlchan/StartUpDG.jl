@@ -453,12 +453,12 @@ function make_periodic(md::MeshData{3, <:VertexMappedMesh{<:Union{<:Wedge, <:Pyr
                         norm(tangent_coords_1 - tangent_coords_2) < tol * domain_lengths[dim]
                         
                         # get the local face number of the face
-                        local_face_f1 = (boundary_faces[f1]-1) % faces+1
-                        local_face_f2 = (boundary_faces[f2]-1) % faces+1
+                        local_face_f1 = (boundary_faces[f1] - 1) % faces + 1
+                        local_face_f2 = (boundary_faces[f2] - 1) % faces + 1
 
                         # get the elem of the boundary face
-                        elem_f1 = ceil(Int, boundary_faces[f1] / faces)
-                        elem_f2 = ceil(Int, boundary_faces[f2] / faces)
+                        elem_f1 = boundary_faces[f1] ÷ faces
+                        elem_f2 = boundary_faces[f2] ÷ faces
 
                         # get all global node ids of the faces
                         face_nodes_1 = mapM[node_ids_by_face[local_face_f1], elem_f1]
