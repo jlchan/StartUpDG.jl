@@ -451,15 +451,16 @@ function make_periodic(md::MeshData{3, <:VertexMappedMesh{<:Union{<:Wedge, <:Pyr
 
                     if norm(face_coords_1 - face_coords_2) ≈ domain_lengths[dim] && 
                         norm(tangent_coords_1 - tangent_coords_2) < tol * domain_lengths[dim]
-
+                        
+                        # get the local face number of the face
                         local_face_f1 = (boundary_faces[f1]-1) % faces+1
                         local_face_f2 = (boundary_faces[f2]-1) % faces+1
 
+                        # get the elem of the boundary face
                         elem_f1 = ceil(Int, boundary_faces[f1] / faces)
                         elem_f2 = ceil(Int, boundary_faces[f2] / faces)
 
-                        # note that for Wedge/Pyr types, mapM is a num_faces x num_elements 
-                        # matrix of UnitRanges instead.
+                        # get all global node ids of the faces
                         face_nodes_1 = mapM[node_ids_by_face[local_face_f1], elem_f1]
                         face_nodes_2 = mapM[node_ids_by_face[local_face_f2], elem_f2]
 
