@@ -13,7 +13,7 @@
             @unpack rxJ, J, nxJ, wJq = md
             @unpack mapM, mapP, mapB = md
 
-            @test md.mesh_type==rd.element_type
+            @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
 
             @test md.x == md.xyz[1]
 
@@ -65,7 +65,7 @@
             @unpack rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq = md
             @unpack FToF, mapM, mapP, mapB = md
 
-            @test md.mesh_type==rd.element_type
+            @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
             @test md.x == md.xyz[1]
 
             # check positivity of Jacobian
@@ -95,6 +95,8 @@
             @test Vf * y ≈ yf
             @test abs(sum(wf .* nxJ)) < tol
             @test abs(sum(wf .* nyJ)) < tol
+            @test md.nx .* md.Jf ≈ md.nxJ
+            @test md.ny .* md.Jf ≈ md.nyJ
             @test sum(@. wf * nxJ * (1 + xf) / 2) ≈ 2.0 # check sign of normals
 
             # check connectivity and boundary maps
@@ -130,7 +132,7 @@
             @unpack rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq = md
             @unpack FToF, mapM, mapP, mapB = md
 
-            @test md.mesh_type==rd.element_type
+            @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
             @test md.x == md.xyz[1]
 
             # check positivity of Jacobian
@@ -160,6 +162,8 @@
             @test Vf * y ≈ yf
             @test abs(sum(diagm(wf) * nxJ)) < tol
             @test abs(sum(diagm(wf) * nyJ)) < tol
+            @test md.nx .* md.Jf ≈ md.nxJ
+            @test md.ny .* md.Jf ≈ md.nyJ
             @test sum(@. wf * nxJ * (1 + xf) / 2) ≈ 2.0 # check sign of normals
 
             # check connectivity and boundary maps
@@ -182,9 +186,13 @@
             @unpack x, y = md
             x_curved = @. x + 0.1 * sin(pi * x) * sin(pi * y)
             y_curved = @. y + 0.1 * sin(pi * x) * sin(pi * y)
-            md = MeshData(rd, md, x_curved, y_curved)
-            @test sum(@. md.wJq) ≈ 4
-            @test sum(@. md.wJq * md.xq^2) ≈ 4/3
+            md2 = MeshData(rd, md, x_curved, y_curved)
+            @test sum(@. md2.wJq) ≈ 4
+            @test sum(@. md2.wJq * md2.xq^2) ≈ 4/3
+            @test md2.nx ≈ md2.nxJ ./ md2.Jf
+            @test md2.ny ≈ md2.nyJ ./ md2.Jf
+            @test typeof(md2) <: MeshData{2, <:StartUpDG.CurvedMesh}
+            @test num_elements(md) == size(md.x, 2)
         end
     end
 end
@@ -208,7 +216,7 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         @unpack nxJ, nyJ, nzJ, sJ = md
         @unpack FToF, mapM, mapP, mapB = md
 
-        @test md.mesh_type==rd.element_type
+        @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
         @test md.x == md.xyz[1]
 
         # check positivity of Jacobian
@@ -246,6 +254,9 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         @test abs(sum(diagm(wf) * nxJ)) < tol
         @test abs(sum(diagm(wf) * nyJ)) < tol
         @test abs(sum(diagm(wf) * nzJ)) < tol
+        @test md.nx .* md.Jf ≈ md.nxJ
+        @test md.ny .* md.Jf ≈ md.nyJ
+        @test md.nz .* md.Jf ≈ md.nzJ
 
         # check connectivity and boundary maps
         u = @. (1-x) * (1+x) * (1-y) * (1+y) * (1-z) * (1+z)
@@ -254,9 +265,11 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         @test norm(uf[mapB]) < tol
 
         # check periodic node connectivity maps
-        md = make_periodic(md, (true, true, true))
-        @unpack mapP = md
+        md_periodic = make_periodic(md, (true, true, true))
+        @test md_periodic.mapP != md.mapP # check that the node mapping actually changed
+
         u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y)) * sin(pi * (.5 + z))
+        @unpack mapP = md_periodic
         uf = Vf * u
         @test uf ≈ uf[mapP] 
         

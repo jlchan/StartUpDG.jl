@@ -11,7 +11,7 @@ rd = RefElemData(Tri(), N)
 @unpack r, s = rd
 ```
 """ 
-struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType, 
+struct RefElemData{Dim, ElemShape <: AbstractElemShape{Dim}, ApproximationType, 
                    FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM, 
                    VQ, VF, MM, P, D, L, VP, V1Type, WQ, WF} 
 
@@ -26,7 +26,6 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType,
     VDM::TVDM            # generalized Vandermonde matrix
     Fmask::FMASK         # indices of face nodes
 
-    Nplot::Int           # TODO: remove. Nplot doesn't do anything IIRC...
     rstp::RSTP           # plotting nodes
     Vp::VP               # interpolation matrix to plotting nodes
 
@@ -45,9 +44,12 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape, ApproximationType,
     Pq::P                # L2 projection matrix
 
     # Nodal DG operators
-    Drst::NTuple{Dim, D} # differentiation operators
+    Drst::D              # differentiation operators
     LIFT::L              # lift matrix
 end
+
+# TODO: remove in next breaking release after 0.15. Deprecated constructor with `Nplot` argument
+@deprecate RefElemData(elem, approxType, N, fv, V1, rst, VDM, Fmask, Nplot, rstp, Vp, rstq, wq, Vq, rstf, wf, Vf, nrstJ, M, Pq, Drst, LIFT) RefElemData(elem, approxType, N, fv, V1, rst, VDM, Fmask, rstp, Vp, rstq, wq, Vq, rstf, wf, Vf, nrstJ, M, Pq, Drst, LIFT)
 
 # need this to use @set outside of StartUpDG
 function ConstructionBase.setproperties(rd::RefElemData, patch::NamedTuple)
@@ -57,7 +59,7 @@ end
 
 ConstructionBase.getproperties(rd::RefElemData) = 
     (; element_type=rd.element_type, approximation_type=rd.approximation_type, N=rd.N, fv=rd.fv, V1=rd.V1, 
-       rst=rd.rst, VDM=rd.VDM, Fmask=rd.Fmask, Nplot=rd.Nplot, rstp=rd.rstp, Vp=rd.Vp, 
+       rst=rd.rst, VDM=rd.VDM, Fmask=rd.Fmask, rstp=rd.rstp, Vp=rd.Vp, 
        rstq=rd.rstq, wq=rd.wq, Vq=rd.Vq, rstf=rd.rstf, wf=rd.wf, Vf=rd.Vf, nrstJ=rd.nrstJ, 
        M=rd.M, Pq=rd.Pq, Drst=rd.Drst, LIFT=rd.LIFT)
 

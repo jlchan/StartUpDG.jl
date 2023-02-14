@@ -93,7 +93,7 @@ function RefElemData(elem::Line, approxType::Polynomial, N;
 
     return RefElemData(elem, approxType, N, fv, V1,
                        tuple(r), VDM, vec(Fmask),
-                       Nplot, tuple(rp), Vp,
+                       tuple(rp), Vp,
                        tuple(rq), wq, Vq,
                        tuple(rf), wf, Vf, tuple(nrJ),
                        M, Pq, tuple(Dr), LIFT)
@@ -134,7 +134,7 @@ function RefElemData(elem::Union{Tri, Quad},  approxType::Polynomial, N;
 
     return RefElemData(elem, approxType, N, fv, V1,
                        tuple(r, s), VDM, vec(Fmask),
-                       Nplot, tuple(rp, sp), Vp,
+                       tuple(rp, sp), Vp,
                        tuple(rq, sq), wq, Vq,
                        tuple(rf, sf), wf, Vf, tuple(nrJ, nsJ),
                        M, Pq, (Dr, Ds), LIFT)
@@ -175,7 +175,7 @@ function RefElemData(elem::Tet, approxType::Polynomial, N;
 
     return RefElemData(elem, approxType, N, fv, V1,
                        tuple(r, s, t), VDM, vec(Fmask),
-                       Nplot, tuple(rp, sp, tp), Vp,
+                       tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        tuple(rf, sf, tf), wf, Vf, tuple(nrJ, nsJ, ntJ),
                        M, Pq, (Dr, Ds, Dt), LIFT)
@@ -203,10 +203,13 @@ function RefElemData(elem::Hex, approxType::Polynomial, N;
     M1D = Vq1D' * diagm(wq1D) * Vq1D
 
     # form kronecker products of multidimensional matrices to invert/multiply
-    M = kronecker(M1D, M1D, M1D)
     VDM = kronecker(VDM_1D, VDM_1D, VDM_1D)
     invVDM = kronecker(invVDM_1D, invVDM_1D, invVDM_1D)
     invM = kronecker(invM_1D, invM_1D, invM_1D)
+
+    # !!! WARNING: the `M` mass matrix is not necessarily a Kronecker product 
+    # if the quadrature isn't tensor product, e.g., a non-tensor product under-integrated quadrature.
+    M = kronecker(M1D, M1D, M1D)
 
     _, Vr, Vs, Vt = basis(elem, N, r, s, t)
     Dr, Ds, Dt = (A -> A * invVDM).((Vr, Vs, Vt))
@@ -238,7 +241,7 @@ function RefElemData(elem::Hex, approxType::Polynomial, N;
 
     return RefElemData(elem, approxType, N, fv, V1,
                        tuple(r, s, t), VDM, vec(Fmask),
-                       Nplot, tuple(rp, sp, tp), Vp, 
+                       tuple(rp, sp, tp), Vp, 
                        tuple(rq, sq, tq), wq, Vq,
                        tuple(rf, sf, tf), wf, Vf, tuple(nrJ, nsJ, ntJ),
                        M, Pq, Drst, LIFT)
@@ -315,7 +318,7 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
 
     return RefElemData(Wedge(node_ids_by_face), approximation_type, N, fv, V1,
                        tuple(r, s, t), VDM, Fmask,
-                       Nplot, tuple(rp, sp, tp), Vp,
+                       tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
                        M, Pq, Drst, LIFT)

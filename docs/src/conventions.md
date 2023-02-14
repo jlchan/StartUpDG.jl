@@ -15,6 +15,8 @@ We make a few simplifying assumptions about the mesh:
 * meshes are _conforming_ (e.g., each face of an element is shared with at most one other element). 
 * the geometric mapping from reference to physical elements is polynomial. 
 
+Initial experimental support for simple hybrid, cut-cell, and non-conforming meshes in two dimensions is also available. Please see the corresponding test sets `test/hybrid_mesh_tests.jl`, `test/cut_mesh_tests.jl`, and `noncon_mesh_tests.jl` for examples. 
+
 ## Code conventions
 
 `StartUpDG.jl` exports structs `RefElemData{Dim, ElemShape, ...}` (which contains data associated with the reference element, such as interpolation points, quadrature rules, face nodes, normals, and differentiation/interpolation/projection matrices) and `MeshData{Dim}` (which contains geometric data associated with a mesh). These are currently used for evaluating DG formulations in a matrix-free fashion. These structs contain fields similar to those in `Globals1D, Globals2D, Globals3D` in the NDG book codes. 
@@ -23,7 +25,7 @@ We use the following code conventions:
 * variables such as `r, s,...` and `x, y,...` correspond to values at nodal interpolation points. 
 * variables ending in `q` (e.g., `rq, sq,...` and `xq, yq,...`) correspond to values at volume quadrature points. 
 * variables ending in `f` (e.g., `rf, sf,...` and `xf, yf,...`) correspond to values at face quadrature points. 
-* variables ending in `p` (e.g., `rp, sp,...`)
+* variables ending in `p` (e.g., `rp, sp,...`) correspond to equispaced plotting nodes.
 * `Dr, Ds, Dt` matrices are nodal differentiation matrices with respect to the ``r, s, t`` coordinates, e.g, `Dr * f.(r, s)` approximates the derivative of ``f(r, s)`` at nodal points. 
-* `V` matrices correspond to interpolation matrices from nodal interpolation points, e.g., `Vq` interpolates to volume quadrature points, `Vf` interpolates to face quadrature points. 
+* `V` matrices correspond to interpolation matrices from nodal interpolation points, e.g., `Vq` interpolates to volume quadrature points, `Vf` interpolates to face quadrature points, `Vp` interpolates to plotting nodes. 
 * geometric quantities in `MeshData` are stored as matrices of dimension ``\text{number of points per element } \times \text{number of elements}``.

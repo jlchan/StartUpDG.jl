@@ -28,7 +28,7 @@ function connect_mesh(EToV, fv)
 
     FToF = reshape(collect(1:num_faces * num_elements), num_faces, num_elements)
     for f = 1:size(fnodes, 1) - 1
-        if fnodes[f, :]==fnodes[f + 1, :]
+        if view(fnodes, f, :)==view(fnodes, f + 1, :)
             f1 = FToF[p[f]]
             f2 = FToF[p[f + 1]]
             FToF[p[f]] = f2
@@ -44,13 +44,16 @@ function match_coordinate_vectors(u, v; tol = 10 * eps())
     p = zeros(Int, length(first(u)))
     return match_coordinate_vectors!(p, u, v; tol)
 end
-function match_coordinate_vectors!(p, u, v; tol = 10 * eps())    
+function match_coordinate_vectors!(p, u::T, v::T; tol = 10 * eps()) where {T <: NTuple{NDIMS}} where {NDIMS}
+    scaled_tol = tol * length(first(u))
     for (i, u_i) in enumerate(zip(u...))
+        u_i_norm = norm(SVector{NDIMS}(u_i))
         for (j, v_i) in enumerate(zip(v...))
             # Checks if the points are close relative to the magnitude of the coordinates.
             # Scaling by length(first(u)) relaxes this bound for high degree polynomials, 
             # which incur slightly more roundoff error. 
-            if norm(u_i .- v_i) < tol * length(first(u)) * max(one(eltype(u_i)), norm(u_i), norm(v_i))
+            max_u_v = max(u_i_norm, norm(SVector{NDIMS}(v_i)))
+            if norm(SVector{NDIMS}(u_i) - SVector{NDIMS}(v_i)) < scaled_tol * max(one(eltype(u_i)), max_u_v)
                 p[i] = j
             end
         end
@@ -124,22 +127,41 @@ function build_node_maps(rd::RefElemData{3, <:Union{Wedge, Pyr}}, FToF, Xf; tol 
     # convert mapP to Vector{Int64} so we can use `setindex!`
     mapP = collect.(deepcopy(mapM))
 
+    num_face_nodes = unique(length.(mapM))
+    p_cache = Dict(num_face_nodes .=> zeros.(eltype(mapM[1]), num_face_nodes))
+
+    # creates tuples of vectors for tri/quad face types    
+    create_tuple_of_coordinate_vectors(num_nodes) = ntuple(_ -> zeros.(eltype(first(Xf)), num_nodes), 3) # NDIMS=3
+    face_coordinates_cache     = Dict(num_face_nodes .=> map(create_tuple_of_coordinate_vectors, num_face_nodes))
+    nbr_face_coordinates_cache = Dict(num_face_nodes .=> map(create_tuple_of_coordinate_vectors, num_face_nodes))
+
     # create list of face indices
     for (f, fnbr) in enumerate(FToF)
         face_indices = mapM[f]
         nbr_face_indices = mapM[fnbr]
 
-        # TODO: can preallocate `face_coordinates`, etc.
-        face_coordinates = map(x->getindex(x, face_indices), Xf)
-        nbr_face_coordinates = map(x->getindex(x, nbr_face_indices), Xf)
+        num_face_nodes = length(face_indices)
 
-        p = match_coordinate_vectors(face_coordinates, nbr_face_coordinates; tol)
+        face_coordinates     = face_coordinates_cache[num_face_nodes]
+        nbr_face_coordinates = nbr_face_coordinates_cache[num_face_nodes]
+        for dim in 1:3 # NDIMS = 3
+            for i in eachindex(face_indices, nbr_face_indices)                
+                id = face_indices[i]
+                nbr_id = nbr_face_indices[i]
+                face_coordinates[dim][i] = Xf[dim][id]
+                nbr_face_coordinates[dim][i] = Xf[dim][nbr_id]
+            end
+        end
+
+        p = p_cache[num_face_nodes]
+        match_coordinate_vectors!(p, face_coordinates, nbr_face_coordinates; tol)
         mapP[f][p] .= nbr_face_indices
     end
 
     # mapM = vcat(mapM...)
     mapP = vcat(mapP...)
     mapB = findall(vec(vcat(mapM...)) .== vec(mapP))
+    mapM = reshape(collect(Iterators.flatten(mapM)), face_nodes_per_element, num_elements)
     return mapM, mapP, mapB
 end
 
@@ -366,14 +388,15 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     return mapPB[:]
 end
 
-function compute_boundary_face_centroids(md::MeshData{NDIMS, <:Union{Wedge, Pyr}}) where {NDIMS}
-    element_type = md.mesh_type
+function compute_boundary_face_centroids(md::MeshData{3, <:VertexMappedMesh{<:Union{<:Wedge, <:Pyr}}})
+    (; element_type) = md.mesh_type
     (; node_ids_by_face) = element_type
 
     face_nodes_per_element = maximum(maximum.(node_ids_by_face))
     boundary_faces = findall(eachindex(md.FToF) .== vec(md.FToF))
 
     # compute face centroids
+    NDIMS = 3
     face_centroids = ntuple(_ -> similar(md.xf, (length(boundary_faces), )), NDIMS)
     sk = 1    
     for e in 1:md.num_elements
@@ -393,12 +416,16 @@ function compute_boundary_face_centroids(md::MeshData{NDIMS, <:Union{Wedge, Pyr}
 end
 
 # specialize on 3D elements with different types of faces
-function make_periodic(md::MeshData{3, <:Union{Wedge, Pyr}}, is_periodic::NTuple{3}; tol=1e-12, kwargs...)
+function make_periodic(md::MeshData{3, <:VertexMappedMesh{<:Union{<:Wedge, <:Pyr}}}, 
+                       is_periodic::NTuple{3}; tol=1e-12, kwargs...)
 
     NDIMS = 3
     (; mapM) = md
     FToF_periodic = copy(md.FToF)
     mapP_periodic = copy(md.mapP)
+
+    node_ids_by_face = md.mesh_type.element_type.node_ids_by_face
+    faces = num_faces(md.mesh_type.element_type)
 
     face_centroids, boundary_faces = compute_boundary_face_centroids(md)
 
@@ -424,9 +451,19 @@ function make_periodic(md::MeshData{3, <:Union{Wedge, Pyr}}, is_periodic::NTuple
 
                     if norm(face_coords_1 - face_coords_2) ≈ domain_lengths[dim] && 
                         norm(tangent_coords_1 - tangent_coords_2) < tol * domain_lengths[dim]
+                        
+                        # get the local face number of the face
+                        local_face_f1 = (boundary_faces[f1] - 1) % faces + 1
+                        local_face_f2 = (boundary_faces[f2] - 1) % faces + 1                    
 
-                        face_nodes_1 = mapM[boundary_faces[f1]]
-                        face_nodes_2 = mapM[boundary_faces[f2]]
+                        # get the elem of the boundary face
+                        # note: `boundary_faces[f] / faces` should yield non-integer values
+                        elem_f1 = ceil(Int, boundary_faces[f1] / faces)
+                        elem_f2 = ceil(Int, boundary_faces[f2] / faces)
+
+                        # get all global node ids of the faces
+                        face_nodes_1 = mapM[node_ids_by_face[local_face_f1], elem_f1]
+                        face_nodes_2 = mapM[node_ids_by_face[local_face_f2], elem_f2]
 
                         # remove the coordinate in the normal direction, since it 
                         # won't coincide on periodic faces.
@@ -437,7 +474,7 @@ function make_periodic(md::MeshData{3, <:Union{Wedge, Pyr}}, is_periodic::NTuple
 
                         p = match_coordinate_vectors(face_coords_1, face_coords_2)
 
-                        mapP_periodic[face_nodes_1][p] .= face_nodes_2
+                        mapP_periodic[face_nodes_1[p]] .= face_nodes_2
                         FToF_periodic[f1] = f2
                     end
                 end

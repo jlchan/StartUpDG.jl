@@ -17,9 +17,10 @@ function geometric_factors(x, y, Dr, Ds)
     xr, xs = Dr * x, Ds * x
     yr, ys = Dr * y, Ds * y
 
-    J = @. -xs * yr + xr * ys
     rxJ, sxJ =  ys, -yr
     ryJ, syJ = -xs,  xr
+
+    J = @. -xs * yr + xr * ys
 
     return rxJ, sxJ, ryJ, syJ, J
 end
@@ -53,11 +54,22 @@ function geometric_factors(x, y, z, Dr, Ds, Dt, Filters=(I, I, I))
     return rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J
 end
 
+# physical normals are computed via G * nhatJ, where G = matrix of J-scaled geometric terms
+# Here, Vf is a face interpolation matrix which maps interpolation nodes to face nodes. 
+function compute_normals(geo::SMatrix{Dim, Dim}, Vf, nrstJ...) where {Dim}
+    nxyzJ = ntuple(x -> zeros(size(Vf, 1), size(first(geo), 2)), Dim)
+    for i = 1:Dim, j = 1:Dim
+        nxyzJ[i] .+= (Vf * geo[i,j]) .* nrstJ[j]
+    end
+    Jf = sqrt.(sum(map(x -> x.^2, nxyzJ)))
+    return nxyzJ..., Jf
+end
+
 """
     estimate_h(rd::RefElemData, md::MeshData)
     estimate_h(e, rd::RefElemData, md::MeshData) # e = element index
 
-Estimates the mesh size via min size_of_domain * |J|/|sJ|, since |J| = O(hᵈ) and |sJ| = O(hᵈ⁻¹). 
+Estimates the mesh size via min size_of_domain * |J|/|Jf|, since |J| = O(hᵈ) and |Jf| = O(hᵈ⁻¹). 
 """
 function estimate_h(rd::RefElemData{DIM}, md::MeshData{DIM}) where {DIM}
     hmin = Inf
@@ -69,30 +81,30 @@ function estimate_h(rd::RefElemData{DIM}, md::MeshData{DIM}) where {DIM}
 end
 
 function estimate_h(e, rd::RefElemData, md::MeshData)
-    sJ_e = reshape(view(md.sJ, :, e), :, rd.Nfaces)
-    sJ_face = zero(eltype(md.sJ))
+    Jf_e = reshape(view(md.Jf, :, e), :, rd.Nfaces)
+    Jf_face = zero(eltype(md.Jf))
     for f in 1:rd.Nfaces
-        sJ_face = max(sJ_face, minimum(view(sJ_e, :, f)) / face_scaling(rd, f))
+        Jf_face = max(Jf_face, minimum(view(Jf_e, :, f)) / face_scaling(rd, f))
     end
-    h_e = minimum(view(md.J, :, e)) / sJ_face
+    h_e = minimum(view(md.J, :, e)) / Jf_face
     return h_e
 end
 
 # specialization for elements with different face types
 function estimate_h(e, rd::RefElemData{3, <:Union{Wedge, Pyr}}, md::MeshData)
     @unpack node_ids_by_face = rd.element_type
-    sJ_e = view(md.sJ, :, e)
-    sJ_face = zero(eltype(md.sJ))
+    Jf_e = view(md.Jf, :, e)
+    Jf_face = zero(eltype(md.Jf))
     for f in 1:rd.num_faces
-        sJ_face = max(sJ_face, minimum(view(sJ_e, node_ids_by_face[f])) / face_scaling(rd, f))
+        Jf_face = max(Jf_face, minimum(view(Jf_e, node_ids_by_face[f])) / face_scaling(rd, f))
     end
-    h_e = minimum(view(md.J, :, e)) / sJ_face
+    h_e = minimum(view(md.J, :, e)) / Jf_face
     return h_e
 end
 
 face_scaling(rd, f) = 1.0
-face_scaling(rd::RefElemData{2, Tri}, f) = f == 3 ? sqrt(2) : 1.0 # sJ incorporates length of long triangle edge
-face_scaling(rd::RefElemData{3, Tet}, f) = f == 2 ? sqrt(3) : 1.0 # sJ incorporates area of larger triangle face
-face_scaling(rd::RefElemData{3, Wedge}, f) = f == 2 ? sqrt(2) : 1.0 # sJ incorporates area of larger triangle face
+face_scaling(rd::RefElemData{2, Tri}, f) = f == 3 ? sqrt(2) : 1.0 # Jf incorporates length of long triangle edge
+face_scaling(rd::RefElemData{3, Tet}, f) = f == 2 ? sqrt(3) : 1.0 # Jf incorporates area of larger triangle face
+face_scaling(rd::RefElemData{3, Wedge}, f) = f == 2 ? sqrt(2) : 1.0 # Jf incorporates area of larger triangle face
 compute_domain_size(rd::RefElemData, md::MeshData) = sum(rd.M * md.J)
 

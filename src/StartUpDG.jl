@@ -1,23 +1,25 @@
 module StartUpDG
 
-using Reexport 
+using Reexport: @reexport
 
-using Colors 
-@reexport using ComponentArrays: ComponentArray
 using ConstructionBase: ConstructionBase
-using HDF5 # used to read in SBP triangular node data
+using FillArrays: Ones, Zeros, Fill
+using HDF5: h5open # used to read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
-using LinearAlgebra: cond, diagm, eigvals, Diagonal, I, UniformScaling, mul!, norm, qr, ColumnNorm
-using NodesAndModes: meshgrid
+using LinearAlgebra: cond, diagm, eigvals, Diagonal, I, mul!, norm, qr, ColumnNorm
+using NodesAndModes: meshgrid, find_face_nodes, face_vertices
 @reexport using NodesAndModes # for basis functions
 using OrderedCollections: LittleDict # fast ordered dict for a small number of entries
 using PathIntersections
 @reexport using PathIntersections: PresetGeometries
-using RecipesBase
+using Printf: @sprintf
+using RecipesBase: RecipesBase
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
 using SparseArrays: sparse, droptol!, blockdiag
-@reexport using UnPack  # for getting values in RefElemData and MeshData
+using Triangulate: Triangulate, TriangulateIO, triangulate
+using WriteVTK
+@reexport using UnPack: @unpack  # for getting values in RefElemData and MeshData
 
 # reference element utility functions
 include("RefElemData.jl")
@@ -47,6 +49,10 @@ export make_periodic
 include("boundary_utils.jl")
 export boundary_face_centroids, tag_boundary_faces, tag_boundary_nodes
 
+# helper array type for cut cell and hybrid meshes
+include("named_array_partition.jl")
+export NamedArrayPartition
+
 include("hybrid_meshes.jl")
 export num_faces, num_vertices, HybridMeshExample
 
@@ -60,32 +66,37 @@ export StateRedistribution, apply!
 include("nonconforming.jl")
 export num_mortars_per_face, NonConformingQuadMeshExample
 
-# uniform meshes + face vertex orderings are included
+# uniform meshes + face vertex orderings
 include("mesh/simple_meshes.jl")
 export readGmsh2D, uniform_mesh
-export readGmsh2D_v4, MeshImportOptions 
+export readGmsh2D_v4, MeshImportOptions
 
 # Plots.jl recipes for meshes
+include("mesh/vtk_helper.jl")
 include("mesh/mesh_visualization.jl")
-export VertexMeshPlotter, MeshPlotter
+export VertexMeshPlotter, MeshPlotter, MeshData_to_vtk
 
-using Requires
-function __init__()                 
-    @require Triangulate="f7e6ffb2-c36d-4f8f-a77e-16e897189344" begin
-        using Printf
-        using .Triangulate: TriangulateIO, triangulate
-        include("mesh/triangulate_utils.jl")      
-        export refine, triangulateIO_to_VXYEToV, get_node_boundary_tags
-        export BoundaryTagPlotter
-        include("mesh/triangulate_example_meshes.jl")
-        export triangulate_domain
-        export Scramjet, SquareDomain, RectangularDomain, RectangularDomainWithHole 
-        export CircularDomain, PartialCircularDomain
-    end
-end
+# Triangulate interfaces and pre-built meshes
+include("mesh/triangulate_utils.jl")
+export refine, triangulateIO_to_VXYEToV, get_node_boundary_tags
+export BoundaryTagPlotter
+include("mesh/triangulate_example_meshes.jl")
+export triangulate_domain
+export Scramjet, SquareDomain, RectangularDomain, RectangularDomainWithHole
+export CircularDomain, PartialCircularDomain
 
 # simple explicit time-stepping included for conveniencea
 include("explicit_timestep_utils.jl")
-export ck45 # LSERK 45 
+export ck45 # LSERK 45
 
+
+using Requires: @require
+
+function __init__()
+  @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" begin
+    include("TriangulatePlots.jl")
+  end
 end
+
+
+end # module

@@ -7,7 +7,7 @@ using PathIntersections
     circle = PresetGeometries.Circle(R=0.33, x0=0, y0=0)
 
     rd = RefElemData(Quad(), N=3)
-    md = MeshData(rd, (circle, ), cells_per_dimension_x, cells_per_dimension_y)
+    md = MeshData(rd, (circle, ), cells_per_dimension_x, cells_per_dimension_y; precompute_operators=true)
 
     @test_throws ErrorException("Face index f = 5 > 4; too large.") StartUpDG.neighbor_across_face(5, nothing, nothing)
 
@@ -28,18 +28,44 @@ using PathIntersections
     @test sum(wJf[md.mapB]) ≈ (8 + 2 * pi * .33)
 
     # check continuity of a function that's in the global polynomial space
-    @unpack physical_frame_elements = md.mesh_type
-    @unpack x, y = md
+    (; physical_frame_elements) = md.mesh_type
+    (; x, y) = md
     u = @. x^rd.N - x * y^(rd.N-1) - x^(rd.N-1) * y + y^rd.N
     uf = similar(md.xf)
     uf.cartesian .= rd.Vf * u.cartesian
     for e in 1:size(md.x.cut, 2)
         ids = md.mesh_type.cut_face_nodes[e]
-        VDM = vandermonde(physical_frame_elements[e], rd.N, md.x.cut[:, e], md.y.cut[:, e])
-        Vf = vandermonde(physical_frame_elements[e], rd.N, md.xf.cut[ids], md.yf.cut[ids]) / VDM
+        Vf = md.mesh_type.cut_cell_operators.face_interpolation_matrices[e]
         uf.cut[ids] .= Vf * u.cut[:, e]
     end
     @test all(uf .≈ vec(uf[md.mapP]))
+
+    dudx_exact = @. rd.N * x^(rd.N-1) - y^(rd.N-1) - (rd.N-1) * x^(rd.N-2) * y
+    dudy_exact = @. -(rd.N-1) * x * y^(rd.N-2) - x^(rd.N-1) + rd.N * y^(rd.N-1)
+    (; physical_frame_elements, cut_face_nodes) = md.mesh_type
+    dudx, dudy = similar(md.x), similar(md.x)     
+    dudx.cartesian .= (md.rxJ.cartesian .* (rd.Dr * u.cartesian)) ./ md.J
+    dudy.cartesian .= (md.syJ.cartesian .* (rd.Ds * u.cartesian)) ./ md.J
+    for (e, elem) in enumerate(physical_frame_elements)
+        VDM = vandermonde(elem, rd.N, x.cut[:, e], y.cut[:, e])
+        Vq, Vxq, Vyq = map(A -> A / VDM, basis(elem, rd.N, md.xq.cut[:,e], md.yq.cut[:, e]))
+    
+        M  = Vq' * diagm(md.wJq.cut[:, e]) * Vq
+        Qx = Vq' * diagm(md.wJq.cut[:, e]) * Vxq
+        Qy = Vq' * diagm(md.wJq.cut[:, e]) * Vyq   
+        Dx, Dy = M \ Qx, M \ Qy
+        # LIFT = M \ (Vf' * diagm(wJf))
+
+        # TODO: add interface flux terms into test
+        dudx.cut[:, e] .= Dx * u.cut[:,e] # (md.rxJ.cut[:,e] .* (Dr * u.cut[:,e])) 
+        dudy.cut[:, e] .= Dy * u.cut[:,e] # (md.rxJ.cut[:,e] .* (Dr * u.cut[:,e])) 
+    end
+
+    @test dudx ≈ dudx_exact
+    @test dudy ≈ dudy_exact
+
+    # test normals are unit and non-zero
+    @test all(@. md.nx^2 + md.ny^2 ≈ 1)
 
     # test creation of equispaced nodes on cut cells
     x, y = equi_nodes(physical_frame_elements[1], circle, 10)
@@ -47,8 +73,6 @@ using PathIntersections
     @test 0 < length(x) <= length(first(equi_nodes(Quad(), 10))) 
     # no points should be contained in the circle
     @test !all(is_contained.(circle, zip(x, y))) 
-
-    # TODO: add tests on taking derivatives 
 
 end
     

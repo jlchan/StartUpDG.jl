@@ -34,7 +34,9 @@ The `mortar_projection_matrix` similarly maps values from 2 mortar faces back to
 original non-conforming face. These can be used to create DG solvers on non-conforming meshes.
 
 """
-struct NonConformingMesh{CF, NCF, I, P}
+struct NonConformingMesh{TV, TE, CF, NCF, I, P}
+    VXYZ::TV
+    EToV::TE
     conforming_faces::CF
     non_conforming_faces::NCF
     mortar_interpolation_matrix::I
@@ -90,6 +92,8 @@ end
 
 # one non-conforming quad face is split into 2 mortar faces
 num_mortars_per_face(rd::RefElemData{2, Quad}) = 2
+
+num_elements(md::MeshData{Dim, <:NonConformingMesh}) where {Dim} = size(getproperty(md.mesh_type, :EToV), 1)
 
 function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
 
@@ -159,17 +163,17 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
     xq, yq = (x -> Vq * x).((x, y))
     wJq = diagm(wq) * (Vq * J)
 
-    nxJ, nyJ, sJ = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
+    nxJ, nyJ, Jf = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
     is_periodic = (false, false)
 
-    mesh_type = NonConformingMesh(conforming_faces, non_conforming_faces, 
+    mesh_type = NonConformingMesh(tuple(VX, VY), EToV, conforming_faces, non_conforming_faces, 
                                   mortar_interpolation_matrix, mortar_projection_matrix)
 
-    return MeshData(mesh_type, tuple(VX, VY), EToV, FToF,
+    return MeshData(mesh_type, FToF,
                     tuple(x, y), tuple(x_mortar, y_mortar), tuple(xq, yq), wJq,
                     mapM, mapP, mapB,
                     SMatrix{2, 2}(tuple(rxJ, ryJ, sxJ, syJ)), J,
-                    tuple(nxJ, nyJ), sJ,
+                    tuple(nxJ, nyJ), Jf,
                     is_periodic)
 end

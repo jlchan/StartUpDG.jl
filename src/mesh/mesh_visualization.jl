@@ -68,3 +68,47 @@ RecipesBase.@recipe function f(m::VertexMeshPlotter{2})
     return xmesh, ymesh
 end
 
+"""
+    Meshdata_to_vtk(md, rd, dim, data, dataname, datatype, filename, write_data = false, equi_dist_nodes = true)
+
+Translate the given mesh into a vtk-file.
+`md` holds a `MeshData` object
+`rd` holds a reference element data/`RefElemData` object. 
+`data` holds an array of arrays (of size `num_nodes` by `num_elements`) with plotting data
+`dataname` is an array of strings with name of the associated data
+`write_data`, flag if data should be written or not (e.g., if data is not written, only the mesh will be saved as output)
+`equi_dist_nodes` flag if points should be interpolated to equidstant nodes
+"""
+function MeshData_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, filename, write_data = false, equi_dist_nodes = true) where {DIM}
+    # Compute the permutation between the StartUpDG order of points and vtk
+    perm = SUD_to_vtk_order(rd)
+    # The number of points per element
+    num_lagrange_points = length(perm)
+    # Number of elements
+    num_elements = md.num_elements
+    vtk_cell_type = type_to_vtk(rd.element_type)
+
+    # Construction of the vtkfile
+    cells = [MeshCell(vtk_cell_type, perm .+ ((i-1) * num_lagrange_points)) for i in 1:num_elements]
+    # Todo: Interpolate to equidstant points 
+    interpolate = I(num_lagrange_points)
+    if equi_dist_nodes
+        interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
+    end
+    coords = map(x -> vec(interpolate * x), md.xyz)
+    vtkfile = WriteVTK.VTKFile[]
+    if DIM == 1
+        vtkfile = vtk_grid(filename, coords[1], cells)
+    elseif DIM == 2
+        vtkfile = vtk_grid(filename, coords[1], coords[2], cells)
+    else
+        vtkfile = vtk_grid(filename, coords[1], coords[2], coords[3], cells)
+    end
+    if write_data
+        for i in 1:size(dataname)[1]
+            vtkfile[dataname[i]] = data[i]
+        end
+    end
+    return vtk_save(vtkfile)
+end
+
