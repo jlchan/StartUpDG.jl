@@ -6,8 +6,6 @@ end
 # for clarity that we're taking a tensor product of nodes
 _wedge_tensor_product(line, tri) = vec.(meshgrid(line, tri))
 
-
-
 function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwargs...)
 
     (; tri, line) = approximation_type
@@ -73,9 +71,6 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwa
     # TODO: create face interpolation matrix
     Vf = nothing
 
-    # TODO: remove
-    Nplot = 10
-
     # create tensor product quadrature rule
     tq, rq  = _wedge_tensor_product(line.rq, tri.rq)
     _,  sq  = _wedge_tensor_product(line.rq, tri.sq)
@@ -95,7 +90,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwa
 
     return RefElemData(Wedge(node_ids_by_face), approximation_type, N, fv, V1,
                        tuple(r, s, t), VDM, Fmask,
-                       Nplot, tuple(rp, sp, tp), Vp,
+                       tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
                        M, Pq, Drst, LIFT)
