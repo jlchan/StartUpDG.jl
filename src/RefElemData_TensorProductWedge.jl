@@ -27,7 +27,6 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwa
     Dt  = kron(line.Dr, I(tri.Np))
     Drst = (Dr, Ds, Dt)
     
-    # TODO: does this need to be generalized?
     # assumes interpolation nodes contain face nodes
     Fmask = find_face_nodes(elem, r, s, t)
     
