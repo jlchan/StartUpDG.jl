@@ -79,8 +79,8 @@ Translate the given mesh into a vtk-file.
 `write_data`, flag if data should be written or not (e.g., if data is not written, only the mesh will be saved as output)
 `equi_dist_nodes` flag if points should be interpolated to equidstant nodes
 """
-function MeshData_to_vtk(md::MeshData, rd::RefElemData, data, dataname, filename, 
-                         write_data = false, equi_dist_nodes = true) 
+function MeshData_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, filename, 
+                         write_data = false, equi_dist_nodes = true) where {DIM}
                          
     # Compute the permutation between the StartUpDG order of points and vtk
     perm = SUD_to_vtk_order(rd)
@@ -93,11 +93,11 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData, data, dataname, filename
 
     if equi_dist_nodes == true
         interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
+        coords = map(x -> vec(interpolate * x), md.xyz)
     else # don't interpolate
-        interpolate = I(num_lagrange_points)
+        coords = vec.(md.xyz) 
     end   
-    coords = map(x -> vec(interpolate * x), md.xyz)
-
+    
     vtkfile = vtk_grid(filename, coords..., cells)
 
     if write_data
