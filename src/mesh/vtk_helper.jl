@@ -76,11 +76,11 @@ end
 """
     quad_vtk_order(corner_verts, order, dim, skip = false)
 
-Compute the coordinates of a VTK_LAGRANGE_QUAD of a quad of order order 
-defined by the coordinates of the vertices given in corner_verts. dim is the
-dimension of the coordinates given. If skip is set to true, the coordinates
+Compute the coordinates of a VTK_LAGRANGE_QUAD of a quad of order `order`
+defined by the coordinates of the vertices given in `corner_verts`. `dim` is the
+dimension of the coordinates given. If `skip` is set to true, the coordinates
 of the vertex- and edge-points aren't computed, which can be used to compute
-points of a VTK_LAGRANGE_WEDGE
+points of a `VTK_LAGRANGE_WEDGE`
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
 """
 function quad_vtk_order(corner_verts, order, dim, skip = false)
@@ -122,15 +122,13 @@ end
 """
     wedge_vtk_order(corner_verts, order, dim)
 
-Compute the coordinates of a VTK_LAGRANGE_wedge of a wedge of order order 
-defined by the coordinates of the vertices given in corner_verts. dim is the
-dimension of the coordinates given. If skip is set to true, the coordinates
-of the vertex- and edge-points aren't computed, which can be used to compute
-points of a VTK_LAGRANGE_WEDGE
+Compute the coordinates of a VTK_LAGRANGE_WEDGE of order `order` 
+defined by the coordinates of the vertices given in `corner_verts`. `dim` is the
+dimension of the coordinates given. 
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
 """
 function wedge_vtk_order(corner_verts, order, dim)
-    
+
     @assert order >= 0 "`order` must be non-negative."
     
     coords = copy(corner_verts)
@@ -233,26 +231,18 @@ function vtk_order(::Quad, order)
     return quad_vtk_order(quad_vtk_vertices, order, 2) 
 end
 
-"""
-    vtk_order(elem::Quad, order)
-
-Construct all node-points of a VTK_LAGRANGE_TRIANGLE of order order. The corner-nodes are
-given by the reference-triangle used by StartUpDG
-"""
-function vtk_order(elem::Quad, order)
-    quad_sud_vertices = [-1.0 1.0 1.0 -1.0; -1.0 -1.0 1.0 1.0]
-    return quad_vtk_order(quad_sud_vertices, order, 2) 
-end
 
 """
     vtk_order(elem::Wedge, order)
 
-Construct all node-points of a VTK_LAGRANGE_TRIANGLE of order order. The corner-nodes are
-given by the reference-triangle used by StartUpDG
+Construct all node-points of a VTK_LAGRANGE_WEDGE of order `order`. The corner-nodes are
+given by the reference-wedge used by StartUpDG
 """
-function vtk_order(elem::Wedge, order)
-    wedge_sud_vertices = [-1.0 1.0 -1.0 -1.0 1.0 -1.0; -1.0 -1.0 1.0 -1.0 -1.0 1.0; -1.0 -1.0 -1.0 1.0 1.0 1.0]
-    return wedge_vtk_order(wedge_sud_vertices, order, 3)
+function vtk_order(::Wedge, order)
+    wedge_sud_vertices = permutedims(hcat(nodes(Wedge(), 1)...))
+    perm = SVector(1, 3, 2, 4, 6, 5)
+    wedge_vtk_vertices = wedge_sud_vertices[:, perm]
+    return wedge_vtk_order(wedge_vtk_vertices, order, 3)
 end
 
 """
