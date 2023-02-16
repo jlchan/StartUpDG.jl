@@ -84,7 +84,7 @@ points of a VTK_LAGRANGE_WEDGE
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
 """
 function quad_vtk_order(corner_verts, order, dim, skip = false)
-    coords = Matrix{Float64}(undef, 0, dim)
+    coords = Matrix{Float64}(undef, dim, 0)
     if order < 0
         return nothing
     end
@@ -130,7 +130,13 @@ points of a VTK_LAGRANGE_WEDGE
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
 """
 function wedge_vtk_order(corner_verts, order, dim)
+    if order < 0
+        return nothing
+    end
     coords = copy(corner_verts)
+    if order == 0
+        return coords
+    end
     num_verts_on_edge = order - 1
     edges = [(1,2), (2,3), (3,1), (4,5), (5,6), (6,4), (1,4), (2,5), (3,6)]
     for (frm, to) in edges

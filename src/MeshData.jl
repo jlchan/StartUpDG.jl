@@ -217,6 +217,10 @@ and outputs a new MeshData struct. Only fields modified are the coordinate-depen
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `Jf`.
 """
 
+# splat `uniform_mesh` arguments, e.g., enables `MeshData(uniform_mesh(Line(), 1), rd)`
+# TODO: wrap `uniform_mesh` in a custom type so we can dispatch more precisely
+MeshData(mesh::Tuple{<:Tuple, Matrix{Int64}}, other_args...) = MeshData(mesh..., other_args...)
+
 # splats VXYZ 
 MeshData(VXYZ::T, EToV, other_args...) where {NDIMS, T <: NTuple{NDIMS}} = 
     MeshData(VXYZ..., EToV, other_args...)
