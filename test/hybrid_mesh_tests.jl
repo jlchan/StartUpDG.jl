@@ -11,17 +11,6 @@
         @test rds[Tri()].element_type == Tri()
         @test rds[Quad()].element_type == Quad()
 
-        #   1  3_______4______5
-        #      |   4   |  6  / 
-        #      |1     2|7  5
-        #      |   3   |  /  
-        #  -1  1 ----- 2        1
-        VX = [-1; 0; -1; 0; 1]
-        VY = [-1; -1; 1; 1; 1]
-        EToV = [[1 2 3 4], [2 4 5]]
-        md = MeshData(VX, VY, EToV, rds)
-        # @test md.FToF == vec([1  7  3  4  5  6  2])
-
         # Simple hybrid mesh for testing
         #   1  7______8______9
         #      |      | 3  / |
@@ -37,6 +26,8 @@
 
         md = MeshData(VX, VY, EToV, rds)
         @test typeof(md.mesh_type) <: typeof(StartUpDG.HybridMesh((Quad(), Tri()), (VX, VY), EToV))
+        @test md.VX == md.mesh_type.VXYZ[1]
+        @test md.VY == md.mesh_type.VXYZ[2]
 
         # test if all nodes on boundary are ±1
         @test all(@. abs(max(abs(md.xf[md.mapB]), abs(md.yf[md.mapB])) - 1) < 100 * eps() )
@@ -66,7 +57,7 @@
     end
 
     @testset "Curved hybrid meshes" begin
-        rds = RefElemData((Tri(), Quad()), N = 3)
+        rds = RefElemData((Tri(), Quad()), N = 2)
         md = MeshData(HybridMeshExample()..., rds)
 
         @unpack x, y = md
