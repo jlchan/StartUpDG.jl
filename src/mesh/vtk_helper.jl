@@ -130,6 +130,7 @@ points of a VTK_LAGRANGE_WEDGE
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
 """
 function wedge_vtk_order(corner_verts, order, dim)
+    
     @assert order >= 0 "`order` must be non-negative."
     
     coords = copy(corner_verts)
@@ -137,7 +138,7 @@ function wedge_vtk_order(corner_verts, order, dim)
         return coords
     end
     num_verts_on_edge = order - 1
-    edges = [(1,2), (2,3), (3,1), (4,5), (5,6), (6,4), (1,4), (2,5), (3,6)]
+    edges = SVector((1,2), (2,3), (3,1), (4,5), (5,6), (6,4), (1,4), (2,5), (3,6))
     for (frm, to) in edges
         tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
         tmp_vec = Vector{Float64}(undef, dim)
@@ -148,8 +149,10 @@ function wedge_vtk_order(corner_verts, order, dim)
             coords = hcat(coords, tmp_vec)
         end
     end
-    tri_faces = [(1,2,3), (4,5,6)]
-    quad_faces = [(1,2,5,4), (2,3,6,5), (1,3,6,4)]
+    #faces
+    tri_faces = SVector((1,2,3), (4,5,6))
+    quad_faces = SVector((1,2,5,4), (2,3,6,5), (1,3,6,4))
+    #triangular faces
     for indices in tri_faces
         tri_nodes = Matrix{Float64}(undef,dim,0)
         tmp_vec = Vector{Float64}(undef, dim)
@@ -167,6 +170,7 @@ function wedge_vtk_order(corner_verts, order, dim)
             end
         end
     end
+    #quadrilateral faces
     for indices in quad_faces
         tmp_vec = Vector{Float64}(undef, dim)
         quad_nodes = Matrix{Float64}(undef, dim,0)
@@ -183,6 +187,7 @@ function wedge_vtk_order(corner_verts, order, dim)
             end
         end
     end
+    #volume
     e_z = (corner_verts[:,4] - corner_verts[:,1]) ./ order
     interior_tri_verts = [corner_verts[:,1] corner_verts[:,2] corner_verts[:,3]]
     face_coords = triangle_vtk_order(interior_tri_verts, order, 3, true)
