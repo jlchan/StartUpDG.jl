@@ -21,7 +21,7 @@ Given the points 'corner_verts' sort them in a lexicographical order and return
 the permutated points. 
 """
 function sort_by_axis(corner_verts)
-    permutation = sortperm([corner_verts[:,i] for i in 1:size(corner_verts)[2]])
+    permutation = sortperm([corner_verts[:, i] for i in 1:size(corner_verts, 2)])
     return corner_verts[:, permutation]
 end
 
@@ -157,15 +157,15 @@ function wedge_vtk_order(corner_verts, order, dim)
     quad_faces = SVector((1,2,5,4), (2,3,6,5), (1,3,6,4))
     #triangular faces
     for indices in tri_faces
-        tri_nodes = Matrix{Float64}(undef,dim,0)
+        tri_nodes = Matrix{Float64}(undef, dim, 0)
         tmp_vec = Vector{Float64}(undef, dim)
         for j in indices
-            tri_nodes = hcat(tri_nodes,corner_verts[:,j])
+            tri_nodes = hcat(tri_nodes, corner_verts[:, j])
         end
         face_coords = triangle_vtk_order(tri_nodes, order, 3, true)
         face_coords = sort_by_axis(face_coords)
         if length(face_coords) > 0
-            for i in range(1,size(face_coords)[2])
+            for i in range(1,size(face_coords, 2))
                 for j in 1:dim
                     tmp_vec[j] = face_coords[j,i]
                 end
@@ -176,9 +176,9 @@ function wedge_vtk_order(corner_verts, order, dim)
     #quadrilateral faces
     for indices in quad_faces
         tmp_vec = Vector{Float64}(undef, dim)
-        quad_nodes = Matrix{Float64}(undef, dim,0)
+        quad_nodes = Matrix{Float64}(undef, dim, 0)
         for j in indices
-            quad_nodes = hcat(quad_nodes, corner_verts[:,j])
+            quad_nodes = hcat(quad_nodes, corner_verts[:, j])
         end
         face_coords = quad_vtk_order(quad_nodes, order, 3, true)
         if length(face_coords) > 0
@@ -195,11 +195,11 @@ function wedge_vtk_order(corner_verts, order, dim)
     interior_tri_verts = [corner_verts[:,1] corner_verts[:,2] corner_verts[:,3]]
     face_coords = triangle_vtk_order(interior_tri_verts, order, 3, true)
     face_coords = sort_by_axis(face_coords)
-    for i in range(1,num_verts_on_edge)
+    for i in range(1, num_verts_on_edge)
         tmp_vec = Vector{Float64}(undef, dim)
         face_coords = face_coords .+ e_z
         if length(face_coords) > 0
-            for k in range(1,size(face_coords)[2])
+            for k in 1:size(face_coords, 2)
                 for j in 1:dim
                     tmp_vec[j] = face_coords[j,k]
                 end
