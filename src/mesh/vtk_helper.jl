@@ -15,6 +15,11 @@ function n_verts_between(n, from, to)
     return edge_verts
 end
 
+"""
+    sort_by_axis(corner_verts)
+Given the points 'corner_verts' sort them in a lexicographical order and return
+the permutated points. 
+"""
 function sort_by_axis(corner_verts)
     permutation = sortperm([corner_verts[:,i] for i in 1:size(corner_verts)[2]])
     return corner_verts[:, permutation]
