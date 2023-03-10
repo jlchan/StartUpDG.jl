@@ -19,7 +19,6 @@ using Setfield: setproperties, @set # for "modifying" structs (setproperties)
 using SparseArrays: sparse, droptol!, blockdiag
 using Triangulate: Triangulate, TriangulateIO, triangulate
 @reexport using WriteVTK
-@reexport using UnPack: @unpack  # for getting values in RefElemData and MeshData
 
 # reference element utility functions
 include("RefElemData.jl")

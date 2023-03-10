@@ -34,11 +34,11 @@
             end
             md = MeshData(VXY, EToV, rd)
 
-            @unpack wq, Dr, Ds, Vq, Vf, wf = rd
+            (; wq, Dr, Ds, Vq, Vf, wf  ) = rd
             Nfaces = length(rd.fv)
-            @unpack x, y, xq, yq, xf, yf, K = md
-            @unpack rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq = md
-            @unpack FToF, mapM, mapP, mapB = md
+            (; x, y, xq, yq, xf, yf, K  ) = md
+            (; rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq  ) = md
+            (; FToF, mapM, mapP, mapB  ) = md
 
             @test md.x == md.xyz[1]
 
@@ -82,7 +82,7 @@
 
             @testset "check periodic node connectivity maps" begin
                 md = make_periodic(md, (true, true))
-                @unpack mapP = md
+                (; mapP  ) = md
                 u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y))
                 uf = Vf * u
                 #@test uf ≈ uf[mapP]

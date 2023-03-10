@@ -55,7 +55,7 @@ julia> md_periodic_x.is_periodic
 It is common to generate curved meshes by first generating a linear mesh, then moving high order nodes on the linear mesh. This can be done by calling [`MeshData`](@ref) again with new `x, y` coordinates:
 ```julia
 md = MeshData((VX, VY), EToV, rd)
-@unpack x, y = md
+(; x, y ) = md
 # <-- code to modify high order nodes (x,y)
 md_curved = MeshData(rd, md, x, y)
 ```

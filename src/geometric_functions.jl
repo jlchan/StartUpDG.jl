@@ -92,7 +92,7 @@ end
 
 # specialization for elements with different face types
 function estimate_h(e, rd::RefElemData{3, <:Union{Wedge, Pyr}}, md::MeshData)
-    @unpack node_ids_by_face = rd.element_type
+    (; node_ids_by_face ) = rd.element_type
     Jf_e = view(md.Jf, :, e)
     Jf_face = zero(eltype(md.Jf))
     for f in 1:rd.num_faces

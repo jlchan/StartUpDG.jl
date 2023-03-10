@@ -25,12 +25,12 @@ VXY, EToV = uniform_mesh(Tri(), K1D)
 md = MeshData(VXY, EToV, rd)
 
 # Define a function by interpolation
-@unpack x, y = md
+(; x, y  ) = md
 u = @. 2 + .5*exp(-100*(x^2 + y^2))
 
 # Compute derivatives using geometric mapping + chain rule
-@unpack Dr, Ds = rd
-@unpack rxJ, sxJ, J = md
+(; Dr, Ds  ) = rd
+(; rxJ, sxJ, J  ) = md
 dudx = (rxJ .* (Dr*u) + sxJ .* (Ds*u)) ./ J
 ```
 

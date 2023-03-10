@@ -7,11 +7,11 @@
             K1D = 2
             rd = RefElemData(Line(), approxType, N)        
             md = MeshData(uniform_mesh(Line(), K1D)..., rd)
-            @unpack wq, Dr, Vq, Vf, wf = rd
-            @unpack Nfaces = rd
-            @unpack x, xq, xf, K = md
-            @unpack rxJ, J, nxJ, wJq = md
-            @unpack mapM, mapP, mapB = md
+            (; wq, Dr, Vq, Vf, wf  ) = rd
+            (; Nfaces  ) = rd
+            (; x, xq, xf, K  ) = md
+            (; rxJ, J, nxJ, wJq  ) = md
+            (; mapM, mapP, mapB  ) = md
 
             @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
 
@@ -46,7 +46,7 @@
 
             # check periodic node connectivity maps
             md = make_periodic(md)
-            @unpack mapP = md
+            (; mapP  ) = md
             u = @. sin(pi * (.5 + x))
             uf = Vf * u
             @test uf ≈ uf[mapP]
@@ -59,11 +59,11 @@
             K1D = 2
             rd = RefElemData(Tri(), approxType, N)
             md = MeshData(uniform_mesh(Tri(), K1D)..., rd)
-            @unpack wq, Dr, Ds, Vq, Vf, wf = rd
+            (; wq, Dr, Ds, Vq, Vf, wf  ) = rd
             Nfaces = length(rd.fv)
-            @unpack x, y, xq, yq, xf, yf, K = md
-            @unpack rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq = md
-            @unpack FToF, mapM, mapP, mapB = md
+            (; x, y, xq, yq, xf, yf, K  ) = md
+            (; rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq  ) = md
+            (; FToF, mapM, mapP, mapB  ) = md
 
             @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
             @test md.x == md.xyz[1]
@@ -107,7 +107,7 @@
 
             # check periodic node connectivity maps
             md = make_periodic(md, (true, true))
-            @unpack mapP = md
+            (; mapP  ) = md
             u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y))
             uf = Vf * u
             @test uf ≈ uf[mapP]
@@ -126,11 +126,11 @@
             N, K1D = 3, 2
             rd = RefElemData(Quad(), approxType, N)        
             md = MeshData(uniform_mesh(Quad(), K1D)..., rd)
-            @unpack wq, Dr, Ds, Vq, Vf, wf = rd
+            (; wq, Dr, Ds, Vq, Vf, wf  ) = rd
             Nfaces = length(rd.fv)
-            @unpack x, y, xq, yq, xf, yf, K = md
-            @unpack rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq = md
-            @unpack FToF, mapM, mapP, mapB = md
+            (; x, y, xq, yq, xf, yf, K  ) = md
+            (; rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq  ) = md
+            (; FToF, mapM, mapP, mapB  ) = md
 
             @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
             @test md.x == md.xyz[1]
@@ -174,7 +174,7 @@
 
             # check periodic node connectivity maps
             md = make_periodic(md, (true, true))
-            @unpack mapP = md
+            (; mapP  ) = md
             u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y))
             uf = Vf * u
             @test uf ≈ uf[mapP]
@@ -183,7 +183,7 @@
         @testset "2D curved tests" begin
             rd = RefElemData(Quad(), N=4)
             md = MeshData(uniform_mesh(Quad(), 4, 4)..., rd)
-            @unpack x, y = md
+            (; x, y  ) = md
             x_curved = @. x + 0.1 * sin(pi * x) * sin(pi * y)
             y_curved = @. y + 0.1 * sin(pi * x) * sin(pi * y)
             md2 = MeshData(rd, md, x_curved, y_curved)
@@ -209,12 +209,12 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         K1D = 2
         rd = RefElemData(element_type, approximation_type, N)        
         md = MeshData(uniform_mesh(element_type, K1D)..., rd)
-        @unpack wq, Dr, Ds, Dt, Vq, Vf, wf = rd
+        (; wq, Dr, Ds, Dt, Vq, Vf, wf  ) = rd
         Nfaces = length(rd.fv)
-        @unpack x, y, z, xq, yq, zq, wJq, xf, yf, zf, K = md
-        @unpack rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J = md
-        @unpack nxJ, nyJ, nzJ, sJ = md
-        @unpack FToF, mapM, mapP, mapB = md
+        (; x, y, z, xq, yq, zq, wJq, xf, yf, zf, K  ) = md
+        (; rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J  ) = md
+        (; nxJ, nyJ, nzJ, sJ  ) = md
+        (; FToF, mapM, mapP, mapB  ) = md
 
         @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
         @test md.x == md.xyz[1]
@@ -269,7 +269,7 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         @test md_periodic.mapP != md.mapP # check that the node mapping actually changed
 
         u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y)) * sin(pi * (.5 + z))
-        @unpack mapP = md_periodic
+        (; mapP  ) = md_periodic
         uf = Vf * u
         @test uf ≈ uf[mapP] 
         
