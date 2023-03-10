@@ -6,7 +6,6 @@ This package contains routines to initialize reference element operators, physic
 
 ```julia
 using StartUpDG
-using UnPack
 
 # polynomial degree and mesh size
 N = 3
