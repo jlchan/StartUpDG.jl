@@ -64,8 +64,9 @@ export num_mortars_per_face, NonConformingQuadMeshExample
 
 # uniform meshes + face vertex orderings
 include("mesh/simple_meshes.jl")
-export readGmsh2D, uniform_mesh
-export readGmsh2D_v4, MeshImportOptions
+export uniform_mesh
+include("mesh/gmsh_utilities.jl")
+export readGmsh2D, readGmsh2D_v4, MeshImportOptions
 
 # Plots.jl recipes for meshes
 include("mesh/vtk_helper.jl")
