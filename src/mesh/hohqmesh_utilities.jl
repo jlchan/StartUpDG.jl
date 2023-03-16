@@ -34,12 +34,15 @@ function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
         # initialize face coordinates as linear coordinates
         curved_face_coordinates[1] .= md.x[rd.Fmask, element]
         curved_face_coordinates[2] .= md.y[rd.Fmask, element]
+
+        ids = 1:hmd.polydeg+1
         for f in 1:rd.num_faces
             f_HOHQMesh = HOHQMesh_to_StartUpDG_face_ordering[f]
             if curved_edges[f_HOHQMesh] == 1
                 curved_lobatto_coordinates = chebyshev_to_lobatto * curved_edge_coordinates                
-                curved_face_coordinates[1][fids[:, f]] .= curved_lobatto_coordinates[:, 1]
-                curved_face_coordinates[2][fids[:, f]] .= curved_lobatto_coordinates[:, 2]
+                curved_face_coordinates[1][fids[:, f]] .= curved_lobatto_coordinates[ids, 1]
+                curved_face_coordinates[2][fids[:, f]] .= curved_lobatto_coordinates[ids, 2]
+                ids = ids .+ (hmd.polydeg+1) # move onto next set of nodes if there is one
             end
         end
         
