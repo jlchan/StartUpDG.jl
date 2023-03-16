@@ -1,9 +1,7 @@
-
-
-using GLMakie, HOHQMesh
+using HOHQMesh
 
 # new project
-cylinder_flow = newProject("easy_example", "out")
+cylinder_flow = newProject("easy_example", "test/testset_HOHQMesh_meshes")
 
 # reset polynomial order
 setPolynomialOrder!(cylinder_flow, 3)
@@ -33,16 +31,5 @@ cylinder = newCircularArcCurve("circle",        # curve name
 
 addCurveToInnerBoundary!(cylinder_flow, cylinder, "inner1")
 
-# visualize project
-
-plotProject!(cylinder_flow, MODEL+GRID)
-
-# This commmand is a hacky way to "pause" the mesh generation so that you can see
-# the model curves and background grid before the mesh gets generated.
-readline()
-
 # generate the mesh
-
 generate_mesh(cylinder_flow)
-
-# profit?!
