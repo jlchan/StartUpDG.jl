@@ -68,7 +68,7 @@ export uniform_mesh
 include("mesh/gmsh_utilities.jl")
 export readGmsh2D, readGmsh2D_v4, MeshImportOptions
 include("mesh/hohqmesh_utilities.jl")
-
+export read_HOHQMesh
 
 # Plots.jl recipes for meshes
 include("mesh/vtk_helper.jl")
