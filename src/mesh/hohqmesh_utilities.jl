@@ -1,11 +1,55 @@
 struct ISM end
 struct ISM_V2 end
 
-struct HOHQMeshData{TV, TE, TC, TB}
-    VXYZ::TV
+struct HOHQMeshData{NDIMS, TV, TE, TP, TC, TB}
+    VXYZ::NTuple{NDIMS, TV}
     EToV::TE
+    polydeg::TP
     curved_elements::TC
     boundary_tags::TB
+end
+
+using NodesAndModes: face_basis
+
+function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
+    (; VXYZ, EToV) = hmd    
+    md = MeshData(VXYZ, EToV[:, SVector(1, 2, 4, 3)], rd)
+
+    # interpolation matrix from chebyshev_to_lobatto nodes
+    r_chebyshev = [-cos(j * pi / hmd.polydeg) for j in 0:hmd.polydeg]
+    chebyshev_to_lobatto = 
+        vandermonde(Line(), hmd.polydeg, gauss_lobatto_quad(0, 0, rd.N)[1]) / vandermonde(Line(), hmd.polydeg, r_chebyshev)
+
+    warp_face_nodes_to_volume_nodes = 
+        face_basis(rd.element_type, rd.N, rd.rst...) / face_basis(rd.element_type, rd.N, rd.r[rd.Fmask], rd.s[rd.Fmask])           
+
+    # HOHQMesh_to_StartUpDG_face_ordering = SVector(3, 2, 4, 1)
+    HOHQMesh_to_StartUpDG_face_ordering = SVector(2, 4, 1, 3) # why does this one seem to work?
+    curved_face_coordinates = ntuple(_ -> similar(md.x[rd.Fmask, 1]), 2)
+    fids = reshape(1:length(rd.Fmask), :, rd.num_faces)
+    x, y = copy.(md.xyz)
+    for curved_elem in hmd.curved_elements
+        (; element, curved_edges, curved_edge_coordinates) = curved_elem
+
+        # initialize face coordinates as linear coordinates
+        curved_face_coordinates[1] .= md.x[rd.Fmask, element]
+        curved_face_coordinates[2] .= md.y[rd.Fmask, element]
+        for f in 1:rd.num_faces
+            f_HOHQMesh = HOHQMesh_to_StartUpDG_face_ordering[f]
+            if curved_edges[f_HOHQMesh] == 1
+                curved_lobatto_coordinates = chebyshev_to_lobatto * curved_edge_coordinates                
+                curved_face_coordinates[1][fids[:, f]] .= curved_lobatto_coordinates[:, 1]
+                curved_face_coordinates[2][fids[:, f]] .= curved_lobatto_coordinates[:, 2]
+            end
+        end
+        
+        x[:, element] .= warp_face_nodes_to_volume_nodes * curved_face_coordinates[1]
+        y[:, element] .= warp_face_nodes_to_volume_nodes * curved_face_coordinates[2]
+    end
+
+    md_curved = MeshData(rd, md, x, y) 
+
+    return md_curved
 end
 
 function read_HOHQMesh(filename::String)
@@ -43,7 +87,7 @@ function _read_HOHQMesh(lines, ::ISM_V2)
     curved_elements = CurvedHOHQMeshElement[]
     nvertices = length(split(lines[1]))    
     num_faces = nvertices == 4 ? 4 : 6 # in 2D, 4 faces. In 3D, 6 faces
-    EToV = zeros(nelements, nvertices)
+    EToV = zeros(Int, nelements, nvertices)
     boundary_tags = Matrix{String}(undef, nelements, num_faces)
     for e in 1:nelements
         EToV[e, :] .= parse.(Int, split(lines[1]))
@@ -67,7 +111,12 @@ function _read_HOHQMesh(lines, ::ISM_V2)
             boundary_tags[e, i] = tags[i]
         end        
     end
-    return (VX, VY, VZ), EToV, curved_elements, boundary_tags
+
+    if nvertices == 4
+        return (VX, VY), EToV, polydeg, curved_elements, boundary_tags
+    else
+        return (VX, VY, VZ), EToV, polydeg, curved_elements, boundary_tags
+    end
 end
 
 function _read_HOHQMesh(lines, ::ISM)    
@@ -105,7 +154,11 @@ function _read_HOHQMesh(lines, ::ISM)
             boundary_tags[e, i] = tags[i]
         end        
     end
-    return (VX, VY, VZ), EToV, curved_elements, boundary_tags
+    if nvertices == 4
+        return (VX, VY), EToV, curved_elements, boundary_tags
+    else
+        return (VX, VY, VZ), EToV, curved_elements, boundary_tags
+    end
 end
 
         
