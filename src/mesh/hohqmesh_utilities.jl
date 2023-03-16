@@ -130,7 +130,7 @@ function _read_HOHQMesh(lines, ::ISM)
     curved_elements = CurvedHOHQMeshElement[]
     nvertices = length(split(lines[1]))    
     num_faces = nvertices == 4 ? 4 : 6 # in 2D, 4 faces. In 3D, 6 faces
-    EToV = zeros(nelements, nvertices)
+    EToV = zeros(Int, nelements, nvertices)
     boundary_tags = Matrix{String}(undef, nelements, num_faces)
     for e in 1:nelements
         EToV[e, :] .= parse.(Int, split(lines[1]))
@@ -155,9 +155,9 @@ function _read_HOHQMesh(lines, ::ISM)
         end        
     end
     if nvertices == 4
-        return (VX, VY), EToV, curved_elements, boundary_tags
+        return (VX, VY), EToV, polydeg, curved_elements, boundary_tags
     else
-        return (VX, VY, VZ), EToV, curved_elements, boundary_tags
+        return (VX, VY, VZ), EToV, polydeg, curved_elements, boundary_tags
     end
 end
 
