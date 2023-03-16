@@ -1,9 +1,9 @@
 """
-findline(word::String,lines)
-## Ouput
-line number of given word in file
-## Notes
-expexted that the word exists once in the file
+findline(word::String, lines)
+
+Outputs the line number of `word` in `lines`. 
+
+It is assumed that the word exists at least once in the file.
 """
 function findline(name::String, lines::Vector{String})
     for (i, line) in enumerate(lines)
