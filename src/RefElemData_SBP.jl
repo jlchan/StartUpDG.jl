@@ -179,7 +179,7 @@ end
 
 function build_Ef_Fmask(rd_sbp::RefElemData; tol = 100*eps())
     
-    @unpack rq, sq, rf, sf, Nfaces = rd_sbp   
+    (; rq, sq, rf, sf, Nfaces ) = rd_sbp   
     rf, sf = (x->reshape(x, length(rf) ÷ Nfaces, Nfaces)).((rf, sf))
     Fmask = zeros(Int, length(rf) ÷ Nfaces, Nfaces) # 
     Ef = zeros(length(rf), length(rq)) # extraction matrix
@@ -210,7 +210,7 @@ end
 Constructs hybridized SBP operators given a `RefElemData`. Returns operators `Qrsth..., VhP, Ph`.
 """
 function hybridized_SBP_operators(rd)
-    @unpack M, Vq, Pq, Vf, wf, Drst, nrstJ = rd
+    (; M, Vq, Pq, Vf, wf, Drst, nrstJ ) = rd
     Qrst = (D->Pq' * M * D * Pq).(Drst)
     Ef = Vf * Pq
     Brst = (nJ->diagm(wf .* nJ)).(nrstJ)

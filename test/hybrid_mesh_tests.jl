@@ -33,11 +33,11 @@
         @test all(@. abs(max(abs(md.xf[md.mapB]), abs(md.yf[md.mapB])) - 1) < 100 * eps() )
 
         ## test that the DG derivative of a polynomial recovers the exact derivative
-        @unpack x, y = md
+        (; x, y  ) = md
         u = @. x^3 - x^2 * y + 2 * y^3
         dudx = @. 3 * x^2 - 2 * x * y
 
-        @unpack rxJ, sxJ, J = md
+        (; rxJ, sxJ, J  ) = md
         dudr, duds = similar(md.x), similar(md.x)
         dudr.Quad .= rds[Quad()].Dr * u.Quad
         duds.Quad .= rds[Quad()].Ds * u.Quad
@@ -47,7 +47,7 @@
         @test norm(@. dudx - (rxJ * dudr + sxJ * duds) / J) < 1e3 * eps()
 
         # compute jumps
-        @unpack mapP = md
+        (; mapP  ) = md
         uf = NamedArrayPartition(Tri=rds[Tri()].Vf * u.Tri, Quad=rds[Quad()].Vf * u.Quad)
         uP = uf[mapP]    
         u_jump = similar(uf)
@@ -60,7 +60,7 @@
         rds = RefElemData((Tri(), Quad()), N = 2)
         md = MeshData(HybridMeshExample()..., rds)
 
-        @unpack x, y = md
+        (; x, y  ) = md
         @. x = x + 0.1 * sin(pi * x) * sin(pi * y)
         @. y = y + 0.1 * sin(pi * x) * sin(pi * y)
         md = MeshData(rds, md, x, y)

@@ -28,12 +28,12 @@ EToV = [[1 2 4 5], [2 3 5 6], [5 8 9], [4 5 7 8], [9 6 5]]
 md = MeshData(VX, VY, EToV, rds)
 
 # test that the local derivatives of a polynomial recover the exact derivative
-@unpack x, y = md
+(; x, y ) = md
 u = @. x^3 - x^2 * y + 2 * y^3
 dudx = @. 3 * x^2 - 2 * x * y
 
 # compute local derivatives
-@unpack rxJ, sxJ, J = md
+(; rxJ, sxJ, J ) = md
 dudr, duds = similar(md.x), similar(md.x)
 dudr.Quad .= rds[Quad()].Dr * u.Quad
 duds.Quad .= rds[Quad()].Ds * u.Quad

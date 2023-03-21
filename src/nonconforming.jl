@@ -9,7 +9,7 @@ The intended usage is as follows:
 rd = RefElemData(Quad(), N=7)
 md = MeshData(NonConformingQuadMeshExample(), rd)
 
-@unpack x, y = md
+(; x, y ) = md
 u = @. sin(pi * x) * sin(pi * y)
 
 # interpolate to faces
@@ -17,7 +17,7 @@ num_total_faces = num_faces(rd.element_type) * md.num_elements
 u_face = reshape(rd.Vf * u, :, num_total_faces)
 
 # interpolate faces to mortars (`uf` denotes mortar faces for `NonConformingMesh` types)
-@unpack conforming_faces, non_conforming_faces, mortar_interpolation_matrix = md.mesh_type
+(; conforming_faces, non_conforming_faces, mortar_interpolation_matrix ) = md.mesh_type
 u_mortar = similar(md.xf)
 view(u_mortar, :, 1:length(conforming_faces)) .= view(u_face, :, conforming_faces)
 
@@ -116,12 +116,12 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
     mortar_projection_matrix = mortar_mass_matrix \ (mortar_interpolation_matrix' * diagm(w_split))
     
     #Construct global coordinates
-    @unpack V1 = rd
+    (; V1 ) = rd
     x = V1 * VX[transpose(EToV)]
     y = V1 * VY[transpose(EToV)]
 
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
-    @unpack Vf = rd
+    (; Vf ) = rd
     xf = Vf * x
     yf = Vf * y
 
@@ -155,11 +155,11 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
     mapM, mapP, mapB = build_node_maps(FToF, (x_mortar, y_mortar))
 
     #Compute geometric factors and surface normals
-    @unpack Dr, Ds = rd
+    (; Dr, Ds ) = rd
     rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, Dr, Ds)
     rstxyzJ = SMatrix{2, 2}(rxJ, ryJ, sxJ, syJ)
 
-    @unpack Vq, wq = rd
+    (; Vq, wq ) = rd
     xq, yq = (x -> Vq * x).((x, y))
     wJq = diagm(wq) * (Vq * J)
 
