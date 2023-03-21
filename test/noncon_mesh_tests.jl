@@ -3,7 +3,7 @@
     rd = RefElemData(Quad(), N=3)
     md = MeshData(NonConformingQuadMeshExample(), rd)
 
-    @unpack x, y = md
+    (; x, y  ) = md
     u = @. sin(pi * x) * sin(pi * y)
 
     # interpolate to faces
@@ -11,7 +11,7 @@
     u_face = reshape(rd.Vf * u, :, num_total_faces)
 
     # interpolate faces to mortars (`uf` denotes mortar faces for `NonConformingMesh` types)
-    @unpack conforming_faces, non_conforming_faces, mortar_interpolation_matrix = md.mesh_type
+    (; conforming_faces, non_conforming_faces, mortar_interpolation_matrix  ) = md.mesh_type
 
     u_mortar = similar(md.xf)
     view(u_mortar, :, 1:length(conforming_faces)) .= view(u_face, :, conforming_faces)

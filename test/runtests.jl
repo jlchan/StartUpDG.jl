@@ -1,10 +1,10 @@
 using Test
 using Suppressor
 using LinearAlgebra
-using RecipesBase
-using Triangulate 
+using RecipesBase: RecipesBase
 using StartUpDG
 
+include("write_vtk_tests.jl")
 include("named_array_partition_tests.jl")
 include("triangulate_tests.jl")
 include("reference_elem_tests.jl")
