@@ -151,7 +151,7 @@
         @test abs(sum(rd.wf .* rd.nsJ)) < tol
         @test abs(sum(rd.wf .* rd.ntJ)) < tol
 
-        @unpack node_ids_by_face = rd.element_type
+        (; node_ids_by_face  ) = rd.element_type
         @test sum(rd.wf[node_ids_by_face[1]]) ≈ 4
         # Note: this is not the true area of face 2. Because we map 
         # all faces back to the reference face, there is a factor of 

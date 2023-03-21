@@ -8,7 +8,7 @@ Example:
 ```julia
 N = 3
 rd = RefElemData(Tri(), N)
-@unpack r, s = rd
+(; r, s ) = rd
 ```
 """ 
 struct RefElemData{Dim, ElemShape <: AbstractElemShape{Dim}, ApproximationType, 

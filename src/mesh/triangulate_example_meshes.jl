@@ -23,7 +23,7 @@ Base.@kwdef struct Scramjet{Ti}
 end
 
 function triangulate_domain(domain::RectangularDomain; h = .1)
-    @unpack xlims,ylims,segment_markers = domain
+    (; xlims,ylims,segment_markers ) = domain
     triin=Triangulate.TriangulateIO()
     triin.pointlist=Matrix{Cdouble}([xlims[1] ylims[1];
                                      xlims[2] ylims[1];
@@ -38,7 +38,7 @@ end
 
 # Todo: allow for general polygon with polygonal hole (using counterclockwise ordering)
 function triangulate_domain(domain::RectangularDomainWithHole; h = .1)
-    @unpack xlims, ylims, hole_xlims, hole_ylims, segment_markers  = domain    
+    (; xlims, ylims, hole_xlims, hole_ylims, segment_markers  ) = domain    
     triin=Triangulate.TriangulateIO()
     triin.pointlist=Matrix{Cdouble}([xlims[1] ylims[1];
                                     xlims[2] ylims[1];
@@ -87,7 +87,7 @@ Base.@kwdef struct CircularDomain{T}
 end
 
 function triangulate_domain(domain::CircularDomain; h = .1)
-    @unpack num_segments, radius, x_center, y_center = domain
+    (; num_segments, radius, x_center, y_center ) = domain
     triin=Triangulate.TriangulateIO()
 
     θ = LinRange(0, 1, num_segments)[1:end-1]
@@ -110,7 +110,7 @@ Base.@kwdef struct PartialCircularDomain{T_angle, T}
 end
 
 function triangulate_domain(domain::PartialCircularDomain; h = .1)
-    @unpack num_segments, radius, x_center, y_center, angle_range = domain
+    (; num_segments, radius, x_center, y_center, angle_range ) = domain
     triin=Triangulate.TriangulateIO()
 
     θ = LinRange(angle_range..., num_segments)

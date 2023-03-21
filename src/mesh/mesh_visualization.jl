@@ -14,9 +14,9 @@ RecipesBase.@recipe function f(m::MeshPlotter{2})
     legend --> false
     aspect_ratio --> 1
 
-    @unpack rd, md = m
-    @unpack x, y = md
-    @unpack Fmask = rd
+    (; rd, md ) = m
+    (; x, y ) = md
+    (; Fmask ) = rd
     Fmask = reshape(Fmask, length(Fmask) ÷ rd.Nfaces, rd.Nfaces)
     get_face_nodes(u, e, f) = view(u, view(Fmask, :, f), e)    
 
@@ -48,7 +48,7 @@ end
 
 RecipesBase.@recipe function f(m::VertexMeshPlotter{2})
 
-    @unpack VXY, EToV, fv = m
+    (; VXY, EToV, fv ) = m
     VX, VY = VXY
 
     linecolor --> :black

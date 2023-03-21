@@ -10,7 +10,7 @@ N, K1D = 3, 2
 rd = RefElemData(Tri(), N)
 VXY, EToV = uniform_mesh(Tri(), K1D)
 md = MeshElemData(VXY, EToV, rd)
-@unpack x, y = md
+(; x, y ) = md
 ```
 """
 Base.@kwdef struct MeshData{Dim, MeshType, 
@@ -228,7 +228,7 @@ MeshData(VXYZ::T, EToV, other_args...) where {NDIMS, T <: NTuple{NDIMS}} =
 function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
     # Construct global coordinates
-    @unpack V1 = rd
+    (; V1 ) = rd
     x = V1 * VX[transpose(EToV)]
     K = size(EToV, 1)
     Nfaces = 2
@@ -245,7 +245,7 @@ function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
     FToF[Nfaces, K] = Nfaces * K
 
     # Connectivity maps
-    @unpack Vf = rd
+    (; Vf ) = rd
     xf = Vf * x
     mapM = reshape(1:2*K, 2, K)
     mapP = copy(mapM)
@@ -259,7 +259,7 @@ function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
     nxJ = repeat([-1.0; 1.0], 1, K)
     Jf = abs.(nxJ)
 
-    @unpack Vq, wq = rd
+    (; Vq, wq ) = rd
     xq = Vq * x
     wJq = diagm(wq) * (Vq * J)
 
@@ -275,17 +275,17 @@ end
 
 function MeshData(VX, VY, EToV, rd::RefElemData{2})
 
-    @unpack fv = rd
+    (; fv ) = rd
     FToF = connect_mesh(EToV, fv)
     Nfaces, K = size(FToF)
 
     #Construct global coordinates
-    @unpack V1 = rd
+    (; V1 ) = rd
     x = V1 * VX[transpose(EToV)]
     y = V1 * VY[transpose(EToV)]
 
     # Compute connectivity maps: uP = exterior value used in DG numerical fluxes
-    @unpack Vf = rd
+    (; Vf ) = rd
     xf = Vf * x
     yf = Vf * y
     mapM, mapP, mapB = build_node_maps(FToF, (xf, yf))
@@ -294,11 +294,11 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2})
     mapP = reshape(mapP, Nfp * Nfaces, K)
 
     #Compute geometric factors and surface normals
-    @unpack Dr, Ds = rd
+    (; Dr, Ds ) = rd
     rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, Dr, Ds)
     rstxyzJ = SMatrix{2, 2}(rxJ, ryJ, sxJ, syJ)
 
-    @unpack Vq, wq = rd
+    (; Vq, wq ) = rd
     xq, yq = (x -> Vq * x).((x, y))
     wJq = diagm(wq) * (Vq * J)
 
@@ -316,27 +316,27 @@ end
 
 function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
 
-    @unpack fv = rd
+    (; fv ) = rd
     FToF = connect_mesh(EToV, fv)
     Nfaces, K = size(FToF)
 
     #Construct global coordinates
-    @unpack V1 = rd
+    (; V1 ) = rd
     x, y, z = (x -> V1 * x[transpose(EToV)]).((VX, VY, VZ))
 
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
-    @unpack r, s, t, Vf = rd
+    (; r, s, t, Vf ) = rd
     xf, yf, zf = (x -> Vf * x).((x, y, z))
     mapM, mapP, mapB = build_node_maps(rd, FToF, (xf, yf, zf))
     mapM = reshape(mapM, :, K)
     mapP = reshape(mapP, :, K)
     
     #Compute geometric factors and surface normals
-    @unpack Dr, Ds, Dt = rd
+    (; Dr, Ds, Dt ) = rd
     rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J = geometric_factors(x, y, z, Dr, Ds, Dt)
     rstxyzJ = SMatrix{3, 3}(rxJ, ryJ, rzJ, sxJ, syJ, szJ, txJ, tyJ, tzJ)
 
-    @unpack Vq, wq = rd
+    (; Vq, wq ) = rd
     xq, yq, zq = (x -> Vq * x).((x, y, z))
     wJq = diagm(wq) * (Vq * J)
 
