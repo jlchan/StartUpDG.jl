@@ -1,5 +1,5 @@
 @testset "HOHQMesh" begin 
-    rd = RefElemData(Quad(), 3)
+    rd = RefElemData(Quad(), 4)
 
     filename = "testset_HOHQMesh_meshes/easy_example.mesh"
     hmd = read_HOHQMesh(filename)
@@ -11,5 +11,5 @@
     filename = "testset_HOHQMesh_meshes/GingerbreadMan.mesh"
     hmd = read_HOHQMesh(filename)
     md = MeshData(hmd, rd)    
-    @test sum(md.wJq) ≈ 1075.1016547806466
+    @test sum(md.wJq) ≈ 1060.558197978162
 end
