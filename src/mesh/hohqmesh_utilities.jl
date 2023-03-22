@@ -104,17 +104,18 @@ function _read_HOHQMesh(lines, mesh_format)
 
         deleteat!(lines, 1:2) # move onto next lines
 
-        if all(curved_edges .== 0)
+        if all(curved_edges .== false)
             # do nothing
         else
             num_curved_faces = count(curved_edges)
-            curved_nodes = 1:(polydeg+1) * num_curved_faces
+            num_face_nodes = nvertices == 4 ? (polydeg + 1) : (polydeg + 1)^2
+            curved_nodes = 1:num_face_nodes * num_curved_faces
             curved_edge_coordinates = mapreduce(vcat, lines[curved_nodes]) do s
                 (parse.(Float64, split(s)))'
             end
             push!(curved_elements, 
                   CurvedHOHQMeshElement(e, curved_edges, curved_edge_coordinates))
-            deleteat!(lines, 1:polydeg+1) # move on to next lines
+            deleteat!(lines, curved_nodes) # move on to next lines
         end
 
         tags = split(popat!(lines, 1))
