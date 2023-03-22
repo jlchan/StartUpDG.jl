@@ -60,13 +60,13 @@ function read_HOHQMesh(filename::String)
     lines = readlines(f)
 
     if contains(lines[1], "ISM-V2")
-        format = ISM_V2()
+        mesh_format = ISM_V2()
         deleteat!(lines, 1)
     else
-        format = ISM()
+        mesh_format = ISM()
     end
 
-    return HOHQMeshData(_read_HOHQMesh(lines, format)...)
+    return HOHQMeshData(_read_HOHQMesh(lines, mesh_format)...)
 end
 
 # container for curved data for a HOHQMesh element
