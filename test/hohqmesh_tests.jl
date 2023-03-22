@@ -12,4 +12,17 @@
     hmd = read_HOHQMesh(filename)
     md = MeshData(hmd, rd)    
     @test sum(md.wJq) ≈ 1060.558197978162
+
+    # hex meshes
+    filename = "testset_HOHQMesh_meshes/MSMappedHex4P4.mesh"
+    hmd = read_HOHQMesh(filename)
+    md = MeshData(hmd, rd)    
+    
+    # Tri and Tet meshes
+    filename = "testset_HOHQMesh_meshes/MSMappedTri4P4.mesh"
+    hmd = read_HOHQMesh(filename, Tri())
+
+    filename = "testset_HOHQMesh_meshes/MSMappedTet4P4.mesh"
+    hmd = read_HOHQMesh(filename, Tet())
+
 end
