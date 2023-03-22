@@ -42,7 +42,7 @@ function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
                 curved_lobatto_coordinates = chebyshev_to_lobatto * curved_edge_coordinates
                 curved_face_coordinates[1][fids[:, f]] .= curved_lobatto_coordinates[ids, 1]
                 curved_face_coordinates[2][fids[:, f]] .= curved_lobatto_coordinates[ids, 2]
-                ids = ids .+ (hmd.polydeg+1) # move onto next set of nodes if there is one
+                ids = ids .+ (rd.N+1) # move onto next set of nodes if there is one
             end
         end
         
