@@ -18,7 +18,7 @@ function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
     # interpolation matrix from chebyshev_to_lobatto nodes
     r_chebyshev = [-cos(j * pi / hmd.polydeg) for j in 0:hmd.polydeg]
     chebyshev_to_lobatto = 
-        vandermonde(Line(), hmd.polydeg, gauss_lobatto_quad(0, 0, rd.N)[1]) / vandermonde(Line(), hmd.polydeg, r_chebyshev)
+        vandermonde(Line(), hmd.polydeg, nodes(Line(), rd.N)) / vandermonde(Line(), hmd.polydeg, r_chebyshev)
 
     warp_face_nodes_to_volume_nodes = 
         face_basis(rd.element_type, rd.N, rd.rst...) / face_basis(rd.element_type, rd.N, rd.r[rd.Fmask], rd.s[rd.Fmask])           
@@ -129,3 +129,62 @@ function _read_HOHQMesh(lines, mesh_format)
         return (VX, VY, VZ), EToV, polydeg, curved_elements, boundary_tags
     end
 end
+
+# reads a curved triangular .mesh file (not a public HOHQMesh utility yet)
+function read_HOHQMesh(filename::String, element_type::Union{Tri, Tet})
+
+    f = open(filename)
+    lines = readlines(f)
+
+    num_nodes, nelements, polydeg = parse.(Int, split(popat!(lines, 1)))
+    VX, VY, VZ = ntuple(_ -> zeros(num_nodes), 3)
+    for i in 1:num_nodes
+        VX[i], VY[i], VZ[i] = parse.(Float64, split(lines[i]))
+    end
+    deleteat!(lines, 1:num_nodes)
+
+    curved_elements = CurvedHOHQMeshElement[]
+    nvertices = length(split(lines[1]))
+    
+    # for Tri/Tet meshes, we still have 4 faces for Tri and 6 faces for Tet. 
+    # These correspond to collapsed quad/hex faces, respectively.
+    num_faces = nvertices == 3 ? 4 : 6 
+
+    EToV = zeros(Int, nelements, nvertices)
+    boundary_tags = Matrix{String}(undef, nelements, num_faces)
+    for e in 1:nelements
+        EToV[e, :] .= parse.(Int, split(lines[1]))
+        curved_edges = parse.(Bool, split(lines[2]))
+
+        deleteat!(lines, 1:2) # move onto next lines
+
+        if all(curved_edges .== false)
+            # do nothing
+        else
+            num_curved_faces = count(curved_edges)            
+
+            # note: HOHQMesh.jl uses (p+1)^2 nodes per face of the triangle, which 
+            # correspond to collapsed coordinates on the quad face. 
+            num_face_nodes = element_type isa Tri ? (polydeg + 1) : (polydeg + 1)^2 
+
+            curved_nodes = 1:num_face_nodes * num_curved_faces
+            curved_edge_coordinates = mapreduce(vcat, lines[curved_nodes]) do s
+                (parse.(Float64, split(s)))'
+            end
+            push!(curved_elements, 
+                  CurvedHOHQMeshElement(e, curved_edges, curved_edge_coordinates))
+            deleteat!(lines, curved_nodes) # move on to next lines
+        end
+
+        tags = split(popat!(lines, 1))
+        for i in eachindex(tags)
+            boundary_tags[e, i] = tags[i]
+        end
+    end
+    
+    if element_type isa Tri
+        return HOHQMeshData((VX, VY), EToV, polydeg, curved_elements, boundary_tags)
+    elseif element_type isa Tet
+        return HOHQMeshData((VX, VY, VZ), EToV, polydeg, curved_elements, boundary_tags)
+    end
+end        
