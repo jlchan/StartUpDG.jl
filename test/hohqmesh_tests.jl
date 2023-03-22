@@ -16,8 +16,8 @@
     # hex meshes
     filename = "testset_HOHQMesh_meshes/MSMappedHex4P4.mesh"
     hmd = read_HOHQMesh(filename)
-    md = MeshData(hmd, rd)    
-    
+    # md = MeshData(hmd, rd)    
+
     # Tri and Tet meshes
     filename = "testset_HOHQMesh_meshes/MSMappedTri4P4.mesh"
     hmd = read_HOHQMesh(filename, Tri())
