@@ -1,3 +1,4 @@
+using LinearAlgebra
 struct TensorProductWedge{TTri <: RefElemData{2, <:Tri}, TLine <: RefElemData{1, <:Line}}
     tri::TTri
     line::TLine
@@ -67,8 +68,19 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwa
     nsJ = [-eq; eq; zq; zt; zt]
     ntJ = [zq; zq; zq; -et; et] 
     
-    # TODO: create face interpolation matrix
-    Vf = nothing
+    # Create face interpolation matrix
+    vandermonde_tensor_wedge = zeros(length(rf), length(r))
+    V_tri, _, _ = basis(tri.element_type, tri.N, rf, sf)
+    V_line, _ = basis(line.element_type, line.N, tf)
+    id = 1
+    for j in axes(V_line, 2)
+        for i in axes(V_tri, 2)
+            @. vandermonde_tensor_wedge[:, id] = V_tri[:, i] * V_line[:,j]
+            id += 1
+        end
+    end
+
+    Vf = vandermonde_tensor_wedge / VDM
 
     # create tensor product quadrature rule
     tq, rq  = _wedge_tensor_product(line.rq, tri.rq)
@@ -79,8 +91,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwa
     Vq = line.Vq isa UniformScaling ? kron(I(num_line_nodes), tri.Vq) : kron(line.Vq, tri.Vq)
     M  = Vq' * diagm(wq) * Vq
     Pq = M \ (Vq' * diagm(wq))
-    # LIFT = M \ (Vf' * diagm(wf))
-    LIFT = nothing
+    LIFT = M \ (Vf' * diagm(wf))
 
     # tensor product plotting nodes
     tp, rp  = _wedge_tensor_product(line.rp, tri.rp)
