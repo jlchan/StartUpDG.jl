@@ -11,9 +11,30 @@ end
 
 using NodesAndModes: face_basis
 
+# why does this one seem to work?
+get_HOHQMesh_to_StartUpDG_face_ordering(::Quad) = SVector(2, 4, 1, 3) 
+get_HOHQMesh_to_StartUpDG_face_ordering(::Tri) = SVector(1, 2, 3) 
+
+vertex_reordering(::Quad) = SVector(1, 2, 4, 3)
+vertex_reordering(::Tri) = SVector(1, 3, 2)
+
+function get_HOHQMesh_ids(::Quad, curved_edges, f, polydeg) 
+    active_face_offset = max.(0, cumsum(curved_edges) .- 1) * (polydeg + 1)
+    return (1:polydeg+1) .+ active_face_offset[f]
+end
+
+function get_HOHQMesh_ids(::Tri, curved_edges, f, polydeg)
+    active_face_offset = max.(0, cumsum(curved_edges) .- 1) * (polydeg + 1)
+    if f == 1 || f == 2
+        return (1:polydeg+1) .+ active_face_offset[f]
+    else # reverse order for face 3
+        return (polydeg+1:-1:1) .+ active_face_offset[f]
+    end    
+end
+
 function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
     (; VXYZ, EToV) = hmd    
-    md = MeshData(VXYZ, EToV[:, SVector(1, 2, 4, 3)], rd)
+    md = MeshData(VXYZ, EToV[:, vertex_reordering(rd.element_type)], rd)
 
     # interpolation matrix from chebyshev_to_lobatto nodes
     r_chebyshev = [-cos(j * pi / hmd.polydeg) for j in 0:hmd.polydeg]
@@ -23,8 +44,7 @@ function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
     warp_face_nodes_to_volume_nodes = 
         face_basis(rd.element_type, rd.N, rd.rst...) / face_basis(rd.element_type, rd.N, rd.r[rd.Fmask], rd.s[rd.Fmask])           
 
-    # HOHQMesh_to_StartUpDG_face_ordering = SVector(3, 2, 4, 1)
-    HOHQMesh_to_StartUpDG_face_ordering = SVector(2, 4, 1, 3) # why does this one seem to work?
+    HOHQMesh_to_StartUpDG_face_ordering = get_HOHQMesh_to_StartUpDG_face_ordering(rd.element_type)
     curved_face_coordinates = ntuple(_ -> similar(md.x[rd.Fmask, 1]), 2)
     fids = reshape(1:length(rd.Fmask), :, rd.num_faces)
     x, y = copy.(md.xyz)
@@ -38,11 +58,17 @@ function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
         ids = 1:rd.N+1
         for f in 1:rd.num_faces
             f_HOHQMesh = HOHQMesh_to_StartUpDG_face_ordering[f]
-            if curved_edges[f_HOHQMesh] == 1
-                curved_lobatto_coordinates = chebyshev_to_lobatto * curved_edge_coordinates
-                curved_face_coordinates[1][fids[:, f]] .= curved_lobatto_coordinates[ids, 1]
-                curved_face_coordinates[2][fids[:, f]] .= curved_lobatto_coordinates[ids, 2]
-                ids = ids .+ (rd.N+1) # move onto next set of nodes if there is one
+            if curved_edges[f_HOHQMesh] == 1     
+                # if isdefined(Main, :Infiltrator)
+                #     Main.Infiltrator.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
+                # end
+                ids_HOHQMesh = get_HOHQMesh_ids(rd.element_type, curved_edges, f, hmd.polydeg)
+                curved_lobatto_coordinates = chebyshev_to_lobatto * curved_edge_coordinates[ids_HOHQMesh, :]
+                curved_face_coordinates[1][fids[:, f]] .= curved_lobatto_coordinates[:, 1]
+                curved_face_coordinates[2][fids[:, f]] .= curved_lobatto_coordinates[:, 2]
+
+                # move onto next set of nodes if there is one
+                ids = ids .+ (rd.N+1) 
             end
         end
         
