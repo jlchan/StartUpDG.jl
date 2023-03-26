@@ -184,7 +184,7 @@ end
     @testset "Degree $tri_grad triangle" for tri_grad = [1, 2, 3, 4]
         @testset "Degree $line_grad line" for line_grad = [1, 2, 3, 4]
         line = RefElemData(Line(), line_grad)
-        tri = RefElemData(Tri(), tri_grad)
+        tri  = RefElemData(Tri(), tri_grad)
         tensor = TensorProductWedge(tri, line)
         rd = RefElemData(Wedge(), tensor, 1)
 
