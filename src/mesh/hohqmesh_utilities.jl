@@ -11,24 +11,25 @@ end
 
 using NodesAndModes: face_basis
 
-# why does this one seem to work?
-get_HOHQMesh_to_StartUpDG_face_ordering(::Quad) = SVector(2, 4, 1, 3) 
-get_HOHQMesh_to_StartUpDG_face_ordering(::Tri) = SVector(1, 2, 3) 
-
 vertex_reordering(::Quad) = SVector(1, 2, 4, 3)
 vertex_reordering(::Tri) = SVector(1, 3, 2)
 
-function get_HOHQMesh_ids(::Quad, curved_edges, f, polydeg) 
+# see https://trixi-framework.github.io/HOHQMesh/TheISMMeshFileFormats 
+# for more details on HOHQMesh's face ordering. 
+get_HOHQMesh_to_StartUpDG_face_ordering(::Quad) = SVector(3, 2, 4, 1) 
+get_HOHQMesh_to_StartUpDG_face_ordering(::Tri) = SVector(1, 2, 3) 
+
+function get_HOHQMesh_ids(::Quad, curved_edges, f_HOHQMesh, f, polydeg) 
     active_face_offset = max.(0, cumsum(curved_edges) .- 1) * (polydeg + 1)
     return (1:polydeg+1) .+ active_face_offset[f]
 end
 
-function get_HOHQMesh_ids(::Tri, curved_edges, f, polydeg)
+function get_HOHQMesh_ids(::Tri, curved_edges, f_HOHQMesh, f, polydeg)
     active_face_offset = max.(0, cumsum(curved_edges) .- 1) * (polydeg + 1)
     if f == 1 || f == 2
-        return (1:polydeg+1) .+ active_face_offset[f]
-    else # reverse order for face 3
-        return (polydeg+1:-1:1) .+ active_face_offset[f]
+        return (1:polydeg+1) .+ active_face_offset[f_HOHQMesh]
+    else # reverse node ordering for face 3
+        return (polydeg+1:-1:1) .+ active_face_offset[f_HOHQMesh]
     end    
 end
 
@@ -55,18 +56,16 @@ function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
         curved_face_coordinates[1] .= reshape(md.x[rd.Fmask, element], :, rd.num_faces)
         curved_face_coordinates[2] .= reshape(md.y[rd.Fmask, element], :, rd.num_faces)
 
-        ids = 1:rd.N+1
-        for f in 1:rd.num_faces
-            f_HOHQMesh = HOHQMesh_to_StartUpDG_face_ordering[f]
-            if curved_edges[f_HOHQMesh] == 1     
-                # TODO: update to `ids_HOHQMesh = get_HOHQMesh_ids(rd.element_type, curved_edges, f, f_HOHQMesh, hmd.polydeg)`
-                ids_HOHQMesh = get_HOHQMesh_ids(rd.element_type, curved_edges, f, hmd.polydeg)
+        for (f_HOHQMesh, f) in enumerate(HOHQMesh_to_StartUpDG_face_ordering)
+            if curved_edges[f_HOHQMesh] == 1                     
+                ids_HOHQMesh = get_HOHQMesh_ids(rd.element_type, curved_edges, f_HOHQMesh, f, hmd.polydeg)
+
+                # if isdefined(Main, :Infiltrator)
+                #     Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
+                # end
                 curved_lobatto_coordinates = chebyshev_to_lobatto * curved_edge_coordinates[ids_HOHQMesh, :]
                 curved_face_coordinates[1][:, f] .= curved_lobatto_coordinates[:, 1]
                 curved_face_coordinates[2][:, f] .= curved_lobatto_coordinates[:, 2]
-
-                # move onto next set of nodes if there is one
-                ids = ids .+ (rd.N+1) 
             end
         end
         
@@ -79,8 +78,11 @@ function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
     return md_curved
 end
 
+# see https://trixi-framework.github.io/HOHQMesh/TheISMMeshFileFormats 
+# for more details on HOHQMesh's face ordering. 
 get_HOHQMesh_to_StartUpDG_face_ordering(::Hex) = SVector(3, 4, 5, 2, 6, 1)
 vertex_reordering(::Hex) = SVector(1, 4, 2, 3, 5, 8, 6, 7)
+
 function get_HOHQMesh_ids(::Hex, curved_edges, f_HOHQMesh, f, polydeg) 
     num_face_nodes = (polydeg + 1)^2
     active_face_offset = max.(0, cumsum(curved_edges) .- 1) * num_face_nodes
