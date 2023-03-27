@@ -12,8 +12,9 @@
     filename = "testset_HOHQMesh_meshes/GingerbreadMan.mesh"
     hmd = read_HOHQMesh(filename)
     rd = RefElemData(Quad(), 4)
-    md = MeshData(hmd, rd)    
-    @test sum(md.wJq) ≈ 1060.558197978162
+    md = MeshData(hmd, rd)   
+    @test all(md.J .> 0) 
+    @test sum(md.wJq) ≈ 1275.7443383314635
 
     # Hex meshes
     filename = "testset_HOHQMesh_meshes/MSMappedHex4P4.mesh"
@@ -30,7 +31,7 @@
     md = MeshData(hmd, rd)
     @test all(md.J .> 0)
     @test sum(md.wJq) ≈ 1.0
-    
+
     # Tet meshes
     filename = "testset_HOHQMesh_meshes/MSMappedTet4P4.mesh"
     hmd = read_HOHQMesh(filename, Tet())
