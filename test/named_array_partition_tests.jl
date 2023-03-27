@@ -15,7 +15,7 @@
     @test propertynames(x) == (:a, :b)
 
     x = NamedArrayPartition(a = ones(1), b = 2*ones(1))
-    @test Base.summary(x)[1:71] == "NamedArrayPartition{Float64, RecursiveArrayTools.ArrayPartition{Float64"
+    @test Base.summary(x) == string(typeof(x), " with arrays:")
     @test (@capture_out Base.show(stdout, MIME"text/plain"(), x)) == "(a = [1.0], b = [2.0])"
 
     # TODO: get FillArrays broadcast working
