@@ -1,5 +1,6 @@
 @testset "HOHQMesh" begin 
 
+    # Quad meshes
     filename = "testset_HOHQMesh_meshes/easy_example.mesh"
     hmd = read_HOHQMesh(filename)
     rd = RefElemData(Quad(), 4)
@@ -20,6 +21,7 @@
     rd = RefElemData(Hex(), 4)
     md = MeshData(hmd, rd)    
     @test all(md.J .> 0)
+    @test sum(md.wJq) ≈ 1.0
 
     # Tri meshes
     filename = "testset_HOHQMesh_meshes/MSMappedTri4P4.mesh"
@@ -27,7 +29,8 @@
     rd = RefElemData(Tri(), 4)
     md = MeshData(hmd, rd)
     @test all(md.J .> 0)
-
+    @test sum(md.wJq) ≈ 1.0
+    
     # Tet meshes
     filename = "testset_HOHQMesh_meshes/MSMappedTet4P4.mesh"
     hmd = read_HOHQMesh(filename, Tet())
