@@ -7,6 +7,7 @@ end
 # for clarity that we're taking a tensor product of nodes
 _wedge_tensor_product(line, tri) = vec.(meshgrid(line, tri))
 
+# TODO: should we remove the argument "N" from this constructor?
 function RefElemData(elem::Wedge, approximation_type::TensorProductWedge, N; kwargs...)
 
     (; tri, line) = approximation_type
