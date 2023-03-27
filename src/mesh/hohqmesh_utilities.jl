@@ -85,7 +85,7 @@ function get_HOHQMesh_ids(::Hex, curved_edges, f_HOHQMesh, f, polydeg)
     num_face_nodes = (polydeg + 1)^2
     active_face_offset = max.(0, cumsum(curved_edges) .- 1) * num_face_nodes
     if f == 5|| f == 6
-        # permute node ordering
+        # permute node ordering for these faces
         ids = vec(permutedims(reshape(1:num_face_nodes, polydeg+1, polydeg+1)))
         return ids .+ active_face_offset[f_HOHQMesh]
     else
@@ -119,8 +119,9 @@ function MeshData(hmd::HOHQMeshData{3}, rd::RefElemData{3, <:Hex})
         curved_face_coordinates[2] .= reshape(md.y[rd.Fmask, element], :, rd.num_faces)
         curved_face_coordinates[3] .= reshape(md.z[rd.Fmask, element], :, rd.num_faces)
 
-        for (f_HOHQMesh, f) in enumerate(HOHQMesh_to_StartUpDG_face_ordering)
+        for (f_HOHQMesh, f) in enumerate(HOHQMesh_to_StartUpDG_face_ordering)            
             if curved_edges[f_HOHQMesh] == 1
+                # incorporate any permutations or face reorderings into indices
                 ids_HOHQMesh = get_HOHQMesh_ids(rd.element_type, curved_edges, f_HOHQMesh, f, hmd.polydeg)
 
                 curved_lobatto_coordinates = chebyshev_to_lobatto * curved_edge_coordinates[ids_HOHQMesh, :]
