@@ -179,6 +179,9 @@
     end
 end
 
+inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}) = ((9.0, 13.898979485566365, 19.292060161853993, 26.999999999999808), (12.0, 16.898979485566365, 22.292060161853993, 29.999999999999808), (16.0, 20.898979485566365, 26.292060161853993, 33.99999999999981), (21.0, 25.898979485566365, 31.292060161853993, 38.99999999999981))
+
+
 @testset "Tensor reference elements" begin
     tol = 5e2*eps()
     @testset "Degree $tri_grad triangle" for tri_grad = [1, 2, 3, 4]
@@ -187,6 +190,9 @@ end
         tri = RefElemData(Tri(), tri_grad)
         tensor = TensorProductWedge(tri, line)
         rd = RefElemData(Wedge(), tensor, 1)
+
+        @test rd.approximation_type.line.N == line_grad
+        @test rd.approximation_type.tri.N == tri_grad
 
         @test rd.r == rd.rst[1]
         @test rd.s == rd.rst[2]
@@ -238,8 +244,13 @@ end
         @test StartUpDG.num_faces(Wedge()) == 5
         @test StartUpDG.num_vertices(Wedge()) == 6
 
+        @test face_type(Wedge(), 1) == Quad()
+        @test face_type(Wedge(), 2) == Quad()
         @test face_type(Wedge(), 3) == Quad()
-        #@test inverse_trace_constant(rd) ≈ 18.56357670538197
+        @test face_type(Wedge(), 4) == Tri()
+        @test face_type(Wedge(), 5) == Tri()
+        
+        @test inverse_trace_constant(rd) ≈ inverse_trace_constant_compare(rd)[line_grad][tri_grad]
         end
     end
 end
