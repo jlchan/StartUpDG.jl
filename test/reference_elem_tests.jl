@@ -249,7 +249,7 @@ inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}
         @test face_type(Wedge(), 3) == Quad()
         @test face_type(Wedge(), 4) == Tri()
         @test face_type(Wedge(), 5) == Tri()
-        
+
         @test inverse_trace_constant(rd) ≈ inverse_trace_constant_compare(rd)[line_grad][tri_grad]
         end
     end
