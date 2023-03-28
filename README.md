@@ -25,12 +25,12 @@ VXY, EToV = uniform_mesh(Tri(), K1D)
 md = MeshData(VXY, EToV, rd)
 
 # Define a function by interpolation
-(; x, y  ) = md
+(; x, y) = md
 u = @. 2 + .5*exp(-100*(x^2 + y^2))
 
 # Compute derivatives using geometric mapping + chain rule
-(; Dr, Ds  ) = rd
-(; rxJ, sxJ, J  ) = md
+(; Dr, Ds) = rd
+(; rxJ, sxJ, J) = md
 dudx = (rxJ .* (Dr*u) + sxJ .* (Ds*u)) ./ J
 ```
 
@@ -39,4 +39,4 @@ dudx = (rxJ .* (Dr*u) + sxJ .* (Ds*u)) ./ J
 * SBP nodal points were contributed by [Ethan Kubatko](https://sites.google.com/site/chilatosu/ethan-bio) and [Jason Hicken](https://doi.org/10.1007/s10915-020-01154-8). 
 * [Hendrik Ranocha](https://ranocha.de) contributed to array types used in cut-cell and hybrid meshes. 
 * [Mason McCallum](https://github.com/masonamccallum) contributed Gmsh reading capabilities
-* [David Knapp](https://github.com/Davknapp) contributed VTK visualization capabilities
+* [David Knapp](https://github.com/Davknapp) contributed VTK visualization capabilities and tensor product wedges.
