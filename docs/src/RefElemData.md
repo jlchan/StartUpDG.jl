@@ -53,7 +53,7 @@ This results in a DG spectral element method (DG-SEM) discretization, with a dia
 
 By default, `RefElemData` is constructed for a nodal basis (in order to facilitate curved meshes, connectivity, etc). There is not functionality to change interpolation nodes, since these transformations can be performed as algebraic changes of basis after setting up a `RefElemData`. 
 
-## RefElemData based on SBP finite differences
+## `RefElemData` based on SBP finite differences
 
 It is also possible to construct a [`RefElemData`](@ref) based on [multi-dimensional SBP finite difference operators](https://doi.org/10.1137/15M1038360). These utilize nodes constructed by [Tianheng Chen and Chi-Wang Shu](https://doi.org/10.1016/j.jcp.2017.05.025), [Ethan Kubatko](https://sites.google.com/site/chilatosu/ethan-bio), and [Jason Hicken](https://doi.org/10.1007/s10915-020-01154-8).
 
@@ -78,3 +78,12 @@ On triangles, we have the following SBP types with the following properties:
 * `SBP{Hicken}`: degree `2N` accurate quadrature rules with `N+2` Lobatto nodes on each face. Nodes for `N=4`:
 ![hicken4](assets/hicken_N4.png)
 
+## Tensor product `RefElemData` on wedge elements
+
+There is experimental support for `RefElemData`s created from tensor products of triangular and 1D `RefElemData` objects. 
+```julia
+line = RefElemData(Line(), N_line)
+tri  = RefElemData(Tri(), N_tri)
+rd = RefElemData(Wedge(), TensorProductWedge(tri, line))
+```
+This new `rd::RefElemData` can then be used to create a wedge-based `MeshData`. The individual `RefElemData` objects can be accessed from `rd.approximation_type::TensorProductWedge`. 
