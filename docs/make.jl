@@ -21,5 +21,6 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/jlchan/StartUpDG.jl",
+    repo = "github.com/USERNAME/PACKAGENAME.jl.git",
+    devbranch = "main"
 )
