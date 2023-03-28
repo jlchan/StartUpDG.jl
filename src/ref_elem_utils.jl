@@ -51,6 +51,7 @@ inverse_trace_constant(rd::RefElemData{3, Hex, Polynomial}) = 3 * (rd.N + 1) * (
 inverse_trace_constant(rd::RefElemData{1, Line, SBP{TensorProductLobatto}}) = rd.N * (rd.N + 1) / 2
 inverse_trace_constant(rd::RefElemData{2, Quad, SBP{TensorProductLobatto}}) = rd.N * (rd.N + 1)
 inverse_trace_constant(rd::RefElemData{3, Hex, SBP{TensorProductLobatto}}) = 3 * rd.N * (rd.N + 1) / 2
+# TODO: add link to proof when we write it up
 inverse_trace_constant(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}) = inverse_trace_constant(rd.approximation_type.line) + inverse_trace_constant(rd.approximation_type.tri)
 
 # precomputed
