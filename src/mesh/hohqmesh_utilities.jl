@@ -62,9 +62,6 @@ function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
             if curved_faces[f_HOHQMesh] == 1                     
                 ids_HOHQMesh = get_HOHQMesh_ids(rd.element_type, curved_faces, f_HOHQMesh, f, hmd.polydeg)
 
-                # if isdefined(Main, :Infiltrator)
-                #     Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
-                # end
                 curved_lobatto_coordinates = chebyshev_to_lobatto * curved_edge_coordinates[ids_HOHQMesh, :]
                 curved_face_coordinates[1][:, f] .= curved_lobatto_coordinates[:, 1]
                 curved_face_coordinates[2][:, f] .= curved_lobatto_coordinates[:, 2]
