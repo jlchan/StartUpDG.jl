@@ -21,13 +21,13 @@ vertex_reordering(::Tri) = SVector(1, 3, 2)
 get_HOHQMesh_to_StartUpDG_face_ordering(::Quad) = SVector(3, 2, 4, 1) 
 get_HOHQMesh_to_StartUpDG_face_ordering(::Tri) = SVector(1, 2, 3) 
 
-function get_HOHQMesh_ids(::Quad, curved_edges, f_HOHQMesh, f, polydeg) 
-    active_face_offset = max.(0, cumsum(curved_edges) .- 1) * (polydeg + 1)
+function get_HOHQMesh_ids(::Quad, curved_faces, f_HOHQMesh, f, polydeg) 
+    active_face_offset = max.(0, cumsum(curved_faces) .- 1) * (polydeg + 1)
     return (1:polydeg+1) .+ active_face_offset[f]
 end
 
-function get_HOHQMesh_ids(::Tri, curved_edges, f_HOHQMesh, f, polydeg)
-    active_face_offset = max.(0, cumsum(curved_edges) .- 1) * (polydeg + 1)
+function get_HOHQMesh_ids(::Tri, curved_faces, f_HOHQMesh, f, polydeg)
+    active_face_offset = max.(0, cumsum(curved_faces) .- 1) * (polydeg + 1)
     if f == 1 || f == 2
         return (1:polydeg+1) .+ active_face_offset[f_HOHQMesh]
     else # reverse node ordering for face 3
@@ -52,15 +52,15 @@ function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
     curved_face_coordinates = ntuple(_ -> similar(reshape(md.x[rd.Fmask, 1], :, rd.num_faces)), 2)
     x, y = copy.(md.xyz)
     for curved_elem in hmd.curved_elements
-        (; element, curved_edges, curved_edge_coordinates) = curved_elem
+        (; element, curved_faces, curved_edge_coordinates) = curved_elem
 
         # initialize face coordinates as linear coordinates
         curved_face_coordinates[1] .= reshape(md.x[rd.Fmask, element], :, rd.num_faces)
         curved_face_coordinates[2] .= reshape(md.y[rd.Fmask, element], :, rd.num_faces)
 
         for (f_HOHQMesh, f) in enumerate(HOHQMesh_to_StartUpDG_face_ordering)
-            if curved_edges[f_HOHQMesh] == 1                     
-                ids_HOHQMesh = get_HOHQMesh_ids(rd.element_type, curved_edges, f_HOHQMesh, f, hmd.polydeg)
+            if curved_faces[f_HOHQMesh] == 1                     
+                ids_HOHQMesh = get_HOHQMesh_ids(rd.element_type, curved_faces, f_HOHQMesh, f, hmd.polydeg)
 
                 # if isdefined(Main, :Infiltrator)
                 #     Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
@@ -85,9 +85,9 @@ end
 get_HOHQMesh_to_StartUpDG_face_ordering(::Hex) = SVector(3, 4, 5, 2, 6, 1)
 vertex_reordering(::Hex) = SVector(1, 4, 2, 3, 5, 8, 6, 7)
 
-function get_HOHQMesh_ids(::Hex, curved_edges, f_HOHQMesh, f, polydeg) 
+function get_HOHQMesh_ids(::Hex, curved_faces, f_HOHQMesh, f, polydeg) 
     num_face_nodes = (polydeg + 1)^2
-    active_face_offset = max.(0, cumsum(curved_edges) .- 1) * num_face_nodes
+    active_face_offset = max.(0, cumsum(curved_faces) .- 1) * num_face_nodes
     if f == 5|| f == 6
         # permute node ordering for these faces
         ids = vec(permutedims(reshape(1:num_face_nodes, polydeg+1, polydeg+1)))
@@ -116,7 +116,7 @@ function MeshData(hmd::HOHQMeshData{3}, rd::RefElemData{3, <:Hex})
     curved_face_coordinates = ntuple(_ -> similar(reshape(md.x[rd.Fmask, 1], :, rd.num_faces)), 3)
     x, y, z = copy.(md.xyz)
     for curved_elem in hmd.curved_elements
-        (; element, curved_edges, curved_edge_coordinates) = curved_elem
+        (; element, curved_faces, curved_edge_coordinates) = curved_elem
 
         # initialize face coordinates as linear coordinates
         curved_face_coordinates[1] .= reshape(md.x[rd.Fmask, element], :, rd.num_faces)
@@ -124,9 +124,9 @@ function MeshData(hmd::HOHQMeshData{3}, rd::RefElemData{3, <:Hex})
         curved_face_coordinates[3] .= reshape(md.z[rd.Fmask, element], :, rd.num_faces)
 
         for (f_HOHQMesh, f) in enumerate(HOHQMesh_to_StartUpDG_face_ordering)            
-            if curved_edges[f_HOHQMesh] == 1
+            if curved_faces[f_HOHQMesh] == 1
                 # incorporate any permutations or face reorderings into indices
-                ids_HOHQMesh = get_HOHQMesh_ids(rd.element_type, curved_edges, f_HOHQMesh, f, hmd.polydeg)
+                ids_HOHQMesh = get_HOHQMesh_ids(rd.element_type, curved_faces, f_HOHQMesh, f, hmd.polydeg)
 
                 curved_lobatto_coordinates = chebyshev_to_lobatto * curved_edge_coordinates[ids_HOHQMesh, :]
                 curved_face_coordinates[1][:, f] .= curved_lobatto_coordinates[:, 1]
@@ -162,7 +162,7 @@ end
 # container for curved data for a HOHQMesh element
 struct CurvedHOHQMeshElement
     element::Int
-    curved_edges::Vector{Int}
+    curved_faces::Vector{Int}
     curved_edge_coordinates::Matrix{Float64}
 end
 
@@ -190,21 +190,21 @@ function _read_HOHQMesh(lines, mesh_format)
     boundary_tags = Matrix{String}(undef, nelements, num_faces)
     for e in 1:nelements
         EToV[e, :] .= parse.(Int, split(lines[1]))
-        curved_edges = parse.(Bool, split(lines[2]))
+        curved_faces = parse.(Bool, split(lines[2]))
 
         deleteat!(lines, 1:2) # move onto next lines
 
-        if all(curved_edges .== false)
+        if all(curved_faces .== false)
             # do nothing
         else
-            num_curved_faces = count(curved_edges)
+            num_curved_faces = count(curved_faces)
             num_face_nodes = nvertices == 4 ? (polydeg + 1) : (polydeg + 1)^2
             curved_nodes = 1:num_face_nodes * num_curved_faces
             curved_edge_coordinates = mapreduce(vcat, lines[curved_nodes]) do s
                 (parse.(Float64, split(s)))'
             end
             push!(curved_elements, 
-                  CurvedHOHQMeshElement(e, curved_edges, curved_edge_coordinates))
+                  CurvedHOHQMeshElement(e, curved_faces, curved_edge_coordinates))
             deleteat!(lines, curved_nodes) # move on to next lines
         end
 
@@ -245,14 +245,14 @@ function read_HOHQMesh(filename::String, element_type::Union{Tri, Tet})
     boundary_tags = Matrix{String}(undef, nelements, num_faces)
     for e in 1:nelements
         EToV[e, :] .= parse.(Int, split(lines[1]))
-        curved_edges = parse.(Bool, split(lines[2]))
+        curved_faces = parse.(Bool, split(lines[2]))
 
         deleteat!(lines, 1:2) # move onto next lines
 
-        if all(curved_edges .== false)
+        if all(curved_faces .== false)
             # do nothing
         else
-            num_curved_faces = count(curved_edges)            
+            num_curved_faces = count(curved_faces)            
 
             # note: HOHQMesh.jl uses (p+1)^2 nodes per face of the triangle, which 
             # correspond to collapsed coordinates on the quad face. 
@@ -263,7 +263,7 @@ function read_HOHQMesh(filename::String, element_type::Union{Tri, Tet})
                 (parse.(Float64, split(s)))'
             end
             push!(curved_elements, 
-                  CurvedHOHQMeshElement(e, curved_edges, curved_edge_coordinates))
+                  CurvedHOHQMeshElement(e, curved_faces, curved_edge_coordinates))
             deleteat!(lines, curved_nodes) # move on to next lines
         end
 
