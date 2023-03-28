@@ -1,6 +1,3 @@
-struct ISM end
-struct ISM_V2 end
-
 struct HOHQMeshData{NDIMS, TV, TE, TP, TC, TB}
     VXYZ::NTuple{NDIMS, TV}
     EToV::TE
@@ -9,6 +6,11 @@ struct HOHQMeshData{NDIMS, TV, TE, TP, TC, TB}
     boundary_tags::TB
 end
 
+# HOHQMesh mesh formats
+struct ISM end
+struct ISM_V2 end
+
+# for transfinite interpolation
 using NodesAndModes: face_basis
 
 vertex_reordering(::Quad) = SVector(1, 2, 4, 3)
