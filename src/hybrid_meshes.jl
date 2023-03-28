@@ -101,11 +101,11 @@ element_type(global_e, element_types, EToV) =
 function compute_geometric_data(xyz, rd::RefElemData{2})
     x, y = xyz
 
-    @unpack Dr, Ds = rd
+    (; Dr, Ds ) = rd
     rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, Dr, Ds)
     rstxyzJ = SMatrix{2, 2}(rxJ, ryJ, sxJ, syJ)
 
-    @unpack Vq, Vf, wq = rd
+    (; Vq, Vf, wq ) = rd
     xyzf = map(x -> Vf * x, (x, y))
     xyzq = map(x -> Vq * x, (x, y))
     wJq = Diagonal(wq) * (Vq * J)
@@ -160,7 +160,7 @@ function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{<:AbstractElemShape, <:
     for elem_type in element_types
         eids = element_ids[elem_type]
         x, y = xyz_hybrid[elem_type]
-        @unpack V1 = rds[elem_type]
+        (; V1 ) = rds[elem_type]
         for (e_local, e) in enumerate(eids)
             etov = EToV[e]        
             x[:, e_local] .= vec(V1 * VX[etov'])

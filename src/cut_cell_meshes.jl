@@ -73,7 +73,7 @@ end
 
 function compute_face_centroids(rd, xf, yf, cutcell_data)
 
-    @unpack region_flags, cut_faces_per_cell, cut_face_offsets = cutcell_data
+    (; region_flags, cut_faces_per_cell, cut_face_offsets ) = cutcell_data
     num_cut_cells = length(cut_faces_per_cell)
     num_cartesian_cells = sum(region_flags .== 0)
     num_cut_faces = sum(cut_faces_per_cell)
@@ -151,28 +151,26 @@ function generate_sampling_points(objects, elem, rd, Np_target; N_sampled = 4 * 
 
     # map sampled points to the background Cartesian cell
     x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
-    is_in_element = fill(true, length(x_sampled))
-    for curve in objects
-        is_in_element .= is_in_element .&& .!(map(x->is_contained(curve, x), zip(x_sampled, y_sampled)))
+    is_in_domain = fill(true, length(x_sampled))
+    for (index, point) in enumerate(zip(x_sampled, y_sampled))
+        is_in_domain[index] = !any(map(obj -> is_contained(obj, point), objects))
     end
-
+    
     # increase number of background points until we are left with `Np_target` sampling points 
-    while sum(is_in_element) < Np_target
+    while sum(is_in_domain) < Np_target
+
+        N_sampled *= 2 # double degree of sampling
+        r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
+        x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
 
         # check if all the points are in all the objects
-        is_in_element = is_contained.(objects[1], zip(x_sampled, y_sampled)) .== false
-        for _ in 2:length(objects)
-            is_in_element = is_in_element .&& (is_contained.(objects[2], zip(x_sampled, y_sampled)) .== false)
-        end
-
-        if sum(is_in_element) < Np_target
-            N_sampled *= 2 # double degree of sampling
-            r_sampled, s_sampled = equi_nodes(rd.element_type, N_sampled) # oversampled nodes
-            x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
+        is_in_domain = fill(true, length(x_sampled))
+        for (index, point) in enumerate(zip(x_sampled, y_sampled))
+            is_in_domain[index] = !any(map(obj -> is_contained(obj, point), objects))
         end
     end
 
-    ids_in_element = findall(is_in_element)
+    ids_in_element = findall(is_in_domain)
 
     return x_sampled[ids_in_element], y_sampled[ids_in_element]
 end
@@ -228,7 +226,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     
     r1D, w1D = quad_rule_face
 
-    @unpack objects, region_flags, cutcells, cut_faces_per_cell = cutcell_data
+    (; objects, region_flags, cutcells, cut_faces_per_cell ) = cutcell_data
 
     # count number of cells and cut face nodes
     num_cartesian_cells = sum(region_flags .== 0)
@@ -277,7 +275,7 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     physical_frame_elements = PhysicalFrame{2}[] # populate this as we iterate through cut cells
 
     # store cut-cell scaling/shifting coefficients
-    @unpack cut_faces_per_cell, cut_face_offsets = cutcell_data
+    (; cut_faces_per_cell, cut_face_offsets ) = cutcell_data
     num_points_per_face = length(r1D)
 
     e = 1
@@ -386,7 +384,7 @@ The keyword argument `tol` is the tolerance for matches between face centroids.
 """    
 function connect_mesh(rd, face_centroids, cutcell_data; tol = 1e2 * eps())
 
-    @unpack region_flags, cut_faces_per_cell, cut_face_offsets = cutcell_data
+    (; region_flags, cut_faces_per_cell, cut_face_offsets ) = cutcell_data
 
     cells_per_dimension_x, cells_per_dimension_y = size(region_flags)
     num_cartesian_cells = sum(region_flags .== 0)

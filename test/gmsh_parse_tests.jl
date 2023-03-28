@@ -1,15 +1,15 @@
-# gmsh test files are located in StartUpDG/test/testset_mesh/
+# gmsh test files are located in StartUpDG/test/testset_Gmsh_meshes/
 # malpasset.msh was previously a 2.2 file. Exported version 
 # of 4.1 has been added for testing
 
 @testset "Gmsh" begin 
     @testset "Gmsh reading" begin
-        VXY, EToV = readGmsh2D("squareCylinder2D.msh")
+        VXY, EToV = readGmsh2D("testset_Gmsh_meshes/squareCylinder2D.msh")
         @test size(EToV) == (3031, 3)
 
         # malpasset data taken from 
         # https://github.com/li12242/NDG-FEM/blob/master/Application/SWE/SWE2d/Benchmark/%40Malpasset2d/mesh/triMesh/malpasset.msh
-        VXY, EToV = readGmsh2D("testset_mesh/malpasset.msh")
+        VXY, EToV = readGmsh2D("testset_Gmsh_meshes/malpasset.msh")
         rd = RefElemData(Tri(), 1)
         md = MeshData(VXY, EToV, rd)
         @test all(md.J .> 0)
@@ -28,17 +28,17 @@
 
             rd = RefElemData(Tri(), approxType, N)
             if version == 2.2
-                VXY, EToV = readGmsh2D("testset_mesh/$file"*".msh");
+                VXY, EToV = readGmsh2D("testset_Gmsh_meshes/$file"*".msh");
             elseif version == 4.1
-                VXY, EToV = readGmsh2D_v4("testset_mesh/$file"*"_v4.msh");
+                VXY, EToV = readGmsh2D_v4("testset_Gmsh_meshes/$file"*"_v4.msh");
             end
             md = MeshData(VXY, EToV, rd)
 
-            @unpack wq, Dr, Ds, Vq, Vf, wf = rd
+            (; wq, Dr, Ds, Vq, Vf, wf  ) = rd
             Nfaces = length(rd.fv)
-            @unpack x, y, xq, yq, xf, yf, K = md
-            @unpack rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq = md
-            @unpack FToF, mapM, mapP, mapB = md
+            (; x, y, xq, yq, xf, yf, K  ) = md
+            (; rxJ, sxJ, ryJ, syJ, J, nxJ, nyJ, sJ, wJq  ) = md
+            (; FToF, mapM, mapP, mapB  ) = md
 
             @test md.x == md.xyz[1]
 
@@ -82,7 +82,7 @@
 
             @testset "check periodic node connectivity maps" begin
                 md = make_periodic(md, (true, true))
-                @unpack mapP = md
+                (; mapP  ) = md
                 u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y))
                 uf = Vf * u
                 #@test uf ≈ uf[mapP]
@@ -101,7 +101,7 @@
     # TODO: avoid the use of stderr.txt, causes issues on Windows
     
     @testset "gmsh version 4.1 file with one data grouping" begin
-        file = "testset_mesh/one_group_v4.msh"
+        file = "testset_Gmsh_meshes/one_group_v4.msh"
         if isfile(file)
             VXY_1, EToV_1 = readGmsh2D_v4(file)
             VXY_2, EToV_2, group_2 = readGmsh2D_v4(file,true) 
@@ -120,7 +120,7 @@
     @testset "gmsh version 4.1 file with no grouping data" begin
         # test promps for grouping data from the file. 
         # suppose such grouping data however is not in the file
-        file = "testset_mesh/no_group_v4.msh"
+        file = "testset_Gmsh_meshes/no_group_v4.msh"
         if isfile(file)
             VXY_1, EToV_1 = readGmsh2D_v4(file)
             VXY_2, EToV_2, group_2 = readGmsh2D_v4(file, true) 
@@ -138,9 +138,9 @@
 
     @testset "Compare output between v2.2 and v4.1" begin
         @testset "file:$file" for file in ["mesh_no_pert","pert_mesh","malpasset"]
-            if isfile("testset_mesh/$file.msh") && isfile("testset_mesh/$file"*"_v4.msh")
-                VXY_v2, EToV_v2 = readGmsh2D("testset_mesh/$file.msh");
-                VXY_v4, EToV_v4 = readGmsh2D_v4("testset_mesh/$file" * "_v4.msh");
+            if isfile("testset_Gmsh_meshes/$file.msh") && isfile("testset_Gmsh_meshes/$file"*"_v4.msh")
+                VXY_v2, EToV_v2 = readGmsh2D("testset_Gmsh_meshes/$file.msh");
+                VXY_v4, EToV_v4 = readGmsh2D_v4("testset_Gmsh_meshes/$file" * "_v4.msh");
                 @test VXY_v2 == VXY_v4
                 @test EToV_v2 == EToV_v4 
             end
