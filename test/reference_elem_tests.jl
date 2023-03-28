@@ -189,7 +189,7 @@ inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}
         line = RefElemData(Line(), line_grad)
         tri  = RefElemData(Tri(), tri_grad)
         tensor = TensorProductWedge(tri, line)
-        rd = RefElemData(Wedge(), tensor, 1)
+        rd = RefElemData(Wedge(), tensor)
 
         @test rd.approximation_type.line.N == line_grad
         @test rd.approximation_type.tri.N == tri_grad
