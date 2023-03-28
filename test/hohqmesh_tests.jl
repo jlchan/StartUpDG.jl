@@ -34,6 +34,7 @@
 
     # Tet meshes
     filename = "testset_HOHQMesh_meshes/MSMappedTet4P4.mesh"
-    hmd = read_HOHQMesh(filename, Tet())
-
+    @test_nowarn hmd = read_HOHQMesh(filename, Tet())
+    # rd = RefElemData(Tet(), 4)
+    # md = MeshData(hmd, rd)
 end
