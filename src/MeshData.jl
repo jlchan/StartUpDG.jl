@@ -377,7 +377,7 @@ function recompute_geometry(rd::RefElemData{Dim}, xyz) where {Dim}
 end
 
 """
-    struct CurvedMesh
+    struct CurvedMesh{T}
 
 Mesh type indicating that the mesh has been curved. Stores the original mesh type as a field.
 
