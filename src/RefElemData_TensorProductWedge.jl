@@ -102,7 +102,8 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
     # `line.Vp` is a `UniformScaling` type for `RefElemData` from SummationByPartsOperators.jl in Trixi.jl
     Vp = line.Vp isa UniformScaling ? kron(I(num_line_nodes), tri.Vp) : kron(line.Vp, tri.Vp)
 
-    return RefElemData(Wedge(node_ids_by_face), approximation_type, N, fv, V1,
+    # set the polynomial degree as the tuple of the line and triangle degree for now
+    return RefElemData(Wedge(node_ids_by_face), approximation_type, (line.N, tri.N), fv, V1,
                        tuple(r, s, t), VDM, Fmask,
                        tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
