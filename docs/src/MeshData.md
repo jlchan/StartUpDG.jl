@@ -98,6 +98,8 @@ which yields the following figure:
 
 ![u](assets/hohqmesh.png)
 
+The boundary faces are also automatically tagged with the labels provided in the HOHQMesh file. Each boundary tag and the faces that lie on it are stored in `md.mesh_type.boundary_faces`. 
+
 ## Tagging boundary faces and boundary nodes
 
 One can "tag" boundary faces (or boundary nodes) by specifying boolean functions which evaluate to `true` if a point is on a given boundary segment. 
