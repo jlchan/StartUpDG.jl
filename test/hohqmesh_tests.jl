@@ -8,6 +8,8 @@
     area = 16 - 0.25^2 * pi
     @test all(md.J .> 0)
     @test abs(sum(md.wJq) - area) < 1e-4
+    @test md.mesh_type isa StartUpDG.HOHQMeshType
+    @test keys(md.mesh_type.boundary_faces) == (:Bottom, :Right, :Top, :circle, :Left)
 
     filename = "testset_HOHQMesh_meshes/GingerbreadMan.mesh"
     hmd = read_HOHQMesh(filename)

@@ -35,6 +35,12 @@ function get_HOHQMesh_ids(::Tri, curved_faces, f_HOHQMesh, f, polydeg)
     end    
 end
 
+# type for `md.mesh_type`
+struct HOHQMeshType{HMD <: HOHQMeshData, TB}
+    hmd::HMD 
+    boundary_faces::TB
+end
+
 # for quads and tris
 function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
     (; VXYZ, EToV) = hmd    
@@ -72,9 +78,21 @@ function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
         y[:, element] .= warp_face_nodes_to_volume_nodes * vec(curved_face_coordinates[2])
     end
 
-    md_curved = MeshData(rd, md, x, y) 
+    md_curved = MeshData(rd, md, x, y)
 
-    return md_curved
+    # find boundary tags
+    boundary_strings = unique(hmd.boundary_tags)
+    deleteat!(boundary_strings, findfirst(boundary_strings .=== "---")) # remove non-boundary faces
+    face_indices = [map(x -> global_face_index(x, rd.num_faces, HOHQMesh_to_StartUpDG_face_ordering), 
+                        findall(hmd.boundary_tags .== name)) for name in boundary_strings]
+    boundary_faces = NamedTuple(Pair.(Symbol.(boundary_strings), face_indices))
+
+    return @set md_curved.mesh_type = HOHQMeshType(hmd, boundary_faces)
+end
+
+function global_face_index(local_elem_and_face::CartesianIndex, num_faces_per_element, face_ordering) 
+    element, face = local_elem_and_face.I
+    return face_ordering[face] + (element - 1) * num_faces_per_element
 end
 
 # see https://trixi-framework.github.io/HOHQMesh/TheISMMeshFileFormats 
@@ -139,7 +157,14 @@ function MeshData(hmd::HOHQMeshData{3}, rd::RefElemData{3, <:Hex})
 
     md_curved = MeshData(rd, md, x, y, z) 
 
-    return md_curved
+    # find boundary tags
+    boundary_strings = unique(hmd.boundary_tags)
+    deleteat!(boundary_strings, findfirst(boundary_strings .=== "---")) # remove non-boundary faces
+    face_indices = [map(x -> global_face_index(x, rd.num_faces, HOHQMesh_to_StartUpDG_face_ordering), 
+                        findall(hmd.boundary_tags .== name)) for name in boundary_strings]
+    boundary_faces = NamedTuple(Pair.(Symbol.(boundary_strings), face_indices))
+
+    return @set md_curved.mesh_type = HOHQMeshType(hmd, boundary_faces)
 end
 
 function read_HOHQMesh(filename::String)
@@ -234,9 +259,8 @@ function read_HOHQMesh(filename::String, element_type::Union{Tri, Tet})
     curved_elements = CurvedHOHQMeshElement[]
     nvertices = length(split(lines[1]))
     
-    # for Tri/Tet meshes, we still have 4 faces for Tri and 6 faces for Tet. 
-    # These correspond to collapsed quad/hex faces, respectively.
-    num_faces = nvertices == 3 ? 4 : 6 
+    # for Tri/Tet meshes. Tets still have 6 faces each because 
+    num_faces = nvertices == 3 ? 3 : 6 # TODO: fix when David fixes the number of tet faces
 
     EToV = zeros(Int, nelements, nvertices)
     boundary_tags = Matrix{String}(undef, nelements, num_faces)
