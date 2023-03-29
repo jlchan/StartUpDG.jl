@@ -1,4 +1,5 @@
 using Plots: plot
+using StartUpDG: RecipesBase
 
 @testset "Misc tests: show, recipes, inferrability" begin
 

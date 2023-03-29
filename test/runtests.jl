@@ -1,7 +1,6 @@
 using Test
 using Suppressor
 using LinearAlgebra
-using RecipesBase: RecipesBase
 using StartUpDG
 
 include("write_vtk_tests.jl")
