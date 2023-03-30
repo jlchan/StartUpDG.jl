@@ -92,7 +92,7 @@ md = MeshData(hmd, rd)
 We can visualize the mesh using 
 ```julia
 using Plots
-plot(MeshPlotter(rd, md))
+plot(rd, md) # can also use `plot(MeshPlotter(rd, md))`
 ``` 
 which yields the following figure:
 
