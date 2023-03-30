@@ -80,6 +80,9 @@ On triangles, we have the following SBP types with the following properties:
 
 ## Tensor product `RefElemData` on wedge elements
 
+!!! warning "Experimental implementation"
+    This is an experimental feature and may change in future releases.
+    
 There is experimental support for `RefElemData`s created from tensor products of triangular and 1D `RefElemData` objects. 
 ```julia
 line = RefElemData(Line(), N_line)
