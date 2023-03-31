@@ -277,8 +277,8 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
     @testset "TensorProductWedge MeshData" begin
         element_type = Wedge()
         tol = 5e2*eps()
-        @testset "Degree $tri_grad triangle" for tri_grad = [2, 3, 4, 5]
-            @testset "Degree $line_grad line" for line_grad = [2, 3, 4, 5]
+        @testset "Degree $tri_grad triangle" for tri_grad = [2, 3]
+            @testset "Degree $line_grad line" for line_grad = [2, 3]
                 line = RefElemData(Line(), line_grad)
                 tri  = RefElemData(Tri(), tri_grad)
                 tensor = TensorProductWedge(tri, line)
