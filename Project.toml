@@ -1,7 +1,7 @@
 name = "StartUpDG"
 uuid = "472ebc20-7c99-4d4b-9470-8fde4e9faa0f"
 authors = ["Jesse Chan", "Yimin Lin"]
-version = "0.15.14"
+version = "0.15.15"
 
 [deps]
 ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
