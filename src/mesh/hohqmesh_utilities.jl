@@ -23,7 +23,7 @@ get_HOHQMesh_to_StartUpDG_face_ordering(::Tri) = SVector(1, 2, 3)
 
 function get_HOHQMesh_ids(::Quad, curved_faces, f_HOHQMesh, f, polydeg) 
     active_face_offset = max.(0, cumsum(curved_faces) .- 1) * (polydeg + 1)
-    return (1:polydeg+1) .+ active_face_offset[f]
+    return (1:polydeg+1) .+ active_face_offset[f_HOHQMesh]
 end
 
 function get_HOHQMesh_ids(::Tri, curved_faces, f_HOHQMesh, f, polydeg)
