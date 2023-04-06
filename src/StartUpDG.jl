@@ -26,7 +26,7 @@ include("RefElemData.jl")
 include("ref_elem_utils.jl")
 
 include("RefElemData_polynomial.jl")
-export RefElemData, Polynomial, GaussCollocation
+export RefElemData, Polynomial, Gauss
 
 include("RefElemData_TensorProductWedge.jl")
 export TensorProductWedge
