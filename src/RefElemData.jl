@@ -48,9 +48,6 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape{Dim}, ApproximationType,
     LIFT::L              # lift matrix
 end
 
-# TODO: remove in next breaking release after 0.15. Deprecated constructor with `Nplot` argument
-@deprecate RefElemData(elem, approxType, N, fv, V1, rst, VDM, Fmask, Nplot, rstp, Vp, rstq, wq, Vq, rstf, wf, Vf, nrstJ, M, Pq, Drst, LIFT) RefElemData(elem, approxType, N, fv, V1, rst, VDM, Fmask, rstp, Vp, rstq, wq, Vq, rstf, wf, Vf, nrstJ, M, Pq, Drst, LIFT)
-
 # need this to use @set outside of StartUpDG
 function ConstructionBase.setproperties(rd::RefElemData, patch::NamedTuple)
     fields = (haskey(patch, symbol) ? getproperty(patch, symbol) : getproperty(rd, symbol) for symbol in fieldnames(typeof(rd)))         
@@ -141,7 +138,7 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbo
     elseif s==:Nfq
         return length(getfield(x, :rstf)[1])
 
-    # CamlCase will be deprecated in the next breaking release
+    # CamlCase will be deprecated in the next breaking release v0.17
     elseif s==:approximationType
         @warn "RefElemData properties `approximationType`. Please use `approximation_type`."
         return getfield(x, :approximation_type)
