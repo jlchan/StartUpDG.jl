@@ -8,17 +8,17 @@ Example:
 ```julia
 N = 3
 rd = RefElemData(Tri(), N)
-@unpack r, s = rd
+(; r, s ) = rd
 ```
 """ 
 struct RefElemData{Dim, ElemShape <: AbstractElemShape{Dim}, ApproximationType, 
-                   FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM, 
+                   NT, FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM, 
                    VQ, VF, MM, P, D, L, VP, V1Type, WQ, WF} 
 
     element_type::ElemShape
     approximation_type::ApproximationType # Polynomial / SBP{...}
 
-    N::Int               # polynomial degree of accuracy
+    N::NT               # polynomial degree of accuracy
     fv::FV               # list of vertices defining faces, e.g., ([1,2],[2,3],[3,1]) for a triangle
     V1::V1Type           # low order interpolation matrix
 
@@ -141,7 +141,7 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbo
     elseif s==:Nfq
         return length(getfield(x, :rstf)[1])
 
-    # CamlCase will be deprecated in a future release
+    # CamlCase will be deprecated in the next breaking release
     elseif s==:elemShape || s==:elementType 
         @warn "RefElemData properties `elemShape` and `elementType`" * 
               "are deprecated. Please use `element_type`."

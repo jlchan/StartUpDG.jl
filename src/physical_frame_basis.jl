@@ -48,7 +48,7 @@ function PhysicalFrame(x, y, vx, vy)
 end
 
 function shift_and_scale(elem::PhysicalFrame{2}, x, y)
-    @unpack shifting, scaling = elem
+    (; shifting, scaling ) = elem
     r = @. (x - shifting[1]) * scaling[1]
     s = @. (y - shifting[2]) * scaling[2]
     return r, s
@@ -59,7 +59,7 @@ function NodesAndModes.basis(elem::PhysicalFrame{2}, N, x, y)
 
     r, s = shift_and_scale(elem, x, y)
 
-    @unpack scaling = elem
+    (; scaling ) = elem
 
     sk = 1
     V, Vr, Vs = ntuple(x->zeros(length(r), Np), 3)
@@ -132,7 +132,7 @@ Returns back `Np(N)` equally spaced nodes on the background quadrilateral corres
 to `elem`, with points inside of `curve` removed.
 """
 function NodesAndModes.equi_nodes(elem::PhysicalFrame{2}, curve, N)
-    @unpack vxyz = elem
+    (; vxyz ) = elem
     r, s = equi_nodes(Quad(), N)
     x, y = map_nodes_to_background_cell(elem, r, s)
     ids = .!is_contained.(curve, zip(x, y))
@@ -140,7 +140,7 @@ function NodesAndModes.equi_nodes(elem::PhysicalFrame{2}, curve, N)
 end
 
 function map_nodes_to_background_cell(elem::PhysicalFrame{2}, r, s)
-    @unpack vxyz = elem
+    (; vxyz ) = elem
     vx, vy = vxyz
     dx, dy = diff(vx), diff(vy)
     x = @. 0.5 * (1 + r) * dx + vx[1]

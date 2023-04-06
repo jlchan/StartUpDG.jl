@@ -15,7 +15,7 @@
     @test propertynames(x) == (:a, :b)
 
     x = NamedArrayPartition(a = ones(1), b = 2*ones(1))
-    @test Base.summary(x) == "NamedArrayPartition{Float64, RecursiveArrayTools.ArrayPartition{Float64, Tuple{Vector{Float64}, Vector{Float64}}}, NamedTuple{(:a, :b), Tuple{Int64, Int64}}} with arrays:"
+    @test Base.summary(x) == string(typeof(x), " with arrays:")
     @test (@capture_out Base.show(stdout, MIME"text/plain"(), x)) == "(a = [1.0], b = [2.0])"
 
     # TODO: get FillArrays broadcast working
@@ -23,7 +23,8 @@
     # c = Fill(2., (2, 5))
     # x = NamedArrayPartition(a = ones(10), b = rand(20), c=c)
 
-    using StructArrays, StaticArrays
+    using StructArrays
+    using StartUpDG: SVector
     x = NamedArrayPartition(a = StructArray{SVector{2, Float64}}((ones(5), 2*ones(5))),
                             b = StructArray{SVector{2, Float64}}((3 * ones(2,2), 4*ones(2,2))))
     @test typeof(x.a) <: StructVector{<:SVector{2}}

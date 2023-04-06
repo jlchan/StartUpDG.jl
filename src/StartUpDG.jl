@@ -16,17 +16,20 @@ using Printf: @sprintf
 using RecipesBase: RecipesBase
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
+@reexport using SimpleUnPack: @unpack
 using SparseArrays: sparse, droptol!, blockdiag
 using Triangulate: Triangulate, TriangulateIO, triangulate
 @reexport using WriteVTK
-@reexport using UnPack: @unpack  # for getting values in RefElemData and MeshData
 
 # reference element utility functions
 include("RefElemData.jl")
 include("RefElemData_polynomial.jl")
-include("RefElemData_SBP.jl")
+include("RefElemData_TensorProductWedge.jl")
+export TensorProductWedge
 include("ref_elem_utils.jl")
 export RefElemData, Polynomial
+
+include("RefElemData_SBP.jl")
 export SBP, DefaultSBPType, TensorProductLobatto, Hicken, Kubatko # types for SBP node dispatch
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
 export hybridized_SBP_operators, inverse_trace_constant, face_type
@@ -64,8 +67,11 @@ export num_mortars_per_face, NonConformingQuadMeshExample
 
 # uniform meshes + face vertex orderings
 include("mesh/simple_meshes.jl")
-export readGmsh2D, uniform_mesh
-export readGmsh2D_v4, MeshImportOptions
+export uniform_mesh
+include("mesh/gmsh_utilities.jl")
+export readGmsh2D, readGmsh2D_v4, MeshImportOptions
+include("mesh/hohqmesh_utilities.jl")
+export read_HOHQMesh
 
 # Plots.jl recipes for meshes
 include("mesh/vtk_helper.jl")

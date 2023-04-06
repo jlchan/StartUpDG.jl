@@ -11,11 +11,10 @@ Derivatives of reference coordinates with respect to physical coordinates are ab
 ## Assumptions
 
 We make a few simplifying assumptions about the mesh:
-* meshes consist of a single type of element
 * meshes are _conforming_ (e.g., each face of an element is shared with at most one other element). 
-* the geometric mapping from reference to physical elements is polynomial. 
+* the geometric mapping from reference to physical elements is the same degree polynomial as the approximation space on the reference element (e.g., the mapping is isoparametric). 
 
-Initial experimental support for simple hybrid, cut-cell, and non-conforming meshes in two dimensions is also available. Please see the corresponding test sets `test/hybrid_mesh_tests.jl`, `test/cut_mesh_tests.jl`, and `noncon_mesh_tests.jl` for examples. 
+Initial experimental support for hybrid, cut-cell, and non-conforming meshes in two dimensions is also available. Please see the corresponding test sets `test/hybrid_mesh_tests.jl`, `test/cut_mesh_tests.jl`, and `noncon_mesh_tests.jl` for examples. 
 
 ## Code conventions
 

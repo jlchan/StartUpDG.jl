@@ -179,7 +179,7 @@ make_periodic(md::MeshData{Dim}, is_periodic::Bool = true; kwargs...) where {Dim
 
 function make_periodic(md::MeshData{Dim}, is_periodic::NTuple{Dim, Bool}; kwargs...) where {Dim, Bool}
 
-    @unpack mapM, mapP, mapB, xyzf, FToF = md
+    (; mapM, mapP, mapB, xyzf, FToF ) = md
     NfacesTotal = length(FToF)
     FToF_periodic = copy(FToF)
     mapPB = build_periodic_boundary_maps!(xyzf..., is_periodic..., NfacesTotal,
@@ -195,7 +195,7 @@ end
 function make_periodic(md::MeshData{1, Tv, Ti}, is_periodic::Bool = true; kwargs...) where {Tv, Ti}
 
     if is_periodic == true
-        @unpack mapP, mapB, xf, FToF = md
+        (; mapP, mapB, xf, FToF ) = md
         mapPB = argmax(vec(xf)), argmin(vec(xf))
         mapP_periodic = copy(mapP)
         mapP_periodic[mapB] .= mapPB
@@ -282,7 +282,7 @@ end
 # specialize on 3D elements with the same types of faces
 function make_periodic(md::MeshData{3, <:Union{Tet, Hex}}, is_periodic::NTuple{3}; kwargs...)
 
-    @unpack mapM, mapP, mapB, xyzf, FToF = md
+    (; mapM, mapP, mapB, xyzf, FToF ) = md
     NfacesTotal = length(FToF)
     FToF_periodic = copy(FToF)
     mapPB = build_periodic_boundary_maps!(xyzf..., is_periodic..., NfacesTotal,

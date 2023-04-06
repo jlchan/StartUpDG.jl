@@ -7,7 +7,7 @@
     
     @testset "Hicken's 2N triangular SBP operators" begin
         rd = RefElemData(Tri(), SBP{Hicken}(), N)
-        @unpack rq,sq,wq = rd
+        (; rq,sq,wq  ) = rd
         rq2,sq2,wq2 = quad_nodes(Tri(),2*N)        
         @test sum(wq.*f.(2*N,rq,sq)) ≈ sum(wq2.*f.(2*N,rq2,sq2))
         @test rd.Dr*rd.r.^N ≈ N*rd.r.^(N-1)
@@ -17,7 +17,7 @@
 
     @testset "Kubatko's Legendre face node triangular SBP operators" begin
         rd = RefElemData(Tri(), SBP{Kubatko{LegendreFaceNodes}}(), N)
-        @unpack rq,sq,wq = rd
+        (; rq,sq,wq  ) = rd
         rq2,sq2,wq2 = quad_nodes(Tri(),2*N-1)
         @test sum(wq.*f.(2*N-1,rq,sq)) ≈ sum(wq2.*f.(2*N-1,rq2,sq2))
         @test rd.Dr*rd.r.^N ≈ N*rd.r.^(N-1)
