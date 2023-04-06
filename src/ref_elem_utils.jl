@@ -45,9 +45,9 @@ by Chan, Wang, Modave, Remacle, Warburton 2016).
 
 Can be used to estimate dependence of maximum stable timestep on degree of approximation.
 """
-inverse_trace_constant(rd::RefElemData{1, Line, Polynomial}) = (rd.N+1) * (rd.N+2) / 2
-inverse_trace_constant(rd::RefElemData{2, Quad, Polynomial}) = (rd.N+1) * (rd.N + 2)
-inverse_trace_constant(rd::RefElemData{3, Hex, Polynomial}) = 3 * (rd.N + 1) * (rd.N + 2) / 2
+inverse_trace_constant(rd::RefElemData{1, Line, <:Polynomial}) = (rd.N+1) * (rd.N+2) / 2
+inverse_trace_constant(rd::RefElemData{2, Quad, <:Polynomial}) = (rd.N+1) * (rd.N + 2)
+inverse_trace_constant(rd::RefElemData{3, Hex, <:Polynomial}) = 3 * (rd.N + 1) * (rd.N + 2) / 2
 inverse_trace_constant(rd::RefElemData{1, Line, SBP{TensorProductLobatto}}) = rd.N * (rd.N + 1) / 2
 inverse_trace_constant(rd::RefElemData{2, Quad, SBP{TensorProductLobatto}}) = rd.N * (rd.N + 1)
 inverse_trace_constant(rd::RefElemData{3, Hex, SBP{TensorProductLobatto}}) = 3 * rd.N * (rd.N + 1) / 2
