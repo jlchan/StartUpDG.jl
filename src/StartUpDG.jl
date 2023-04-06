@@ -23,18 +23,20 @@ using Triangulate: Triangulate, TriangulateIO, triangulate
 
 # reference element utility functions
 include("RefElemData.jl")
+include("ref_elem_utils.jl")
+
 include("RefElemData_polynomial.jl")
-export RefElemData, Polynomial
+export RefElemData, Polynomial, GaussCollocation
 
 include("RefElemData_TensorProductWedge.jl")
 export TensorProductWedge
-
-include("ref_elem_utils.jl")
 
 include("RefElemData_SBP.jl")
 export SBP, DefaultSBPType, TensorProductLobatto, Hicken, Kubatko # types for SBP node dispatch
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
 export hybridized_SBP_operators, inverse_trace_constant, face_type
+
+include("ref_elem_utils.jl")
 
 include("MeshData.jl")
 export MeshData, num_elements
