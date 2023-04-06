@@ -36,6 +36,8 @@ export SBP, DefaultSBPType, TensorProductLobatto, Hicken, Kubatko # types for SB
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
 export hybridized_SBP_operators, inverse_trace_constant, face_type
 
+include("ref_elem_utils.jl")
+
 include("MeshData.jl")
 export MeshData, num_elements
 
