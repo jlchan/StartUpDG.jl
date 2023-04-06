@@ -199,7 +199,10 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 #          RefElemData approximation types
 # ====================================================
 
-struct Polynomial end 
+struct Polynomial{T} end 
+
+struct DefaultPolynomialType end
+Polynomial() = Polynomial{DefaultPolynomialType}()
 
 # ========= SBP approximation types ============
 
