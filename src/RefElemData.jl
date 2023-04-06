@@ -70,7 +70,7 @@ end
 
 function Base.show(io::IO, rd::RefElemData)
     @nospecialize basis # reduce precompilation time
-    print(io,"RefElemData{N=$(rd.N),$(rd.approximation_type),$(rd.element_type)}.")
+    print(io,"RefElemData{N=$(rd.N), $(rd.approximation_type), $(rd.element_type)}.")
 end
 
 _propertynames(::Type{RefElemData}, private::Bool = false) = (:num_faces, :Np, :Nq, :Nfq)
@@ -196,7 +196,10 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 #          RefElemData approximation types
 # ====================================================
 
-struct Polynomial end 
+struct Polynomial{T} end 
+
+struct DefaultPolynomialType end
+Polynomial() = Polynomial{DefaultPolynomialType}()
 
 # ========= SBP approximation types ============
 
