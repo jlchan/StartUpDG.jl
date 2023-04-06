@@ -6,8 +6,8 @@ using StartUpDG: RecipesBase
     # test Base.show
     rd = RefElemData(Tri(),N=3)
     md = MeshData(uniform_mesh(Tri(),1)...,rd)
-    @test (@capture_out Base.show(stdout,MIME"text/plain"(),rd)) == "RefElemData for a degree 3 Polynomial() approximation on Tri() element."
-    @test (@capture_out Base.show(stdout,rd)) == "RefElemData{N=3,Polynomial(),Tri()}."
+    @test (@capture_out Base.show(stdout,MIME"text/plain"(),rd)) == "RefElemData for a degree 3 Polynomial{StartUpDG.DefaultPolynomialType}() approximation on Tri() element."
+    @test (@capture_out Base.show(stdout,rd)) == "RefElemData{N=3, Polynomial{StartUpDG.DefaultPolynomialType}(), Tri()}."
     @test (@capture_out Base.show(stdout, MIME"text/plain"(), md)) == "MeshData of dimension 2 with 2 elements"
     @test (@capture_out Base.show(stdout, md)) == "MeshData{2}"
 

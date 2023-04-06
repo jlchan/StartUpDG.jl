@@ -70,7 +70,7 @@ end
 
 function Base.show(io::IO, rd::RefElemData)
     @nospecialize basis # reduce precompilation time
-    print(io,"RefElemData{N=$(rd.N),$(rd.approximation_type),$(rd.element_type)}.")
+    print(io,"RefElemData{N=$(rd.N), $(rd.approximation_type), $(rd.element_type)}.")
 end
 
 _propertynames(::Type{RefElemData}, private::Bool = false) = (:num_faces, :Np, :Nq, :Nfq)
