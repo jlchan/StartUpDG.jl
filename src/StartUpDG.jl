@@ -23,7 +23,6 @@ using Triangulate: Triangulate, TriangulateIO, triangulate
 
 # reference element utility functions
 include("RefElemData.jl")
-include("ref_elem_utils.jl")
 
 include("RefElemData_polynomial.jl")
 export RefElemData, Polynomial, Gauss
