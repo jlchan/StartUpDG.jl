@@ -9,7 +9,6 @@ using Kronecker: kronecker # for Hex element matrix manipulations
 using LinearAlgebra: cond, diagm, eigvals, Diagonal, I, mul!, norm, qr, ColumnNorm
 using NodesAndModes: meshgrid, find_face_nodes, face_vertices
 @reexport using NodesAndModes # for basis functions
-using OrderedCollections: LittleDict # fast ordered dict for a small number of entries
 using PathIntersections
 @reexport using PathIntersections: PresetGeometries
 using Printf: @sprintf

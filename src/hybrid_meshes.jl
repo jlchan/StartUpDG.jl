@@ -173,21 +173,20 @@ function MeshData(VX, VY, EToV_unsorted,
 
     FToF = StartUpDG.connect_mesh(EToV, face_vertex_indices, rds)
 
-    # LittleDict between element type and element_ids of that type, e.g., element_ids[Tri()] = ...
     # We distinguish between different elements by the number of vertices. 
     # This should work in 3D too (but might have issues if we ever do mixed 2D/3D meshes).
     element_types = Tuple(getproperty(rd, :element_type) for rd in values(rds))
-    element_ids = LittleDict((Pair(elem, findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
-    num_elements_of_type(elem) = length(element_ids[elem])
+    element_ids = NamedTuple((Pair(typename(elem), findall(length.(EToV) .== num_vertices(elem))) for elem in element_types))
+    num_elements_of_type(elem) = length(getproperty(element_ids, typename(elem)))
 
     # make node arrays 
     allocate_node_arrays(num_rows, element_type) = 
         ntuple(_ -> zeros(num_rows, num_elements_of_type(element_type)), ndims(element_type))
 
-    xyz_hybrid = LittleDict((rd.element_type => allocate_node_arrays(size(rd.V1, 1), rd.element_type) for rd in values(rds)))
+    xyz_hybrid = NamedTuple((typename(rd.element_type) => allocate_node_arrays(size(rd.V1, 1), rd.element_type) for rd in values(rds)))
     for elem_type in element_types
-        eids = element_ids[elem_type]
-        x, y = xyz_hybrid[elem_type]
+        eids = getproperty(element_ids, typename(elem_type))
+        x, y = getproperty(xyz_hybrid, typename(elem_type))
 
         (; V1 ) = getproperty(rds, typename(elem_type))
         for (e_local, e) in enumerate(eids)
@@ -228,8 +227,8 @@ function MeshData(rds::MultipleRefElemData,
                   md::MeshData{Dim}, xyz_curved...) where {Dim}
 
     # TODO: can this be made type stable?
-    tuple_fields = LittleDict{AbstractElemShape, NamedTuple}()
-    scalar_fields = LittleDict{AbstractElemShape, NamedTuple}()
+    tuple_fields = Dict{AbstractElemShape, NamedTuple}()
+    scalar_fields = Dict{AbstractElemShape, NamedTuple}()
     for rd in values(rds)
         # compute curved geometric properties for each element type
         xyz = getproperty.(xyz_curved, typename(rd.element_type))
