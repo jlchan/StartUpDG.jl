@@ -131,6 +131,19 @@ end
 
 typename(x) = typeof(x).name.name
 
+function RefElemDataTuple(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs...) where {N} 
+    
+    rds = NamedTuple((typename(elem) => RefElemData(elem, args...; kwargs...) for elem in element_types))
+
+    # check if number of face nodes is the same 
+    num_face_nodes = length.(getproperty.(values(rds), :rf)) .÷ num_faces.(getproperty.(values(rds), :element_type))
+    allequal(x) = all(y -> y == x[1], x)
+    if !allequal(num_face_nodes)
+        Base.@warn "Number of nodes per face for each element should be the same, but instead is:" num_face_nodes
+    end
+    return rds
+end
+
 # constructs MeshData for a hybrid mesh given a LittleDict of `RefElemData` 
 # with element type keys (e.g., `Tri()` or `Quad`). 
 function MeshData(VX, VY, EToV_unsorted, rds::LittleDict{<:AbstractElemShape, <:RefElemData};
