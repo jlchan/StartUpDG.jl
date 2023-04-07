@@ -25,9 +25,11 @@ num_cells_x, num_cells_y, num_cells_z = 4, 2, 8
 (VX,), EToV = uniform_mesh(Line(), num_cells_x)
 (VX, VY), EToV = uniform_mesh(Tri(), num_cells_x, num_cells_y)
 (VX, VY), EToV = uniform_mesh(Quad(), num_cells_x, num_cells_y)
+(VX, VY, VZ), EToV = uniform_mesh(Tet(), num_cells_x, num_cells_y, num_cells_z)
+(VX, VY, VZ), EToV = uniform_mesh(Wedge(), num_cells_x, num_cells_y, num_cells_z)
 (VX, VY, VZ), EToV = uniform_mesh(Hex(), num_cells_x, num_cells_y, num_cells_z)
 ```
-The uniform triangular mesh is constructed by creating a uniform quadrilateral mesh then bisecting each quad into two triangles.
+The uniform triangular mesh is constructed by creating a uniform quadrilateral mesh then bisecting each quad into two triangles. Wedge meshes are constructed similarly. Tet meshes are constructed by dividing each hexahedron into 5 tetrahedral elements. 
 
 ## Initializing high order DG mesh data
 
