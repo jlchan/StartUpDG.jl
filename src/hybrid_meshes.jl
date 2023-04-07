@@ -84,9 +84,9 @@ end
 
 # if EToV is an array of arrays, treat it as a "ragged" index array for a hybrid mesh.
 function connect_mesh(EToV::AbstractVector{<:AbstractArray}, 
-                      face_vertex_indices::AbstractDict)
+                      face_vertex_indices, rds)
 
-    elem_types = (keys(face_vertex_indices)...,)
+    elem_types = Tuple(getproperty(rds, key).element_type for key in keys(face_vertex_indices))
 
     # EToV = vector of index vectors
     K = length(EToV)    
@@ -96,7 +96,7 @@ function connect_mesh(EToV::AbstractVector{<:AbstractArray},
     for e in 1:K
         vertex_ids = EToV[e]
         element_type = element_type_from_num_vertices(elem_types, length(vertex_ids))
-        for ids in face_vertex_indices[element_type]
+        for ids in getproperty(face_vertex_indices, typename(element_type))
             push!(fnodes, sort(EToV[e][ids]))
         end
     end
@@ -168,8 +168,10 @@ function MeshData(VX, VY, EToV_unsorted,
     EToV = EToV_unsorted[p]
 
     # connect faces together 
-    fvs = LittleDict((Pair(getproperty(rd, :element_type), getproperty(rd, :fv)) for rd in values(rds))...)
-    FToF = StartUpDG.connect_mesh(EToV, fvs)
+    face_vertex_indices = NamedTuple((Pair(typename(getproperty(rd, :element_type)), 
+                                           getproperty(rd, :fv)) for rd in values(rds)))
+
+    FToF = StartUpDG.connect_mesh(EToV, face_vertex_indices, rds)
 
     # LittleDict between element type and element_ids of that type, e.g., element_ids[Tri()] = ...
     # We distinguish between different elements by the number of vertices. 
@@ -181,6 +183,7 @@ function MeshData(VX, VY, EToV_unsorted,
     # make node arrays 
     allocate_node_arrays(num_rows, element_type) = 
         ntuple(_ -> zeros(num_rows, num_elements_of_type(element_type)), ndims(element_type))
+
     xyz_hybrid = LittleDict((rd.element_type => allocate_node_arrays(size(rd.V1, 1), rd.element_type) for rd in values(rds)))
     for elem_type in element_types
         eids = element_ids[elem_type]
@@ -193,8 +196,6 @@ function MeshData(VX, VY, EToV_unsorted,
             y[:, e_local] .= vec(V1 * VY[etov'])
         end
     end    
-
-    #if isdefined(Main, :Infiltrator); Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__); end
 
     # returns tuple of NamedTuples containing geometric fields 
     # for each reference element in `rds`
@@ -237,7 +238,7 @@ function MeshData(rds::MultipleRefElemData,
         tuple_fields[rd.element_type] = (; xyz, xyzq, xyzf, rstxyzJ, nxyzJ)
         scalar_fields[rd.element_type] = (; J, wJq, Jf)
     end
-    
+
     xyz   = Tuple(NamedArrayPartition(NamedTuple(zip(keys(rds), (getproperty(tuple_fields[rd.element_type], :xyz)[dim] for rd in values(rds))))) for dim in 1:Dim)
     xyzf  = Tuple(NamedArrayPartition(NamedTuple(zip(keys(rds), (getproperty(tuple_fields[rd.element_type], :xyzf)[dim] for rd in values(rds))))) for dim in 1:Dim)
     xyzq  = Tuple(NamedArrayPartition(NamedTuple(zip(keys(rds), (getproperty(tuple_fields[rd.element_type], :xyzq)[dim] for rd in values(rds))))) for dim in 1:Dim)
