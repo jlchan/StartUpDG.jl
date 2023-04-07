@@ -11,6 +11,35 @@ struct HybridMesh{T, TV, TE}
     end
 end
 
+"""
+    struct MultipleRefElemData{T <: NamedTuple}
+        data::T
+    end
+        
+Holds multiple `RefElemData` objects in `data` where `typeof(data) <: NamedTuple`.
+
+Individual `RefElemData` can be accessed via `getproperty`, for example `rds.Tri`. 
+""" 
+struct MultipleRefElemData{T <: NamedTuple}
+    data::T
+end
+
+function Base.show(io::IO, ::MIME"text/plain", rds::MultipleRefElemData)
+    @nospecialize rds
+    print(io, "MultipleRefElemData: ")
+    print(io, "\n")
+    for rd in values(rds)
+        print(io, "⋅ ")
+        Base.show(io, MIME("text/plain"), rd)
+        print(io, "\n")
+    end
+end
+
+import Base: keys, values, getproperty
+@inline keys(rds::MultipleRefElemData) = keys(getfield(rds, :data))
+@inline values(rds::MultipleRefElemData) = values(getfield(rds, :data))
+@inline getproperty(rds::MultipleRefElemData, s::Symbol) = getproperty(getfield(rds, :data), s)
+
 function Base.getproperty(x::MeshData{Dim, <:HybridMesh}, s::Symbol) where {Dim}
 
     if s===:VX
@@ -123,13 +152,14 @@ function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs
     if !allequal(num_face_nodes)
         Base.@warn "Number of nodes per face for each element should be the same, but instead is:" num_face_nodes
     end
-    return rds
+
+    return MultipleRefElemData(rds)
 end
 
 # constructs MeshData for a hybrid mesh given a NamedTuple of `RefElemData` 
 # with element type keys (e.g., `:Tri` or `:Quad`). 
 function MeshData(VX, VY, EToV_unsorted, 
-                  rds::NamedTuple;
+                  rds::MultipleRefElemData;
                   is_periodic = (false, false))
 
     # sort EToV so that elements of the same type are contiguous
@@ -193,7 +223,7 @@ function MeshData(VX, VY, EToV_unsorted,
                     is_periodic)
 end
 
-function MeshData(rds::NamedTuple, 
+function MeshData(rds::MultipleRefElemData, 
                   md::MeshData{Dim}, xyz_curved...) where {Dim}
 
     # TODO: can this be made type stable?
