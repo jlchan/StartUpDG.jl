@@ -194,6 +194,15 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 #          RefElemData approximation types
 # ====================================================
 
+=======
+"""
+    `Polynomial{T}`
+
+Represents polynomial approximation types (as opposed to finite differences). 
+By default, `Polynomial()` constructs a `Polynomial{StartUpDG.DefaultPolynomialType}`.
+Specifying a type parameters allows for dispatch on additional structure within a
+polynomial approximation (e.g., collocation, tensor product quadrature, etc). 
+"""
 struct Polynomial{T} end 
 
 struct DefaultPolynomialType end
@@ -214,15 +223,24 @@ struct Kubatko{FaceNodeType} end
 struct LegendreFaceNodes end
 struct LobattoFaceNodes end
 
+"""
+    `SBP{Type}`
+
+Represents polynomial approximation types (as opposed to finite differences). 
+By default, `Polynomial()` constructs a `Polynomial{StartUpDG.DefaultPolynomialType}`.
+Specifying a type parameters allows for dispatch on additional structure within a
+polynomial approximation (e.g., collocation, tensor product quadrature, etc). 
+"""
 # SBP approximation type: the more common diagonal E and diagonal-norm SBP operators on tri/quads.
-struct SBP{Type}
-    SBP() = new{DefaultSBPType}() # no-parameter default
-    SBP{T}() where {T} = new{T}()  # default constructor
-end 
+struct SBP{Type} end 
+
+SBP() = SBP{DefaultSBPType}() # no-parameter default
 
 # sets default to TensorProductLobatto on Quads 
-RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{TensorProductLobatto}(), N)
+RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N) = 
+    RefElemData(elem, SBP{TensorProductLobatto}(), N)
 
 # sets default to Kubatko{LobattoFaceNodes} on Tris
-RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
+RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = 
+    RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
 
