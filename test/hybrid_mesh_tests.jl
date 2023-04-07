@@ -10,6 +10,8 @@
         rds = RefElemData((Tri(), Quad()), N = 3)
         @test rds.Tri.element_type == Tri()
         @test rds.Quad.element_type == Quad()
+        out = (@capture_out Base.show(stdout, MIME"text/plain"(), rds))
+        @test out[1:19] == "MultipleRefElemData"
 
         # Simple hybrid mesh for testing
         #   1  7______8______9
