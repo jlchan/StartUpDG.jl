@@ -194,6 +194,7 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 #          RefElemData approximation types
 # ====================================================
 
+=======
 """
     `Polynomial{T}`
 
