@@ -84,7 +84,7 @@ end
 
 # if EToV is an array of arrays, treat it as a "ragged" index array for a hybrid mesh.
 function connect_mesh(EToV::AbstractVector{<:AbstractArray}, 
-                      face_vertex_indices, rds)
+                      face_vertex_indices, rds::MultipleRefElemData)
 
     elem_types = Tuple(getproperty(rds, key).element_type for key in keys(face_vertex_indices))
 
