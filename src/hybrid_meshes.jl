@@ -93,10 +93,6 @@ function connect_mesh(EToV::AbstractVector{<:AbstractArray},
     return FToF
 end
 
-# returns element type of global element `global_e`
-element_type(global_e, element_types, EToV) = 
-    element_types[findfirst(length(EToV[global_e]) .== num_vertices.(element_types))]
-
 # computes geometric terms from nodal coordinates
 function compute_geometric_data(xyz, rd::RefElemData{2})
     x, y = xyz
