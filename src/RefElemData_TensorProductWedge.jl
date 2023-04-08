@@ -110,3 +110,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
                        M, Pq, Drst, LIFT)
 end
+
+# TODO: add link to proof when we write it up
+inverse_trace_constant(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}) = 
+    inverse_trace_constant(rd.approximation_type.line) + inverse_trace_constant(rd.approximation_type.tri)
