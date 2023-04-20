@@ -201,6 +201,8 @@ end
 num_elements(md::MeshData) = size(md.x, 2) # number of columns in the "x" coordinate array
 num_elements(md::MeshData{Dim, <:VertexMappedMesh}) where {Dim} = size(md.mesh_type.EToV, 1)
 
+# splat `uniform_mesh` arguments, e.g., enables `MeshData(uniform_mesh(Line(), 1), rd)`
+# TODO: wrap `uniform_mesh` in a custom type so we can dispatch more precisely
 """
     MeshData(VXYZ, EToV, rd::RefElemData)
 
@@ -213,14 +215,9 @@ Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometr
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `Jf`.
 """
-
-# splat `uniform_mesh` arguments, e.g., enables `MeshData(uniform_mesh(Line(), 1), rd)`
-# TODO: wrap `uniform_mesh` in a custom type so we can dispatch more precisely
 MeshData(mesh::Tuple{<:Tuple, Matrix{Int64}}, other_args...) = MeshData(mesh..., other_args...)
-
-# splats VXYZ 
 MeshData(VXYZ::T, EToV, other_args...) where {NDIMS, T <: NTuple{NDIMS}} = 
-    MeshData(VXYZ..., EToV, other_args...)
+    MeshData(VXYZ..., EToV, other_args...) # splats VXYZ 
 
 function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
 
