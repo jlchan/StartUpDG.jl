@@ -1,12 +1,9 @@
 name: CI
 on:
   pull_request:
-    branches:
-      - main
-      - pre-0.15
   push:
     branches:
-      - main      
+      - main            
     tags: '*'
 jobs:
   test:

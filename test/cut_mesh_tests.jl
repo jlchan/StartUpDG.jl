@@ -1,4 +1,4 @@
-using PathIntersections
+using StartUpDG: PathIntersections
 
 @testset "Cut meshes" begin
     
@@ -72,7 +72,7 @@ using PathIntersections
     # shouldn't have more points than equispaced points on a quad
     @test 0 < length(x) <= length(first(equi_nodes(Quad(), 10))) 
     # no points should be contained in the circle
-    @test !all(is_contained.(circle, zip(x, y))) 
+    @test !all(PathIntersections.is_contained.(circle, zip(x, y))) 
 
 end
     

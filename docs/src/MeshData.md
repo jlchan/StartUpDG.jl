@@ -1,13 +1,13 @@
 # `MeshData` type
 
 [`MeshData`](@ref) includes fields such as
-* `xyz::NTuple{Dim, ...}`: nodal interpolation points mapped to physical elements. All elements of `xyz` are ``N_p \times num_elements`` matrices, where ``N_p`` are the number of nodal points on each element.
-* `xyzq::NTuple{Dim, ...}, wJq`: volume quadrature points/weights mapped to physical elements. All elements these tuples are ``N_q \times num_elements`` matrices, where ``N_q`` is the number of quadrature points on each element.
-* `xyzf::NTuple{Dim, ...}`: face quadrature points mapped to physical elements. All elements of `xyz` are ``N_f \times num_elements`` matrices, where ``N_f`` is the number of face points on each element.
-* `mapP, mapB`: indexing arrays for inter-element node connectivity (`mapP`) and for extracting boundary nodes from the list of face nodes `xyzf` (`mapB`). `mapP` is a matrix of size ``N_f \times num_elements``, while the length of `mapB` is the total number of nodes on the boundary.
-* `rstxyzJ::SMatrix{Dim, Dim}`: volume geometric terms ``G_{ij} = \frac{\partial x_i}{\partial \hat{x}_j}``. Each element of `rstxyzJ` is a matrix of size ``N_p \times num_elements``.
-* `J, Jf`: volume and surface Jacobians evaluated at interpolation points and surface quadrature points, respectively. `J` is a matrix of size ``N_p \times num_elements``, while `Jf` is a matrix of size ``N_f \times num_elements``. 
-* `nxyz::NTuple{Dim, ...}` and `nxyzJ::NTuple{Dim, ...}`: normalized and `Jf` scaled outward normals evaluated at surface quadrature points. Each element of `nxyzJ` is a matrix of size ``N_f\times num_elements``. 
+* `xyz::NTuple{Dim, ...}`: nodal interpolation points mapped to physical elements. All elements of `xyz` are ``N_p \times N_{\rm elements}`` matrices, where ``N_p`` are the number of nodal points on each element.
+* `xyzq::NTuple{Dim, ...}, wJq`: volume quadrature points/weights mapped to physical elements. All elements these tuples are ``N_q \times N_{\rm elements}`` matrices, where ``N_q`` is the number of quadrature points on each element.
+* `xyzf::NTuple{Dim, ...}`: face quadrature points mapped to physical elements. All elements of `xyz` are ``N_f \times N_{\rm elements}`` matrices, where ``N_f`` is the number of face points on each element.
+* `mapP, mapB`: indexing arrays for inter-element node connectivity (`mapP`) and for extracting boundary nodes from the list of face nodes `xyzf` (`mapB`). `mapP` is a matrix of size ``N_f \times N_{\rm elements}``, while the length of `mapB` is the total number of nodes on the boundary.
+* `rstxyzJ::SMatrix{Dim, Dim}`: volume geometric terms ``G_{ij} = \frac{\partial x_i}{\partial \hat{x}_j}``. Each element of `rstxyzJ` is a matrix of size ``N_p \times N_{\rm elements}``.
+* `J, Jf`: volume and surface Jacobians evaluated at interpolation points and surface quadrature points, respectively. `J` is a matrix of size ``N_p \times N_{\rm elements}``, while `Jf` is a matrix of size ``N_f \times N_{\rm elements}``. 
+* `nxyz::NTuple{Dim, ...}` and `nxyzJ::NTuple{Dim, ...}`: normalized and `Jf` scaled outward normals evaluated at surface quadrature points. Each element of `nxyzJ` is a matrix of size ``N_f \times N_{\rm elements}``. 
 
 These are the main quantities used to construct a DG solver. Information specific to the type of mesh used is
 stored in the `md.mesh_type` field. 
@@ -25,9 +25,11 @@ num_cells_x, num_cells_y, num_cells_z = 4, 2, 8
 (VX,), EToV = uniform_mesh(Line(), num_cells_x)
 (VX, VY), EToV = uniform_mesh(Tri(), num_cells_x, num_cells_y)
 (VX, VY), EToV = uniform_mesh(Quad(), num_cells_x, num_cells_y)
+(VX, VY, VZ), EToV = uniform_mesh(Tet(), num_cells_x, num_cells_y, num_cells_z)
+(VX, VY, VZ), EToV = uniform_mesh(Wedge(), num_cells_x, num_cells_y, num_cells_z)
 (VX, VY, VZ), EToV = uniform_mesh(Hex(), num_cells_x, num_cells_y, num_cells_z)
 ```
-The uniform triangular mesh is constructed by creating a uniform quadrilateral mesh then bisecting each quad into two triangles.
+The uniform triangular mesh is constructed by creating a uniform quadrilateral mesh then bisecting each quad into two triangles. Wedge meshes are constructed similarly. Tet meshes are constructed by dividing each hexahedron into 5 tetrahedral elements. 
 
 ## Initializing high order DG mesh data
 
@@ -63,7 +65,7 @@ md_curved = MeshData(rd, md, x, y)
 
 More generally, one can create a copy of a `MeshData` with certain fields modified by using `@set` or `setproperties` from `Setfield.jl`.
 
-## Unstructured and pre-defined triangular meshes using Triangulate
+## Unstructured and pre-defined triangular meshes using Triangulate.jl
 
 StartUpDG.jl also includes additional utilities based on Triangulate.jl for creating and visualizing meshes. Several pre-defined geometries are included in StartUpDG.jl. A few examples are `SquareDomain`, `RectangularDomainWithHole`, `Scramjet`, and `CircularDomain`. See `triangulate_example_meshes.jl` for a more complete list and field arguments. These can each be called using `triangulate_domain`, for example the following code will create a mesh of a scramjet:
 ```julia
@@ -79,6 +81,26 @@ scatter(vec.(md.xyzf)..., msw=0, ms=1, aspect_ratio=:equal, ylims=(0,2), leg=fal
 ```
 shows the following figure
 ![u](assets/scramjet.png)
+
+## Unstructured curved quadrilateral and hexahedral meshes using HOHQMesh.jl
+
+StartUpDG.jl also reads in `.mesh` files generated by [HOHQMesh.jl](https://github.com/trixi-framework/HOHQMesh.jl). The following code constructs a `MeshData` which represents a curved quadrilateral mesh generated by HOHQMesh.jl. 
+```julia
+using StartUpDG
+rd = RefElemData(Quad(), 4)
+hmd = read_HOHQMesh("test/testset_HOHQMesh_meshes/easy_example.mesh")
+md = MeshData(hmd, rd)
+```
+We can visualize the mesh using 
+```julia
+using Plots
+plot(rd, md) # can also use `plot(MeshPlotter(rd, md))`
+``` 
+which yields the following figure:
+
+![u](assets/hohqmesh.png)
+
+The boundary faces are also automatically tagged with the labels provided in the HOHQMesh file. Each boundary tag and the faces that lie on it are stored in `md.mesh_type.boundary_faces`. 
 
 ## Tagging boundary faces and boundary nodes
 

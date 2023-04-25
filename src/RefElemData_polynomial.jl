@@ -62,7 +62,7 @@ end
 
 Constructor for `RefElemData` for different element types.
 """
-function RefElemData(elem::Line, approxType::Polynomial, N; 
+function RefElemData(elem::Line, approxType::Polynomial{DefaultPolynomialType}, N; 
                      quad_rule_vol=quad_nodes(elem, N+1), 
                      Nplot=10)
 
@@ -74,7 +74,7 @@ function RefElemData(elem::Line, approxType::Polynomial, N;
     VDM = vandermonde(elem, N, r)
     Dr = grad_vandermonde(elem, N, r)/VDM
 
-    V1 = vandermonde(elem, 1, r)/vandermonde(elem, 1, [-1; 1])
+    V1 = vandermonde(elem, 1, r) / vandermonde(elem, 1, [-1; 1])
 
     rq, wq = quad_rule_vol
     Vq = vandermonde(elem, N, rq) / VDM
@@ -99,7 +99,8 @@ function RefElemData(elem::Line, approxType::Polynomial, N;
                        M, Pq, tuple(Dr), LIFT)
 end
 
-function RefElemData(elem::Union{Tri, Quad},  approxType::Polynomial, N;
+function RefElemData(elem::Union{Tri, Quad}, 
+                     approxType::Polynomial{DefaultPolynomialType}, N;
                      quad_rule_vol=quad_nodes(elem, N),
                      quad_rule_face=quad_nodes(face_type(elem), N),
                      Nplot=10)
@@ -107,7 +108,7 @@ function RefElemData(elem::Union{Tri, Quad},  approxType::Polynomial, N;
     fv = face_vertices(elem) # set faces for triangle
 
     # Construct matrices on reference elements
-    r,s = nodes(elem, N)
+    r, s = nodes(elem, N)
     Fmask = hcat(find_face_nodes(elem, r, s)...)
 
     VDM, Vr, Vs = basis(elem, N, r, s)
@@ -182,7 +183,7 @@ function RefElemData(elem::Tet, approxType::Polynomial, N;
 end
 
 # specialize constructor for `Hex` to allow for higher polynomial degrees `N`
-function RefElemData(elem::Hex, approxType::Polynomial, N;
+function RefElemData(elem::Hex, approxType::Polynomial{DefaultPolynomialType}, N;
                      quad_rule_vol = quad_nodes(elem, N),
                      quad_rule_face = quad_nodes(face_type(elem), N),
                      Nplot = 10)
@@ -324,3 +325,33 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
                        M, Pq, Drst, LIFT)
 end
 
+
+function tensor_product_quadrature(::Line, r1D, w1D)
+    return r1D, w1D
+end
+  
+function tensor_product_quadrature(::Quad, r1D, w1D)
+    sq, rq = vec.(StartUpDG.NodesAndModes.meshgrid(r1D))
+    ws, wr = vec.(StartUpDG.NodesAndModes.meshgrid(w1D))
+    wq = wr .* ws
+    return rq, sq, wq
+end
+  
+function tensor_product_quadrature(::Hex, r1D, w1D)
+    rq, sq, tq = vec.(StartUpDG.NodesAndModes.meshgrid(r1D, r1D, r1D))
+    wr, ws, wt = vec.(StartUpDG.NodesAndModes.meshgrid(w1D, w1D, w1D))
+    wq = wr .* ws .* wt
+    return rq, sq, tq, wq
+end
+
+# Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
+struct Gauss end 
+
+# explicitly specify Gauss quadrature rule with (N+1)^d points 
+function RefElemData(element_type::Union{Line, Quad, Hex}, 
+                     approximation_type::Polynomial{<:Gauss}, N; kwargs...) 
+    quad_rule_vol = tensor_product_quadrature(element_type, StartUpDG.gauss_quad(0, 0, N)...)
+    rd = RefElemData(element_type, Polynomial(), N; quad_rule_vol)
+    return @set rd.approximation_type = approximation_type
+end
+  

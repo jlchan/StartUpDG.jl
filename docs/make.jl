@@ -22,4 +22,5 @@ makedocs(
 
 deploydocs(
     repo = "github.com/jlchan/StartUpDG.jl",
+    devbranch = "main"
 )

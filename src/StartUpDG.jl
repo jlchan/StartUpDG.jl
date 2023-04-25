@@ -9,7 +9,6 @@ using Kronecker: kronecker # for Hex element matrix manipulations
 using LinearAlgebra: cond, diagm, eigvals, Diagonal, I, mul!, norm, qr, ColumnNorm
 using NodesAndModes: meshgrid, find_face_nodes, face_vertices
 @reexport using NodesAndModes # for basis functions
-using OrderedCollections: LittleDict # fast ordered dict for a small number of entries
 using PathIntersections
 @reexport using PathIntersections: PresetGeometries
 using Printf: @sprintf
@@ -23,13 +22,19 @@ using Triangulate: Triangulate, TriangulateIO, triangulate
 
 # reference element utility functions
 include("RefElemData.jl")
+
 include("RefElemData_polynomial.jl")
+export RefElemData, Polynomial, Gauss
+
+include("RefElemData_TensorProductWedge.jl")
+export TensorProductWedge
+
 include("RefElemData_SBP.jl")
-include("ref_elem_utils.jl")
-export RefElemData, Polynomial
 export SBP, DefaultSBPType, TensorProductLobatto, Hicken, Kubatko # types for SBP node dispatch
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
 export hybridized_SBP_operators, inverse_trace_constant, face_type
+
+include("ref_elem_utils.jl")
 
 include("MeshData.jl")
 export MeshData, num_elements
@@ -64,8 +69,11 @@ export num_mortars_per_face, NonConformingQuadMeshExample
 
 # uniform meshes + face vertex orderings
 include("mesh/simple_meshes.jl")
-export readGmsh2D, uniform_mesh
-export readGmsh2D_v4, MeshImportOptions
+export uniform_mesh
+include("mesh/gmsh_utilities.jl")
+export readGmsh2D, readGmsh2D_v4, MeshImportOptions
+include("mesh/hohqmesh_utilities.jl")
+export read_HOHQMesh
 
 # Plots.jl recipes for meshes
 include("mesh/vtk_helper.jl")

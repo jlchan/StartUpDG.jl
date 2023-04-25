@@ -8,8 +8,10 @@
     @testset "Hybrid mesh RefElemData and MeshData" begin
 
         rds = RefElemData((Tri(), Quad()), N = 3)
-        @test rds[Tri()].element_type == Tri()
-        @test rds[Quad()].element_type == Quad()
+        @test rds.Tri.element_type == Tri()
+        @test rds.Quad.element_type == Quad()
+        out = (@capture_out Base.show(stdout, MIME"text/plain"(), rds))
+        @test out[1:19] == "MultipleRefElemData"
 
         # Simple hybrid mesh for testing
         #   1  7______8______9
@@ -39,16 +41,16 @@
 
         (; rxJ, sxJ, J  ) = md
         dudr, duds = similar(md.x), similar(md.x)
-        dudr.Quad .= rds[Quad()].Dr * u.Quad
-        duds.Quad .= rds[Quad()].Ds * u.Quad
-        dudr.Tri .= rds[Tri()].Dr * u.Tri
-        duds.Tri .= rds[Tri()].Ds * u.Tri
+        dudr.Quad .= rds.Quad.Dr * u.Quad
+        duds.Quad .= rds.Quad.Ds * u.Quad
+        dudr.Tri .= rds.Tri.Dr * u.Tri
+        duds.Tri .= rds.Tri.Ds * u.Tri
 
         @test norm(@. dudx - (rxJ * dudr + sxJ * duds) / J) < 1e3 * eps()
 
         # compute jumps
         (; mapP  ) = md
-        uf = NamedArrayPartition(Tri=rds[Tri()].Vf * u.Tri, Quad=rds[Quad()].Vf * u.Quad)
+        uf = NamedArrayPartition(Tri=rds.Tri.Vf * u.Tri, Quad=rds.Quad.Vf * u.Quad)
         uP = uf[mapP]    
         u_jump = similar(uf)
         u_jump .= uP - uf
@@ -68,10 +70,10 @@
         # test differentiation of a linear function 
         u = @. 2 * x + y
         dudr, duds = similar(u), similar(u)
-        dudr.Tri .= rds[Tri()].Dr * u.Tri
-        duds.Tri .= rds[Tri()].Ds * u.Tri
-        dudr.Quad .= rds[Quad()].Dr * u.Quad
-        duds.Quad .= rds[Quad()].Ds * u.Quad
+        dudr.Tri .= rds.Tri.Dr * u.Tri
+        duds.Tri .= rds.Tri.Ds * u.Tri
+        dudr.Quad .= rds.Quad.Dr * u.Quad
+        duds.Quad .= rds.Quad.Ds * u.Quad
         dudx = @. (md.rxJ * dudr + md.sxJ * duds) / md.J
         dudy = @. (md.ryJ * dudr + md.syJ * duds) / md.J
 

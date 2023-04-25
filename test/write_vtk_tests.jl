@@ -13,19 +13,18 @@
 
 
     @testset "VTKWriter test for $elem" for elem in [Tri(), Quad(), Wedge()]
-        @testset "Polygrad $N" for N in [2, 3] # reduce CI time by only testing N = 2, 3
-            @testset "Write Mesh" begin
-                rd = RefElemData(elem, N)
-                md = MeshData(uniform_mesh(elem, 2)..., rd)
-                interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
-                pdata = [quad.(interpolate * md.x, interpolate * md.y)]
-                filename = replace(string(elem), "()" => "") * "_" * string(N)
-                check = filename * ".vtu"
-                # Todo: Can we implement a better check?
-                vtu_name = MeshData_to_vtk(md, rd, pdata, ["(x+y)^2"], filename, true)
-                @test vtu_name[1] == check
-                rm(check) # remove created file after test is done
-            end
+        N = 3 # test only N=3 for CI time
+        @testset "Write Mesh" begin
+            rd = RefElemData(elem, N)
+            md = MeshData(uniform_mesh(elem, 2)..., rd)
+            interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
+            pdata = [quad.(interpolate * md.x, interpolate * md.y)]
+            filename = replace(string(elem), "()" => "") * "_" * string(N)
+            check = filename * ".vtu"
+            # Todo: Can we implement a better check?
+            vtu_name = MeshData_to_vtk(md, rd, pdata, ["(x+y)^2"], filename, true)
+            @test vtu_name[1] == check
+            rm(check) # remove created file after test is done
         end
 
         @testset "VTK-Node degree $order" for order=[0, 1]
