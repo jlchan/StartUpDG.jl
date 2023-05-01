@@ -266,7 +266,9 @@ function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
             for i in eachindex(first(rstq)), j in eachindex(first(rstq))]
     A = zeros(Int, length(first(rstq)), length(first(rstq)))
     for i in axes(D, 1)
-        dist = sort(view(D, i, :))[NDIMS + 2] # heuristic cutoff - smallest distance = 0, and we take NDIMS more
+        # heuristic cutoff - we take NDIMS + 1 neighbors, but the smallest distance = 0, 
+        # so we need to access the first NDIMS + 2 sorted distance entries.
+        dist = sort(view(D, i, :))[NDIMS + 2] 
         for j in findall(view(D, i, :) .< 1.01 * dist)
             A[i, j] = 1
         end
@@ -274,14 +276,16 @@ function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
     A = (A + A' .> 0) # symmetrize
     L = Diagonal(vec(sum(A, dims=2))) - A
     sorted_eigvals = sort(eigvals(L))
-    @assert sorted_eigvals[2] > 100 * eps() # check that there's only one zero null vector
+
+    # check that there's only one zero null vector
+    @assert sorted_eigvals[2] > 100 * eps() 
     
     E_dense = Vf * Pq
     E = zeros(size(E_dense))
     for i in axes(E, 1)
         # find all j such that E[i,j] ≥ 0.5, e.g., points which positively contribute to at least half of the 
         # interpolation. These seem to be associated with volume points "j" that are close to face point "i".
-        ids = findall(E_dense[i, :] .> 0.5)
+        ids = findall(E_dense[i, :] .>= 0.5)
         E[i, ids] .= E_dense[i, ids] ./ sum(E_dense[i, ids]) # normalize so sum(E, dims=2) = [1, 1, ...] still.
     end
     Brst = (nJ -> diagm(wf .* nJ)).(nrstJ)
@@ -305,6 +309,44 @@ function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
 
     Srst = construct_skew_matrix_from_potential.(psi)
     Qrst = map((S, B) -> S + 0.5 * E' * B * E, Srst, Brst)
-    return Qrst, E
+    return sparse.(Qrst), sparse(E)
 end
 
+function sparse_low_order_SBP_operators(rd::RefElemData{1, Line, <:Union{<:SBP, <:Polynomial{Gauss}}}) 
+    E = zeros(2, rd.N+1)
+    E[1, 1] = 1
+    E[2, end] = 1
+
+    # create volume operators
+    Q =  diagm(1 => ones(rd.N), -1 => -ones(rd.N))
+    Q[1,1] = -1
+    Q[end,end] = 1
+    Q = 0.5 * Q1D
+
+    return (sparse(Q),), sparse(E)
+end
+
+function sparse_low_order_SBP_operators(rd::RefElemData{2, Quad, <:Union{<:SBP, <:Polynomial{Gauss}}}) 
+    E1D = zeros(2, rd.N+1)
+    E1D[1, 1] = 1
+    E1D[2, end] = 1
+
+    # face ids for the first 2 faces
+    ids = reshape(1:(rd.N+1) * 2, :, 2)    
+    E_LR = zeros((rd.N+1) * 2, rd.Np)
+    E_LR[vec(ids'), :] .= kron(I(rd.N+1), E1D)
+
+    # create boundary extraction matrix
+    E = vcat(E_LR, kron(E1D, I(rd.N+1)))
+
+    # create volume operators
+    Q1D =  diagm(1 => ones(rd.N), -1 => -ones(rd.N))
+    Q1D[1,1] = -1
+    Q1D[end,end] = 1
+    Q1D = 0.5 * Q1D
+
+    Qr = kron(I(rd.N+1), Q1D)
+    Qs = kron(Q1D, I(rd.N+1))
+
+    return sparse.((Qr, Qs)), sparse(E)
+end
