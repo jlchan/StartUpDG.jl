@@ -347,11 +347,19 @@ end
 # Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
 struct Gauss end 
 
-# explicitly specify Gauss quadrature rule with (N+1)^d points 
+"""
+    RefElemData(elem::Union{Line, Quad, Hex}, approximation_type::Polynomial{Gauss}, N)
+
+Builds `rd::RefElemData` with (N+1)-point Gauss quadrature in each dimension. 
+"""
 function RefElemData(element_type::Union{Line, Quad, Hex}, 
                      approximation_type::Polynomial{<:Gauss}, N; kwargs...) 
+    # explicitly specify Gauss quadrature rule with (N+1)^d points 
     quad_rule_vol = tensor_product_quadrature(element_type, StartUpDG.gauss_quad(0, 0, N)...)
     rd = RefElemData(element_type, Polynomial(), N; quad_rule_vol)
-    return @set rd.approximation_type = approximation_type
+    @set rd.approximation_type = approximation_type
+    return rd
 end
   
+RefElemData(element_type::Union{Line, Quad, Hex}, ::Gauss, N; kwargs...) = 
+    RefElemData(element_type, Polynomial{Gauss}(), N; kwargs...)
