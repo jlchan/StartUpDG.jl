@@ -275,9 +275,15 @@ function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
     L = Diagonal(vec(sum(A, dims=2))) - A
     sorted_eigvals = sort(eigvals(L))
     @assert sorted_eigvals[2] > 100 * eps() # check that there's only one zero null vector
-
-    # TODO: sparsify the E matrix
-    E = Vf * Pq    
+    
+    E_dense = Vf * Pq
+    E = zeros(size(E_dense))
+    for i in axes(E, 1)
+        # find all j such that E[i,j] ≥ 0.5, e.g., points which positively contribute to at least half of the 
+        # interpolation. These seem to be associated with volume points "j" that are close to face point "i".
+        ids = findall(E_dense[i, :] .> 0.5)
+        E[i, ids] .= E_dense[i, ids] ./ sum(E_dense[i, ids]) # normalize so sum(E, dims=2) = [1, 1, ...] still.
+    end
     Brst = (nJ -> diagm(wf .* nJ)).(nrstJ)
 
     # compute potential 
