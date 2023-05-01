@@ -48,9 +48,6 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape{Dim}, ApproximationType,
     LIFT::L              # lift matrix
 end
 
-# TODO: remove in next breaking release after 0.15. Deprecated constructor with `Nplot` argument
-@deprecate RefElemData(elem, approxType, N, fv, V1, rst, VDM, Fmask, Nplot, rstp, Vp, rstq, wq, Vq, rstf, wf, Vf, nrstJ, M, Pq, Drst, LIFT) RefElemData(elem, approxType, N, fv, V1, rst, VDM, Fmask, rstp, Vp, rstq, wq, Vq, rstf, wf, Vf, nrstJ, M, Pq, Drst, LIFT)
-
 # need this to use @set outside of StartUpDG
 function ConstructionBase.setproperties(rd::RefElemData, patch::NamedTuple)
     fields = (haskey(patch, symbol) ? getproperty(patch, symbol) : getproperty(rd, symbol) for symbol in fieldnames(typeof(rd)))         
@@ -70,7 +67,7 @@ end
 
 function Base.show(io::IO, rd::RefElemData)
     @nospecialize basis # reduce precompilation time
-    print(io,"RefElemData{N=$(rd.N),$(rd.approximation_type),$(rd.element_type)}.")
+    print(io,"RefElemData{N=$(rd.N), $(rd.approximation_type), $(rd.element_type)}.")
 end
 
 _propertynames(::Type{RefElemData}, private::Bool = false) = (:num_faces, :Np, :Nq, :Nfq)
@@ -141,12 +138,10 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbo
     elseif s==:Nfq
         return length(getfield(x, :rstf)[1])
 
-    # CamlCase will be deprecated in a future release
-    elseif s==:elemShape || s==:elementType 
-        @warn "RefElemData properties `elemShape` and `elementType`" * 
-              "are deprecated. Please use `element_type`."
-        return getfield(x, :element_type)
+    # CamlCase will be deprecated in the next breaking release v0.17
     elseif s==:approximationType
+        @warn "RefElemData property `approximationType` is deprecated and will be removed in v0.17. " * 
+              "Please use `approximation_type` instead."
         return getfield(x, :approximation_type)
     else
         return getfield(x, s)
@@ -199,7 +194,18 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 #          RefElemData approximation types
 # ====================================================
 
-struct Polynomial end 
+"""
+    `Polynomial{T}`
+
+Represents polynomial approximation types (as opposed to finite differences). 
+By default, `Polynomial()` constructs a `Polynomial{StartUpDG.DefaultPolynomialType}`.
+Specifying a type parameters allows for dispatch on additional structure within a
+polynomial approximation (e.g., collocation, tensor product quadrature, etc). 
+"""
+struct Polynomial{T} end 
+
+struct DefaultPolynomialType end
+Polynomial() = Polynomial{DefaultPolynomialType}()
 
 # ========= SBP approximation types ============
 
@@ -216,15 +222,24 @@ struct Kubatko{FaceNodeType} end
 struct LegendreFaceNodes end
 struct LobattoFaceNodes end
 
+"""
+    `SBP{Type}`
+
+Represents polynomial approximation types (as opposed to finite differences). 
+By default, `Polynomial()` constructs a `Polynomial{StartUpDG.DefaultPolynomialType}`.
+Specifying a type parameters allows for dispatch on additional structure within a
+polynomial approximation (e.g., collocation, tensor product quadrature, etc). 
+"""
 # SBP approximation type: the more common diagonal E and diagonal-norm SBP operators on tri/quads.
-struct SBP{Type}
-    SBP() = new{DefaultSBPType}() # no-parameter default
-    SBP{T}() where {T} = new{T}()  # default constructor
-end 
+struct SBP{Type} end 
+
+SBP() = SBP{DefaultSBPType}() # no-parameter default
 
 # sets default to TensorProductLobatto on Quads 
-RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{TensorProductLobatto}(), N)
+RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N) = 
+    RefElemData(elem, SBP{TensorProductLobatto}(), N)
 
 # sets default to Kubatko{LobattoFaceNodes} on Tris
-RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
+RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = 
+    RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
 

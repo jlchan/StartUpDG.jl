@@ -8,15 +8,19 @@ struct MeshPlotter{Dim, RD<:RefElemData{Dim}, MD<:MeshData{Dim}}
     md::MD
 end
 
+RecipesBase.@recipe function f(rd::RefElemData, md::MeshData)
+    return MeshPlotter(rd, md)
+end
+
 RecipesBase.@recipe function f(m::MeshPlotter{2})
 
     linecolor --> :black
     legend --> false
     aspect_ratio --> 1
 
-    (; rd, md ) = m
-    (; x, y ) = md
-    (; Fmask ) = rd
+    (; rd, md) = m
+    (; x, y) = md
+    (; Fmask) = rd
     Fmask = reshape(Fmask, length(Fmask) ÷ rd.Nfaces, rd.Nfaces)
     get_face_nodes(u, e, f) = view(u, view(Fmask, :, f), e)    
 
@@ -26,12 +30,12 @@ RecipesBase.@recipe function f(m::MeshPlotter{2})
     xmesh, ymesh = eltype(x)[], eltype(y)[]    
     for e in 1:md.num_elements
         for f in 1:rd.Nfaces
-            x_f,y_f = (x->append!(Vp1D*x, NaN)).(get_face_nodes.((x, y), e, f))
+            x_f,y_f = (x->append!(Vp1D * x, NaN)).(get_face_nodes.((x, y), e, f))
             append!(xmesh, x_f)
             append!(ymesh, y_f)
         end
     end
-    return xmesh,ymesh
+    return xmesh, ymesh
 end
 
 """

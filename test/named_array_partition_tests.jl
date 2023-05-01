@@ -23,7 +23,8 @@
     # c = Fill(2., (2, 5))
     # x = NamedArrayPartition(a = ones(10), b = rand(20), c=c)
 
-    using StructArrays, StaticArrays
+    using StructArrays
+    using StartUpDG: SVector
     x = NamedArrayPartition(a = StructArray{SVector{2, Float64}}((ones(5), 2*ones(5))),
                             b = StructArray{SVector{2, Float64}}((3 * ones(2,2), 4*ones(2,2))))
     @test typeof(x.a) <: StructVector{<:SVector{2}}

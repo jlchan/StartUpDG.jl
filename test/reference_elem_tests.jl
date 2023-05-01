@@ -179,10 +179,13 @@
     end
 end
 
-inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}) = ((9.0, 13.898979485566365, 19.292060161853993, 26.999999999999808), (12.0, 16.898979485566365, 22.292060161853993, 29.999999999999808), (16.0, 20.898979485566365, 26.292060161853993, 33.99999999999981), (21.0, 25.898979485566365, 31.292060161853993, 38.99999999999981))
+inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}) = 
+    ((9.0, 13.898979485566365, 19.292060161853993, 26.999999999999808), 
+    (12.0, 16.898979485566365, 22.292060161853993, 29.999999999999808), 
+    (16.0, 20.898979485566365, 26.292060161853993, 33.99999999999981), 
+    (21.0, 25.898979485566365, 31.292060161853993, 38.99999999999981))
 
-
-@testset "Tensor reference elements" begin
+@testset "Tensor product wedges" begin
     tol = 5e2*eps()
     @testset "Degree $tri_grad triangle" for tri_grad = [1, 2, 3, 4]
         @testset "Degree $line_grad line" for line_grad = [1, 2, 3, 4]
@@ -252,5 +255,20 @@ inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}
 
         @test inverse_trace_constant(rd) ≈ inverse_trace_constant_compare(rd)[line_grad][tri_grad]
         end
+    end
+end
+
+ndims(::Line) = 1
+ndims(::Quad) = 2
+ndims(::Hex) = 3
+
+@testset "Tensor product Gauss collocation" begin
+    N = 3
+    @testset "element_type = $element_type" for element_type in [Line(), Quad(), Hex()]
+        rd = RefElemData(element_type, Polynomial{Gauss}(), N)
+
+        # test that quadrature is equivalent to interpolation
+        @test size(rd.Vq, 1) == size(rd.Vq, 2)        
+        @test length(rd.wq) == (N+1)^ndims(element_type)
     end
 end

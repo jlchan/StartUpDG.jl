@@ -23,7 +23,7 @@ get_HOHQMesh_to_StartUpDG_face_ordering(::Tri) = SVector(1, 2, 3)
 
 function get_HOHQMesh_ids(::Quad, curved_faces, f_HOHQMesh, f, polydeg) 
     active_face_offset = max.(0, cumsum(curved_faces) .- 1) * (polydeg + 1)
-    return (1:polydeg+1) .+ active_face_offset[f]
+    return (1:polydeg+1) .+ active_face_offset[f_HOHQMesh]
 end
 
 function get_HOHQMesh_ids(::Tri, curved_faces, f_HOHQMesh, f, polydeg)
@@ -73,7 +73,7 @@ function MeshData(hmd::HOHQMeshData{2}, rd::RefElemData)
                 curved_face_coordinates[2][:, f] .= curved_lobatto_coordinates[:, 2]
             end
         end
-        
+       
         x[:, element] .= warp_face_nodes_to_volume_nodes * vec(curved_face_coordinates[1])
         y[:, element] .= warp_face_nodes_to_volume_nodes * vec(curved_face_coordinates[2])
     end
@@ -188,20 +188,27 @@ struct CurvedHOHQMeshElement
     curved_edge_coordinates::Matrix{Float64}
 end
 
+# for hexes and quads
 function _read_HOHQMesh(lines, mesh_format)
     if mesh_format isa ISM_V2
         num_nodes, num_edges, nelements, polydeg = parse.(Int, split(popat!(lines, 1)))
     else
         num_nodes, nelements, polydeg = parse.(Int, split(popat!(lines, 1)))
     end
-    VX, VY, VZ = ntuple(_ -> zeros(num_nodes), 3)
+    VX, VY, VZ = ntuple(_ -> zeros(num_nodes), 3)    
+
+    has_z_coordinate = length(split(lines[1])) == 3 
     for i in 1:num_nodes
-        VX[i], VY[i], VZ[i] = parse.(Float64, split(lines[i]))
+        if has_z_coordinate
+            VX[i], VY[i], VZ[i] = parse.(Float64, split(lines[i]))
+        else
+            VX[i], VY[i] = parse.(Float64, split(lines[i]))
+        end
     end
     deleteat!(lines, 1:num_nodes)
 
     if mesh_format isa ISM_V2
-        # ignore edges for now 
+        # ignore edge data for now
         deleteat!(lines, 1:num_edges)
     end
 
@@ -225,6 +232,7 @@ function _read_HOHQMesh(lines, mesh_format)
             curved_edge_coordinates = mapreduce(vcat, lines[curved_nodes]) do s
                 (parse.(Float64, split(s)))'
             end
+
             push!(curved_elements, 
                   CurvedHOHQMeshElement(e, curved_faces, curved_edge_coordinates))
             deleteat!(lines, curved_nodes) # move on to next lines
@@ -283,6 +291,7 @@ function read_HOHQMesh(filename::String, element_type::Union{Tri, Tet})
             curved_edge_coordinates = mapreduce(vcat, lines[curved_nodes]) do s
                 (parse.(Float64, split(s)))'
             end
+
             push!(curved_elements, 
                   CurvedHOHQMeshElement(e, curved_faces, curved_edge_coordinates))
             deleteat!(lines, curved_nodes) # move on to next lines
