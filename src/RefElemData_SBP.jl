@@ -224,7 +224,7 @@ end
 # default to doing nothing
 map_nodes_to_symmetric_element(element_type, rst...) = rst
 
-# for triangles and tets, map to an equilateral triangle/tet
+# for triangles, map to an equilateral triangle
 function map_nodes_to_symmetric_element(::Tri, r, s)
     # biunit right triangular vertices
     v1, v2, v3 = SVector{2}.(zip(nodes(Tri(), 1)...))
@@ -246,13 +246,13 @@ function map_nodes_to_symmetric_element(::Tri, r, s)
 end
 
 
-
-
 """
     function sparse_low_order_SBP_operators(rd)
 
 Constructs sparse low order SBP operators given a `RefElemData`. 
-Returns operators `Qrst..., E ≈ Vf*Pq` that satisfy the GSBP property
+Returns operators `Qrst..., E ≈ Vf * Pq` that satisfy a generalized 
+summation-by-parts (GSBP) property:
+
         `Q_i + Q_i^T = E' * B_i * E`
 """
 function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
@@ -293,7 +293,7 @@ function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
     psi = map(x -> x[1:end-1], psi_augmented)
 
     # construct sparse skew part
-    function construct_skew_matrix(ψ)
+    function construct_skew_matrix_from_potential(ψ)
         S = zeros(length(ψ), length(ψ))
         for i in axes(S, 1), j in axes(S, 2)
             if A[i,j] > 0
@@ -302,8 +302,9 @@ function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
         end
         return S
     end
-    Srst = construct_skew_matrix.(psi)
-    Qrst = map((S,B) -> S + 0.5 * E' * B * E, Srst, Brst)
+
+    Srst = construct_skew_matrix_from_potential.(psi)
+    Qrst = map((S, B) -> S + 0.5 * E' * B * E, Srst, Brst)
     return Qrst, E
 end
 
