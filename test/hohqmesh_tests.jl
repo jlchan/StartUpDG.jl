@@ -43,7 +43,7 @@
     filename = "testset_HOHQMesh_meshes/TetMesh44.mesh"
     @test_nowarn hmd = read_HOHQMesh(filename, Tet())
     rd = RefElemData(Tet(), 4)
-    md = MeshData(hmd.VXYZ, hmd.EToV, rd)
+    md = MeshData(hmd, rd)
     @test all(md.J .> 0)
     # TODO: implement curved reader 
 end

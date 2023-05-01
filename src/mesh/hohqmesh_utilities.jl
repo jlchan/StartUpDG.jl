@@ -167,6 +167,77 @@ function MeshData(hmd::HOHQMeshData{3}, rd::RefElemData{3, <:Hex})
     return @set md_curved.mesh_type = HOHQMeshType(hmd, boundary_faces)
 end
 
+vertex_reordering(::Tet) = SVector(1, 2, 3, 4)
+function get_HOHQMesh_ids(::Tet, curved_faces, f_HOHQMesh, f, polydeg) 
+    active_face_offset = max.(0, cumsum(curved_faces) .- 1) * (polydeg + 1)
+    return (1:polydeg+1) .+ active_face_offset[f_HOHQMesh]
+end
+
+function abtors(a, b)
+    s = b
+    r = @. (1 - s) * 0.5 * (a + 1) - 1
+    return r, s
+end
+
+function MeshData(hmd::HOHQMeshData{3}, rd::RefElemData{3, <:Tet})
+    (; VXYZ, EToV) = hmd    
+    md = MeshData(VXYZ, EToV[:, vertex_reordering(rd.element_type)], rd)
+
+    return md
+    
+    # interpolation matrix from chebyshev_to_lobatto nodes
+    a_chebyshev = vec([-cos(j * pi / hmd.polydeg) for j in 0:hmd.polydeg, i in 0:hmd.polydeg])
+    b_chebyshev = vec([-cos(j * pi / hmd.polydeg) for i in 0:hmd.polydeg, j in 0:hmd.polydeg])
+    r_chebyshev, s_chebyshev = abtors(a_chebyshev, b_chebyshev)
+
+    chebyshev_to_lobatto = 
+        vandermonde(face_type(rd.element_type), hmd.polydeg, nodes(face_type(rd.element_type), rd.N)...) / vandermonde(face_type(rd.element_type), hmd.polydeg, r_chebyshev, s_chebyshev)
+
+    warp_face_nodes_to_volume_nodes = 
+        face_basis(rd.element_type, rd.N, rd.rst...) / face_basis(rd.element_type, rd.N, rd.r[rd.Fmask], rd.s[rd.Fmask], rd.t[rd.Fmask])
+
+            
+
+    HOHQMesh_to_StartUpDG_face_ordering = get_HOHQMesh_to_StartUpDG_face_ordering(rd.element_type)
+    curved_face_coordinates = ntuple(_ -> similar(reshape(md.x[rd.Fmask, 1], :, rd.num_faces)), 3)
+    x, y, z = copy.(md.xyz)
+    for curved_elem in hmd.curved_elements
+        (; element, curved_faces, curved_edge_coordinates) = curved_elem
+
+        # initialize face coordinates as linear coordinates
+        curved_face_coordinates[1] .= reshape(md.x[rd.Fmask, element], :, rd.num_faces)
+        curved_face_coordinates[2] .= reshape(md.y[rd.Fmask, element], :, rd.num_faces)
+        curved_face_coordinates[3] .= reshape(md.z[rd.Fmask, element], :, rd.num_faces)
+
+        for (f_HOHQMesh, f) in enumerate(HOHQMesh_to_StartUpDG_face_ordering)            
+            if curved_faces[f_HOHQMesh] == 1
+                # incorporate any permutations or face reorderings into indices
+                ids_HOHQMesh = get_HOHQMesh_ids(rd.element_type, curved_faces, f_HOHQMesh, f, hmd.polydeg)
+
+                curved_lobatto_coordinates = chebyshev_to_lobatto * curved_edge_coordinates[ids_HOHQMesh, :]
+                curved_face_coordinates[1][:, f] .= curved_lobatto_coordinates[:, 1]
+                curved_face_coordinates[2][:, f] .= curved_lobatto_coordinates[:, 2]
+                curved_face_coordinates[3][:, f] .= curved_lobatto_coordinates[:, 3]
+            end
+        end        
+
+        x[:, element] .= warp_face_nodes_to_volume_nodes * vec(curved_face_coordinates[1])
+        y[:, element] .= warp_face_nodes_to_volume_nodes * vec(curved_face_coordinates[2])
+        z[:, element] .= warp_face_nodes_to_volume_nodes * vec(curved_face_coordinates[3])
+    end
+
+    md_curved = MeshData(rd, md, x, y, z) 
+
+    # find boundary tags
+    boundary_strings = unique(hmd.boundary_tags)
+    deleteat!(boundary_strings, findfirst(boundary_strings .=== "---")) # remove non-boundary faces
+    face_indices = [map(x -> global_face_index(x, rd.num_faces, HOHQMesh_to_StartUpDG_face_ordering), 
+                        findall(hmd.boundary_tags .== name)) for name in boundary_strings]
+    boundary_faces = NamedTuple(Pair.(Symbol.(boundary_strings), face_indices))
+
+    return @set md_curved.mesh_type = HOHQMeshType(hmd, boundary_faces)
+end
+
 function read_HOHQMesh(filename::String)
     f = open(filename)
     lines = readlines(f)
