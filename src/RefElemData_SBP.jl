@@ -312,7 +312,7 @@ function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
     return sparse.(Qrst), sparse(E)
 end
 
-function sparse_low_order_SBP_operators(rd::RefElemData{1, Line, <:Union{<:SBP, <:Polynomial{Gauss}}}) 
+function sparse_low_order_SBP_1D_operators(rd::RefElemData{1}) 
     E = zeros(2, rd.N+1)
     E[1, 1] = 1
     E[2, end] = 1
@@ -326,27 +326,41 @@ function sparse_low_order_SBP_operators(rd::RefElemData{1, Line, <:Union{<:SBP, 
     return (sparse(Q),), sparse(E)
 end
 
+sparse_low_order_SBP_operators(rd::RefElemData{1, Line, <:Union{<:SBP, <:Polynomial{Gauss}}}) = 
+    sparse_low_order_SBP_1D_operators(rd)
+
 function sparse_low_order_SBP_operators(rd::RefElemData{2, Quad, <:Union{<:SBP, <:Polynomial{Gauss}}}) 
-    E1D = zeros(2, rd.N+1)
-    E1D[1, 1] = 1
-    E1D[2, end] = 1
+    (Q1D,), E1D = sparse_low_order_SBP_1D_operators(rd)
 
-    # face ids for the first 2 faces
+    # permute face node ordering for the first 2 faces
     ids = reshape(1:(rd.N+1) * 2, :, 2)    
-    E_LR = zeros((rd.N+1) * 2, rd.Np)
-    E_LR[vec(ids'), :] .= kron(I(rd.N+1), E1D)
-
-    # create boundary extraction matrix
-    E = vcat(E_LR, kron(E1D, I(rd.N+1)))
-
-    # create volume operators
-    Q1D =  diagm(1 => ones(rd.N), -1 => -ones(rd.N))
-    Q1D[1,1] = -1
-    Q1D[end,end] = 1
-    Q1D = 0.5 * Q1D
+    Er = zeros((rd.N+1) * 2, rd.Np)
+    Er[vec(ids'), :] .= kron(I(rd.N+1), E1D)
+    Es = kron(E1D, I(rd.N+1))
+    E = vcat(Er, Es)
 
     Qr = kron(I(rd.N+1), Q1D)
     Qs = kron(Q1D, I(rd.N+1))
 
     return sparse.((Qr, Qs)), sparse(E)
+end
+
+function sparse_low_order_SBP_operators(rd::RefElemData{3, Hex, <:Union{<:SBP, <:Polynomial{Gauss}}}) 
+    (Q1D,), E1D = sparse_low_order_SBP_1D_operators(rd)
+
+    # permute face nodes for the faces in the ±r and ±s directions
+    ids = reshape(1:(rd.N+1)^2 * 2, rd.N+1, :, 2) 
+    Er, Es, Et = ntuple(_ -> zeros((rd.N+1)^2 * 2, rd.Np), 3)
+    Er[vec(permutedims(ids, [2, 3, 1])), :] .= kron(I(rd.N+1), E1D, I(rd.N+1))
+    Es[vec(permutedims(ids, [3, 2, 1])), :] .= kron(I(rd.N+1), I(rd.N+1), E1D)
+    Et .= kron(E1D, I(rd.N+1), I(rd.N+1))
+
+    # create boundary extraction matrix
+    E = vcat(Er, Es, Et)
+
+    Qr = kron(I(rd.N+1), Q1D, I(rd.N+1))
+    Qs = kron(I(rd.N+1), I(rd.N+1), Q1D)
+    Qt = kron(Q1D, I(rd.N+1), I(rd.N+1))
+
+    return sparse.((Qr, Qs, Qt)), sparse(E)
 end

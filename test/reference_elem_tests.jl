@@ -300,5 +300,16 @@ end
         @test Qr + Qr' ≈ E' * Diagonal(rd.wf .* rd.nrJ) * E
         @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
     end
+
+    @testset "Hex (Polynomial{Gauss})" begin
+        rd = RefElemData(Hex(), Gauss(), N)
+        (Qr, Qs, Qt), E = sparse_low_order_SBP_operators(rd)
+        @test norm(sum(Qr, dims=2)) < tol
+        @test norm(sum(Qs, dims=2)) < tol
+        @test norm(sum(Qt, dims=2)) < tol
+        @test Qr + Qr' ≈ E' * Diagonal(rd.wf .* rd.nrJ) * E
+        @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
+        @test Qt + Qt' ≈ E' * Diagonal(rd.wf .* rd.ntJ) * E
+    end
 end
 
