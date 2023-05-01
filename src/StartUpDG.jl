@@ -32,7 +32,8 @@ export TensorProductWedge
 include("RefElemData_SBP.jl")
 export SBP, DefaultSBPType, TensorProductLobatto, Hicken, Kubatko # types for SBP node dispatch
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
-export hybridized_SBP_operators, inverse_trace_constant, face_type
+export hybridized_SBP_operators, sparse_low_order_SBP_operators
+export inverse_trace_constant, face_type
 
 include("ref_elem_utils.jl")
 
