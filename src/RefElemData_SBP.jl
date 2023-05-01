@@ -220,3 +220,133 @@ function hybridized_SBP_operators(rd)
     VhP = Vh * Pq
     return Qrsth, VhP, Ph, Vh
 end
+
+# default to doing nothing
+map_nodes_to_symmetric_element(element_type, rst...) = rst
+
+# for triangles, map to an equilateral triangle
+function map_nodes_to_symmetric_element(::Tri, r, s)
+    # biunit right triangular vertices
+    v1, v2, v3 = SVector{2}.(zip(nodes(Tri(), 1)...))
+
+    denom = (v2[2] - v3[2]) * (v1[1] - v3[1]) + (v3[1] - v2[1]) * (v1[2] - v3[2])
+    L1 = @. ((v2[2] - v3[2]) * (r - v3[1]) + (v3[1] - v2[1]) * (s - v3[2])) / denom
+    L2 = @. ((v3[2] - v1[2]) * (r - v3[1]) + (v1[1] - v3[1]) * (s - v3[2])) / denom
+    L3 = @. 1 - L1 - L2
+
+    # equilateral vertices
+    v1 = SVector{2}(2 * [-.5, -sqrt(3) / 6])
+    v2 = SVector{2}(2 * [.5, -sqrt(3)/6])
+    v3 = SVector{2}(2 * [0, sqrt(3)/3])
+
+    x = @. v1[1] * L1 + v2[1] * L2 + v3[1] * L3
+    y = @. v1[2] * L1 + v2[2] * L2 + v3[2] * L3
+
+    return x, y
+end
+
+
+"""
+    function sparse_low_order_SBP_operators(rd)
+
+Constructs sparse low order SBP operators given a `RefElemData`. 
+Returns operators `Qrst..., E ≈ Vf * Pq` that satisfy a generalized 
+summation-by-parts (GSBP) property:
+
+        `Q_i + Q_i^T = E' * B_i * E`
+"""
+function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
+    (; Pq, Vf, rstq, wf, nrstJ) = rd
+
+    # if element is a simplex, convert nodes to an equilateral triangle for symmetry
+    rstq = map_nodes_to_symmetric_element(rd.element_type, rstq...)
+
+    # build distance and adjacency matrices
+    D = [norm(SVector{NDIMS}(getindex.(rstq, i)) - SVector{NDIMS}(getindex.(rstq, j))) 
+            for i in eachindex(first(rstq)), j in eachindex(first(rstq))]
+    A = zeros(Int, length(first(rstq)), length(first(rstq)))
+    for i in axes(D, 1)
+        # heuristic cutoff - we take NDIMS + 1 neighbors, but the smallest distance = 0, 
+        # so we need to access the first NDIMS + 2 sorted distance entries.
+        dist = sort(view(D, i, :))[NDIMS + 2] 
+        for j in findall(view(D, i, :) .< 1.01 * dist)
+            A[i, j] = 1
+        end
+    end
+    A = (A + A' .> 0) # symmetrize
+    L = Diagonal(vec(sum(A, dims=2))) - A
+    sorted_eigvals = sort(eigvals(L))
+
+    # check that there's only one zero null vector
+    @assert sorted_eigvals[2] > 100 * eps() 
+    
+    E_dense = Vf * Pq
+    E = zeros(size(E_dense))
+    for i in axes(E, 1)
+        # find all j such that E[i,j] ≥ 0.5, e.g., points which positively contribute to at least half of the 
+        # interpolation. These seem to be associated with volume points "j" that are close to face point "i".
+        ids = findall(E_dense[i, :] .>= 0.5)
+        E[i, ids] .= E_dense[i, ids] ./ sum(E_dense[i, ids]) # normalize so sum(E, dims=2) = [1, 1, ...] still.
+    end
+    Brst = (nJ -> diagm(wf .* nJ)).(nrstJ)
+
+    # compute potential 
+    e = ones(size(L, 2))
+    right_hand_sides = map(B -> 0.5 * sum(E' * B, dims=2), Brst)
+    psi_augmented = map(b -> [L e; e' 0] \ [b; 0], right_hand_sides)
+    psi = map(x -> x[1:end-1], psi_augmented)
+
+    # construct sparse skew part
+    function construct_skew_matrix_from_potential(ψ)
+        S = zeros(length(ψ), length(ψ))
+        for i in axes(S, 1), j in axes(S, 2)
+            if A[i,j] > 0
+                S[i,j] = ψ[j] - ψ[i]
+            end
+        end
+        return S
+    end
+
+    Srst = construct_skew_matrix_from_potential.(psi)
+    Qrst = map((S, B) -> S + 0.5 * E' * B * E, Srst, Brst)
+    return sparse.(Qrst), sparse(E)
+end
+
+function sparse_low_order_SBP_operators(rd::RefElemData{1, Line, <:Union{<:SBP, <:Polynomial{Gauss}}}) 
+    E = zeros(2, rd.N+1)
+    E[1, 1] = 1
+    E[2, end] = 1
+
+    # create volume operators
+    Q =  diagm(1 => ones(rd.N), -1 => -ones(rd.N))
+    Q[1,1] = -1
+    Q[end,end] = 1
+    Q = 0.5 * Q1D
+
+    return (sparse(Q),), sparse(E)
+end
+
+function sparse_low_order_SBP_operators(rd::RefElemData{2, Quad, <:Union{<:SBP, <:Polynomial{Gauss}}}) 
+    E1D = zeros(2, rd.N+1)
+    E1D[1, 1] = 1
+    E1D[2, end] = 1
+
+    # face ids for the first 2 faces
+    ids = reshape(1:(rd.N+1) * 2, :, 2)    
+    E_LR = zeros((rd.N+1) * 2, rd.Np)
+    E_LR[vec(ids'), :] .= kron(I(rd.N+1), E1D)
+
+    # create boundary extraction matrix
+    E = vcat(E_LR, kron(E1D, I(rd.N+1)))
+
+    # create volume operators
+    Q1D =  diagm(1 => ones(rd.N), -1 => -ones(rd.N))
+    Q1D[1,1] = -1
+    Q1D[end,end] = 1
+    Q1D = 0.5 * Q1D
+
+    Qr = kron(I(rd.N+1), Q1D)
+    Qs = kron(Q1D, I(rd.N+1))
+
+    return sparse.((Qr, Qs)), sparse(E)
+end
