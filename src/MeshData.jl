@@ -198,7 +198,7 @@ function Base.getproperty(x::MeshData{Dim, <:VertexMappedMesh}, s::Symbol) where
     end
 end
 
-@inline num_elements(md::MeshData) = size(getfield(md, :x), 2) # number of columns in the "x" coordinate array
+@inline num_elements(md::MeshData) = size(first(getfield(md, :xyz)), 2) # number of columns in the coordinate array
 
 # splat `uniform_mesh` arguments, e.g., enables `MeshData(uniform_mesh(Line(), 1), rd)`
 # TODO: wrap `uniform_mesh` in a custom type so we can dispatch more precisely
