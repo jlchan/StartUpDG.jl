@@ -321,7 +321,7 @@ function sparse_low_order_SBP_1D_operators(rd::RefElemData{1})
     Q =  diagm(1 => ones(rd.N), -1 => -ones(rd.N))
     Q[1,1] = -1
     Q[end,end] = 1
-    Q = 0.5 * Q1D
+    Q = 0.5 * Q
 
     return (sparse(Q),), sparse(E)
 end
