@@ -292,6 +292,15 @@ end
         @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
     end
 
+    @testset "Quad (SBP)" begin
+        rd = RefElemData(Quad(), SBP(), N)
+        (Qr, Qs), E = sparse_low_order_SBP_operators(rd)
+        @test norm(sum(Qr, dims=2)) < tol
+        @test norm(sum(Qs, dims=2)) < tol
+        @test Qr + Qr' ≈ E' * Diagonal(rd.wf .* rd.nrJ) * E
+        @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
+    end
+
     @testset "Quad (Polynomial{Gauss})" begin
         rd = RefElemData(Quad(), Gauss(), N)
         (Qr, Qs), E = sparse_low_order_SBP_operators(rd)
