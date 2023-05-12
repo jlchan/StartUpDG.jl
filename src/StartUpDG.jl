@@ -9,7 +9,7 @@ using Kronecker: kronecker # for Hex element matrix manipulations
 using LinearAlgebra: cond, diagm, eigvals, Diagonal, I, mul!, norm, qr, ColumnNorm
 using NodesAndModes: meshgrid, find_face_nodes, face_vertices
 @reexport using NodesAndModes # for basis functions
-using PathIntersections
+using PathIntersections: PathIntersections
 @reexport using PathIntersections: PresetGeometries
 using Printf: @sprintf
 using RecipesBase: RecipesBase
