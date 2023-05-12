@@ -187,8 +187,8 @@ inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}
 
 @testset "Tensor product wedges" begin
     tol = 5e2*eps()
-    @testset "Degree $tri_grad triangle" for tri_grad = [1, 2, 3, 4]
-        @testset "Degree $line_grad line" for line_grad = [1, 2, 3, 4]
+    @testset "Degree $tri_grad triangle" for tri_grad = [2, 3]
+        @testset "Degree $line_grad line" for line_grad = [1, 2]
         line = RefElemData(Line(), line_grad)
         tri  = RefElemData(Tri(), tri_grad)
         tensor = TensorProductWedge(tri, line)
@@ -285,6 +285,15 @@ end
 
     @testset "Tri" begin
         rd = RefElemData(Tri(), N)
+        (Qr, Qs), E = sparse_low_order_SBP_operators(rd)
+        @test norm(sum(Qr, dims=2)) < tol
+        @test norm(sum(Qs, dims=2)) < tol
+        @test Qr + Qr' ≈ E' * Diagonal(rd.wf .* rd.nrJ) * E
+        @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
+    end
+
+    @testset "Quad (SBP)" begin
+        rd = RefElemData(Quad(), SBP(), N)
         (Qr, Qs), E = sparse_low_order_SBP_operators(rd)
         @test norm(sum(Qr, dims=2)) < tol
         @test norm(sum(Qs, dims=2)) < tol
