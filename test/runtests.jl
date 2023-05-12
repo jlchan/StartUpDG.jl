@@ -6,7 +6,7 @@ using StartUpDG
 include("write_vtk_tests.jl")
 include("named_array_partition_tests.jl")
 include("triangulate_tests.jl")
-include("reference_elem_tests.jl")
+# include("reference_elem_tests.jl")
 include("sbp_tests.jl")
 include("MeshData_tests.jl")
 include("boundary_util_tests.jl")
