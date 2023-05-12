@@ -135,7 +135,7 @@ function NodesAndModes.equi_nodes(elem::PhysicalFrame{2}, curve, N)
     (; vxyz ) = elem
     r, s = equi_nodes(Quad(), N)
     x, y = map_nodes_to_background_cell(elem, r, s)
-    ids = .!is_contained.(curve, zip(x, y))
+    ids = .!PathIntersections.is_contained.(curve, zip(x, y))
     return x[ids], y[ids]
 end
 
