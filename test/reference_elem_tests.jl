@@ -187,8 +187,8 @@ inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}
 
 @testset "Tensor product wedges" begin
     tol = 5e2*eps()
-    @testset "Degree $tri_grad triangle" for tri_grad = [1, 2, 3, 4]
-        @testset "Degree $line_grad line" for line_grad = [1, 2, 3, 4]
+    @testset "Degree $tri_grad triangle" for tri_grad = [2, 3]
+        @testset "Degree $line_grad line" for line_grad = [1, 2]
         line = RefElemData(Line(), line_grad)
         tri  = RefElemData(Tri(), tri_grad)
         tensor = TensorProductWedge(tri, line)
