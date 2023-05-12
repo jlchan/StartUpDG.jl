@@ -312,7 +312,7 @@ function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
     return sparse.(Qrst), sparse(E)
 end
 
-function sparse_low_order_SBP_1D_operators(rd::RefElemData{1}) 
+function sparse_low_order_SBP_1D_operators(rd::RefElemData) 
     E = zeros(2, rd.N+1)
     E[1, 1] = 1
     E[2, end] = 1
