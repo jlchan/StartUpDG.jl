@@ -81,7 +81,9 @@
         # @test rd.Pq * rd.Vq ≈ I
 
         @suppress begin # suppress warnings
-            @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
+            trace_constant_1 = invoke(inverse_trace_constant, Tuple{RefElemData}, rd)
+            trace_constant_2 = inverse_trace_constant(rd)
+            @test trace_constant_1 ≈ trace_constant_2
         end
         # TODO: test interpolation of Fmask matches rd.rstf.
 
