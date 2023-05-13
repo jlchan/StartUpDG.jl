@@ -93,7 +93,7 @@ end
 # one non-conforming quad face is split into 2 mortar faces
 num_mortars_per_face(rd::RefElemData{2, Quad}) = 2
 
-num_elements(md::MeshData{Dim, <:NonConformingMesh}) where {Dim} = size(getproperty(md.mesh_type, :EToV), 1)
+num_elements(md::MeshData{Dim, <:NonConformingMesh}) where {Dim} = size(getfield(getfield(md, :mesh_type), :EToV), 1)
 
 function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
 

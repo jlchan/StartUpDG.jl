@@ -145,7 +145,7 @@ function generate_sampling_points(objects, elem, rd, Np_target; N_sampled = 4 * 
     x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
     is_in_domain = fill(true, length(x_sampled))
     for (index, point) in enumerate(zip(x_sampled, y_sampled))
-        is_in_domain[index] = !any(map(obj -> is_contained(obj, point), objects))
+        is_in_domain[index] = !any(map(obj -> PathIntersections.is_contained(obj, point), objects))
     end
     
     # increase number of background points until we are left with `Np_target` sampling points 
@@ -158,7 +158,7 @@ function generate_sampling_points(objects, elem, rd, Np_target; N_sampled = 4 * 
         # check if all the points are in all the objects
         is_in_domain = fill(true, length(x_sampled))
         for (index, point) in enumerate(zip(x_sampled, y_sampled))
-            is_in_domain[index] = !any(map(obj -> is_contained(obj, point), objects))
+            is_in_domain[index] = !any(map(obj -> PathIntersections.is_contained(obj, point), objects))
         end
     end
 
@@ -472,12 +472,12 @@ end
 
 function calculate_cutcells(vx, vy, objects, ds = 1e-3, arc_tol = 1e-10, corner_tol = 1e-10)
 
-    stop_pts = find_mesh_intersections((vx, vy), objects, ds, arc_tol, corner_tol,
-                                       closed_list=true, closure_tol=1e-12)
+    stop_pts = PathIntersections.find_mesh_intersections((vx, vy), objects, ds, arc_tol, corner_tol,
+                                                          closed_list=true, closure_tol=1e-12)
 
     # Calculate cutcells
     region_flags, cutcell_indices, cutcells = 
-        define_regions((vx, vy), objects, stop_pts, binary_regions=false)
+        PathIntersections.define_regions((vx, vy), objects, stop_pts, binary_regions=false)
 
     cells_per_dimension_x = length(vx) - 1
     cells_per_dimension_y = length(vy) - 1

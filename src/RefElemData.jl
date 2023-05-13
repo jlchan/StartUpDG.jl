@@ -130,7 +130,7 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbo
         return getfield(x, :Drst)[3]
         
     elseif s==:Nfaces || s==:num_faces
-        return num_faces(x.element_type)
+        return num_faces(getfield(x, :element_type))
     elseif s==:Np
         return length(getfield(x, :rst)[1])
     elseif s==:Nq
