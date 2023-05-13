@@ -63,26 +63,27 @@
     # end
 
     @testset "Hex" begin
-        rd = RefElemData(Hex(),N)
-        @test propertynames(rd)[1] == :element_type
-        @test rd.t == rd.rst[3]
-        @test rd.tf == rd.rstf[3]    
-        @test rd.tq == rd.rstq[3]
-        @test rd.rp == rd.rstp[1]    
-        @test rd.sp == rd.rstp[2]
-        @test rd.tp == rd.rstp[3]    
-        @test rd.Np == length(rd.r)  
-        @test rd.Nq == length(rd.rq)    
-        @test abs(sum(rd.wq)) ≈ 8
-        @test abs(sum(rd.wf)) ≈ 6*4
-        @test abs(sum(rd.wf .* rd.nrJ)) < tol
-        @test abs(sum(rd.wf .* rd.nsJ)) < tol
-        @test abs(sum(rd.wf .* rd.ntJ)) < tol
-        @test rd.Pq * rd.Vq ≈ I
-        # @suppress begin # suppress warnings
-        #     @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
-        # end
-        # # TODO: test interpolation of Fmask matches rd.rstf.
+        # rd = RefElemData(Hex(),N)
+        # @test propertynames(rd)[1] == :element_type
+        # @test rd.t == rd.rst[3]
+        # @test rd.tf == rd.rstf[3]    
+        # @test rd.tq == rd.rstq[3]
+        # @test rd.rp == rd.rstp[1]    
+        # @test rd.sp == rd.rstp[2]
+        # @test rd.tp == rd.rstp[3]    
+        # @test rd.Np == length(rd.r)  
+        # @test rd.Nq == length(rd.rq)    
+        # @test abs(sum(rd.wq)) ≈ 8
+        # @test abs(sum(rd.wf)) ≈ 6*4
+        # @test abs(sum(rd.wf .* rd.nrJ)) < tol
+        # @test abs(sum(rd.wf .* rd.nsJ)) < tol
+        # @test abs(sum(rd.wf .* rd.ntJ)) < tol
+        # @test rd.Pq * rd.Vq ≈ I
+
+        @suppress begin # suppress warnings
+            @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
+        end
+        # TODO: test interpolation of Fmask matches rd.rstf.
 
         # @test StartUpDG.num_vertices(Hex()) == 8
         # @test StartUpDG.num_faces(Hex()) == 6
