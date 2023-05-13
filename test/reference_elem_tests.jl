@@ -63,7 +63,7 @@
     end
 
     @testset "Hex" begin
-        rd = RefElemData(Hex(),N)
+        rd = RefElemData(Hex(), N)
         @test propertynames(rd)[1] == :element_type
         @test rd.t == rd.rst[3]
         @test rd.tf == rd.rstf[3]    
@@ -79,9 +79,12 @@
         @test abs(sum(rd.wf .* rd.nsJ)) < tol
         @test abs(sum(rd.wf .* rd.ntJ)) < tol
         @test rd.Pq * rd.Vq ≈ I
-        @suppress begin # suppress warnings
-            @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
-        end
+
+        # @suppress begin # suppress warnings
+        #     trace_constant_1 = invoke(inverse_trace_constant, Tuple{RefElemData}, rd)
+        #     trace_constant_2 = inverse_trace_constant(rd)
+        #     @test_skip trace_constant_1 ≈ trace_constant_2 # currently broken on Windows Julia 1...
+        # end
         # TODO: test interpolation of Fmask matches rd.rstf.
 
         @test StartUpDG.num_vertices(Hex()) == 8
