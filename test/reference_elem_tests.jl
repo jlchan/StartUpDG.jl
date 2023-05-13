@@ -63,7 +63,7 @@
     # end
 
     @testset "Hex" begin
-        # rd = RefElemData(Hex(),N)
+        rd = RefElemData(Hex(),N)
         # @test propertynames(rd)[1] == :element_type
         # @test rd.t == rd.rst[3]
         # @test rd.tf == rd.rstf[3]    
