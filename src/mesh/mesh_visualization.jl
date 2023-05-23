@@ -113,3 +113,36 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, fil
     return vtk_save(vtkfile)
 end
 
+
+function MeshData_to_vtk(md::MeshData, rd::RefElemData, filename)
+    num_tri_nodes = length(rd.approximation_type.tri.r)
+    num_wedge_nodes = length(rd.r)
+    node_connection = []
+    wedge_add = 0
+    for elems in 1:md.num_elements
+        for k in 1:rd.N[1]
+            add = 0
+            bottom = (k-1)*num_tri_nodes
+            top = k*num_tri_nodes
+            for i in rd.N[2]+1:-1:1
+                for j in 1:i-1
+                    push!(node_connection, [j+add+bottom + wedge_add, j+1+add+bottom + wedge_add, j+i+add+bottom + wedge_add, j+add+top + wedge_add, j+1+add+top + wedge_add, j+i+add+top + wedge_add])
+                    if j!=i && j!=1
+                        push!(node_connection,  [j+add+bottom + wedge_add, j+i+add+bottom + wedge_add, j+i+add-1+bottom + wedge_add, j+add+top + wedge_add, j+i+add+top + wedge_add, j+i+add-1+top + wedge_add])
+                    end
+                end
+                add = add + i
+            end
+        end
+        wedge_add = wedge_add + num_wedge_nodes
+    end
+    
+    total_num_elems = length(node_connection)
+    vtk_cell_type = VTKCellTypes.VTK_WEDGE
+    cells = [MeshCell(vtk_cell_type, node_connection[i]) for i in 1:total_num_elems]
+    coords = vec.(md.xyz)
+    vtkfile = vtk_grid(filename, coords..., cells)
+    return vtk_save(vtkfile)
+end
+
+
