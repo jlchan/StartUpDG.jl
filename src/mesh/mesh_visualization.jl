@@ -149,6 +149,7 @@ function MeshData_Tensor_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, datana
         wedge_add = wedge_add + num_wedge_nodes
     end
 
+    # The total number of written vtk-elements is higher than the number of md.num_elements
     total_num_elems = length(node_connection)
     vtk_cell_type = VTKCellTypes.VTK_WEDGE
     # Fill the cells-Array for VTK
