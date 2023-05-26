@@ -39,4 +39,21 @@
         end
     end
 
+    @testset "TensorProduct VTKWriter" begin
+        @testset "Degree ($tri_grad, $line_grad)" for tri_grad in 1:5, line_grad in 1:5
+            line = RefElemData(Line(), line_grad)
+            tri  = RefElemData(Tri(), tri_grad)
+            tensor = TensorProductWedge(tri, line)
+            rd = RefElemData(Wedge(), tensor)
+            md = MeshData(uniform_mesh(Wedge(), 2)..., rd)
+            pdata = [quad.(md.x, md.y)]
+            filename = "TensorProductWedge" * "_" * string(tri_grad) * "_" * string(line_grad)
+            check = filename * ".vtu"
+            # Todo: Can we implement a better check?
+            vtu_name = MeshData_Tensor_to_vtk(md, rd, pdata, ["(x+y)^2"], filename, true)
+            @test vtu_name[1] == check
+            rm(check) # remove created file after test is done
+        end
+    end
+
 end # VTK tests
