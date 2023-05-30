@@ -156,6 +156,11 @@ function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs
     return MultipleRefElemData(rds)
 end
 
+MeshData(mesh::Tuple{<:Tuple, Vector{Matrix{Int64}}}, rd::MultipleRefElemData, other_args...) = 
+    MeshData(mesh..., rd; other_args...)
+MeshData(VXYZ::Tuple, EToV, rd::MultipleRefElemData, other_args...) = 
+    MeshData(VXYZ..., EToV, rd; other_args...) # splats VXYZ 
+
 # constructs MeshData for a hybrid mesh given a NamedTuple of `RefElemData` 
 # with element type keys (e.g., `:Tri` or `:Quad`). 
 function MeshData(VX, VY, EToV_unsorted, 

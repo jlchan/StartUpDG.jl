@@ -60,7 +60,7 @@
 
     @testset "Curved hybrid meshes" begin
         rds = RefElemData((Tri(), Quad()), N = 2)
-        md = MeshData(HybridMeshExample()..., rds)
+        md = MeshData(HybridMeshExample(), rds)
 
         (; x, y  ) = md
         @. x = x + 0.1 * sin(pi * x) * sin(pi * y)
