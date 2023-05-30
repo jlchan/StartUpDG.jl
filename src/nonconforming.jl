@@ -17,12 +17,12 @@ num_total_faces = num_faces(rd.element_type) * md.num_elements
 u_face = reshape(rd.Vf * u, :, num_total_faces)
 
 # interpolate faces to mortars (`uf` denotes mortar faces for `NonConformingMesh` types)
-(; conforming_faces, non_conforming_faces, mortar_interpolation_matrix ) = md.mesh_type
+(; conforming_faces, nonconforming_faces, mortar_interpolation_matrix ) = md.mesh_type
 u_mortar = similar(md.xf)
 view(u_mortar, :, 1:length(conforming_faces)) .= view(u_face, :, conforming_faces)
 
 # interpolate to non-conforming faces, which are stored after the conforming faces
-for (i, f) in enumerate(non_conforming_faces)
+for (i, f) in enumerate(nonconforming_faces)
     mortar_face_ids = (1:num_mortars_per_face(rd)) .+ (i-1) * num_mortars_per_face(rd) .+ length(conforming_faces)
     u_mortar[:, mortar_face_ids] .= reshape(mortar_interpolation_matrix * u_face[:, f], :, num_mortars_per_face(rd))
 end
@@ -38,7 +38,7 @@ struct NonConformingMesh{TV, TE, CF, NCF, I, P}
     VXYZ::TV
     EToV::TE
     conforming_faces::CF
-    non_conforming_faces::NCF
+    nonconforming_faces::NCF
     mortar_interpolation_matrix::I
     mortar_projection_matrix::P
 end
@@ -78,7 +78,7 @@ struct NonConformingQuadMeshExample{T1, T2, T3, T4}
     VXY::T1
     EToV::T2
     FToF::T3
-    non_conforming_faces::T4
+    nonconforming_faces::T4
 end 
 
 function NonConformingQuadMeshExample()
@@ -86,8 +86,8 @@ function NonConformingQuadMeshExample()
     VY = [-1,  1, -1,  1, 0, -1, 0, 1]
     EToV = [1 3 2 4; 3 6 5 7; 5 7 4 8]
     FToF = [1, 2, 3, 12, 5, 6, 7, 13, 9, 7, 11, 4, 8] # FToF[mortar_face] = exterior_mortar_face
-    non_conforming_faces = [2]
-    return NonConformingQuadMeshExample((VX, VY), EToV, FToF, non_conforming_faces)
+    nonconforming_faces = [2]
+    return NonConformingQuadMeshExample((VX, VY), EToV, FToF, nonconforming_faces)
 end
 
 # one non-conforming quad face is split into 2 mortar faces
@@ -129,10 +129,10 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
     FToF = mesh.FToF
     non_conforming_faces = mesh.non_conforming_faces
     num_total_faces = num_faces(rd.element_type) * num_elements
-    conforming_faces = setdiff(1:num_total_faces, non_conforming_faces)
+    conforming_faces = setdiff(1:num_total_faces, nonconforming_faces)
 
     # one non-conforming face is divided into 2 in 2D
-    num_mortar_faces = num_mortars_per_face(rd) * length(non_conforming_faces) + length(conforming_faces)
+    num_mortar_faces = num_mortars_per_face(rd) * length(nonconforming_faces) + length(conforming_faces)
    
     # copy over conforming face data
     x_mortar = similar(xf, (num_face_points, num_mortar_faces))
@@ -142,7 +142,7 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
     view(y_mortar, :, 1:length(conforming_faces)) .= view(yf, :, conforming_faces)
 
     # interpolate to non-conforming faces
-    for (i, f) in enumerate(non_conforming_faces)
+    for (i, f) in enumerate(nonconforming_faces)
         x_interpolated = reshape(mortar_interpolation_matrix * xf[:, f], size(xf, 1), 2)
         y_interpolated = reshape(mortar_interpolation_matrix * yf[:, f], size(xf, 1), 2)        
         
@@ -167,7 +167,7 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
 
     is_periodic = (false, false)
 
-    mesh_type = NonConformingMesh(tuple(VX, VY), EToV, conforming_faces, non_conforming_faces, 
+    mesh_type = NonConformingMesh(tuple(VX, VY), EToV, conforming_faces, nonconforming_faces, 
                                   mortar_interpolation_matrix, mortar_projection_matrix)
 
     return MeshData(mesh_type, FToF,
