@@ -73,7 +73,7 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, MeshType}) where {DIM, MeshType}
     @nospecialize md
-    print(io,"MeshData of dimension $DIM with $(md.num_elements) elements")
+    print(io,"MeshData of dimension $DIM with $(md.num_elements) elements with periodicity = $(md.is_periodic).")
 end
 
 function Base.propertynames(x::MeshData{1}, private::Bool = false)
