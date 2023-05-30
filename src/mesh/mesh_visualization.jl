@@ -125,7 +125,7 @@ Translate the given mesh into a vtk-file.
 `equi_dist_nodes` flag if points should be interpolated to equidstant nodes
 """
 function MeshData_Tensor_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, filename, 
-                    write_data = false, equi_dist_nodes = false) where {DIM}
+                    write_data = false, equi_dist_nodes = true) where {DIM}
     # Number of nodes in the triangular base
     num_tri_nodes = length(rd.approximation_type.tri.r)
     # Number of all wedges in the mesh
