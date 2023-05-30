@@ -50,7 +50,7 @@
             filename = "TensorProductWedge" * "_" * string(tri_grad) * "_" * string(line_grad)
             check = filename * ".vtu"
             # Todo: Can we implement a better check?
-            vtu_name = MeshData_Tensor_to_vtk(md, rd, pdata, ["(x+y)^2"], filename, true)
+            vtu_name = MeshData_Tensor_to_vtk(md, rd, pdata, ["(x+y)^2"], filename, true, true)
             @test vtu_name[1] == check
             rm(check) # remove created file after test is done
         end

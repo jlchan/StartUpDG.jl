@@ -165,13 +165,28 @@ function MeshData_Tensor_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, datana
     # Fill the cells-Array for VTK
     cells = [MeshCell(vtk_cell_type, node_connection[i]) for i in 1:total_num_elems]
     # Coordinates for VTK
-    coords = vec.(md.xyz)
+    
 
-    # TODO: Use the equi-dist transformation for the triangular basis and for the linear basis. The nodes in the TensorWedge repeat
-    #       the nodes of the triangle `line-degree`-times. Therefore we can apply the transformation on each of the set of nodes. 
-    #       The same holds for the line-nodes. 
     if equi_dist_nodes
-        println("Equidistant nodes is not yet supported for meshes consisting of TensorProductWedges")
+        # Construct an interpolation matrix for the triangular basis. 
+        tri_interpolate = vandermonde(rd.approximation_type.tri.element_type, rd.approximation_type.tri.N, equi_nodes(rd.approximation_type.tri.element_type, rd.approximation_type.tri.N)...)/rd.approximation_type.tri.VDM
+        coords = (similar(md.x), similar(md.y), md.z)
+        # Get the number of points per element 
+        tri_inter_size = length(rd.approximation_type.tri.r)
+        line_inter_size = length(rd.approximation_type.line.r)
+
+        for dim in 1:2
+            for elem in 1:md.num_elements
+                tmp_coords = Vector{Float64}[]
+                for i in 1:line_inter_size
+                    tmp_coords = vcat(tmp_coords, tri_interpolate * md.xyz[dim][((i-1)*tri_inter_size + 1):(i*tri_inter_size), elem])
+                end
+                coords[dim][:, elem] =  tmp_coords
+            end
+        end  
+        coords = vec.(coords)  
+    else
+        coords = vec.(md.xyz)
     end
     vtkfile = vtk_grid(filename, coords...,cells)
     
@@ -180,9 +195,6 @@ function MeshData_Tensor_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, datana
             vtkfile[dataname[i]] = data[i]
         end
     end
-
-    
-
     return vtk_save(vtkfile)
 end
 
