@@ -170,7 +170,12 @@ function MeshData_Tensor_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, datana
     if equi_dist_nodes
         # Construct an interpolation matrix for the triangular basis. 
         tri_interpolate = vandermonde(rd.approximation_type.tri.element_type, rd.approximation_type.tri.N, equi_nodes(rd.approximation_type.tri.element_type, rd.approximation_type.tri.N)...)/rd.approximation_type.tri.VDM
+        line_interpolate = vandermonde(rd.approximation_type.line.element_type, rd.approximation_type.line.N, collect(LinRange(-1, 1, rd.approximation_type.line.N+1))) / rd.approximation_type.line.VDM
+        
         coords = (similar(md.x), similar(md.y), md.z)
+
+        
+
         # Get the number of points per element 
         tri_inter_size = length(rd.approximation_type.tri.r)
         line_inter_size = length(rd.approximation_type.line.r)
@@ -184,6 +189,16 @@ function MeshData_Tensor_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, datana
                 coords[dim][:, elem] =  tmp_coords
             end
         end  
+
+        for elem in 1:md.num_elements
+            z_coords = [md.z[(i-1)*tri_inter_size + 1, elem] for i in 1:line_inter_size]
+            z_tmp = line_interpolate * z_coords
+            z_equi = Vector{Float64}[]
+            for i in 1:line_inter_size
+                z_equi = vcat(z_equi, fill(z_tmp[i], tri_inter_size))
+            end
+            coords[3][:, elem] = z_equi
+        end
         coords = vec.(coords)  
     else
         coords = vec.(md.xyz)
