@@ -8,7 +8,7 @@ using StartUpDG: RecipesBase
     md = MeshData(uniform_mesh(Tri(),1)...,rd)
     @test (@capture_out Base.show(stdout,MIME"text/plain"(),rd)) == "RefElemData for a degree 3 Polynomial{StartUpDG.DefaultPolynomialType}() approximation on Tri() element."
     @test (@capture_out Base.show(stdout,rd)) == "RefElemData{N=3, Polynomial{StartUpDG.DefaultPolynomialType}(), Tri()}."
-    @test (@capture_out Base.show(stdout, MIME"text/plain"(), md)) == "MeshData of dimension 2 with 2 elements"
+    @test (@capture_out Base.show(stdout, MIME"text/plain"(), md)) == "MeshData of dimension 2 with 2 elements with periodicity = (false, false)."
     @test (@capture_out Base.show(stdout, md)) == "MeshData{2}"
 
     # test recipes
