@@ -95,10 +95,12 @@ num_mortars_per_face(rd::RefElemData{2, Quad}) = 2
 
 num_elements(md::MeshData{Dim, <:NonConformingMesh}) where {Dim} = size(getfield(getfield(md, :mesh_type), :EToV), 1)
 
-function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
+MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad}) = 
+    MeshData(mesh.VXY, mesh.EToV, mesh.FToF, mesh.nonconforming_faces, rd)
 
-    (VX, VY) = mesh.VXY
-    EToV = mesh.EToV
+function MeshData(VXY, EToV, FToF, nonconforming_faces, rd::RefElemData{2, Quad})    
+
+    VX, VY = VXY
     num_elements = size(EToV, 1)
 
     # assume each mortar face is a uniform subdivision
@@ -125,9 +127,6 @@ function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
     xf = Vf * x
     yf = Vf * y
 
-    # TODO: fix hard-coding of connectivity
-    FToF = mesh.FToF
-    non_conforming_faces = mesh.non_conforming_faces
     num_total_faces = num_faces(rd.element_type) * num_elements
     conforming_faces = setdiff(1:num_total_faces, nonconforming_faces)
 
