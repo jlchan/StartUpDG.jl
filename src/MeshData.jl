@@ -204,6 +204,7 @@ end
 # TODO: wrap `uniform_mesh` in a custom type so we can dispatch more precisely
 """
     MeshData(VXYZ, EToV, rd::RefElemData)
+    MeshData((VXYZ, EToV), rd::RefElemData)
 
 Returns a MeshData struct with high order DG mesh information from the unstructured
 mesh information (VXYZ..., EToV).
@@ -214,11 +215,12 @@ Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometr
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `Jf`.
 """
-MeshData(mesh::Tuple{<:Tuple, Matrix{Int64}}, other_args...) = MeshData(mesh..., other_args...)
-MeshData(VXYZ::T, EToV, other_args...) where {NDIMS, T <: NTuple{NDIMS}} = 
-    MeshData(VXYZ..., EToV, other_args...) # splats VXYZ 
+MeshData(mesh::Tuple{<:Tuple, Matrix{Int64}}, rd::RefElemData, other_args...) = 
+    MeshData(mesh..., rd, other_args...)
+MeshData(VXYZ, EToV, rd::RefElemData, other_args...) = 
+    MeshData(VXYZ..., EToV, rd, other_args...) # splats VXYZ 
 
-function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
+function MeshData(VX::AbstractVector, EToV, rd::RefElemData{1}) 
 
     # Construct global coordinates
     (; V1 ) = rd
