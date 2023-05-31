@@ -114,7 +114,7 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, fil
 end
 
 """
-MeshData_Tensor_to_vtk(md, rd, dim, data, dataname, datatype, filename, write_data = false, equi_dist_nodes = true)
+MeshData_to_vtk(md, rd, dim, data, dataname, datatype, filename, write_data = false, equi_dist_nodes = true)
 
 Translate the given mesh into a vtk-file.
 `md` holds a `MeshData` object
