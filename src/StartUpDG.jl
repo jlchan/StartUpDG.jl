@@ -79,7 +79,7 @@ export read_HOHQMesh
 # Plots.jl recipes for meshes
 include("mesh/vtk_helper.jl")
 include("mesh/mesh_visualization.jl")
-export VertexMeshPlotter, MeshPlotter, MeshData_to_vtk, MeshData_Tensor_to_vtk
+export VertexMeshPlotter, MeshPlotter, MeshData_to_vtk
 
 # Triangulate interfaces and pre-built meshes
 include("mesh/triangulate_utils.jl")

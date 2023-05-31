@@ -124,8 +124,8 @@ Translate the given mesh into a vtk-file.
 `write_data`, flag if data should be written or not (e.g., if data is not written, only the mesh will be saved as output)
 `equi_dist_nodes` flag if points should be interpolated to equidstant nodes
 """
-function MeshData_Tensor_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, filename, 
-                    write_data = false, equi_dist_nodes = true) where {DIM}
+function MeshData_to_vtk(md::MeshData, rd::RefElemData{3, <:Wedge, <:TensorProductWedge}, data, dataname, filename, 
+                    write_data = false, equi_dist_nodes = true)
     # Number of nodes in the triangular base
     num_tri_nodes = length(rd.approximation_type.tri.r)
     # Number of all wedges in the mesh
