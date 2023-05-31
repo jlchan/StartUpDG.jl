@@ -210,7 +210,7 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{3, <:Wedge, <:TensorProdu
     else
         coords = vec.(md.xyz)
     end
-    vtkfile = vtk_grid(filename, coords...,cells)
+    vtkfile = vtk_grid(filename, coords..., cells)
     
     if write_data
         for i in 1:length(dataname)
