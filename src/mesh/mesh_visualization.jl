@@ -177,17 +177,17 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{3, <:Wedge, <:TensorProdu
         coords = (similar(md.x), similar(md.y), similar(md.z))
 
         # Get the number of points per element 
-        tri_inter_size = length(rd.approximation_type.tri.r)
-        line_inter_size = length(rd.approximation_type.line.r)
+        tri_num_points = length(rd.approximation_type.tri.r)
+        line_num_points = length(rd.approximation_type.line.r)
 
         # equi-distant nodes for triangular basis (hence only consider x-y-coords. )
         for dim in 1:2
             # iterate over all elements
             for elem in 1:md.num_elements
                 tmp_coords = Vector{Float64}[]
-                for i in 1:line_inter_size
+                for i in 1:line_num_points
                     # interpolate each slice of the wedge
-                    tmp_coords = vcat(tmp_coords, tri_interpolate * md.xyz[dim][((i-1)*tri_inter_size + 1):(i*tri_inter_size), elem])
+                    tmp_coords = vcat(tmp_coords, tri_interpolate * md.xyz[dim][((i-1)*tri_num_points + 1):(i*tri_num_points), elem])
                 end
                 coords[dim][:, elem] =  tmp_coords
             end
@@ -196,13 +196,13 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{3, <:Wedge, <:TensorProdu
         # equi-distant nodes for linear basis (hence only consider z-coords)
         for elem in 1:md.num_elements
             # Get the z-coord of each wedge-slice
-            z_coords = [md.z[(i-1)*tri_inter_size + 1, elem] for i in 1:line_inter_size]
+            z_coords = [md.z[(i-1)*tri_num_points + 1, elem] for i in 1:line_num_points]
             # interpolate
             z_tmp = line_interpolate * z_coords
             z_equi = Vector{Float64}[]
-            # each slice has 'tri_inter_size' nodes. repeat the z-value 'tri-inter-size' times and add to z-coords. 
-            for i in 1:line_inter_size
-                z_equi = vcat(z_equi, fill(z_tmp[i], tri_inter_size))
+            # each slice has 'tri_num_points' nodes. repeat the z-value 'tri-inter-size' times and add to z-coords. 
+            for i in 1:line_num_points
+                z_equi = vcat(z_equi, fill(z_tmp[i], tri_num_points))
             end
             coords[3][:, elem] = z_equi
         end
