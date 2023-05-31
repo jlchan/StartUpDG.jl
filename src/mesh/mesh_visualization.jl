@@ -131,7 +131,7 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{3, <:Wedge, <:TensorProdu
     # Number of all wedges in the mesh
     num_wedge_nodes = length(rd.r)
     # Array to fill with the connectivity data for vtk
-    node_connection = Int[]
+    node_connection = Vector{Int}[]
     # Shift for the number of nodes of the wedges we already computed
     wedge_add = 0
     for elems in 1:md.num_elements
