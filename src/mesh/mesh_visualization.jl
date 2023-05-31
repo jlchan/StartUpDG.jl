@@ -180,7 +180,7 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{3, <:Wedge, <:TensorProdu
         tri_inter_size = length(rd.approximation_type.tri.r)
         line_inter_size = length(rd.approximation_type.line.r)
 
-        # equi-distant nodes for triangular basis (hence only concider x-y-coords. )
+        # equi-distant nodes for triangular basis (hence only consider x-y-coords. )
         for dim in 1:2
             # iterate over all elements
             for elem in 1:md.num_elements
@@ -193,7 +193,7 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{3, <:Wedge, <:TensorProdu
             end
         end  
 
-        # equi-distant nodes for linear basis (hence only concider z-coords)
+        # equi-distant nodes for linear basis (hence only consider z-coords)
         for elem in 1:md.num_elements
             # Get the z-coord of each wedge-slice
             z_coords = [md.z[(i-1)*tri_inter_size + 1, elem] for i in 1:line_inter_size]
