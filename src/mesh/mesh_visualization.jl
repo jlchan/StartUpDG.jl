@@ -184,12 +184,11 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{3, <:Wedge, <:TensorProdu
         for dim in 1:2
             # iterate over all elements
             for elem in 1:md.num_elements
-                tmp_coords = Vector{Float64}[]
                 for i in 1:line_num_points
                     # interpolate each slice of the wedge
-                    tmp_coords = vcat(tmp_coords, tri_interpolate * md.xyz[dim][((i-1)*tri_num_points + 1):(i*tri_num_points), elem])
+                    range = ((i-1)*tri_num_points + 1):(i*tri_num_points)
+                    coords[dim][range, elem] = tri_interpolate * md.xyz[dim][range, elem]
                 end
-                coords[dim][:, elem] =  tmp_coords
             end
         end  
 
