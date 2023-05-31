@@ -198,12 +198,11 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{3, <:Wedge, <:TensorProdu
             z_coords = [md.z[(i-1)*tri_num_points + 1, elem] for i in 1:line_num_points]
             # interpolate
             z_tmp = line_interpolate * z_coords
-            z_equi = Vector{Float64}[]
             # each slice has 'tri_num_points' nodes. repeat the z-value 'tri-inter-size' times and add to z-coords. 
             for i in 1:line_num_points
-                z_equi = vcat(z_equi, fill(z_tmp[i], tri_num_points))
+                range = ((i-1)*tri_num_points + 1):(i*tri_num_points)
+                coords[3][range, elem] = fill(z_tmp[i], tri_num_points)
             end
-            coords[3][:, elem] = z_equi
         end
         coords = vec.(coords)  
     else
