@@ -146,6 +146,11 @@ function RefElemData(elem::Union{Hex, Tet}, approx_type::Polynomial, N;
                      quad_rule_face=quad_nodes(face_type(elem), N),
                      Nplot=10)
 
+    if elem isa Hex && N > 4
+        @warn "Since N > 4, we suggest using `RefElemData(Hex(), TensorProductQuadrature(gauss_quad(0, 0, $N+1)), $N)`, " * 
+              "which is more efficient."
+    end      
+
     fv = face_vertices(elem) 
 
     # Construct matrices on reference elements

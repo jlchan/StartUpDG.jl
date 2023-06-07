@@ -319,6 +319,26 @@ ndims(::Line) = 1
 ndims(::Quad) = 2
 ndims(::Hex) = 3
 
+@testset "Tensor product quadrature on Hex" begin
+    N = 2
+    rd = RefElemData(Hex(), TensorProductQuadrature(quad_nodes(Line(), N+1)), N)
+    rd_ref = RefElemData(Hex(), N; quad_rule_vol=quad_nodes(Hex(), N+1))
+
+    for prop in [:N, :element_type]        
+        @test getproperty(rd, prop) == getproperty(rd_ref, prop)
+    end
+    
+    for prop in [:fv, :rst, :rstp, :rstq, :rstf, :nrstJ, :Drst]
+        @show prop
+        @test all(getproperty(rd, prop) .≈ getproperty(rd_ref, prop))
+    end
+
+    for prop in [:Fmask, :VDM, :V1, :wq, :Vq, :wf, :Vf, :Vp, :M, :Pq, :LIFT]
+        @show prop
+        @test norm(getproperty(rd, prop) - getproperty(rd_ref, prop)) < 1e4 * eps()
+    end
+end
+
 @testset "Tensor product Gauss collocation" begin
     N = 3
     @testset "element_type = $element_type" for element_type in [Line(), Quad(), Hex()]
