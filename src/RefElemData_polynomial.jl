@@ -347,10 +347,8 @@ function RefElemData(elem::Pyr, approximation_type::Polynomial, N;
 
     #Get interpolation nodes of degree N 
     r, s, t = nodes(elem, N)
-    
-    VDM, Vr, Vs, Vt = basis(elem, N, r, s, t)
-    Dr, Ds, Dt = (A -> A/VDM).((Vr, Vs, Vt))
-    Drst = (Dr, Ds, Dt)
+        
+    VDM = vandermonde(elem, N, r, s, t)
     
     Fmask = find_face_nodes(elem, r, s, t)
 
@@ -361,10 +359,10 @@ function RefElemData(elem::Pyr, approximation_type::Polynomial, N;
     # build face quadrature nodes
     rquad, squad, wquad = quad_rule_face[1]
     rtri, stri, wtri = quad_rule_face[2]
-    rf = vcat(-one.(wtri), -stri, rtri, rtri, rquad)
-    sf = vcat(rtri, rtri, -one.(wtri), -stri, squad)
-    tf = vcat(stri, stri, stri, stri, -one.(wquad))
-    wf = vcat(wtri, sqrt(2) * wtri, wtri, sqrt(2) * wtri, wquad)
+    sf = vcat(rtri,         rtri,   -one.(wtri), -stri,     squad)
+    rf = vcat(-one.(wtri), -stri,   rtri,         rtri,     rquad)
+    tf = vcat(stri,         stri,   stri,         stri,     -one.(wquad))
+    wf = vcat(wtri, wtri, wtri, wtri, wquad)
 
     # Index into the face nodes. 
     # Faces are ordered tri faces (+/-r, then +/-s), then the quad face
@@ -379,16 +377,23 @@ function RefElemData(elem::Pyr, approximation_type::Polynomial, N;
         
     # for nrJ and nsJ normal on face 1-3 coincide with the triangular normals
     zt, zq = zeros(length(wtri)), zeros(length(wquad))
-    et, eq = ones(length(wtri)), ones(length(wquad))
+    et, eq = ones(length(wtri)),  ones(length(wquad))
 
-    nrJ = [zq; eq; -eq; zt; zt]
-    nsJ = [-eq; eq; zq; zt; zt]
-    ntJ = [zq; zq; zq; -et; et]
+    nrJ = [-et;  et;  zt;  zt;  zq]
+    nsJ = [ zt;  zt; -et;  et;  zq]
+    ntJ = [ zt;  et;  zt;  et; -eq]
 
     rq, sq, tq, wq = quad_rule_vol
-    Vq = vandermonde(elem, N, rq, sq, tq) / VDM
+    Vq, Vrq, Vsq, Vtq = map(A -> A / VDM, basis(elem, N, rq, sq, tq))
     M  = Vq' * diagm(wq) * Vq
     Pq = M \ (Vq' * diagm(wq))
+
+    # We define nodal differentiation matrices using quadrature instead of using 
+    # interpolation nodes and linear algebra. This is because the basis is not 
+    # polynomial, so derivative(pyramid_space) ∉ pyramid_space. Instead, we define 
+    # a weak gradient `D` s.t. for any u ∈ pyramid_space, we have:
+    #       (Du, v) = (du/dx, v) ∀v ∈ pyramid_space
+    Drst = map(Vderiv -> M \ (Vq' * diagm(wq) * Vderiv), (Vrq, Vsq, Vtq))
 
     # plotting nodes
     rp, sp, tp = equi_nodes(elem, Nplot)
@@ -396,14 +401,13 @@ function RefElemData(elem::Pyr, approximation_type::Polynomial, N;
 
     LIFT = M \ (Vf' * diagm(wf))
 
-    return RefElemData(Wedge(node_ids_by_face), approximation_type, N, fv, V1,
+    return RefElemData(Pyr(node_ids_by_face), approximation_type, N, fv, V1,
                        tuple(r, s, t), VDM, Fmask,
                        tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
                        M, Pq, Drst, LIFT)
 end
-
 
 
 function tensor_product_quadrature(::Line, r1D, w1D)
