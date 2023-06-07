@@ -206,10 +206,23 @@ By default, `Polynomial()` constructs a `Polynomial{StartUpDG.DefaultPolynomialT
 Specifying a type parameters allows for dispatch on additional structure within a
 polynomial approximation (e.g., collocation, tensor product quadrature, etc). 
 """
-struct Polynomial{T} end 
+struct Polynomial{T} 
+    data::T
+end 
 
 struct DefaultPolynomialType end
-Polynomial() = Polynomial{DefaultPolynomialType}()
+Polynomial() = Polynomial{DefaultPolynomialType}(DefaultPolynomialType())
+
+struct TensorProductHex{T}
+    quad_rule_1D::T  # 1D quadrature nodes and weights (rq, wq)
+end
+
+# Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
+struct Gauss end 
+Polynomial{Gauss}() = Polynomial(Gauss())
+
+# Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
+struct Gauss end 
 
 # ========= SBP approximation types ============
 
@@ -247,3 +260,23 @@ RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N) =
 RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = 
     RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
 
+
+function Base.show(io::IO, ::MIME"text/plain", rd::RefElemData)
+    @nospecialize rd
+    print(io,"RefElemData for a degree $(rd.N) $(_short_typeof(rd.approximation_type)) " * 
+             "approximation on a $(_short_typeof(rd.element_type)) element.")
+end
+
+function Base.show(io::IO, rd::RefElemData)
+    @nospecialize basis # reduce precompilation time
+    print(io,"RefElemData{N=$(rd.N), $(_short_typeof(rd.approximation_type)), $(_short_typeof(rd.element_type))}.")
+end
+
+_short_typeof(x) = typeof(x)
+
+_short_typeof(approx_type::Wedge) = "Wedge"
+_short_typeof(approx_type::Pyr) = "Pyr"
+
+_short_typeof(approx_type::Polynomial{<:DefaultPolynomialType}) = "Polynomial"
+_short_typeof(approx_type::Polynomial{<:Gauss}) = "Polynomial{Gauss}"
+_short_typeof(approx_type::Polynomial{<:TensorProductHex}) = "Polynomial{TensorProductHex}"

@@ -184,8 +184,9 @@ end
 
 # specialize constructor for `Hex` to allow for higher polynomial degrees `N`
 function RefElemData(elem::Hex, approxType::Polynomial{DefaultPolynomialType}, N;
-                     quad_rule_vol = quad_nodes(elem, N),
-                     quad_rule_face = quad_nodes(face_type(elem), N),
+                     quad_rule_1D = quad_nodes(Line(), N), 
+                     quad_rule_vol = quad_nodes(elem, N), # !!! this argument isn't used. TODO: remove
+                     quad_rule_face = quad_nodes(face_type(elem), N), # !!! this argument isn't used. TODO: remove
                      Nplot = 10)
 
     fv = face_vertices(elem) 
@@ -196,7 +197,7 @@ function RefElemData(elem::Hex, approxType::Polynomial{DefaultPolynomialType}, N
 
     # construct 1D operator for faster Kronecker solves
     r1D = nodes(Line(), N)
-    rq1D, wq1D = quad_nodes(Line(), N)
+    rq1D, wq1D = quad_rule_1D
     VDM_1D = vandermonde(Line(), N, r1D)
     Vq1D = vandermonde(Line(), N, rq1D) / VDM_1D
     invVDM_1D = inv(VDM_1D)
@@ -208,8 +209,6 @@ function RefElemData(elem::Hex, approxType::Polynomial{DefaultPolynomialType}, N
     invVDM = kronecker(invVDM_1D, invVDM_1D, invVDM_1D)
     invM = kronecker(invM_1D, invM_1D, invM_1D)
 
-    # !!! WARNING: the `M` mass matrix is not necessarily a Kronecker product if the quadrature 
-    # !!! isn't tensor product, e.g., a non-tensor product under-integrated quadrature.
     M = kronecker(M1D, M1D, M1D)
 
     _, Vr, Vs, Vt = basis(elem, N, r, s, t)
@@ -240,7 +239,8 @@ function RefElemData(elem::Hex, approxType::Polynomial{DefaultPolynomialType}, N
 
     Drst = (Dr, Ds, Dt)
 
-    return RefElemData(elem, approxType, N, fv, V1,
+    quad_rule_1D = (rq1D, wq1D)
+    return RefElemData(elem, Polynomial(TensorProductHex(quad_rule_1D)), N, fv, V1,
                        tuple(r, s, t), VDM, vec(Fmask),
                        tuple(rp, sp, tp), Vp, 
                        tuple(rq, sq, tq), wq, Vq,
