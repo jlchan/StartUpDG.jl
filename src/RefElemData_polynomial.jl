@@ -2,8 +2,8 @@ function init_face_data(elem::Tri; quad_rule_face = gauss_quad(0,0,N))
     r1D, w1D = quad_rule_face
     e = ones(size(r1D)) 
     z = zeros(size(r1D)) 
-    rf,sf = map_face_nodes(elem,r1D)
-    wf = vec(repeat(w1D,3,1));
+    rf, sf = map_face_nodes(elem, r1D)
+    wf = vec(repeat(w1D, 3, 1));
     nrJ = [z; e; -e]
     nsJ = [-e; e; z]
     return rf,sf,wf,nrJ,nsJ
@@ -208,8 +208,8 @@ function RefElemData(elem::Hex, approxType::Polynomial{DefaultPolynomialType}, N
     invVDM = kronecker(invVDM_1D, invVDM_1D, invVDM_1D)
     invM = kronecker(invM_1D, invM_1D, invM_1D)
 
-    # !!! WARNING: the `M` mass matrix is not necessarily a Kronecker product 
-    # if the quadrature isn't tensor product, e.g., a non-tensor product under-integrated quadrature.
+    # !!! WARNING: the `M` mass matrix is not necessarily a Kronecker product if the quadrature 
+    # !!! isn't tensor product, e.g., a non-tensor product under-integrated quadrature.
     M = kronecker(M1D, M1D, M1D)
 
     _, Vr, Vs, Vt = basis(elem, N, r, s, t)
@@ -272,7 +272,7 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
     r, s, t = nodes(elem, N)
     
     VDM, Vr, Vs, Vt = basis(elem, N, r, s, t)
-    Dr, Ds, Dt = (A -> A/VDM).((Vr, Vs, Vt))
+    Dr, Ds, Dt = (A -> A / VDM).((Vr, Vs, Vt))
     Drst = (Dr, Ds, Dt)
     
     Fmask = find_face_nodes(elem, r, s, t)
@@ -318,6 +318,90 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
     LIFT = M \ (Vf' * diagm(wf))
 
     return RefElemData(Wedge(node_ids_by_face), approximation_type, N, fv, V1,
+                       tuple(r, s, t), VDM, Fmask,
+                       tuple(rp, sp, tp), Vp,
+                       tuple(rq, sq, tq), wq, Vq,
+                       rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
+                       M, Pq, Drst, LIFT)
+end
+
+"""
+    RefElemData(elem::Pyr, approximation_type::Polynomial, N;
+                quad_rule_vol=quad_nodes(elem, N),
+                quad_rule_face_quad=quad_nodes(Quad(), N), 
+                quad_rule_face_tri=quad_nodes(Tri(), N), 
+                quad_rule_face=(quad_rule_face_quad, quad_rule_face_tri),
+                Nplot=10)
+
+Builds operators for pyramids.
+"""
+function RefElemData(elem::Pyr, approximation_type::Polynomial, N;
+                     quad_rule_vol=quad_nodes(elem, N),
+                     quad_rule_face_quad=quad_nodes(Quad(), N), 
+                     quad_rule_face_tri=quad_nodes(Tri(), N), 
+                     quad_rule_face=(quad_rule_face_quad, quad_rule_face_tri),
+                     Nplot=10)
+
+    #Find the vertices of the faces
+    fv = face_vertices(elem)
+
+    #Get interpolation nodes of degree N 
+    r, s, t = nodes(elem, N)
+        
+    VDM = vandermonde(elem, N, r, s, t)
+    
+    Fmask = find_face_nodes(elem, r, s, t)
+
+    # low order interpolation nodes
+    r1, s1, t1 = nodes(elem, 1)
+    V1 = vandermonde(elem, 1, r, s, t) / vandermonde(elem, 1, r1, s1, t1)
+    
+    # build face quadrature nodes
+    rquad, squad, wquad = quad_rule_face[1]
+    rtri, stri, wtri = quad_rule_face[2]
+    sf = vcat(rtri,         rtri,   -one.(wtri), -stri,     squad)
+    rf = vcat(-one.(wtri), -stri,   rtri,         rtri,     rquad)
+    tf = vcat(stri,         stri,   stri,         stri,     -one.(wquad))
+    wf = vcat(wtri, wtri, wtri, wtri, wquad)
+
+    # Index into the face nodes. 
+    # Faces are ordered tri faces (+/-r, then +/-s), then the quad face
+    tri_face_ids(f) = (1:length(wtri)) .+ (f-1) * length(wtri) 
+    quad_face_ids = (1:length(wquad)) .+ 4 * length(wtri)
+    node_ids_by_face = (tri_face_ids(1), tri_face_ids(2), 
+                        tri_face_ids(3), tri_face_ids(4), 
+                        quad_face_ids)
+
+    rstf = tuple(rf, sf, tf)
+    Vf = vandermonde(elem, N, rf, sf, tf) / VDM
+        
+    # for nrJ and nsJ normal on face 1-3 coincide with the triangular normals
+    zt, zq = zeros(length(wtri)), zeros(length(wquad))
+    et, eq = ones(length(wtri)),  ones(length(wquad))
+
+    nrJ = [-et;  et;  zt;  zt;  zq]
+    nsJ = [ zt;  zt; -et;  et;  zq]
+    ntJ = [ zt;  et;  zt;  et; -eq]
+
+    rq, sq, tq, wq = quad_rule_vol
+    Vq, Vrq, Vsq, Vtq = map(A -> A / VDM, basis(elem, N, rq, sq, tq))
+    M  = Vq' * diagm(wq) * Vq
+    Pq = M \ (Vq' * diagm(wq))
+
+    # We define nodal differentiation matrices using quadrature instead of using 
+    # interpolation nodes and linear algebra. This is because the basis is not 
+    # polynomial, so derivative(pyramid_space) ∉ pyramid_space. Instead, we define 
+    # a weak gradient `D` s.t. for any u ∈ pyramid_space, we have:
+    #       (Du, v) = (du/dx, v) ∀v ∈ pyramid_space
+    Drst = map(Vderiv -> M \ (Vq' * diagm(wq) * Vderiv), (Vrq, Vsq, Vtq))
+
+    # plotting nodes
+    rp, sp, tp = equi_nodes(elem, Nplot)
+    Vp = vandermonde(elem, N, rp, sp, tp) / VDM
+
+    LIFT = M \ (Vf' * diagm(wf))
+
+    return RefElemData(Pyr(node_ids_by_face), approximation_type, N, fv, V1,
                        tuple(r, s, t), VDM, Fmask,
                        tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
