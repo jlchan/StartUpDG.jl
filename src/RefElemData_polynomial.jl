@@ -367,7 +367,7 @@ function RefElemData(elem::Pyr, approximation_type::Polynomial, N;
     # Index into the face nodes. 
     # Faces are ordered tri faces (+/-r, then +/-s), then the quad face
     tri_face_ids(f) = (1:length(wtri)) .+ (f-1) * length(wtri) 
-    quad_face_ids = (1:length(wquad)) .+ length(wtri)
+    quad_face_ids = (1:length(wquad)) .+ 4 * length(wtri)
     node_ids_by_face = (tri_face_ids(1), tri_face_ids(2), 
                         tri_face_ids(3), tri_face_ids(4), 
                         quad_face_ids)
