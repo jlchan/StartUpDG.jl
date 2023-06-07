@@ -189,6 +189,10 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 # last two faces are triangles.
 @inline face_type(::Wedge, id) = (id <= 3) ? Quad() : Tri()
 
+# Pyramids have different types of faces depending on the face. 
+# We define the first four faces to be triangles and the 
+# last face to be a quadrilateral. 
+@inline face_type(::Pyr, id) = (id <= 4) ? Tri() : Quad()
 
 # ====================================================
 #          RefElemData approximation types
