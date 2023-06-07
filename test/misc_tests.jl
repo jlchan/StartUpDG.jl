@@ -14,15 +14,15 @@ using StartUpDG: RecipesBase
 
     rd = RefElemData(Line(), Polynomial{Gauss}(), N=3)
     @test (@capture_out Base.show(stdout, MIME"text/plain"(), rd)) == "RefElemData for a degree 3 Polynomial{Gauss} approximation on a Line element."
-    @test (@capture_out Base.show(stdout, rd)) == "RefElemData{N=3, Polynomial, Line}."
+    @test (@capture_out Base.show(stdout, rd)) == "RefElemData{N=3, Polynomial{Gauss}, Line}."
 
     rd = RefElemData(Wedge(), Polynomial(), N=1)
-    @test (@capture_out Base.show(stdout, MIME"text/plain"(), rd)) == "RefElemData for a degree 3 Polynomial approximation on a Wedge element."
-    @test (@capture_out Base.show(stdout, rd)) == "RefElemData{N=3, Polynomial, Wedge}."
+    @test (@capture_out Base.show(stdout, MIME"text/plain"(), rd)) == "RefElemData for a degree 1 Polynomial approximation on a Wedge element."
+    @test (@capture_out Base.show(stdout, rd)) == "RefElemData{N=1, Polynomial, Wedge}."
 
     rd = RefElemData(Pyr(), Polynomial(), N=1)
-    @test (@capture_out Base.show(stdout, MIME"text/plain"(), rd)) == "RefElemData for a degree 3 Polynomial approximation on a Pyr element."
-    @test (@capture_out Base.show(stdout, rd)) == "RefElemData{N=3, Polynomial, Pyr}."
+    @test (@capture_out Base.show(stdout, MIME"text/plain"(), rd)) == "RefElemData for a degree 1 Polynomial approximation on a Pyr element."
+    @test (@capture_out Base.show(stdout, rd)) == "RefElemData{N=1, Polynomial, Pyr}."
 
     # test recipes
     # see https://discourse.julialang.org/t/how-to-test-plot-recipes/2648/6?u=jlchan
