@@ -1,7 +1,13 @@
-using LinearAlgebra
 struct TensorProductWedge{TTri <: RefElemData{2, <:Tri}, TLine <: RefElemData{1, <:Line}}
     tri::TTri
     line::TLine
+end
+
+# for pretty printing
+function _short_typeof(approx_type::TensorProductWedge) 
+    T1 = _short_typeof(approx_type.line.approximation_type)
+    T2 = _short_typeof(approx_type.tri.approximation_type)
+    return "TensorProductWedge{$T1, $T2}"
 end
 
 # for clarity that we're taking a tensor product of nodes
