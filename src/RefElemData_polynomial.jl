@@ -272,7 +272,7 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
     r, s, t = nodes(elem, N)
     
     VDM, Vr, Vs, Vt = basis(elem, N, r, s, t)
-    Dr, Ds, Dt = (A -> A/VDM).((Vr, Vs, Vt))
+    Dr, Ds, Dt = (A -> A / VDM).((Vr, Vs, Vt))
     Drst = (Dr, Ds, Dt)
     
     Fmask = find_face_nodes(elem, r, s, t)
