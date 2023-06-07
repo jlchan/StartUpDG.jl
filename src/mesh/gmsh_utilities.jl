@@ -323,6 +323,6 @@ function correct_negative_Jacobians!((VX, VY), EToV)
     return EToV
 end
 
-# deprecate these in the next major release 
+# TODO: deprecate these in major release 0.18 or 1.0 (whichever's first)
 @deprecate readGmsh2D(filename) read_Gmsh_2D(filename)
 @deprecate readGmsh2D_v4(filename, args...) read_Gmsh_2D_v4(filename, args...)
