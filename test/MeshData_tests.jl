@@ -200,7 +200,8 @@ end
 approx_elem_types_to_test = [(Polynomial(), Hex()), 
                              (SBP(), Hex()), 
                              (Polynomial(), Tet()),
-                             (Polynomial(), Wedge())]
+                             (Polynomial(), Wedge()),
+                             (Polynomial(), Pyr())]
 @testset "3D MeshData tests" begin 
     @testset "$approximation_type $element_type MeshData initialization" for (approximation_type, element_type) in approx_elem_types_to_test
         tol = 5e2*eps()
@@ -220,7 +221,6 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         @test md.x == md.xyz[1]
 
         # check positivity of Jacobian
-        # @show J[1,:]
         @test all(J .> 0)
         h = estimate_h(rd, md)        
         @test h <= 2 / K1D + tol
@@ -274,6 +274,7 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         @test uf ≈ uf[mapP] 
         
     end
+    
     @testset "TensorProductWedge MeshData" begin
         element_type = Wedge()
         tol = 5e2*eps()

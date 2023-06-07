@@ -20,6 +20,8 @@ using SparseArrays: sparse, droptol!, blockdiag
 using Triangulate: Triangulate, TriangulateIO, triangulate
 @reexport using WriteVTK
 
+@inline mean(x) = sum(x) / length(x)
+
 # reference element utility functions
 include("RefElemData.jl")
 
