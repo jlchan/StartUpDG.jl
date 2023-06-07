@@ -1,6 +1,6 @@
 # Overview
 
-This package contains routines to initialize reference element operators, physical mesh arrays, and connectivities for nodal DG methods. Codes roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007).
+This package contains routines to initialize reference element operators, physical mesh arrays, and connectivity arrays for nodal DG methods. The codes roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007).
 
 ## A short example
 
