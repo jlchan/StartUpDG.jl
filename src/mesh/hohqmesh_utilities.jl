@@ -267,7 +267,8 @@ function read_HOHQMesh(filename::String, element_type::Union{Tri, Tet})
     curved_elements = CurvedHOHQMeshElement[]
     nvertices = length(split(lines[1]))
     
-    # for Tri/Tet meshes. Tets still have 6 faces each because 
+    # for Tri/Tet meshes. Tets still have 6 faces each because they're 
+    # constructed from a collapsed mapping of a hex.
     num_faces = nvertices == 3 ? 3 : 6 # TODO: fix when David fixes the number of tet faces
 
     EToV = zeros(Int, nelements, nvertices)
