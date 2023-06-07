@@ -2,8 +2,8 @@ function init_face_data(elem::Tri; quad_rule_face = gauss_quad(0,0,N))
     r1D, w1D = quad_rule_face
     e = ones(size(r1D)) 
     z = zeros(size(r1D)) 
-    rf,sf = map_face_nodes(elem,r1D)
-    wf = vec(repeat(w1D,3,1));
+    rf, sf = map_face_nodes(elem, r1D)
+    wf = vec(repeat(w1D, 3, 1));
     nrJ = [z; e; -e]
     nsJ = [-e; e; z]
     return rf,sf,wf,nrJ,nsJ
