@@ -228,6 +228,44 @@ function read_Gmsh_2D_v4(filename::String, options::MeshImportOptions)
 end
 
 """
+    read_Gmsh_2D(filename, args...)
+
+Reads a 2D triangular Gmsh file. Mesh formats 2.2 and 4.1 supported. 
+Returns (VX, VY), EToV. 
+
+# Examples
+```julia
+VXY, EToV = read_Gmsh_2D("eulerSquareCylinder2D.msh") # v2.2 file format
+VXY, EToV = read_Gmsh_2D("test/testset_Gmsh_meshes/periodicity_mesh_v4.msh") # v4.1 file format
+
+# if MeshImportOptions.grouping=true, then a third variable `grouping` is returned
+VXY, EToV, grouping = read_Gmsh_2D("test/testset_Gmsh_meshes/periodicity_mesh_v4.msh", MeshImportOptions(true, false))
+VXY, EToV, grouping = read_Gmsh_2D("test/testset_Gmsh_meshes/periodicity_mesh_v4.msh", true) # same as above
+```
+
+# See also
+https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format\\
+https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_0029
+"""
+function read_Gmsh_2D(filename::String, args...)
+    f = open(filename)
+    lines = readlines(f)
+
+    format_line = findline("\$MeshFormat", lines) + 1
+    version, _ = split(lines[format_line])
+    gmsh_version = parse(Float64, version)
+    if gmsh_version == 2.2
+        @info "reading Gmsh file with legacy ($gmsh_version) format"
+        return read_Gmsh_2D_v2(filename)
+    elseif gmsh_version == 4.1
+        @info "reading Gmsh file with legacy ($gmsh_version) format"
+        return read_Gmsh_2D_v4(filename, args...)
+    else
+        @warn "Gmsh file version is: $gmsh_version; consider using a different parsing fuction for this file format"
+    end
+end
+
+"""
 For brevity when grouping is the only supported feature.
 
     example: VXY, EToV, grouping = read_Gmsh_2D_v4("file.msh",true)
