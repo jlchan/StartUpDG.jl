@@ -152,8 +152,8 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 
 
 @inline Base.ndims(::Line) = 1
-@inline Base.ndims(::Union{Tri,Quad}) = 2
-@inline Base.ndims(::Union{Tet,Hex}) = 3
+@inline Base.ndims(::Union{Tri, Quad}) = 2
+@inline Base.ndims(::Union{Tet, Hex}) = 3
 
 @inline num_vertices(::Tri) = 3
 @inline num_vertices(::Union{Quad, Tet}) = 4
