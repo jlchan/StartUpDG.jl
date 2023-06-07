@@ -16,7 +16,6 @@ makedocs(
         "Additional mesh types" => "more_meshes.md",
         "Timestepping" => "tstep_usage.md",
         "Reference" => "index_refs.md",
-        "Authors" => "authors.md",
     ]
 )
 

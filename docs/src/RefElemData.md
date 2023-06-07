@@ -87,6 +87,6 @@ There is experimental support for `RefElemData`s created from tensor products of
 ```julia
 line = RefElemData(Line(), N_line)
 tri  = RefElemData(Tri(), N_tri)
-rd = RefElemData(Wedge(), TensorProductWedge(tri, line))
+rd   = RefElemData(Wedge(), TensorProductWedge(tri, line))
 ```
 This new `rd::RefElemData` can then be used to create a wedge-based `MeshData`. The individual `RefElemData` objects can be accessed from `rd.approximation_type::TensorProductWedge`. 
