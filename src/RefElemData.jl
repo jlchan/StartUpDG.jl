@@ -152,8 +152,8 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 
 
 @inline Base.ndims(::Line) = 1
-@inline Base.ndims(::Union{Tri,Quad}) = 2
-@inline Base.ndims(::Union{Tet,Hex}) = 3
+@inline Base.ndims(::Union{Tri, Quad}) = 2
+@inline Base.ndims(::Union{Tet, Hex}) = 3
 
 @inline num_vertices(::Tri) = 3
 @inline num_vertices(::Union{Quad, Tet}) = 4
@@ -218,6 +218,9 @@ TensorProductQuadrature(r1D, w1D) = TensorProductQuadrature((r1D, w1D))
 struct Gauss end 
 Polynomial{Gauss}() = Polynomial(Gauss())
 
+# Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
+struct Gauss end 
+
 # ========= SBP approximation types ============
 
 struct DefaultSBPType end
@@ -254,6 +257,9 @@ RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N) =
 RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = 
     RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
 
+# ====================================
+#              Printing 
+# ====================================
 
 function Base.show(io::IO, ::MIME"text/plain", rd::RefElemData)
     @nospecialize rd
