@@ -26,12 +26,12 @@ md = MeshData(VXY, EToV, rd)
 
 # Define a function by interpolation
 (; x, y) = md
-u = @. 2 + .5*exp(-100*(x^2 + y^2))
+u = @. 2 + 0.5 * exp(-100 * (x^2 + y^2))
 
 # Compute derivatives using geometric mapping + chain rule
 (; Dr, Ds) = rd
 (; rxJ, sxJ, J) = md
-dudx = (rxJ .* (Dr*u) + sxJ .* (Ds*u)) ./ J
+dudx = (rxJ .* (Dr * u) + sxJ .* (Ds * u)) ./ J
 ```
 
 # Contributors

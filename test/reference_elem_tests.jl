@@ -84,8 +84,7 @@
         #     trace_constant_1 = invoke(inverse_trace_constant, Tuple{RefElemData}, rd)
         #     trace_constant_2 = inverse_trace_constant(rd)
         #     @test_skip trace_constant_1 ≈ trace_constant_2 # currently broken on Windows Julia 1...
-        # end
-        # TODO: test interpolation of Fmask matches rd.rstf.
+        # end        
 
         @test StartUpDG.num_vertices(Hex()) == 8
         @test StartUpDG.num_faces(Hex()) == 6
