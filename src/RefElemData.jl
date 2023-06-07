@@ -203,9 +203,16 @@ end
 struct DefaultPolynomialType end
 Polynomial() = Polynomial{DefaultPolynomialType}(DefaultPolynomialType())
 
-struct TensorProductHex{T}
+"""
+    TensorProductQuadrature{T}
+
+A type parameter to `Polynomial` indicating that 
+"""
+struct TensorProductQuadrature{T}
     quad_rule_1D::T  # 1D quadrature nodes and weights (rq, wq)
 end
+
+TensorProductQuadrature(r1D, w1D) = TensorProductQuadrature((r1D, w1D))
 
 # Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
 struct Gauss end 
@@ -266,4 +273,4 @@ _short_typeof(approx_type::Pyr) = "Pyr"
 
 _short_typeof(approx_type::Polynomial{<:DefaultPolynomialType}) = "Polynomial"
 _short_typeof(approx_type::Polynomial{<:Gauss}) = "Polynomial{Gauss}"
-_short_typeof(approx_type::Polynomial{<:TensorProductHex}) = "Polynomial{TensorProductHex}"
+_short_typeof(approx_type::Polynomial{<:TensorProductQuadrature}) = "Polynomial{TensorProductQuadrature}"
