@@ -294,6 +294,7 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
                 (; nxJ, nyJ, nzJ, sJ  ) = md
                 (; FToF, mapM, mapP, mapB  ) = md
 
+                @test StartUpDG._short_typeof(rd.approximation_type) == "TensorProductWedge{Polynomial, Polynomial}"
                 @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
                 @test md.x == md.xyz[1]
                 @test md.y == md.xyz[2]
