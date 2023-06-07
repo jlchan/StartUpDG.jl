@@ -4,7 +4,7 @@
 
     N = 2
     @testset "Interval" begin
-        rd = RefElemData(Line(),N)
+        rd = RefElemData(Line(), N)
         @test rd.r == rd.rst[1]
         @test rd.Np == length(rd.r)
         @test abs(sum(rd.rq .* rd.wq)) < tol 
@@ -21,7 +21,7 @@
     end
 
     @testset "Triangle" begin
-        rd = RefElemData(Tri(),N)
+        rd = RefElemData(Tri(), N)
         @test rd.r == rd.rst[1]
         @test rd.Np == length(rd.r)  
         @test rd.Nq == length(rd.rq)    
