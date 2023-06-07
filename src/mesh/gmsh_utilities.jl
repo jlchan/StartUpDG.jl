@@ -117,11 +117,7 @@ function read_Gmsh_2D_v4(filename::String, options::MeshImportOptions)
     gmsh_version = parse(Float64, version)
     group_requested_but_none_in_file = false
 
-    if gmsh_version == 4.1
-        @info "reading Gmsh file with legacy ($gmsh_version) format"
-    else
-        @warn "Gmsh file version is: $gmsh_version; consider using a different parsing fuction for this file format"
-    end
+    @assert gmsh_version == 4.1
 
     # grouping may be requested yet not be present in the file
     if isnothing(findline("\$PhysicalNames", lines)) && grouping == true
@@ -294,13 +290,7 @@ function read_Gmsh_2D_v2(filename::String)
     format_line = findline("\$MeshFormat", lines) + 1
     version, _, dataSize = split(lines[format_line])
     gmsh_version = parse(Float64, version)
-    if gmsh_version == 2.2
-        @info "reading Gmsh file with legacy ($gmsh_version) format"
-    elseif gmsh_version == 4.1
-        @assert "This parsing function is not compatable with Gmsh version $gmsh_version"
-    else
-        @warn "Gmsh file version is: $gmsh_version; consider using a different parsing fuction for this file format"
-    end
+    @assert gmsh_version == 2.2
 
     node_start = findline("\$Nodes", lines) + 1
     Nv = parse(Int64, lines[node_start])
