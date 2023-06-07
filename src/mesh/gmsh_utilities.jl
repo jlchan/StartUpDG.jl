@@ -325,4 +325,4 @@ end
 
 # deprecate these in the next major release 
 @deprecate readGmsh2D(filename) read_Gmsh_2D(filename)
-@deprecate readGmsh2D_v4(filename) read_Gmsh_2D_v4(filename)
+@deprecate readGmsh2D_v4(filename, args...) read_Gmsh_2D_v4(filename, args...)
