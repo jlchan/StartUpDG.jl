@@ -201,6 +201,9 @@ struct Polynomial{T} end
 struct DefaultPolynomialType end
 Polynomial() = Polynomial{DefaultPolynomialType}()
 
+# Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
+struct Gauss end 
+
 # ========= SBP approximation types ============
 
 struct DefaultSBPType end
