@@ -60,16 +60,6 @@ ConstructionBase.getproperties(rd::RefElemData) =
        rstq=rd.rstq, wq=rd.wq, Vq=rd.Vq, rstf=rd.rstf, wf=rd.wf, Vf=rd.Vf, nrstJ=rd.nrstJ, 
        M=rd.M, Pq=rd.Pq, Drst=rd.Drst, LIFT=rd.LIFT)
 
-function Base.show(io::IO, ::MIME"text/plain", rd::RefElemData)
-    @nospecialize rd
-    print(io,"RefElemData for a degree $(rd.N) $(rd.approximation_type) approximation on $(rd.element_type) element.")
-end
-
-function Base.show(io::IO, rd::RefElemData)
-    @nospecialize basis # reduce precompilation time
-    print(io,"RefElemData{N=$(rd.N), $(rd.approximation_type), $(rd.element_type)}.")
-end
-
 _propertynames(::Type{RefElemData}, private::Bool = false) = (:num_faces, :Np, :Nq, :Nfq)
 function Base.propertynames(x::RefElemData{1}, private::Bool=false) 
     return (fieldnames(RefElemData)..., _propertynames(RefElemData)...,
@@ -220,9 +210,6 @@ end
 # Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
 struct Gauss end 
 Polynomial{Gauss}() = Polynomial(Gauss())
-
-# Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
-struct Gauss end 
 
 # ========= SBP approximation types ============
 

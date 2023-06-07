@@ -428,9 +428,6 @@ function tensor_product_quadrature(::Hex, r1D, w1D)
     return rq, sq, tq, wq
 end
 
-# Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
-struct Gauss end 
-
 """
     RefElemData(elem::Union{Line, Quad, Hex}, approximation_type::Polynomial{Gauss}, N)
 
