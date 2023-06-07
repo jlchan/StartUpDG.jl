@@ -74,7 +74,9 @@ export num_mortars_per_face, NonConformingQuadMeshExample
 include("mesh/simple_meshes.jl")
 export uniform_mesh
 include("mesh/gmsh_utilities.jl")
-export readGmsh2D, readGmsh2D_v4, MeshImportOptions
+export read_Gmsh_2D # unifies v2.2.8 and v4.1 mesh reading
+export readGmsh2D, readGmsh2D_v4 # TODO: deprecate these
+export MeshImportOptions 
 include("mesh/hohqmesh_utilities.jl")
 export read_HOHQMesh
 
