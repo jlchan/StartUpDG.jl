@@ -319,10 +319,6 @@ inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}
     end
 end
 
-# ndims(::Line) = 1
-# ndims(::Quad) = 2
-# ndims(::Hex) = 3
-
 @testset "Tensor product Gauss collocation" begin
     N = 3
     @testset "element_type = $element_type" for element_type in [Line(), Quad(), Hex()]
