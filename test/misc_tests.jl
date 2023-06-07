@@ -14,7 +14,7 @@ using StartUpDG: RecipesBase
 
     rd = RefElemData(Line(), Polynomial{Gauss}(), N=3)
     @test (@capture_out Base.show(stdout, MIME"text/plain"(), rd)) == "RefElemData for a degree 3 Polynomial{Gauss} approximation on a Line element."
-    @test (@capture_out Base.show(stdout, rd)) == "RefElemData{N=3, Polynomial, Tri}."
+    @test (@capture_out Base.show(stdout, rd)) == "RefElemData{N=3, Polynomial, Line}."
 
     rd = RefElemData(Wedge(), Polynomial(), N=1)
     @test (@capture_out Base.show(stdout, MIME"text/plain"(), rd)) == "RefElemData for a degree 3 Polynomial approximation on a Wedge element."
