@@ -258,7 +258,7 @@ function MeshData(VX::AbstractVector, EToV, rd::RefElemData{1})
     xq = Vq * x
     wJq = diagm(wq) * (Vq * J)
 
-    is_periodic = (false,)
+    is_periodic = (false, )
 
     return MeshData(VertexMappedMesh(rd.element_type, tuple(VX), EToV), FToF,
                     tuple(x), tuple(xf), tuple(xq), wJq,
