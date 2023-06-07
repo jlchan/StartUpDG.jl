@@ -233,6 +233,8 @@
         @test face_type(Pyr(), 1) == Tri()
         @test face_type(Pyr(), 5) == Quad()
         @test inverse_trace_constant(rd) ≈ 17.524350232967805
+
+        @test StartUpDG._short_typeof(rd.element_type) == "Pyr"
     end
 end
 
@@ -310,14 +312,16 @@ inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}
         @test face_type(Wedge(), 4) == Tri()
         @test face_type(Wedge(), 5) == Tri()
 
+        @test StartUpDG._short_typeof(rd.element_type) == "Wedge"
+
         @test inverse_trace_constant(rd) ≈ inverse_trace_constant_compare(rd)[line_grad][tri_grad]
         end
     end
 end
 
-ndims(::Line) = 1
-ndims(::Quad) = 2
-ndims(::Hex) = 3
+# ndims(::Line) = 1
+# ndims(::Quad) = 2
+# ndims(::Hex) = 3
 
 @testset "Tensor product Gauss collocation" begin
     N = 3
@@ -325,6 +329,7 @@ ndims(::Hex) = 3
         rd = RefElemData(element_type, Polynomial{Gauss}(), N)
 
         # test that quadrature is equivalent to interpolation
+        @test StartUpDG._short_typeof(rd.approximation_type) == "Polynomial{Gauss}"
         @test size(rd.Vq, 1) == size(rd.Vq, 2)        
         @test length(rd.wq) == (N+1)^ndims(element_type)
     end
