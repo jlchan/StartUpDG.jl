@@ -62,7 +62,7 @@ end
 
 Constructor for `RefElemData` for different element types.
 """
-function RefElemData(elem::Line, approxType::Polynomial{DefaultPolynomialType}, N; 
+function RefElemData(elem::Line, approx_type::Polynomial{DefaultPolynomialType}, N; 
                      quad_rule_vol=quad_nodes(elem, N+1), 
                      Nplot=10)
 
@@ -91,7 +91,7 @@ function RefElemData(elem::Line, approxType::Polynomial{DefaultPolynomialType}, 
     rp = equi_nodes(elem, Nplot)
     Vp = vandermonde(elem, N, rp) / VDM
 
-    return RefElemData(elem, approxType, N, fv, V1,
+    return RefElemData(elem, approx_type, N, fv, V1,
                        tuple(r), VDM, vec(Fmask),
                        tuple(rp), Vp,
                        tuple(rq), wq, Vq,
@@ -100,7 +100,7 @@ function RefElemData(elem::Line, approxType::Polynomial{DefaultPolynomialType}, 
 end
 
 function RefElemData(elem::Union{Tri, Quad}, 
-                     approxType::Polynomial{DefaultPolynomialType}, N;
+                     approx_type::Polynomial{DefaultPolynomialType}, N;
                      quad_rule_vol=quad_nodes(elem, N),
                      quad_rule_face=quad_nodes(face_type(elem), N),
                      Nplot=10)
@@ -133,7 +133,7 @@ function RefElemData(elem::Union{Tri, Quad},
     rp, sp = equi_nodes(elem, Nplot)
     Vp = vandermonde(elem, N, rp, sp) / VDM
 
-    return RefElemData(elem, approxType, N, fv, V1,
+    return RefElemData(elem, approx_type, N, fv, V1,
                        tuple(r, s), VDM, vec(Fmask),
                        tuple(rp, sp), Vp,
                        tuple(rq, sq), wq, Vq,
@@ -141,7 +141,7 @@ function RefElemData(elem::Union{Tri, Quad},
                        M, Pq, (Dr, Ds), LIFT)
 end
 
-function RefElemData(elem::Union{Hex, Tet}, approxType::Polynomial, N;
+function RefElemData(elem::Union{Hex, Tet}, approx_type::Polynomial, N;
                      quad_rule_vol=quad_nodes(elem, N),
                      quad_rule_face=quad_nodes(face_type(elem), N),
                      Nplot=10)
@@ -174,7 +174,7 @@ function RefElemData(elem::Union{Hex, Tet}, approxType::Polynomial, N;
     rp, sp, tp = equi_nodes(elem, Nplot)
     Vp = vandermonde(elem, N, rp, sp, tp) / VDM
 
-    return RefElemData(elem, approxType, N, fv, V1,
+    return RefElemData(elem, approx_type, N, fv, V1,
                        tuple(r, s, t), VDM, vec(Fmask),
                        tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
