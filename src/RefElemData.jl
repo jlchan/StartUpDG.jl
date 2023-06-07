@@ -189,20 +189,34 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 # ====================================================
 
 """
-    `Polynomial{T}`
+    Polynomial{T}
 
 Represents polynomial approximation types (as opposed to finite differences). 
 By default, `Polynomial()` constructs a `Polynomial{StartUpDG.DefaultPolynomialType}`.
 Specifying a type parameters allows for dispatch on additional structure within a
 polynomial approximation (e.g., collocation, tensor product quadrature, etc). 
 """
-struct Polynomial{T} end 
+struct Polynomial{T} 
+    data::T
+end 
 
 struct DefaultPolynomialType end
-Polynomial() = Polynomial{DefaultPolynomialType}()
+Polynomial() = Polynomial{DefaultPolynomialType}(DefaultPolynomialType())
+
+"""
+    TensorProductQuadrature{T}
+
+A type parameter to `Polynomial` indicating that 
+"""
+struct TensorProductQuadrature{T}
+    quad_rule_1D::T  # 1D quadrature nodes and weights (rq, wq)
+end
+
+TensorProductQuadrature(r1D, w1D) = TensorProductQuadrature((r1D, w1D))
 
 # Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
 struct Gauss end 
+Polynomial{Gauss}() = Polynomial(Gauss())
 
 # ========= SBP approximation types ============
 
@@ -262,3 +276,4 @@ _short_typeof(approx_type::Pyr) = "Pyr"
 
 _short_typeof(approx_type::Polynomial{<:DefaultPolynomialType}) = "Polynomial"
 _short_typeof(approx_type::Polynomial{<:Gauss}) = "Polynomial{Gauss}"
+_short_typeof(approx_type::Polynomial{<:TensorProductQuadrature}) = "Polynomial{TensorProductQuadrature}"

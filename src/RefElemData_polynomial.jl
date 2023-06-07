@@ -62,7 +62,7 @@ end
 
 Constructor for `RefElemData` for different element types.
 """
-function RefElemData(elem::Line, approxType::Polynomial{DefaultPolynomialType}, N; 
+function RefElemData(elem::Line, approx_type::Polynomial{DefaultPolynomialType}, N; 
                      quad_rule_vol=quad_nodes(elem, N+1), 
                      Nplot=10)
 
@@ -91,7 +91,7 @@ function RefElemData(elem::Line, approxType::Polynomial{DefaultPolynomialType}, 
     rp = equi_nodes(elem, Nplot)
     Vp = vandermonde(elem, N, rp) / VDM
 
-    return RefElemData(elem, approxType, N, fv, V1,
+    return RefElemData(elem, approx_type, N, fv, V1,
                        tuple(r), VDM, vec(Fmask),
                        tuple(rp), Vp,
                        tuple(rq), wq, Vq,
@@ -100,7 +100,7 @@ function RefElemData(elem::Line, approxType::Polynomial{DefaultPolynomialType}, 
 end
 
 function RefElemData(elem::Union{Tri, Quad}, 
-                     approxType::Polynomial{DefaultPolynomialType}, N;
+                     approx_type::Polynomial{DefaultPolynomialType}, N;
                      quad_rule_vol=quad_nodes(elem, N),
                      quad_rule_face=quad_nodes(face_type(elem), N),
                      Nplot=10)
@@ -133,7 +133,7 @@ function RefElemData(elem::Union{Tri, Quad},
     rp, sp = equi_nodes(elem, Nplot)
     Vp = vandermonde(elem, N, rp, sp) / VDM
 
-    return RefElemData(elem, approxType, N, fv, V1,
+    return RefElemData(elem, approx_type, N, fv, V1,
                        tuple(r, s), VDM, vec(Fmask),
                        tuple(rp, sp), Vp,
                        tuple(rq, sq), wq, Vq,
@@ -141,10 +141,15 @@ function RefElemData(elem::Union{Tri, Quad},
                        M, Pq, (Dr, Ds), LIFT)
 end
 
-function RefElemData(elem::Tet, approxType::Polynomial, N;
+function RefElemData(elem::Union{Hex, Tet}, approx_type::Polynomial{DefaultPolynomialType}, N;
                      quad_rule_vol=quad_nodes(elem, N),
                      quad_rule_face=quad_nodes(face_type(elem), N),
                      Nplot=10)
+
+    if elem isa Hex && N > 4
+        @warn "Since N > 4, we suggest using `RefElemData(Hex(), TensorProductQuadrature(gauss_quad(0, 0, $N+1)), $N)`, " * 
+              "which is more efficient."
+    end      
 
     fv = face_vertices(elem) 
 
@@ -174,7 +179,7 @@ function RefElemData(elem::Tet, approxType::Polynomial, N;
     rp, sp, tp = equi_nodes(elem, Nplot)
     Vp = vandermonde(elem, N, rp, sp, tp) / VDM
 
-    return RefElemData(elem, approxType, N, fv, V1,
+    return RefElemData(elem, approx_type, N, fv, V1,
                        tuple(r, s, t), VDM, vec(Fmask),
                        tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
@@ -182,10 +187,17 @@ function RefElemData(elem::Tet, approxType::Polynomial, N;
                        M, Pq, (Dr, Ds, Dt), LIFT)
 end
 
-# specialize constructor for `Hex` to allow for higher polynomial degrees `N`
-function RefElemData(elem::Hex, approxType::Polynomial{DefaultPolynomialType}, N;
-                     quad_rule_vol = quad_nodes(elem, N),
-                     quad_rule_face = quad_nodes(face_type(elem), N),
+"""
+    RefElemData(elem::Hex, ::TensorProductQuadrature, N; Nplot = 10)
+    RefElemData(elem::Hex, approximation_type::Polynomial{<:TensorProductQuadrature}, N; Nplot = 10)
+
+Constructor for hexahedral `RefElemData` where the quadrature is assumed to have tensor product structure.
+"""
+RefElemData(elem::Hex, approximation_parameter::TensorProductQuadrature, N; Nplot = 10) = 
+    RefElemData(elem, Polynomial(approximation_parameter), N; Nplot)
+
+function RefElemData(elem::Hex, 
+                     approximation_type::Polynomial{<:TensorProductQuadrature}, N;
                      Nplot = 10)
 
     fv = face_vertices(elem) 
@@ -196,7 +208,7 @@ function RefElemData(elem::Hex, approxType::Polynomial{DefaultPolynomialType}, N
 
     # construct 1D operator for faster Kronecker solves
     r1D = nodes(Line(), N)
-    rq1D, wq1D = quad_nodes(Line(), N)
+    rq1D, wq1D = approximation_type.data.quad_rule_1D
     VDM_1D = vandermonde(Line(), N, r1D)
     Vq1D = vandermonde(Line(), N, rq1D) / VDM_1D
     invVDM_1D = inv(VDM_1D)
@@ -208,8 +220,6 @@ function RefElemData(elem::Hex, approxType::Polynomial{DefaultPolynomialType}, N
     invVDM = kronecker(invVDM_1D, invVDM_1D, invVDM_1D)
     invM = kronecker(invM_1D, invM_1D, invM_1D)
 
-    # !!! WARNING: the `M` mass matrix is not necessarily a Kronecker product if the quadrature 
-    # !!! isn't tensor product, e.g., a non-tensor product under-integrated quadrature.
     M = kronecker(M1D, M1D, M1D)
 
     _, Vr, Vs, Vt = basis(elem, N, r, s, t)
@@ -220,32 +230,29 @@ function RefElemData(elem::Hex, approxType::Polynomial{DefaultPolynomialType}, N
     V1 = vandermonde(elem, 1, r, s, t) / vandermonde(elem, 1, r1, s1, t1)
 
     # Nodes on faces, and face node coordinate
+    quad_rule_face = tensor_product_quadrature(face_type(elem), approximation_type.data.quad_rule_1D...)
     rf, sf, tf, wf, nrJ, nsJ, ntJ = init_face_data(elem, quad_rule_face=quad_rule_face)
 
-    # quadrature nodes - build from 1D nodes.
-    rq, sq, tq, wq = quad_rule_vol
-    Vq = vandermonde(elem, N, rq, sq, tq) * invVDM
-    # M = Vq' * diagm(wq) * Vq
+    # quadrature nodes - build from 1D nodes.    
+    rq, sq, tq, wq = tensor_product_quadrature(elem, approximation_type.data.quad_rule_1D...)
+    Vq = kronecker(Vq1D, Vq1D, Vq1D) # vandermonde(elem, N, rq, sq, tq) * invVDM
     Pq = invM * (Vq' * diagm(wq))
 
     Vf = vandermonde(elem, N, rf, sf, tf) * invVDM
     LIFT = invM * (Vf' * diagm(wf))
 
     # plotting nodes
-    rp, sp, tp = equi_nodes(elem, Nplot)
-    # Vp = vandermonde(elem, N, rp, sp, tp) * invVDM 
     rp1D = LinRange(-1, 1, Nplot + 1)
     Vp1D = vandermonde(Line(), N, rp1D) / VDM_1D
     Vp = kronecker(Vp1D, Vp1D, Vp1D)
-
-    Drst = (Dr, Ds, Dt)
-
-    return RefElemData(elem, approxType, N, fv, V1,
+    rp, sp, tp = vec.(StartUpDG.NodesAndModes.meshgrid(rp1D, rp1D, rp1D))
+    
+    return RefElemData(elem, approximation_type, N, fv, V1,
                        tuple(r, s, t), VDM, vec(Fmask),
                        tuple(rp, sp, tp), Vp, 
                        tuple(rq, sq, tq), wq, Vq,
                        tuple(rf, sf, tf), wf, Vf, tuple(nrJ, nsJ, ntJ),
-                       M, Pq, Drst, LIFT)
+                       M, Pq, (Dr, Ds, Dt), LIFT)
 end
 
 """

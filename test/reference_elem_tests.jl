@@ -319,6 +319,26 @@ inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}
     end
 end
 
+@testset "TensorProductQuadrature on Hex" begin
+    N = 2
+    rd = RefElemData(Hex(), TensorProductQuadrature(quad_nodes(Line(), N+1)), N)
+    rd_ref = RefElemData(Hex(), N; quad_rule_vol=quad_nodes(Hex(), N+1), quad_rule_face=quad_nodes(Quad(), N+1))
+
+    @test typeof(rd) == typeof(RefElemData(Hex(), Polynomial(TensorProductQuadrature(quad_nodes(Line(), N+1))), N))
+
+    for prop in [:N, :element_type]        
+        @test getproperty(rd, prop) == getproperty(rd_ref, prop)
+    end
+    
+    for prop in [:fv, :rst, :rstp, :rstq, :rstf, :nrstJ, :Drst]
+        @test all(getproperty(rd, prop) .≈ getproperty(rd_ref, prop))
+    end
+
+    for prop in [:Fmask, :VDM, :V1, :wq, :Vq, :wf, :Vf, :Vp, :M, :Pq, :LIFT]
+        @test norm(getproperty(rd, prop) - getproperty(rd_ref, prop)) < 1e4 * eps()
+    end
+end
+
 @testset "Tensor product Gauss collocation" begin
     N = 3
     @testset "element_type = $element_type" for element_type in [Line(), Quad(), Hex()]

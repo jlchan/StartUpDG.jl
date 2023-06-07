@@ -26,7 +26,8 @@ using Triangulate: Triangulate, TriangulateIO, triangulate
 include("RefElemData.jl")
 
 include("RefElemData_polynomial.jl")
-export RefElemData, Polynomial, Gauss
+export RefElemData, Polynomial
+export TensorProductQuadrature, Gauss
 
 include("RefElemData_TensorProductWedge.jl")
 export TensorProductWedge
