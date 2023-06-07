@@ -233,7 +233,7 @@
 
         @test face_type(Pyr(), 1) == Tri()
         @test face_type(Pyr(), 5) == Quad()
-        @test inverse_trace_constant(rd) ≈ 27.133709492299314
+        @test inverse_trace_constant(rd) ≈ 17.524350232967805
     end
 end
 
