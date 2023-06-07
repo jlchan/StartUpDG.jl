@@ -1,6 +1,6 @@
 # Additional mesh types
 
-In addition to more "standard" mesh types, StartUpDG.jl also has experimental supoprt for hybrid and cut-cell meshes. Both are currently restricted to two dimensions.
+In addition to more "standard" mesh types, StartUpDG.jl also has experimental support for hybrid and cut-cell meshes. Both are currently restricted to two dimensional domains.
 
 ## Hybrid meshes
 
