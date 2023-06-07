@@ -239,17 +239,17 @@ function read_Gmsh_2D_v4(filename::String, groupOpt::Bool=false, remap_group_nam
 end
 
 """
-    read_Gmsh_2D(filename)
+    read_Gmsh_2D_v2(filename)
 
 Reads triangular GMSH 2D file format 2.2 0 8. Returns (VX, VY), EToV.
 # Examples
 ```julia
-VXY, EToV = read_Gmsh_2D("eulerSquareCylinder2D.msh")
+VXY, EToV = read_Gmsh_2D_v2("eulerSquareCylinder2D.msh")
 ```
 
 https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_0029
 """
-function read_Gmsh_2D(filename::String)
+function read_Gmsh_2D_v2(filename::String)
     f = open(filename)
     lines = readlines(f)
 
@@ -324,5 +324,5 @@ function correct_negative_Jacobians!((VX, VY), EToV)
 end
 
 # TODO: deprecate these in major release 0.18 or 1.0 (whichever's first)
-@deprecate readGmsh2D(filename) read_Gmsh_2D(filename)
+@deprecate readGmsh2D(filename) read_Gmsh_2D_v2(filename)
 @deprecate readGmsh2D_v4(filename, args...) read_Gmsh_2D_v4(filename, args...)
