@@ -72,7 +72,9 @@ export num_mortars_per_face, NonConformingQuadMeshExample
 include("mesh/simple_meshes.jl")
 export uniform_mesh
 include("mesh/gmsh_utilities.jl")
-export readGmsh2D, readGmsh2D_v4, MeshImportOptions
+export read_gmsh_2D
+export readGmsh2D, readGmsh2D_v4
+export MeshImportOptions 
 include("mesh/hohqmesh_utilities.jl")
 export read_HOHQMesh
 
