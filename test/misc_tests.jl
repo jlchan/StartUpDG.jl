@@ -4,12 +4,25 @@ using StartUpDG: RecipesBase
 @testset "Misc tests: show, recipes, inferrability" begin
 
     # test Base.show
-    rd = RefElemData(Tri(),N=3)
-    md = MeshData(uniform_mesh(Tri(),1)...,rd)
-    @test (@capture_out Base.show(stdout,MIME"text/plain"(),rd)) == "RefElemData for a degree 3 Polynomial approximation on a Tri element."
-    @test (@capture_out Base.show(stdout,rd)) == "RefElemData{N=3, Polynomial, Tri}."
+    rd = RefElemData(Tri(), N=3)
+    @test (@capture_out Base.show(stdout, MIME"text/plain"(), rd)) == "RefElemData for a degree 3 Polynomial approximation on a Tri element."
+    @test (@capture_out Base.show(stdout, rd)) == "RefElemData{N=3, Polynomial, Tri}."
+
+    md = MeshData(uniform_mesh(Tri(), 1)...,rd)
     @test (@capture_out Base.show(stdout, MIME"text/plain"(), md)) == "MeshData of dimension 2 with 2 elements with periodicity = (false, false)."
     @test (@capture_out Base.show(stdout, md)) == "MeshData{2}"
+
+    rd = RefElemData(Line(), Polynomial{Gauss}(), N=3)
+    @test (@capture_out Base.show(stdout, MIME"text/plain"(), rd)) == "RefElemData for a degree 3 Polynomial{Gauss} approximation on a Tri element."
+    @test (@capture_out Base.show(stdout, rd)) == "RefElemData{N=3, Polynomial, Tri}."
+
+    rd = RefElemData(Wedge(), Polynomial(), N=1)
+    @test (@capture_out Base.show(stdout, MIME"text/plain"(), rd)) == "RefElemData for a degree 3 Polynomial approximation on a Wedge element."
+    @test (@capture_out Base.show(stdout, rd)) == "RefElemData{N=3, Polynomial, Wedge}."
+
+    rd = RefElemData(Pyr(), Polynomial(), N=1)
+    @test (@capture_out Base.show(stdout, MIME"text/plain"(), rd)) == "RefElemData for a degree 3 Polynomial approximation on a Pyr element."
+    @test (@capture_out Base.show(stdout, rd)) == "RefElemData{N=3, Polynomial, Pyr}."
 
     # test recipes
     # see https://discourse.julialang.org/t/how-to-test-plot-recipes/2648/6?u=jlchan

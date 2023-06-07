@@ -324,6 +324,8 @@ ndims(::Hex) = 3
     rd = RefElemData(Hex(), TensorProductQuadrature(quad_nodes(Line(), N+1)), N)
     rd_ref = RefElemData(Hex(), N; quad_rule_vol=quad_nodes(Hex(), N+1), quad_rule_face=quad_nodes(Quad(), N+1))
 
+    @test typeof(rd) == typeof(RefElemData(Hex(), Polynomial(TensorProductQuadrature(quad_nodes(Line(), N+1))), N))
+
     for prop in [:N, :element_type]        
         @test getproperty(rd, prop) == getproperty(rd_ref, prop)
     end
