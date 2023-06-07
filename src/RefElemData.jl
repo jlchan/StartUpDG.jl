@@ -218,9 +218,6 @@ TensorProductQuadrature(r1D, w1D) = TensorProductQuadrature((r1D, w1D))
 struct Gauss end 
 Polynomial{Gauss}() = Polynomial(Gauss())
 
-# Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
-struct Gauss end 
-
 # ========= SBP approximation types ============
 
 struct DefaultSBPType end
