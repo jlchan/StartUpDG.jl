@@ -261,6 +261,4 @@ _short_typeof(approx_type::Wedge) = "Wedge"
 _short_typeof(approx_type::Pyr) = "Pyr"
 
 _short_typeof(approx_type::Polynomial{<:DefaultPolynomialType}) = "Polynomial"
-_short_typeof(approx_type::Polynomial{<:TensorProductHex}) = "Polynomial{TensorProductHex}"
 _short_typeof(approx_type::Polynomial{<:Gauss}) = "Polynomial{Gauss}"
-
