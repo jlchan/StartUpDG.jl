@@ -208,8 +208,8 @@ function RefElemData(elem::Hex, approxType::Polynomial{DefaultPolynomialType}, N
     invVDM = kronecker(invVDM_1D, invVDM_1D, invVDM_1D)
     invM = kronecker(invM_1D, invM_1D, invM_1D)
 
-    # !!! WARNING: the `M` mass matrix is not necessarily a Kronecker product 
-    # if the quadrature isn't tensor product, e.g., a non-tensor product under-integrated quadrature.
+    # !!! WARNING: the `M` mass matrix is not necessarily a Kronecker product if the quadrature 
+    # !!! isn't tensor product, e.g., a non-tensor product under-integrated quadrature.
     M = kronecker(M1D, M1D, M1D)
 
     _, Vr, Vs, Vt = basis(elem, N, r, s, t)
