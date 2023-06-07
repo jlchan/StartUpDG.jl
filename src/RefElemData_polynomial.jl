@@ -141,7 +141,7 @@ function RefElemData(elem::Union{Tri, Quad},
                        M, Pq, (Dr, Ds), LIFT)
 end
 
-function RefElemData(elem::Union{Hex, Tet}, approx_type::Polynomial, N;
+function RefElemData(elem::Union{Hex, Tet}, approx_type::Polynomial{DefaultPolynomialType}, N;
                      quad_rule_vol=quad_nodes(elem, N),
                      quad_rule_face=quad_nodes(face_type(elem), N),
                      Nplot=10)
