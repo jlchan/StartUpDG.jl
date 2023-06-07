@@ -9,8 +9,7 @@
 * `J, Jf`: volume and surface Jacobians evaluated at interpolation points and surface quadrature points, respectively. `J` is a matrix of size ``N_p \times N_{\rm elements}``, while `Jf` is a matrix of size ``N_f \times N_{\rm elements}``. 
 * `nxyz::NTuple{Dim, ...}` and `nxyzJ::NTuple{Dim, ...}`: normalized and `Jf` scaled outward normals evaluated at surface quadrature points. Each element of `nxyzJ` is a matrix of size ``N_f \times N_{\rm elements}``. 
 
-These are the main quantities used to construct a DG solver. Information specific to the type of mesh used is
-stored in the `md.mesh_type` field. 
+These are the main quantities used to construct a DG solver. Information specific to the type of mesh used is stored in the `md.mesh_type` field. 
 
 # Setting up `md::MeshData`
 
