@@ -71,14 +71,14 @@ function remap_element_grouping(eg::Vector{Int})
 end
 
 """
- function read_Gmsh_2D_v4(filename)
+    function read_Gmsh_2D_v4(filename, options)
 
 reads triangular GMSH 2D .msh files.
 
 # Output
 This depends on if grouping is opted for or not
-- returns: (VX,VY), EToV
-- return:(VX,VY),EToV,grouping
+- returns: (VX, VY), EToV
+- returns: (VX, VY), EToV, grouping
 
 # Supported formats and features:
 - version 4.1
@@ -86,7 +86,7 @@ This depends on if grouping is opted for or not
     'remap group ids
 
 ## grouping application
-When modeling the wave equation you might want wave speeds to vary accross your domain. By assigning Physical groups
+When modeling the wave equation you might want wave speeds to vary across your domain. By assigning physical groups
 in Gmsh we can maintain such groupings upon importing the .msh file. Each imported element will be a member of a phyical group.
 
 ```julia
@@ -94,12 +94,12 @@ VXY, EToV = read_Gmsh_2D_v4("eulerSquareCylinder2D.msh")
 VXY, EToV = read_Gmsh_2D_v4("eulerSquareCylinder2D.msh",false)
 VXY, EToV, grouping = read_Gmsh_2D_v4("eulerSquareCylinder2D.msh", true)
 
-option = MeshOption(true)
+option = MeshImportOption(true)
 VXY, EToV, grouping = read_Gmsh_2D_v4("eulerSquareCylinder2D.msh", option)
 ```
 https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format
 
-Notes:The version 4 format has a more detailed block data format
+Notes: the version 4 format has a more detailed block data format
 this leads to more complicated parser.
 """
 function read_Gmsh_2D_v4(filename::String, options::MeshImportOptions)
@@ -116,7 +116,6 @@ function read_Gmsh_2D_v4(filename::String, options::MeshImportOptions)
     version, _, dataSize = split(lines[format_line])
     gmsh_version = parse(Float64, version)
     group_requested_but_none_in_file = false
-
 
     if gmsh_version == 4.1
         @info "reading Gmsh file with legacy ($gmsh_version) format"
@@ -229,8 +228,8 @@ function read_Gmsh_2D_v4(filename::String, options::MeshImportOptions)
 end
 
 """
-For brevity while grouping is the only supported feature this allows
-for simpler code
+For brevity when grouping is the only supported feature.
+
     example: VXY, EToV, grouping = read_Gmsh_2D_v4("file.msh",true)
     example: VXY, EToV = read_Gmsh_2D_v4("file.msh",false)
 """
@@ -240,8 +239,9 @@ function read_Gmsh_2D_v4(filename::String, groupOpt::Bool=false, remap_group_nam
 end
 
 """
-function read_Gmsh_2D(filename)
-reads triangular GMSH 2D file format 2.2 0 8. returns (VX, VY), EToV
+    read_Gmsh_2D(filename)
+
+Reads triangular GMSH 2D file format 2.2 0 8. Returns (VX, VY), EToV.
 # Examples
 ```julia
 VXY, EToV = read_Gmsh_2D("eulerSquareCylinder2D.msh")
