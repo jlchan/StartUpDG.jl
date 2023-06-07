@@ -16,7 +16,7 @@ end
 """
     MeshImportOptions
 This struct allows the user to opt for supported features when importing
-a gmsh 4.1 .msh file.
+a Gmsh 4.1 .msh file.
 ## Support
 - grouping::Bool | On import would you like to include physical group assignements of 2D elements?
 - remap\\_group\\_name::Bool | On import would you like to maintain or remap physical group ID? Remap results in groupIds in the range 1:number\\_group\\_ids.
@@ -51,7 +51,7 @@ end
 
 """
 remap_element_grouping!(eg::Vector{Int})
-GMSH uses integers for naming conventions. This function remaps the gmsh ids to
+GMSH uses integers for naming conventions. This function remaps the Gmsh ids to
 a list of ids 1:numGroups. This just cleans up a little after Gmsh
 ## Example output
 remap_element_grouping([16,16,17,17]) -> [1,1,2,2]
@@ -71,7 +71,7 @@ function remap_element_grouping(eg::Vector{Int})
 end
 
 """
- function readGmsh2D_v4(filename)
+ function read_Gmsh_2D_v4(filename)
 
 reads triangular GMSH 2D .msh files.
 
@@ -87,22 +87,22 @@ This depends on if grouping is opted for or not
 
 ## grouping application
 When modeling the wave equation you might want wave speeds to vary accross your domain. By assigning Physical groups
-in gmsh we can maintain such groupings upon importing the .msh file. Each imported element will be a member of a phyical group.
+in Gmsh we can maintain such groupings upon importing the .msh file. Each imported element will be a member of a phyical group.
 
 ```julia
-VXY, EToV = readGmsh2D_v4("eulerSquareCylinder2D.msh")
-VXY, EToV = readGmsh2D_v4("eulerSquareCylinder2D.msh",false)
-VXY, EToV, grouping = readGmsh2D_v4("eulerSquareCylinder2D.msh", true)
+VXY, EToV = read_Gmsh_2D_v4("eulerSquareCylinder2D.msh")
+VXY, EToV = read_Gmsh_2D_v4("eulerSquareCylinder2D.msh",false)
+VXY, EToV, grouping = read_Gmsh_2D_v4("eulerSquareCylinder2D.msh", true)
 
 option = MeshOption(true)
-VXY, EToV, grouping = readGmsh2D_v4("eulerSquareCylinder2D.msh", option)
+VXY, EToV, grouping = read_Gmsh_2D_v4("eulerSquareCylinder2D.msh", option)
 ```
 https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format
 
 Notes:The version 4 format has a more detailed block data format
 this leads to more complicated parser.
 """
-function readGmsh2D_v4(filename::String, options::MeshImportOptions)
+function read_Gmsh_2D_v4(filename::String, options::MeshImportOptions)
     @unpack grouping, remap_group_name = options
 
     if !isfile(filename)
@@ -119,7 +119,7 @@ function readGmsh2D_v4(filename::String, options::MeshImportOptions)
 
 
     if gmsh_version == 4.1
-        @info "reading gmsh file with legacy ($gmsh_version) format"
+        @info "reading Gmsh file with legacy ($gmsh_version) format"
     else
         @warn "Gmsh file version is: $gmsh_version consider using a different parsing fuction for this file format"
     end
@@ -231,25 +231,25 @@ end
 """
 For brevity while grouping is the only supported feature this allows
 for simpler code
-    example: VXY, EToV, grouping = readGmsh2D_v4("file.msh",true)
-    example: VXY, EToV = readGmsh2D_v4("file.msh",false)
+    example: VXY, EToV, grouping = read_Gmsh_2D_v4("file.msh",true)
+    example: VXY, EToV = read_Gmsh_2D_v4("file.msh",false)
 """
-function readGmsh2D_v4(filename::String, groupOpt::Bool=false, remap_group_name::Bool=false)
+function read_Gmsh_2D_v4(filename::String, groupOpt::Bool=false, remap_group_name::Bool=false)
     options = MeshImportOptions(groupOpt, remap_group_name)
-    return readGmsh2D_v4(filename, options)
+    return read_Gmsh_2D_v4(filename, options)
 end
 
 """
-function readGmsh2D(filename)
+function read_Gmsh_2D(filename)
 reads triangular GMSH 2D file format 2.2 0 8. returns (VX, VY), EToV
 # Examples
 ```julia
-VXY, EToV = readGmsh2D("eulerSquareCylinder2D.msh")
+VXY, EToV = read_Gmsh_2D("eulerSquareCylinder2D.msh")
 ```
 
 https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_0029
 """
-function readGmsh2D(filename::String)
+function read_Gmsh_2D(filename::String)
     f = open(filename)
     lines = readlines(f)
 
@@ -257,9 +257,9 @@ function readGmsh2D(filename::String)
     version, _, dataSize = split(lines[format_line])
     gmsh_version = parse(Float64, version)
     if gmsh_version == 2.2
-        @info "reading gmsh file with legacy ($gmsh_version) format"
+        @info "reading Gmsh file with legacy ($gmsh_version) format"
     elseif gmsh_version == 4.1
-        @assert "This parsing function is not compatable with gmsh version $gmsh_version"
+        @assert "This parsing function is not compatable with Gmsh version $gmsh_version"
     else
         @warn "Gmsh file version is: $gmsh_version consider using a different parsing fuction for this file format"
     end
@@ -322,3 +322,7 @@ function correct_negative_Jacobians!((VX, VY), EToV)
     end
     return EToV
 end
+
+# deprecate these in the next major release 
+@deprecate readGmsh2D(filename) read_Gmsh_2D(filename)
+@deprecate readGmsh2D_v4(filename) read_Gmsh_2D_v4(filename)
