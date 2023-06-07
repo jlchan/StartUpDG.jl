@@ -189,7 +189,7 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 # ====================================================
 
 """
-    `Polynomial{T}`
+    Polynomial{T}
 
 Represents polynomial approximation types (as opposed to finite differences). 
 By default, `Polynomial()` constructs a `Polynomial{StartUpDG.DefaultPolynomialType}`.
