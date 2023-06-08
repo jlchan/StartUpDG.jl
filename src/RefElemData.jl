@@ -127,12 +127,6 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbo
         return length(getfield(x, :rstq)[1])
     elseif s==:Nfq
         return length(getfield(x, :rstf)[1])
-
-    # CamlCase will be deprecated in the next breaking release v0.17
-    elseif s==:approximationType
-        @warn "RefElemData property `approximationType` is deprecated and will be removed in v0.17. " * 
-              "Please use `approximation_type` instead."
-        return getfield(x, :approximation_type)
     else
         return getfield(x, s)
     end
@@ -140,12 +134,12 @@ end
 
 """
     function RefElemData(elem; N, kwargs...)
-    function RefElemData(elem, approxType; N, kwargs...)
+    function RefElemData(elem, approx_type; N, kwargs...)
 
 Keyword argument constructor for RefElemData (to "label" `N` via `rd = RefElemData(Line(), N=3)`)
 """
 RefElemData(elem; N, kwargs...) = RefElemData(elem, N; kwargs...)
-RefElemData(elem, approxType; N, kwargs...) = RefElemData(elem, approxType, N; kwargs...)
+RefElemData(elem, approx_type; N, kwargs...) = RefElemData(elem, approx_type, N; kwargs...)
 
 # default to Polynomial-type RefElemData
 RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs...)

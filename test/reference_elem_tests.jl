@@ -15,9 +15,6 @@
             @test invoke(inverse_trace_constant, Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
         end
         @test propertynames(rd)[1] == :element_type
-
-        # test for deprecated CamlCase approximationType usage
-        @test rd.approximationType == rd.approximation_type
     end
 
     @testset "Triangle" begin
