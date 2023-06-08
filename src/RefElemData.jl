@@ -127,12 +127,6 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbo
         return length(getfield(x, :rstq)[1])
     elseif s==:Nfq
         return length(getfield(x, :rstf)[1])
-
-    # CamlCase will be deprecated in the next breaking release v0.17
-    elseif s==:approximationType
-        @warn "RefElemData property `approximationType` is deprecated and will be removed in v0.17. " * 
-              "Please use `approximation_type` instead."
-        return getfield(x, :approximation_type)
     else
         return getfield(x, s)
     end
