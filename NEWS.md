@@ -2,6 +2,19 @@
 
 StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https://julialang.github.io/Pkg.jl/dev/compatibility/#Version-specifier-format-1) used in the Julia ecosystem. Recent changes will be documented in this file for human readability.
 
+## Changes when updating to v0.17
+
+#### Added
+* Added support for pyramid reference elements and meshes
+* Introduced unified `read_Gmsh_2D(...)` functions 
+* Specializations of `RefElemData` for `Polynomial(TensorProductQuadrature(quad_rule_1D))` approximation types
+* Add docs on difference between StartUpDG.jl and Nodal DG Matlab codes
+
+#### Changed
+* removed `approximationType` as a property of `RefElemData` 
+* Made `Base.show` output less verbose. 
+* Deprecated CamlCase Gmsh read functions
+
 ## Changes when updating to v0.16
 
 #### Added
