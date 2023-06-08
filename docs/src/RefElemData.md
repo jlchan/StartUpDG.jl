@@ -57,9 +57,18 @@ wq = @. wr * ws
 rd = RefElemData(Quad(), N; quad_rule_vol = (rq, sq, wq),  
                            quad_rule_face = (r1D, w1D))
 ```
-This results in a DG spectral element method (DG-SEM) discretization, with a diagonal lumped mass matrix and differentiation matrices which satisfy a summation-by-parts property.
+This results in a DG spectral element method (DG-SEM) discretization, with a diagonal lumped mass matrix and differentiation matrices which satisfy a summation-by-parts property. 
 
 By default, `RefElemData` is constructed for a nodal basis (in order to facilitate curved meshes, connectivity, etc). The interpolation nodes are computed using an [interpolatory](https://doi.org/10.1137/141000105) version of the [warp-and-blend](https://doi.org/10.1007/s10665-006-9086-6) procedure. 
+
+!!! note
+While specifying the quadrature rule changes the discretization, it is not reflected in the `RefElemData` type and thus cannot be specialized on. The following constructors produce `RefElemData` where the quadrature structure is reflected in the type parameters:
+```julia
+rd = RefElemData(Hex(), Polynomial(TensorProductQuadrature(quad_nodes(Line(), N+1)), N)) # tensor product quadrature rules
+rd = RefElemData(Quad(), Polynomial{Gauss}(), N) # (N+1)^d point tensor product Gauss quadrature
+```
+
+
 
 ## `RefElemData` based on SBP finite differences
 
