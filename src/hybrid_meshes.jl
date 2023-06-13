@@ -221,11 +221,19 @@ function MeshData(VX, VY, EToV_unsorted,
 
     mapM, mapP, mapB = vec.(build_node_maps(FToF, xyzf))
 
-    return MeshData(HybridMesh(Tuple(element_types), (VX, VY), EToV), FToF, 
-                    xyz, xyzf, xyzq, wJq,
-                    mapM, mapP, mapB,
-                    rstxyzJ, J, nxyzJ, Jf, 
-                    is_periodic)
+    periodicity = (false, false)
+    md = MeshData(HybridMesh(Tuple(element_types), (VX, VY), EToV), FToF, 
+                  xyz, xyzf, xyzq, wJq,
+                  mapM, mapP, mapB,
+                  rstxyzJ, J, nxyzJ, Jf, 
+                  periodicity)
+
+    if any(is_periodic)     
+        @warn "Periodic boundary conditions not yet implemented for hybrid meshes."
+        # md = make_periodic(md, is_periodic)
+    end
+
+    return md
 end
 
 function MeshData(rds::MultipleRefElemData, 
