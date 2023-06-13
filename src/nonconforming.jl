@@ -86,7 +86,8 @@ function NonConformingQuadMeshExample()
 end
 
 # one non-conforming quad face is split into 2 mortar faces
-num_mortars_per_face(rd::RefElemData{2, Quad}) = 2
+num_mortars_per_face(rd::RefElemData) = num_mortars_per_face(rd.element_type)
+num_mortars_per_face(::Union{Quad, Tri}) = 2
 
 num_elements(md::MeshData{Dim, <:NonConformingMesh}) where {Dim} = size(getfield(getfield(md, :mesh_type), :EToV), 1)
 
@@ -126,13 +127,18 @@ function MeshData(VXY, EToV, FToF, nonconforming_faces, rd::RefElemData{2, Quad}
     num_element_faces = num_faces(rd.element_type) * num_elements
     xf, yf = reshape.((xf, yf), num_face_points, num_element_faces)
 
+    x_mortar = reshape(mortar_interpolation_matrix * xf[:, nonconforming_faces], :, 
+                       num_mortars_per_face(rd) * length(nonconforming_faces))
+    y_mortar = reshape(mortar_interpolation_matrix * yf[:, nonconforming_faces], :, 
+                       num_mortars_per_face(rd) * length(nonconforming_faces))                       
+
     # each nonconforming face is split into 2 mortar faces. we append the mortar faces to the existing element faces. 
     # TODO: should we use LazyArrays.Hcat for this in the future?
-    x_mortar = hcat(xf, reshape(mortar_interpolation_matrix * xf[:, nonconforming_faces], :, 2 * length(nonconforming_faces)))
-    y_mortar = hcat(yf, reshape(mortar_interpolation_matrix * yf[:, nonconforming_faces], :, 2 * length(nonconforming_faces)))
+    xM = hcat(xf, x_mortar)
+    yM = hcat(yf, y_mortar)
 
     # compute node maps between mortars
-    mapM, mapP, mapB = build_node_maps(FToF, (x_mortar, y_mortar))
+    mapM, mapP, mapB = build_node_maps(FToF, (xM, yM))
 
     #Compute geometric factors and surface normals
     rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, rd.Drst...)
