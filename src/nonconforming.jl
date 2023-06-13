@@ -1,6 +1,6 @@
 """
 !!! warning "Experimental implementation"
-    This is an experimental feature and may change in future releases.
+    This is an experimental feature and may change without warning in future releases.
 
 This is a proof of concept implementation of a non-conforming mesh in StartUpDG.jl. 
 The intended usage is as follows:
@@ -9,35 +9,29 @@ The intended usage is as follows:
 rd = RefElemData(Quad(), N=7)
 md = MeshData(NonConformingQuadMeshExample(), rd)
 
-(; x, y ) = md
+(; x, y) = md
 u = @. sin(pi * x) * sin(pi * y)
 
 # interpolate to faces
 num_total_faces = num_faces(rd.element_type) * md.num_elements
-u_face = reshape(rd.Vf * u, :, num_total_faces)
+uf = reshape(rd.Vf * u, :, num_total_faces)
 
 # interpolate faces to mortars (`uf` denotes mortar faces for `NonConformingMesh` types)
-(; conforming_faces, nonconforming_faces, mortar_interpolation_matrix ) = md.mesh_type
-u_mortar = similar(md.xf)
-view(u_mortar, :, 1:length(conforming_faces)) .= view(u_face, :, conforming_faces)
+(; nonconforming_faces, mortar_interpolation_matrix) = md.mesh_type
 
-# interpolate to non-conforming faces, which are stored after the conforming faces
-for (i, f) in enumerate(nonconforming_faces)
-    mortar_face_ids = (1:num_mortars_per_face(rd)) .+ (i-1) * num_mortars_per_face(rd) .+ length(conforming_faces)
-    u_mortar[:, mortar_face_ids] .= reshape(mortar_interpolation_matrix * u_face[:, f], :, num_mortars_per_face(rd))
-end
+u_mortar = reshape(mortar_interpolation_matrix * uf[:, nonconforming_faces], :, 2 * length(nonconforming_faces))
 
-# get exterior values
-uP = u_mortar[md.mapP]
+# construct interior (uM = u⁻ "minus") values and exterior (uP = u⁺ "plus") values
+uM = hcat(uf, u_mortar)
+uP = uM[md.mapP]
 ```
 The `mortar_projection_matrix` similarly maps values from 2 mortar faces back to values on the 
 original non-conforming face. These can be used to create DG solvers on non-conforming meshes.
 
 """
-struct NonConformingMesh{TV, TE, CF, NCF, I, P}
+struct NonConformingMesh{TV, TE, NCF, I, P}
     VXYZ::TV
     EToV::TE
-    conforming_faces::CF
     nonconforming_faces::NCF
     mortar_interpolation_matrix::I
     mortar_projection_matrix::P
@@ -85,7 +79,8 @@ function NonConformingQuadMeshExample()
     VX = [-1, -1,  1,  1, 1,  2, 2, 2]
     VY = [-1,  1, -1,  1, 0, -1, 0, 1]
     EToV = [1 3 2 4; 3 6 5 7; 5 7 4 8]
-    FToF = [1, 2, 3, 12, 5, 6, 7, 13, 9, 7, 11, 4, 8] # FToF[mortar_face] = exterior_mortar_face
+    #FToF = [1, 2, 3, 12, 5, 6, 7, 13, 9, 7, 11, 4, 8] # FToF[mortar_face] = exterior_mortar_face
+    FToF = [1,  2,  3,  4,  13,  6,  7,  11,  14,  10,  8,  12,  5,  9]
     nonconforming_faces = [2]
     return NonConformingQuadMeshExample((VX, VY), EToV, FToF, nonconforming_faces)
 end
@@ -117,48 +112,33 @@ function MeshData(VXY, EToV, FToF, nonconforming_faces, rd::RefElemData{2, Quad}
     # L2 projection of mortars back to face nodes
     mortar_projection_matrix = mortar_mass_matrix \ (mortar_interpolation_matrix' * diagm(w_split))
     
-    #Construct global coordinates
+    # construct element nodal coordinates
     (; V1 ) = rd
     x = V1 * VX[transpose(EToV)]
     y = V1 * VY[transpose(EToV)]
 
-    #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
+    # construct face coordinates
     (; Vf ) = rd
     xf = Vf * x
     yf = Vf * y
 
-    num_total_faces = num_faces(rd.element_type) * num_elements
-    conforming_faces = setdiff(1:num_total_faces, nonconforming_faces)
+    # reshape xf, yf into arrays of size (num_nodes_per_face x num_faces)
+    num_element_faces = num_faces(rd.element_type) * num_elements
+    xf, yf = reshape.((xf, yf), num_face_points, num_element_faces)
 
-    # one non-conforming face is divided into 2 in 2D
-    num_mortar_faces = num_mortars_per_face(rd) * length(nonconforming_faces) + length(conforming_faces)
-   
-    # copy over conforming face data
-    x_mortar = similar(xf, (num_face_points, num_mortar_faces))
-    y_mortar = similar(yf, (num_face_points, num_mortar_faces))
-    xf, yf = reshape.((xf, yf), num_face_points, num_total_faces)
-    view(x_mortar, :, 1:length(conforming_faces)) .= view(xf, :, conforming_faces)
-    view(y_mortar, :, 1:length(conforming_faces)) .= view(yf, :, conforming_faces)
-
-    # interpolate to non-conforming faces
-    for (i, f) in enumerate(nonconforming_faces)
-        x_interpolated = reshape(mortar_interpolation_matrix * xf[:, f], size(xf, 1), 2)
-        y_interpolated = reshape(mortar_interpolation_matrix * yf[:, f], size(xf, 1), 2)        
-        
-        mortar_face_ids = (1:num_mortars_per_face(rd)) .+ (i-1) * num_mortars_per_face(rd) .+ length(conforming_faces)
-        view(x_mortar, :, mortar_face_ids) .= x_interpolated
-        view(y_mortar, :, mortar_face_ids) .= y_interpolated
-    end
+    # each nonconforming face is split into 2 mortar faces. we append the mortar faces to the existing element faces. 
+    # TODO: should we use LazyArrays.Hcat for this in the future?
+    x_mortar = hcat(xf, reshape(mortar_interpolation_matrix * xf[:, nonconforming_faces], :, 2 * length(nonconforming_faces)))
+    y_mortar = hcat(yf, reshape(mortar_interpolation_matrix * yf[:, nonconforming_faces], :, 2 * length(nonconforming_faces)))
 
     # compute node maps between mortars
     mapM, mapP, mapB = build_node_maps(FToF, (x_mortar, y_mortar))
 
     #Compute geometric factors and surface normals
-    (; Dr, Ds ) = rd
-    rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, Dr, Ds)
+    rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, rd.Drst...)
     rstxyzJ = SMatrix{2, 2}(rxJ, ryJ, sxJ, syJ)
 
-    (; Vq, wq ) = rd
+    (; Vq, wq) = rd
     xq, yq = (x -> Vq * x).((x, y))
     wJq = diagm(wq) * (Vq * J)
 
@@ -166,8 +146,10 @@ function MeshData(VXY, EToV, FToF, nonconforming_faces, rd::RefElemData{2, Quad}
 
     is_periodic = (false, false)
 
-    mesh_type = NonConformingMesh(tuple(VX, VY), EToV, conforming_faces, nonconforming_faces, 
-                                  mortar_interpolation_matrix, mortar_projection_matrix)
+    mesh_type = NonConformingMesh(tuple(VX, VY), EToV, 
+                                  nonconforming_faces, 
+                                  mortar_interpolation_matrix, 
+                                  mortar_projection_matrix)
 
     return MeshData(mesh_type, FToF,
                     tuple(x, y), tuple(x_mortar, y_mortar), tuple(xq, yq), wJq,
