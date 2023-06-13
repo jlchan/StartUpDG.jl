@@ -29,9 +29,8 @@ The `mortar_projection_matrix` similarly maps values from 2 mortar faces back to
 original non-conforming face. These can be used to create DG solvers on non-conforming meshes.
 
 """
-struct NonConformingMesh{TV, TE, NCF, I, P}
-    VXYZ::TV
-    EToV::TE
+struct NonConformingMesh{TV, NCF, I, P}
+    VXYZ::TV # VXYZ = (VX_local, VY_local, ...), where VX_local = [[element_1], [element_2], ...]
     nonconforming_faces::NCF
     mortar_interpolation_matrix::I
     mortar_projection_matrix::P
@@ -58,15 +57,16 @@ end
 #      |               |5   2  6|
 #      |_______3_______|____7___|
 #                           
-# Mortar ordering: first the unsplit faces, then the split faces
+# Mortar ordering
 #       _______________ ________
-#      |       3       |    11  |
-#      |             13|8  3   9|
-#      |1      1       |____10__|
-#      |               |    7   |
-#      |             12|4   2  5|
-#      |_______2_______|____6___|
-#                           
+#      |       4       |    12  |
+#      |             14|9  3  10|
+#      |1      1       |____11__|
+#      |               |    8   |
+#      |             13|5   2  6|
+#      |_______3_______|____7___|
+#                   
+
 # custom type to trigger this demo
 struct NonConformingQuadMeshExample{T1, T2, T3, T4}
     VXY::T1
@@ -79,7 +79,6 @@ function NonConformingQuadMeshExample()
     VX = [-1, -1,  1,  1, 1,  2, 2, 2]
     VY = [-1,  1, -1,  1, 0, -1, 0, 1]
     EToV = [1 3 2 4; 3 6 5 7; 5 7 4 8]
-    #FToF = [1, 2, 3, 12, 5, 6, 7, 13, 9, 7, 11, 4, 8] # FToF[mortar_face] = exterior_mortar_face
     FToF = [1,  2,  3,  4,  13,  6,  7,  11,  14,  10,  8,  12,  5,  9]
     nonconforming_faces = [2]
     return NonConformingQuadMeshExample((VX, VY), EToV, FToF, nonconforming_faces)
@@ -89,20 +88,37 @@ end
 num_mortars_per_face(rd::RefElemData) = num_mortars_per_face(rd.element_type)
 num_mortars_per_face(::Union{Quad, Tri}) = 2
 
-num_elements(md::MeshData{Dim, <:NonConformingMesh}) where {Dim} = size(getfield(getfield(md, :mesh_type), :EToV), 1)
+num_elements(md::MeshData{Dim, <:NonConformingMesh}) where {Dim} = 
+    length(getfield(getfield(md, :mesh_type), :VXYZ)[1]) 
 
 MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad}) = 
     MeshData(mesh.VXY, mesh.EToV, mesh.FToF, mesh.nonconforming_faces, rd)
 
 function MeshData(VXY, EToV, FToF, nonconforming_faces, rd::RefElemData{2, Quad})    
 
+    # vector of arrays containing vertex coordinates per element
     VX, VY = VXY
-    num_elements = size(EToV, 1)
+    VX_local = [VX[EToV[e, :]] for e in 1:size(EToV, 1)]
+    VY_local = [VY[EToV[e, :]] for e in 1:size(EToV, 1)]
+
+    return MeshData((VX_local, VY_local), FToF, nonconforming_faces, rd)
+end
+
+function MeshData(VXY_local::Tuple{<:Vector{<:AbstractArray}, Vararg}, 
+                  FToF, nonconforming_faces, rd::RefElemData{2})
+
+    VX_local, VY_local = VXY_local
+    num_elements = length(VX_local)
 
     # assume each mortar face is a uniform subdivision
     num_face_points = length(rd.rf) ÷ num_faces(rd.element_type)
-    r1D = rd.sf[1:num_face_points]
-    w1D = rd.wf[1:num_face_points]
+    if rd.element_type isa Quad
+        r1D = rd.sf[1:num_face_points]
+        w1D = rd.wf[1:num_face_points]
+    else
+        r1D = rd.rf[1:num_face_points]
+        w1D = rd.wf[1:num_face_points]
+    end
     r_split = vcat(0.5 * (1 .+ r1D) .- 1, 0.5 * (1 .+ r1D)) 
     w_split = 0.5 * vcat(w1D, w1D)
 
@@ -115,8 +131,12 @@ function MeshData(VXY, EToV, FToF, nonconforming_faces, rd::RefElemData{2, Quad}
     
     # construct element nodal coordinates
     (; V1 ) = rd
-    x = V1 * VX[transpose(EToV)]
-    y = V1 * VY[transpose(EToV)]
+    x = zeros(size(V1, 1), length(VX_local))
+    y = zeros(size(V1, 1), length(VX_local))
+    for e in eachindex(VX_local)
+        view(x, :, e) .= V1 * VX_local[e]
+        view(y, :, e) .= V1 * VY_local[e]
+    end
 
     # construct face coordinates
     (; Vf ) = rd
@@ -139,6 +159,7 @@ function MeshData(VXY, EToV, FToF, nonconforming_faces, rd::RefElemData{2, Quad}
 
     # compute node maps between mortars
     mapM, mapP, mapB = build_node_maps(FToF, (xM, yM))
+    # mapM, mapP, mapB = Int[], Int[], Int[]
 
     #Compute geometric factors and surface normals
     rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, rd.Drst...)
@@ -150,13 +171,13 @@ function MeshData(VXY, EToV, FToF, nonconforming_faces, rd::RefElemData{2, Quad}
 
     nxJ, nyJ, Jf = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
-    is_periodic = (false, false)
-
-    mesh_type = NonConformingMesh(tuple(VX, VY), EToV, 
+    mesh_type = NonConformingMesh(VXY_local, 
                                   nonconforming_faces, 
                                   mortar_interpolation_matrix, 
                                   mortar_projection_matrix)
 
+    is_periodic = (false, false)                                  
+    
     return MeshData(mesh_type, FToF,
                     tuple(x, y), tuple(x_mortar, y_mortar), tuple(xq, yq), wJq,
                     mapM, mapP, mapB,
