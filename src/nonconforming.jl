@@ -22,7 +22,7 @@ uf = reshape(rd.Vf * u, :, num_total_faces)
 u_mortar = reshape(mortar_interpolation_matrix * uf[:, nonconforming_faces], :, 2 * length(nonconforming_faces))
 
 # construct interior (uM = u⁻ "minus") values and exterior (uP = u⁺ "plus") values
-uM = hcat(uf, u_mortar)
+uM = hcat(uf, u_mortar) # uM = both element faces and mortar faces
 uP = uM[md.mapP]
 ```
 The `mortar_projection_matrix` similarly maps values from 2 mortar faces back to values on the 
