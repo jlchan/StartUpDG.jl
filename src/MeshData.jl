@@ -147,12 +147,12 @@ end
     elseif s==:tzJ
         return getfield(x, :rstxyzJ)[3,3]
         
-    # old behavior where K = num_elements        
+    # old notation in the NDG book where K = num_elements
     elseif s==:K || s==:num_elements 
         return num_elements(x)
 
-    # old notation in the NDG book where sJ (surface Jacobian) is 
-    # used instead of Jf (Jacobian for the face)
+    # old notation in the NDG book using sJ (surface Jacobian) 
+    # instead of Jf (Jacobian for the face)
     elseif s==:sJ 
         return getfield(x, :Jf)
 
@@ -201,7 +201,7 @@ end
 @inline num_elements(md::MeshData) = size(first(getfield(md, :xyz)), 2) # number of columns in the coordinate array
 
 # splat `uniform_mesh` arguments, e.g., enables `MeshData(uniform_mesh(Line(), 1), rd)`
-# TODO: wrap `uniform_mesh` in a custom type so we can dispatch more precisely
+# TODO: wrap `uniform_mesh` in a custom type so we can dispatch more precisely?
 """
     MeshData(VXYZ, EToV, rd::RefElemData)
     MeshData((VXYZ, EToV), rd::RefElemData)
@@ -231,9 +231,9 @@ function MeshData(VX::AbstractVector, EToV, rd::RefElemData{1})
     FToF = zeros(Int, Nfaces, K)
     sk = 1
     for e = 1:K
-        l = 2 * e-1
-        r = 2 * e
-        FToF[1:2, e] .= [l-1; r+1]
+        left = 2 * e-1
+        right = 2 * e
+        FToF[1:2, e] .= [left - 1; right + 1]
         sk += 1
     end
     FToF[1, 1] = 1
