@@ -356,15 +356,21 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
     # Note: the volume Jacobian for cut elements is 1 since the "reference element" is the 
     # cut element itself. Similarly, geometric terms should be 1 since `basis` computes 
     # physical derivatives accounting for element scaling
+
+    # Note: we use FillArrays.Fill instead of FillArrays.Ones and FillArrays.Zeros because 
+    # we store `rxJ, sxJ, ryJ, syJ` in a single SMatrix, which assumes one homogeneous 
+    # type for all the entries. Since FillArrays.Ones/Zeros are distinct types, using them
+    # results in a type instability when accessing entries of md.rstxyzJ
     rxJ = NamedArrayPartition(cartesian=Fill(rxJ_cartesian, rd.Np, num_cartesian_cells), 
-                              cut=Ones(Np_cut(rd.N), num_cut_cells))
+                              cut=Fill(1.0, Np_cut(rd.N), num_cut_cells))
     syJ = NamedArrayPartition(cartesian=Fill(syJ_cartesian, rd.Np, num_cartesian_cells), 
-                              cut=Ones(Np_cut(rd.N), num_cut_cells))
-    sxJ, ryJ = ntuple(_ -> NamedArrayPartition(cartesian=Zeros(rd.Np, num_cartesian_cells), 
-                                               cut=Zeros(Np_cut(rd.N), num_cut_cells)), 2) 
+                              cut=Fill(1.0, Np_cut(rd.N), num_cut_cells))
+    sxJ, ryJ = ntuple(_ -> NamedArrayPartition(cartesian=Fill(0.0, rd.Np, num_cartesian_cells), 
+                                               cut=Fill(0.0, Np_cut(rd.N), num_cut_cells)), 2) 
     J = NamedArrayPartition(cartesian = Fill(J_cartesian, rd.Np, num_cartesian_cells), 
-                            cut = Ones(Np_cut(rd.N), num_cut_cells))
-    rstxyzJ = SMatrix{2, 2}(rxJ, sxJ, ryJ, syJ) # pack geometric terms together
+                            cut = Fill(1.0, Np_cut(rd.N), num_cut_cells))
+
+    rstxyzJ = SMatrix{2, 2, typeof(rxJ), 4}(rxJ, sxJ, ryJ, syJ) # pack geometric terms together
 
     return physical_frame_elements, x, y, rstxyzJ, J, xf, yf, nxJ, nyJ, Jf
 end
