@@ -50,14 +50,14 @@ function triangle_vtk_order(corner_verts, order, dim, skip = false)
         coords = corner_verts
     end
     #edge vertices
-    num_verts_on_edge = order -1 
+    num_nodes_on_edge = order -1
     # edges in vtk-order
     vtk_edges = SVector((1,2), (2,3), (3,1))
     for (frm, to) in vtk_edges
         if skip == false
-            tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
+            tmp = n_verts_between(num_nodes_on_edge, corner_verts[:, frm], corner_verts[:, to])
             tmp_vec = Vector{Float64}(undef, dim)
-            for i in 1:num_verts_on_edge
+            for i in 1:num_nodes_on_edge
                 for j in 1:dim
                     tmp_vec[j] = tmp[j][i]
                 end
@@ -96,13 +96,13 @@ function quad_vtk_order(corner_verts, order, dim, skip = false)
     if skip == false
         coords = copy(corner_verts)
     end
-    num_verts_on_edge = order - 1
+    num_nodes_on_edge = order - 1
     edges = SVector((1,2), (2,3), (4,3), (1,4))
     for (frm, to) in edges
         if skip == false
-            tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
+            tmp = n_verts_between(num_nodes_on_edge, corner_verts[:, frm], corner_verts[:, to])
             tmp_vec = Vector{Float64}(undef, dim)
-            for i in 1:num_verts_on_edge
+            for i in 1:num_nodes_on_edge
                 for j in 1:dim
                     tmp_vec[j] = tmp[j][i]
                 end
@@ -113,10 +113,10 @@ function quad_vtk_order(corner_verts, order, dim, skip = false)
     e_x = (corner_verts[:, 2] .- corner_verts[:, 1]) ./ order
     e_y = (corner_verts[:, 4] .- corner_verts[:, 1]) ./ order
     pos_y = copy(corner_verts[:, 1])
-    for i in 1:num_verts_on_edge
+    for i in 1:num_nodes_on_edge
         pos_y = pos_y .+ e_y
         pos_yx = pos_y
-        for j in 1:num_verts_on_edge
+        for j in 1:num_nodes_on_edge
             pos_yx = pos_yx .+ e_x
             coords = hcat(coords, pos_yx)
         end
@@ -132,7 +132,20 @@ defined by the coordinates of the vertices given in `corner_verts`. `dim` is
 the dimension of the coordinates given. If `skip` is set to true, the
 coordinates of the vertex- and edge-points aren't computed, which can be used
 to compute points of a `VTK_LAGRANGE_HEXHEDRON`
+
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
+
+VTK node numbering of a hexagon:
+
+                8+------+7
+                /|     /|
+               / |    / |
+             5+------+6 |
+   z          | 4+---|--+3
+   | y        | /    | /
+   |/         |/     |/
+   0--> x    1+------+2
+
 """
 function hex_vtk_order(corner_verts, order, dim, skip = false)
 
@@ -144,16 +157,17 @@ function hex_vtk_order(corner_verts, order, dim, skip = false)
     end
     
     # Edges.
-    num_verts_on_edge = order - 1
+    num_nodes_on_edge = order - 1
     edges = SVector(
+      # VTK ordering. See hexagon schematic above.
       (1,2), (2,3), (4,3), (1,4), # bottom face
       (5,6), (6,7), (8,7), (5,8), # top face
       (1,5), (2,6), (4,8), (3,7), # vertical lines
     )
     for (frm, to) in edges
-        tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
+        tmp = n_verts_between(num_nodes_on_edge, corner_verts[:, frm], corner_verts[:, to])
         tmp_vec = Vector{Float64}(undef, dim)
-        for i in 1:num_verts_on_edge
+        for i in 1:num_nodes_on_edge
             for j in 1:dim
                 tmp_vec[j] = tmp[j][i]
             end
@@ -163,6 +177,7 @@ function hex_vtk_order(corner_verts, order, dim, skip = false)
 
     # Faces.
     quad_faces = SVector(
+      # VTK ordering. See hexagon schematic above.
       (1,4,8,5), # left
       (2,3,7,6), # right
       (1,2,6,5), # front
@@ -192,7 +207,7 @@ function hex_vtk_order(corner_verts, order, dim, skip = false)
     interior_quad_verts = [corner_verts[:,1] corner_verts[:,2] corner_verts[:,3] corner_verts[:,4]]
     face_coords = quad_vtk_order(interior_quad_verts, order, 3, true)
     face_coords = sort_by_axis(face_coords)
-    for i in range(1, num_verts_on_edge)
+    for i in range(1, num_nodes_on_edge)
         tmp_vec = Vector{Float64}(undef, dim)
         face_coords = face_coords .+ e_z
         if length(face_coords) > 0
@@ -224,12 +239,12 @@ function wedge_vtk_order(corner_verts, order, dim)
     if order == 0
         return coords
     end
-    num_verts_on_edge = order - 1
+    num_nodes_on_edge = order - 1
     edges = SVector((1,2), (2,3), (3,1), (4,5), (5,6), (6,4), (1,4), (2,5), (3,6))
     for (frm, to) in edges
-        tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
+        tmp = n_verts_between(num_nodes_on_edge, corner_verts[:, frm], corner_verts[:, to])
         tmp_vec = Vector{Float64}(undef, dim)
-        for i in 1:num_verts_on_edge
+        for i in 1:num_nodes_on_edge
             for j in 1:dim
                 tmp_vec[j] = tmp[j][i]
             end
@@ -279,7 +294,7 @@ function wedge_vtk_order(corner_verts, order, dim)
     interior_tri_verts = [corner_verts[:,1] corner_verts[:,2] corner_verts[:,3]]
     face_coords = triangle_vtk_order(interior_tri_verts, order, 3, true)
     face_coords = sort_by_axis(face_coords)
-    for i in range(1, num_verts_on_edge)
+    for i in range(1, num_nodes_on_edge)
         tmp_vec = Vector{Float64}(undef, dim)
         face_coords = face_coords .+ e_z
         if length(face_coords) > 0
