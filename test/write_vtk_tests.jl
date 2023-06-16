@@ -8,11 +8,14 @@
     deg_one_order(::Tri) = permutedims(hcat(nodes(Tri(), 1)...))
     deg_zero_order(::Tri) = [-1.0; -1.0]
     deg_one_order(::Quad) = [-1.0 1.0 1.0 -1.0; -1.0 -1.0 1.0 1.0]
+    deg_one_order(::Hex) = [-1.0 -1.0  1.0  1.0 -1.0 -1.0  1.0  1.0;
+                            -1.0  1.0  1.0 -1.0 -1.0  1.0  1.0 -1.0;
+                            -1.0 -1.0 -1.0 -1.0  1.0  1.0  1.0  1.0]
     deg_one_order(::Wedge) = [-1.0 1.0 -1.0 -1.0 1.0 -1.0; -1.0 -1.0 1.0 -1.0 -1.0 1.0; -1.0 -1.0 -1.0 1.0 1.0 1.0]
-    deg_zero_order(elem::Union{Quad, Wedge}) = deg_one_order(elem)
+    deg_zero_order(elem::Union{Quad, Hex, Wedge}) = deg_one_order(elem)
 
 
-    @testset "VTKWriter test for $elem" for elem in [Tri(), Quad(), Wedge()]
+    @testset "VTKWriter test for $elem" for elem in [Tri(), Quad(), Hex(), Wedge()]
         N = 3 # test only N=3 for CI time
         @testset "Write Mesh" begin
             rd = RefElemData(elem, N)

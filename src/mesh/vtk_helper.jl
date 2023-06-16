@@ -33,7 +33,7 @@ Compute the coordinates of a `VTK_LAGRANGE_TRIANGLE` of a triangle or order `ord
 defined by the coordinates of the vertices given in `corner_verts`. `dim` is the
 dimension of the coordinates given. If `skip` is set to true, the coordinates
 of the vertex- and edge-points aren't computed, which can be used to compute
-points of a `VTK_LAGRANGE_WEDGE`
+points of a `VTK_LAGRANGE_TRIANGLE`
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
 """
 function triangle_vtk_order(corner_verts, order, dim, skip = false)
@@ -50,14 +50,14 @@ function triangle_vtk_order(corner_verts, order, dim, skip = false)
         coords = corner_verts
     end
     #edge vertices
-    num_verts_on_edge = order -1 
+    num_nodes_on_edge = order -1
     # edges in vtk-order
     vtk_edges = SVector((1,2), (2,3), (3,1))
     for (frm, to) in vtk_edges
         if skip == false
-            tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
+            tmp = n_verts_between(num_nodes_on_edge, corner_verts[:, frm], corner_verts[:, to])
             tmp_vec = Vector{Float64}(undef, dim)
-            for i in 1:num_verts_on_edge
+            for i in 1:num_nodes_on_edge
                 for j in 1:dim
                     tmp_vec[j] = tmp[j][i]
                 end
@@ -85,24 +85,24 @@ Compute the coordinates of a VTK_LAGRANGE_QUAD of a quad of order `order`
 defined by the coordinates of the vertices given in `corner_verts`. `dim` is the
 dimension of the coordinates given. If `skip` is set to true, the coordinates
 of the vertex- and edge-points aren't computed, which can be used to compute
-points of a `VTK_LAGRANGE_WEDGE`
+points of a `VTK_LAGRANGE_QUAD`
 Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
 """
 function quad_vtk_order(corner_verts, order, dim, skip = false)
     
     @assert order >= 0 "`order` must be non-negative."
-    
+
     coords = Matrix{Float64}(undef, dim, 0)
     if skip == false
         coords = copy(corner_verts)
     end
-    num_verts_on_edge = order - 1
+    num_nodes_on_edge = order - 1
     edges = SVector((1,2), (2,3), (4,3), (1,4))
     for (frm, to) in edges
         if skip == false
-            tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
+            tmp = n_verts_between(num_nodes_on_edge, corner_verts[:, frm], corner_verts[:, to])
             tmp_vec = Vector{Float64}(undef, dim)
-            for i in 1:num_verts_on_edge
+            for i in 1:num_nodes_on_edge
                 for j in 1:dim
                     tmp_vec[j] = tmp[j][i]
                 end
@@ -113,14 +113,113 @@ function quad_vtk_order(corner_verts, order, dim, skip = false)
     e_x = (corner_verts[:, 2] .- corner_verts[:, 1]) ./ order
     e_y = (corner_verts[:, 4] .- corner_verts[:, 1]) ./ order
     pos_y = copy(corner_verts[:, 1])
-    for i in 1:num_verts_on_edge
+    for i in 1:num_nodes_on_edge
         pos_y = pos_y .+ e_y
         pos_yx = pos_y
-        for j in 1:num_verts_on_edge
+        for j in 1:num_nodes_on_edge
             pos_yx = pos_yx .+ e_x
             coords = hcat(coords, pos_yx)
         end
     end
+    return coords
+end
+
+"""
+    hex_vtk_order(corner_verts, order, dim, skip = false)
+
+Compute the coordinates of a VTK_LAGRANGE_HEXAHEDRON of a hex of order `order`
+defined by the coordinates of the vertices given in `corner_verts`. `dim` is
+the dimension of the coordinates given. If `skip` is set to true, the
+coordinates of the vertex- and edge-points aren't computed, which can be used
+to compute points of a `VTK_LAGRANGE_HEXHEDRON`
+
+Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
+
+VTK node numbering of a hexagon:
+
+                8+------+7
+                /|     /|
+               / |    / |
+             5+------+6 |
+   z          | 4+---|--+3
+   | y        | /    | /
+   |/         |/     |/
+   0--> x    1+------+2
+
+"""
+function hex_vtk_order(corner_verts, order, dim, skip = false)
+
+    @assert order >= 0 "`order` must be non-negative."
+    
+    coords = copy(corner_verts)
+    if order == 0
+        return coords
+    end
+    
+    # Edges.
+    num_nodes_on_edge = order - 1
+    edges = SVector(
+      # VTK ordering. See hexagon schematic above.
+      (1,2), (2,3), (4,3), (1,4), # bottom face
+      (5,6), (6,7), (8,7), (5,8), # top face
+      (1,5), (2,6), (4,8), (3,7), # vertical lines
+    )
+    for (frm, to) in edges
+        tmp = n_verts_between(num_nodes_on_edge, corner_verts[:, frm], corner_verts[:, to])
+        tmp_vec = Vector{Float64}(undef, dim)
+        for i in 1:num_nodes_on_edge
+            for j in 1:dim
+                tmp_vec[j] = tmp[j][i]
+            end
+            coords = hcat(coords, tmp_vec)
+        end
+    end
+
+    # Faces.
+    quad_faces = SVector(
+      # VTK ordering. See hexagon schematic above.
+      (1,4,8,5), # left
+      (2,3,7,6), # right
+      (1,2,6,5), # front
+      (4,3,7,8), # back
+      (1,2,3,4), # bottom
+      (5,6,7,8), # top
+    )
+    for indices in quad_faces
+        tmp_vec = Vector{Float64}(undef, dim)
+        quad_nodes = Matrix{Float64}(undef, dim, 0)
+        for j in indices
+            quad_nodes = hcat(quad_nodes, corner_verts[:, j])
+        end
+        face_coords = quad_vtk_order(quad_nodes, order, 3, true)
+        if length(face_coords) > 0
+            for i in 1:size(face_coords)[2]
+                for j in 1:dim
+                    tmp_vec[j] = face_coords[j,i]
+                end
+                coords = hcat(coords, tmp_vec)
+            end
+        end
+    end
+
+    # Volume.
+    e_z = (corner_verts[:,5] - corner_verts[:,1]) ./ order
+    interior_quad_verts = [corner_verts[:,1] corner_verts[:,2] corner_verts[:,3] corner_verts[:,4]]
+    face_coords = quad_vtk_order(interior_quad_verts, order, 3, true)
+    face_coords = sort_by_axis(face_coords)
+    for i in range(1, num_nodes_on_edge)
+        tmp_vec = Vector{Float64}(undef, dim)
+        face_coords = face_coords .+ e_z
+        if length(face_coords) > 0
+            for k in 1:size(face_coords, 2)
+                for j in 1:dim
+                    tmp_vec[j] = face_coords[j,k]
+                end
+                coords = hcat(coords, tmp_vec)
+            end
+        end
+    end
+
     return coords
 end
 
@@ -140,12 +239,12 @@ function wedge_vtk_order(corner_verts, order, dim)
     if order == 0
         return coords
     end
-    num_verts_on_edge = order - 1
+    num_nodes_on_edge = order - 1
     edges = SVector((1,2), (2,3), (3,1), (4,5), (5,6), (6,4), (1,4), (2,5), (3,6))
     for (frm, to) in edges
-        tmp = n_verts_between(num_verts_on_edge, corner_verts[:, frm], corner_verts[:, to])
+        tmp = n_verts_between(num_nodes_on_edge, corner_verts[:, frm], corner_verts[:, to])
         tmp_vec = Vector{Float64}(undef, dim)
-        for i in 1:num_verts_on_edge
+        for i in 1:num_nodes_on_edge
             for j in 1:dim
                 tmp_vec[j] = tmp[j][i]
             end
@@ -195,7 +294,7 @@ function wedge_vtk_order(corner_verts, order, dim)
     interior_tri_verts = [corner_verts[:,1] corner_verts[:,2] corner_verts[:,3]]
     face_coords = triangle_vtk_order(interior_tri_verts, order, 3, true)
     face_coords = sort_by_axis(face_coords)
-    for i in range(1, num_verts_on_edge)
+    for i in range(1, num_nodes_on_edge)
         tmp_vec = Vector{Float64}(undef, dim)
         face_coords = face_coords .+ e_z
         if length(face_coords) > 0
@@ -236,6 +335,19 @@ function vtk_order(::Quad, order)
     return quad_vtk_order(quad_vtk_vertices, order, 2) 
 end
 
+"""
+    vtk_order(elem::Hex, order)
+
+Construct all node-points of a VTK_LAGRANGE_HEXAHEDRON of order `order`. The
+corner-nodes are given by the reference hexahedron used by StartUpDG in the
+order defined by vtk.
+"""
+function vtk_order(::Hex, order)
+    hex_sud_vertices = permutedims(hcat(nodes(Hex(), 1)...))
+    perm = SVector(1, 2, 4, 3, 5, 6, 8, 7)
+    hex_vtk_vertices = hex_sud_vertices[:, perm]
+    return hex_vtk_order(hex_vtk_vertices, order, 3)
+end
 
 """
     vtk_order(elem::Wedge, order)
@@ -283,6 +395,14 @@ end
 """
 function type_to_vtk(elem::Quad)
     return VTKCellTypes.VTK_LAGRANGE_QUADRILATERAL
+end
+
+"""
+    type_to_vtk(elem::Hex)
+    return the VTK-type
+"""
+function type_to_vtk(elem::Hex)
+    return VTKCellTypes.VTK_LAGRANGE_HEXAHEDRON
 end
 
 """
