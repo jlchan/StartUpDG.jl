@@ -10,9 +10,9 @@ For `Line()`, `Quad()`, and `Hex()`, `approxType` is `SBP{TensorProductLobatto}`
 
 For `Tri()`, `approxType` can be `SBP{Kubatko{LobattoFaceNodes}}`, `SBP{Kubatko{LegendreFaceNodes}}`, or `SBP{Hicken}`. 
 """
-function RefElemData(elementType::Line, approxType::SBP{TensorProductLobatto}, N; tol = 100*eps())
+function RefElemData(elementType::Line, approxType::SBP{TensorProductLobatto}, N; tol = 100*eps(), kwargs...)
 
-    rd = RefElemData(elementType, N, quad_rule_vol = gauss_lobatto_quad(0,0,N))        
+    rd = RefElemData(elementType, N; quad_rule_vol = gauss_lobatto_quad(0,0,N), kwargs...)        
     
     rd = @set rd.Vf = droptol!(sparse(rd.Vf), tol)
     rd = @set rd.LIFT = Diagonal(rd.wq) \ (rd.Vf' * Diagonal(rd.wf)) # TODO: make this more efficient with LinearMaps?
@@ -20,7 +20,7 @@ function RefElemData(elementType::Line, approxType::SBP{TensorProductLobatto}, N
     return _convert_RefElemData_fields_to_SBP(rd, approxType)
 end
 
-function RefElemData(elementType::Quad, approxType::SBP{TensorProductLobatto}, N; tol = 100*eps())
+function RefElemData(elementType::Quad, approxType::SBP{TensorProductLobatto}, N; tol = 100*eps(), kwargs...)
 
     # make 2D SBP nodes/weights
     r1D, w1D = gauss_lobatto_quad(0, 0, N)
@@ -30,7 +30,7 @@ function RefElemData(elementType::Quad, approxType::SBP{TensorProductLobatto}, N
     quad_rule_vol = (rq, sq, wq)
     quad_rule_face = (r1D, w1D)
 
-    rd = RefElemData(elementType, N, quad_rule_vol = quad_rule_vol, quad_rule_face = quad_rule_face)
+    rd = RefElemData(elementType, N; quad_rule_vol = quad_rule_vol, quad_rule_face = quad_rule_face, kwargs...)
 
     rd = @set rd.Vf = droptol!(sparse(rd.Vf), tol)
     rd = @set rd.LIFT = Diagonal(rd.wq) \ (rd.Vf' * Diagonal(rd.wf)) # TODO: make this more efficient with LinearMaps?
@@ -38,7 +38,7 @@ function RefElemData(elementType::Quad, approxType::SBP{TensorProductLobatto}, N
     return _convert_RefElemData_fields_to_SBP(rd, approxType)
 end
 
-function RefElemData(elementType::Hex, approxType::SBP{TensorProductLobatto}, N; tol = 100*eps())
+function RefElemData(elementType::Hex, approxType::SBP{TensorProductLobatto}, N; tol = 100*eps(), kwargs...)
 
     # make 2D SBP nodes/weights
     r1D, w1D = gauss_lobatto_quad(0, 0, N)
@@ -51,7 +51,7 @@ function RefElemData(elementType::Hex, approxType::SBP{TensorProductLobatto}, N;
     quad_rule_vol = (rq, sq, tq, wq)
     quad_rule_face = (rf, sf, wf)
 
-    rd = RefElemData(elementType, N, quad_rule_vol = quad_rule_vol, quad_rule_face = quad_rule_face)
+    rd = RefElemData(elementType, N; quad_rule_vol = quad_rule_vol, quad_rule_face = quad_rule_face, kwargs...)
 
     rd = @set rd.Vf = droptol!(sparse(rd.Vf), tol)
     rd = @set rd.LIFT = Diagonal(rd.wq) \ (rd.Vf' * Diagonal(rd.wf)) # TODO: make this more efficient with LinearMaps?
@@ -59,12 +59,12 @@ function RefElemData(elementType::Hex, approxType::SBP{TensorProductLobatto}, N;
     return _convert_RefElemData_fields_to_SBP(rd, approxType)
 end
 
-function RefElemData(elementType::Tri, approxType::SBP, N; tol = 100*eps())
+function RefElemData(elementType::Tri, approxType::SBP, N; tol = 100*eps(), kwargs...)
     
     quad_rule_vol, quad_rule_face = diagE_sbp_nodes(elementType, approxType, N)
 
     # build polynomial reference element using quad rules; will be modified to create SBP RefElemData
-    rd = RefElemData(elementType, Polynomial(), N; quad_rule_vol=quad_rule_vol, quad_rule_face=quad_rule_face)
+    rd = RefElemData(elementType, Polynomial(), N; quad_rule_vol=quad_rule_vol, quad_rule_face=quad_rule_face, kwargs...)
 
     # determine Fmask = indices of face nodes among volume nodes
     Ef, Fmask = build_Ef_Fmask(rd)

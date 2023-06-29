@@ -241,12 +241,12 @@ struct SBP{Type} end
 SBP() = SBP{DefaultSBPType}() # no-parameter default
 
 # sets default to TensorProductLobatto on Quads 
-RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N) = 
-    RefElemData(elem, SBP{TensorProductLobatto}(), N)
+RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N; kwargs...) = 
+    RefElemData(elem, SBP{TensorProductLobatto}(), N; kwargs...)
 
 # sets default to Kubatko{LobattoFaceNodes} on Tris
-RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = 
-    RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
+RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N; kwargs...) = 
+    RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N; kwargs...)
 
 # ====================================
 #              Printing 

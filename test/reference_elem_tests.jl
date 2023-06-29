@@ -385,3 +385,9 @@ end
     end
 end
 
+@testset "RefElemData SBP keyword arguments" begin
+    for elem in [Line(), Tri(), Quad(), Hex()]
+        # make sure Nplot is accepted as a kwarg
+        @test_nowarn rd = RefElemData(elem, SBP(), 1; Nplot=11)
+    end
+end
