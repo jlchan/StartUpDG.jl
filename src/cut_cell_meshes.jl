@@ -330,18 +330,31 @@ function compute_geometric_data(rd::RefElemData{2, Quad}, quad_rule_face,
 
         # if the condition number of the VDM is really bad, then increase the 
         # number of sampled points. 
-        condV = cond(V[ids,:])
-        if condV > 1e8
+        condV_original = cond(V[ids, :])
+        condV = condV_original
+        N_sampled = 20 * rd.N
+        iter, maxiters = 0, 100
+        while condV > 1e8 && iter < maxiters
             x_sampled, y_sampled = 
                 generate_sampling_points(objects, physical_frame_element, rd, 2 * Np_cut(rd.N); 
-                                         N_sampled = 20 * rd.N)
+                                         N_sampled = N_sampled)
             V = vandermonde(physical_frame_element, rd.N, x_sampled, y_sampled) 
 
             # use pivoted QR to find good interpolation points
             QRfac = qr(V', ColumnNorm())
             ids = QRfac.p[1:Np_cut(rd.N)]
-            @warn "Conditioning of old VDM for element $e is $condV. " * 
-                  "After recomputing with a finer set of samples: $(cond(V[ids,:]))."                   
+            condV = cond(V[ids, :])
+            N_sampled += 5 * rd.N
+            
+            if condV < 1e8
+                @warn "Conditioning of old VDM for element $e is $condV_original. " * 
+                "After recomputing with $(length(x_sampled)) samples: $condV."
+            end
+
+            iter += 1
+        end
+        if iter >= maxiters
+            @warn "Adaptive sampling of cut-cell element $e: maximum number of iterations $maxiters exceeded."
         end
 
         view(x.cut, :, e) .= x_sampled[ids]
@@ -625,7 +638,7 @@ function MeshData(rd::RefElemData, objects,
     for e in eachindex(cutcells)
         # compute these quantities using a higher accuracy surface quadrature rule 
         xf_element, yf_element, nxJ_element, nyJ_element, Jf_element = 
-            map_points_to_cut_cell_faces(r1D, cutcells[e])                            
+            map_points_to_cut_cell_faces(r1D, cutcells[e]) 
         nx_element = nxJ_element ./ Jf_element                
         ny_element = nyJ_element ./ Jf_element                
         wJf_element = vec(Diagonal(w1D) * reshape(Jf_element, length(w1D), :))
@@ -638,20 +651,70 @@ function MeshData(rd::RefElemData, objects,
         
         # compute degree 2N basis matrix at sampled points            
         x_sampled, y_sampled = generate_sampling_points(objects, physical_frame_elements[e], 
-                                                        rd, Np_cut(6 * rd.N); N_sampled = 8 * rd.N)          
-        Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)
-        
+                                                        rd, 2 * Np_cut(rd.N); N_sampled = 8 * rd.N)
+        Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)    
+
+        # if the condition number of the VDM matrix is large, select more points until cond(VDM) < 1e8
+        QRfac = qr(Vq', ColumnNorm())
+
+        # if we have enough points, compute the cond number. Otherwise, assume it's Inf
+        if length(QRfac.p) >= num_cut_quad_points
+            ids = view(QRfac.p, 1:num_cut_quad_points)
+            condV_original = cond(Vq[ids, :])
+        else
+            condV_original = Inf
+        end
+        condV = condV_original
+        N_sampled = 20 * rd.N # start with a lot more points
+        iter, maxiters = 0, 100
+        while condV > 1e8 && iter < maxiters
+            x_sampled, y_sampled = 
+                generate_sampling_points(objects, physical_frame_elements[e], rd, 2 * Np_cut(rd.N); 
+                                         N_sampled = N_sampled)
+
+            # if the number of sampled points isn't large enough, add more
+            if length(x_sampled) < num_cut_quad_points
+                N_sampled += 5 * rd.N
+                continue
+            end
+
+            Vq = vandermonde(physical_frame_elements[e], 2 * rd.N, x_sampled, y_sampled)        
+
+            # use pivoted QR to find good interpolation points
+            QRfac = qr(Vq', ColumnNorm())
+            ids = view(QRfac.p, 1:num_cut_quad_points)
+            condV = cond(Vq[ids, :])
+            N_sampled += 5 * rd.N
+            
+            if condV < 1e8
+                @warn "Conditioning of old VDM for element $e is $condV_original. " * 
+                "After recomputing with $(length(x_sampled)) samples: $condV."
+            end
+
+            iter += 1
+        end
+
+        if iter >= maxiters
+            @warn "Adaptive sampling of cut-cell element $e: maximum number of iterations $maxiters exceeded."
+        end
+
         # naive approach to computing quadrature weights; no guarantees of positivity
-        QR  = qr(Vq', ColumnNorm())
-        ids = view(QR.p, 1:num_cut_quad_points)
-        wq  = Vq[ids,:]' \ b
-        
-        quadrature_error = norm(Vq[ids,:]' * wq - b)
+        QRfac = qr(Vq', ColumnNorm())
+        ids = view(QRfac.p, 1:num_cut_quad_points)
+        wq  = Vq[ids, :]' \ b
+
+        quadrature_error = norm(Vq[ids, :]' * wq - b)
         quadrature_condition_number = sum(abs.(wq)) / sum(wq)
-        if quadrature_condition_number > 10 || quadrature_error > 1e-13
-            println("Quadrature error on element $e is $quadrature_error, " * 
-                    "quadrature condition number = $quadrature_condition_number. " * 
-                    "Condition number of quadrature VDM is $(cond(Vq[ids,:]')).")
+        if quadrature_condition_number > 10 || quadrature_error > 1e3 * eps()
+            @warn "Quadrature error on element $e is $quadrature_error, " * 
+                  "quadrature condition number = $quadrature_condition_number. " * 
+                  "Condition number of quadrature VDM is $condV."
+        end
+
+        if e==249
+            if isdefined(Main, :Infiltrator)
+                Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
+            end
         end
 
         view(xq.cut, :, e)  .= view(x_sampled, ids)
