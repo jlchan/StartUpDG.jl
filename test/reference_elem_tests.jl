@@ -11,9 +11,9 @@
         @test rd.nrJ ≈ [-1,1]
         @test rd.Pq * rd.Vq ≈ I
         @test rd.r[rd.Fmask[:]] ≈ rd.rf
-        # @suppress begin # suppress warnings
-        #     @test invoke(inverse_trace_constant, Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
-        # end
+        @suppress begin # suppress warnings
+            @test invoke(inverse_trace_constant, Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
+        end
         @test propertynames(rd)[1] == :element_type
     end
 
