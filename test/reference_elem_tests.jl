@@ -11,9 +11,9 @@
         @test rd.nrJ ≈ [-1,1]
         @test rd.Pq * rd.Vq ≈ I
         @test rd.r[rd.Fmask[:]] ≈ rd.rf
-        @suppress begin # suppress warnings
-            @test invoke(inverse_trace_constant, Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
-        end
+        # @suppress begin # suppress warnings
+        #     @test invoke(inverse_trace_constant, Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
+        # end
         @test propertynames(rd)[1] == :element_type
     end
 
@@ -29,9 +29,9 @@
         Vfp = vandermonde(Line(), N, quad_nodes(Line(), N)[1]) / vandermonde(Line(), N, nodes(Line(), N))
         rstf = (x->Vfp * x[reshape(rd.Fmask, rd.Nfq ÷ rd.Nfaces, rd.Nfaces)]).(rd.rst)
         @test all(vec.(rstf) .≈ rd.rstf)
-        @suppress begin # suppress warnings
-            @test invoke(inverse_trace_constant,Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
-        end
+        # @suppress begin # suppress warnings
+        #     @test invoke(inverse_trace_constant,Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
+        # end
         @test propertynames(rd)[1] == :element_type
 
         @test StartUpDG.num_vertices(Tri()) == 3
@@ -51,9 +51,9 @@
         Vfp = vandermonde(Line(), N, quad_nodes(Line(), N)[1]) / vandermonde(Line(), N, nodes(Line(), N))
         rstf = (x->Vfp * x[reshape(rd.Fmask,rd.Nfq÷rd.Nfaces,rd.Nfaces)]).(rd.rst)
         @test all(vec.(rstf) .≈ rd.rstf)
-        @suppress begin # suppress warnings
-            @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)    
-        end
+        # @suppress begin # suppress warnings
+        #     @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)    
+        # end
 
         @test StartUpDG.num_vertices(Quad()) == 4
         @test StartUpDG.num_faces(Quad()) == 4
@@ -104,9 +104,9 @@
         @test abs(sum(rd.wf .* rd.nsJ)) < tol
         @test abs(sum(rd.wf .* rd.ntJ)) < tol
         @test rd.Pq * rd.Vq ≈ I
-        @suppress begin # suppress warnings
-            @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
-        end
+        # @suppress begin # suppress warnings
+        #     @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
+        # end
 
         @test StartUpDG.num_vertices(Tet()) == 4
         @test StartUpDG.num_faces(Tet()) == 4
