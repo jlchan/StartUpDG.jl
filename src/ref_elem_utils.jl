@@ -74,5 +74,5 @@ function inverse_trace_constant(rd::RefElemData)
 end
 
 function eigenvalue_inverse_trace_constant(rd::RefElemData)
-    return maximum(eigvals(Symmetric(Matrix(rd.Vf' * diagm(rd.wf) * rd.Vf)), Symmetric(Matrix(rd.Vq' * diagm(rd.wq) * rd.Vq))))
+    return maximum(real(eigvals(Matrix(rd.Vf' * diagm(rd.wf) * rd.Vf), Matrix(rd.Vq' * diagm(rd.wq) * rd.Vq))))
 end
