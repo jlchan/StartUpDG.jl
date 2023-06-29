@@ -68,7 +68,11 @@ inverse_trace_constant(rd::RefElemData{3, <:Wedge, <:Polynomial}) = _inverse_tra
 inverse_trace_constant(rd::RefElemData{3, <:Pyr, <:Polynomial})   = _inverse_trace_constants(rd)[rd.N]
 
 # generic fallback
-function inverse_trace_constant(rd::RefElemData)
+function inverse_trace_constant(rd::RefElemData) 
     @warn "Computing the inverse trace constant using an eigenvalue problem; this may be expensive."
-    return maximum(eigvals(Symmetric(Matrix(rd.Vf' * diagm(rd.wf) * rd.Vf)), Symmetric(Matrix(rd.Vq' * diagm(rd.wq) * rd.Vq))))
+    return eigenvalue_inverse_trace_constant(rd)
+end
+
+function eigenvalue_inverse_trace_constant(rd::RefElemData)
+    return maximum(real(eigvals(Matrix(rd.Vf' * diagm(rd.wf) * rd.Vf), Matrix(rd.Vq' * diagm(rd.wq) * rd.Vq))))
 end

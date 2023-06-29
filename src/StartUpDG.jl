@@ -1,4 +1,4 @@
-module StartUpDG
+module StartUpDG 
 
 using Reexport: @reexport
 
@@ -76,7 +76,8 @@ include("mesh/simple_meshes.jl")
 export uniform_mesh
 include("mesh/gmsh_utilities.jl")
 export read_Gmsh_2D # unifies v2.2.8 and v4.1 mesh reading
-export readGmsh2D, readGmsh2D_v4 
+export readGmsh2D, readGmsh2D_v4 # TODO: deprecate
+export read_Gmsh_2D_v2, read_Gmsh_2D_v4 
 export MeshImportOptions 
 include("mesh/hohqmesh_utilities.jl")
 export read_HOHQMesh
