@@ -13,6 +13,7 @@
         @test rd.Dr*rd.r.^N ≈ N*rd.r.^(N-1)
         @test rd.Ds*rd.s.^N ≈ N*rd.s.^(N-1)
         @test norm(rd.Dr*rd.s + rd.Ds*rd.r) < tol
+        @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd)    
     end
 
     @testset "Kubatko's Legendre face node triangular SBP operators" begin
@@ -23,6 +24,7 @@
         @test rd.Dr*rd.r.^N ≈ N*rd.r.^(N-1)
         @test rd.Ds*rd.s.^N ≈ N*rd.s.^(N-1)
         @test norm(rd.Dr*rd.s + rd.Ds*rd.r) < tol
+        @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd)    
     end
     
     @testset "Warning for N=6 Kubatko Lobatto SBP nodes" begin
