@@ -279,21 +279,6 @@ function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
     return mapPB[:]
 end
 
-# specialize on 3D elements with the same types of faces
-function make_periodic(md::MeshData{3, <:Union{Tet, Hex}}, is_periodic::NTuple{3}; kwargs...)
-
-    (; mapM, mapP, mapB, xyzf, FToF ) = md
-    NfacesTotal = length(FToF)
-    FToF_periodic = copy(FToF)
-    mapPB = build_periodic_boundary_maps!(xyzf..., is_periodic..., NfacesTotal,
-                                          mapM, mapP, mapB, FToF_periodic; kwargs...)
-    mapP_periodic = copy(mapP)
-    mapP_periodic[mapB] = mapPB
-    mapB_periodic = mapB[mapPB .== mapP[mapB]] # keep only non-periodic boundary nodes
-    return setproperties(md, (; mapB=mapB_periodic, mapP = mapP_periodic, 
-                                FToF = FToF_periodic, is_periodic = is_periodic)) # from Setfield.jl    
-end
-
 # 3D version of build_periodic_boundary_maps, modifies FToF
 function build_periodic_boundary_maps!(xf, yf, zf,
                                        is_periodic_x, is_periodic_y, is_periodic_z,

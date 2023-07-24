@@ -156,6 +156,11 @@ function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs
     return MultipleRefElemData(rds)
 end
 
+MeshData(mesh::Tuple{<:Tuple, Vector{Matrix{Int64}}}, rd::MultipleRefElemData, other_args...) = 
+    MeshData(mesh..., rd; other_args...)
+MeshData(VXYZ::Tuple, EToV, rd::MultipleRefElemData, other_args...) = 
+    MeshData(VXYZ..., EToV, rd; other_args...) # splats VXYZ 
+
 # constructs MeshData for a hybrid mesh given a NamedTuple of `RefElemData` 
 # with element type keys (e.g., `:Tri` or `:Quad`). 
 function MeshData(VX, VY, EToV_unsorted, 
@@ -216,11 +221,19 @@ function MeshData(VX, VY, EToV_unsorted,
 
     mapM, mapP, mapB = vec.(build_node_maps(FToF, xyzf))
 
-    return MeshData(HybridMesh(Tuple(element_types), (VX, VY), EToV), FToF, 
-                    xyz, xyzf, xyzq, wJq,
-                    mapM, mapP, mapB,
-                    rstxyzJ, J, nxyzJ, Jf, 
-                    is_periodic)
+    periodicity = (false, false)
+    md = MeshData(HybridMesh(Tuple(element_types), (VX, VY), EToV), FToF, 
+                  xyz, xyzf, xyzq, wJq,
+                  mapM, mapP, mapB,
+                  rstxyzJ, J, nxyzJ, Jf, 
+                  periodicity)
+
+    if any(is_periodic)     
+        @warn "Periodic boundary conditions not yet implemented for hybrid meshes."
+        # md = make_periodic(md, is_periodic)
+    end
+
+    return md
 end
 
 function MeshData(rds::MultipleRefElemData, 

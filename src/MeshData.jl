@@ -73,7 +73,7 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, MeshType}) where {DIM, MeshType}
     @nospecialize md
-    print(io,"MeshData of dimension $DIM with $(md.num_elements) elements")
+    print(io,"MeshData of dimension $DIM with $(md.num_elements) elements with periodicity = $(md.is_periodic).")
 end
 
 function Base.propertynames(x::MeshData{1}, private::Bool = false)
@@ -147,12 +147,12 @@ end
     elseif s==:tzJ
         return getfield(x, :rstxyzJ)[3,3]
         
-    # old behavior where K = num_elements        
+    # old notation in the NDG book where K = num_elements
     elseif s==:K || s==:num_elements 
         return num_elements(x)
 
-    # old notation in the NDG book where sJ (surface Jacobian) is 
-    # used instead of Jf (Jacobian for the face)
+    # old notation in the NDG book using sJ (surface Jacobian) 
+    # instead of Jf (Jacobian for the face)
     elseif s==:sJ 
         return getfield(x, :Jf)
 
@@ -201,9 +201,10 @@ end
 @inline num_elements(md::MeshData) = size(first(getfield(md, :xyz)), 2) # number of columns in the coordinate array
 
 # splat `uniform_mesh` arguments, e.g., enables `MeshData(uniform_mesh(Line(), 1), rd)`
-# TODO: wrap `uniform_mesh` in a custom type so we can dispatch more precisely
+# TODO: wrap `uniform_mesh` in a custom type so we can dispatch more precisely?
 """
     MeshData(VXYZ, EToV, rd::RefElemData)
+    MeshData((VXYZ, EToV), rd::RefElemData)
 
 Returns a MeshData struct with high order DG mesh information from the unstructured
 mesh information (VXYZ..., EToV).
@@ -214,11 +215,13 @@ Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometr
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `Jf`.
 """
-MeshData(mesh::Tuple{<:Tuple, Matrix{Int64}}, other_args...) = MeshData(mesh..., other_args...)
-MeshData(VXYZ::T, EToV, other_args...) where {NDIMS, T <: NTuple{NDIMS}} = 
-    MeshData(VXYZ..., EToV, other_args...) # splats VXYZ 
+MeshData(mesh::Tuple{<:Tuple, Matrix{Int64}}, rd::RefElemData, other_args...; kwargs...) = 
+    MeshData(mesh..., rd, other_args...; kwargs...)
 
-function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
+MeshData(VXYZ, EToV, rd::RefElemData, other_args...; kwargs...) = 
+    MeshData(VXYZ..., EToV, rd, other_args...; kwargs...) # splats VXYZ 
+
+function MeshData(VX::AbstractVector, EToV, rd::RefElemData{1}; is_periodic=(false, ))
 
     # Construct global coordinates
     (; V1 ) = rd
@@ -229,9 +232,9 @@ function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
     FToF = zeros(Int, Nfaces, K)
     sk = 1
     for e = 1:K
-        l = 2 * e-1
-        r = 2 * e
-        FToF[1:2, e] .= [l-1; r+1]
+        left = 2 * e-1
+        right = 2 * e
+        FToF[1:2, e] .= [left - 1; right + 1]
         sk += 1
     end
     FToF[1, 1] = 1
@@ -255,18 +258,24 @@ function MeshData(VX::AbstractVector{Tv}, EToV, rd::RefElemData{1}) where {Tv}
     (; Vq, wq ) = rd
     xq = Vq * x
     wJq = diagm(wq) * (Vq * J)
+    
+    # create non-periodic version by default
+    periodicity = (false, )
+    md = MeshData(VertexMappedMesh(rd.element_type, tuple(VX), EToV), FToF,
+                  tuple(x), tuple(xf), tuple(xq), wJq,
+                  collect(mapM), mapP, mapB,
+                  SMatrix{1,1}(tuple(rxJ)), J,
+                  tuple(nxJ), Jf, periodicity)
 
-    is_periodic = (false,)
+    # if any coordinates are periodic
+    if any(is_periodic)
+        md = make_periodic(md, is_periodic)
+    end
 
-    return MeshData(VertexMappedMesh(rd.element_type, tuple(VX), EToV), FToF,
-                    tuple(x), tuple(xf), tuple(xq), wJq,
-                    collect(mapM), mapP, mapB,
-                    SMatrix{1,1}(tuple(rxJ)), J,
-                    tuple(nxJ), Jf,
-                    is_periodic)
+    return md
 end
 
-function MeshData(VX, VY, EToV, rd::RefElemData{2})
+function MeshData(VX, VY, EToV, rd::RefElemData{2}; is_periodic=(false, false))
 
     (; fv ) = rd
     FToF = connect_mesh(EToV, fv)
@@ -297,17 +306,22 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2})
 
     nxJ, nyJ, Jf = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
-    is_periodic = (false, false)
-    return MeshData(VertexMappedMesh(rd.element_type, tuple(VX, VY), EToV), FToF,
-                    tuple(x, y), tuple(xf, yf), tuple(xq, yq), wJq,
-                    mapM, mapP, mapB,
-                    SMatrix{2, 2}(tuple(rxJ, ryJ, sxJ, syJ)), J,
-                    tuple(nxJ, nyJ), Jf,
-                    is_periodic)
+    periodicity = (false, false)
+    md = MeshData(VertexMappedMesh(rd.element_type, tuple(VX, VY), EToV), FToF,
+                  tuple(x, y), tuple(xf, yf), tuple(xq, yq), wJq,
+                  mapM, mapP, mapB,
+                  SMatrix{2, 2}(tuple(rxJ, ryJ, sxJ, syJ)), J,
+                  tuple(nxJ, nyJ), Jf, periodicity)
+    
+    if any(is_periodic)
+        md = make_periodic(md, is_periodic)
+    end
+
+    return md
 
 end
 
-function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
+function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3}; is_periodic=(false, false, false))
 
     (; fv ) = rd
     FToF = connect_mesh(EToV, fv)
@@ -335,12 +349,18 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3})
 
     nxJ, nyJ, nzJ, Jf = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
-    is_periodic = (false, false, false)
-    return MeshData(VertexMappedMesh(rd.element_type, tuple(VX, VY, VZ), EToV), FToF,
-                    tuple(x, y, z), tuple(xf, yf, zf), tuple(xq, yq, zq), wJq,
-                    mapM, mapP, mapB,
-                    rstxyzJ, J, tuple(nxJ, nyJ, nzJ), Jf,
-                    is_periodic)
+    periodicity = (false, false, false)
+    md = MeshData(VertexMappedMesh(rd.element_type, tuple(VX, VY, VZ), EToV), FToF,
+                  tuple(x, y, z), tuple(xf, yf, zf), tuple(xq, yq, zq), wJq,
+                  mapM, mapP, mapB,
+                  rstxyzJ, J, tuple(nxJ, nyJ, nzJ), Jf, 
+                  periodicity)
+
+    if any(is_periodic)
+        md = make_periodic(md, is_periodic)
+    end
+
+    return md
 end
 
 function recompute_geometry(rd::RefElemData{Dim}, xyz) where {Dim}

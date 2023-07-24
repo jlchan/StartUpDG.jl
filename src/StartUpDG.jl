@@ -1,4 +1,4 @@
-module StartUpDG
+module StartUpDG 
 
 using Reexport: @reexport
 
@@ -6,7 +6,7 @@ using ConstructionBase: ConstructionBase
 using FillArrays: Ones, Zeros, Fill
 using HDF5: h5open # used to read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
-using LinearAlgebra: cond, diagm, eigvals, Diagonal, I, mul!, norm, qr, ColumnNorm
+using LinearAlgebra: cond, diagm, eigvals, Diagonal, UniformScaling, I, mul!, norm, qr, ColumnNorm, Symmetric
 using NodesAndModes: meshgrid, find_face_nodes, face_vertices
 @reexport using NodesAndModes # for basis functions
 using PathIntersections: PathIntersections
@@ -20,11 +20,14 @@ using SparseArrays: sparse, droptol!, blockdiag
 using Triangulate: Triangulate, TriangulateIO, triangulate
 @reexport using WriteVTK
 
+@inline mean(x) = sum(x) / length(x)
+
 # reference element utility functions
 include("RefElemData.jl")
 
 include("RefElemData_polynomial.jl")
-export RefElemData, Polynomial, Gauss
+export RefElemData, Polynomial
+export TensorProductQuadrature, Gauss
 
 include("RefElemData_TensorProductWedge.jl")
 export TensorProductWedge
@@ -72,7 +75,10 @@ export num_mortars_per_face, NonConformingQuadMeshExample
 include("mesh/simple_meshes.jl")
 export uniform_mesh
 include("mesh/gmsh_utilities.jl")
-export readGmsh2D, readGmsh2D_v4, MeshImportOptions
+export read_Gmsh_2D # unifies v2.2.8 and v4.1 mesh reading
+export readGmsh2D, readGmsh2D_v4 # TODO: deprecate
+export read_Gmsh_2D_v2, read_Gmsh_2D_v4 
+export MeshImportOptions 
 include("mesh/hohqmesh_utilities.jl")
 export read_HOHQMesh
 

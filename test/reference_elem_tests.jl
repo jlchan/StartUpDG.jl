@@ -4,24 +4,19 @@
 
     N = 2
     @testset "Interval" begin
-        rd = RefElemData(Line(),N)
+        rd = RefElemData(Line(), N)
         @test rd.r == rd.rst[1]
         @test rd.Np == length(rd.r)
         @test abs(sum(rd.rq .* rd.wq)) < tol 
         @test rd.nrJ ≈ [-1,1]
         @test rd.Pq * rd.Vq ≈ I
-        @test rd.r[rd.Fmask[:]] ≈ rd.rf
-        @suppress begin # suppress warnings
-            @test invoke(inverse_trace_constant, Tuple{RefElemData},rd) ≈ inverse_trace_constant(rd)
-        end
+        @test rd.r[rd.Fmask[:]] ≈ rd.rf        
+        @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd)        
         @test propertynames(rd)[1] == :element_type
-
-        # test for deprecated CamlCase approximationType usage
-        @test rd.approximationType == rd.approximation_type
     end
 
     @testset "Triangle" begin
-        rd = RefElemData(Tri(),N)
+        rd = RefElemData(Tri(), N)
         @test rd.r == rd.rst[1]
         @test rd.Np == length(rd.r)  
         @test rd.Nq == length(rd.rq)    
@@ -32,9 +27,7 @@
         Vfp = vandermonde(Line(), N, quad_nodes(Line(), N)[1]) / vandermonde(Line(), N, nodes(Line(), N))
         rstf = (x->Vfp * x[reshape(rd.Fmask, rd.Nfq ÷ rd.Nfaces, rd.Nfaces)]).(rd.rst)
         @test all(vec.(rstf) .≈ rd.rstf)
-        @suppress begin # suppress warnings
-            @test invoke(inverse_trace_constant,Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
-        end
+        @test StartUpDG.eigenvalue_inverse_trace_constant(rd)  ≈ inverse_trace_constant(rd)
         @test propertynames(rd)[1] == :element_type
 
         @test StartUpDG.num_vertices(Tri()) == 3
@@ -53,10 +46,8 @@
         @test rd.Pq * rd.Vq ≈ I
         Vfp = vandermonde(Line(), N, quad_nodes(Line(), N)[1]) / vandermonde(Line(), N, nodes(Line(), N))
         rstf = (x->Vfp * x[reshape(rd.Fmask,rd.Nfq÷rd.Nfaces,rd.Nfaces)]).(rd.rst)
-        @test all(vec.(rstf) .≈ rd.rstf)
-        @suppress begin # suppress warnings
-            @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)    
-        end
+        @test all(vec.(rstf) .≈ rd.rstf)        
+        @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd)    
 
         @test StartUpDG.num_vertices(Quad()) == 4
         @test StartUpDG.num_faces(Quad()) == 4
@@ -80,12 +71,7 @@
         @test abs(sum(rd.wf .* rd.ntJ)) < tol
         @test rd.Pq * rd.Vq ≈ I
 
-        # @suppress begin # suppress warnings
-        #     trace_constant_1 = invoke(inverse_trace_constant, Tuple{RefElemData}, rd)
-        #     trace_constant_2 = inverse_trace_constant(rd)
-        #     @test_skip trace_constant_1 ≈ trace_constant_2 # currently broken on Windows Julia 1...
-        # end
-        # TODO: test interpolation of Fmask matches rd.rstf.
+        @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd) # currently broken on Windows Julia 1...
 
         @test StartUpDG.num_vertices(Hex()) == 8
         @test StartUpDG.num_faces(Hex()) == 6
@@ -108,9 +94,7 @@
         @test abs(sum(rd.wf .* rd.nsJ)) < tol
         @test abs(sum(rd.wf .* rd.ntJ)) < tol
         @test rd.Pq * rd.Vq ≈ I
-        @suppress begin # suppress warnings
-            @test invoke(inverse_trace_constant, Tuple{RefElemData}, rd) ≈ inverse_trace_constant(rd)
-        end
+        @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd)
 
         @test StartUpDG.num_vertices(Tet()) == 4
         @test StartUpDG.num_faces(Tet()) == 4
@@ -176,9 +160,66 @@
         @test inverse_trace_constant(rd) ≈ 18.56357670538197
     end
 
-    @testset "Misc Pyr" begin
+    @testset "Pyr" begin
+        rd = RefElemData(Pyr(), N)
+        
+        @test propertynames(rd)[1] == :element_type
+        @test rd.r == rd.rst[1]
+        @test rd.s == rd.rst[2]
+        @test rd.t == rd.rst[3]
+
+        @test rd.rf == rd.rstf[1]    
+        @test rd.sf == rd.rstf[2]
+        @test rd.tf == rd.rstf[3] 
+
+        @test rd.rq == rd.rstq[1]    
+        @test rd.sq == rd.rstq[2]
+        @test rd.tq == rd.rstq[3] 
+
+        @test rd.rp == rd.rstp[1]    
+        @test rd.sp == rd.rstp[2]
+        @test rd.tp == rd.rstp[3] 
+
+        @test isapprox(rd.rf, rd.Vf * rd.r)
+        @test isapprox(rd.rq, rd.Vq * rd.r)
+
+        @test isapprox(rd.sf, rd.Vf * rd.s)
+        @test isapprox(rd.sq, rd.Vq * rd.s)
+
+        @test isapprox(rd.tf, rd.Vf * rd.t)
+        @test isapprox(rd.tq, rd.Vq * rd.t)
+
+        @test rd.Np == length(rd.r)  
+        @test rd.Nq == length(rd.rq)
+        
+        @test abs(sum(rd.wf .* rd.nrJ)) < tol
+        @test abs(sum(rd.wf .* rd.nsJ)) < tol
+        @test abs(sum(rd.wf .* rd.ntJ)) < tol
+
+        (; node_ids_by_face) = rd.element_type
+        @test sum(rd.wf[node_ids_by_face[1]]) ≈ 2
+        @test sum(rd.wf[node_ids_by_face[3]]) ≈ 2
+        # Note: this is not the true area of faces 2 and 4. Because we map 
+        # all faces back to the reference face, there is a factor of sqrt(2) 
+        # difference from the true area. 
+        @test sum(rd.wf[node_ids_by_face[2]]) ≈ 2
+        @test sum(rd.wf[node_ids_by_face[4]]) ≈ 2
+        @test sum(rd.wf[node_ids_by_face[5]]) ≈ 4
+
+        @test rd.Pq * rd.Vq ≈ I
+        
+        # 1/2 * base * height, where base = 4 and 
+        # height = 2 for a biunit right pyramid.
+        @test sum(rd.wq) ≈ 8/3
+        
         @test StartUpDG.num_faces(Pyr()) == 5
         @test StartUpDG.num_vertices(Pyr()) == 5
+
+        @test face_type(Pyr(), 1) == Tri()
+        @test face_type(Pyr(), 5) == Quad()
+        @test inverse_trace_constant(rd) ≈ 17.524350232967805
+
+        @test StartUpDG._short_typeof(rd.element_type) == "Pyr"
     end
 end
 
@@ -256,14 +297,32 @@ inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}
         @test face_type(Wedge(), 4) == Tri()
         @test face_type(Wedge(), 5) == Tri()
 
+        @test StartUpDG._short_typeof(rd.element_type) == "Wedge"
+
         @test inverse_trace_constant(rd) ≈ inverse_trace_constant_compare(rd)[line_grad][tri_grad]
         end
     end
 end
 
-ndims(::Line) = 1
-ndims(::Quad) = 2
-ndims(::Hex) = 3
+@testset "TensorProductQuadrature on Hex" begin
+    N = 2
+    rd = RefElemData(Hex(), TensorProductQuadrature(quad_nodes(Line(), N+1)), N)
+    rd_ref = RefElemData(Hex(), N; quad_rule_vol=quad_nodes(Hex(), N+1), quad_rule_face=quad_nodes(Quad(), N+1))
+
+    @test typeof(rd) == typeof(RefElemData(Hex(), Polynomial(TensorProductQuadrature(quad_nodes(Line(), N+1))), N))
+
+    for prop in [:N, :element_type]        
+        @test getproperty(rd, prop) == getproperty(rd_ref, prop)
+    end
+    
+    for prop in [:fv, :rst, :rstp, :rstq, :rstf, :nrstJ, :Drst]
+        @test all(getproperty(rd, prop) .≈ getproperty(rd_ref, prop))
+    end
+
+    for prop in [:Fmask, :VDM, :V1, :wq, :Vq, :wf, :Vf, :Vp, :M, :Pq, :LIFT]
+        @test norm(getproperty(rd, prop) - getproperty(rd_ref, prop)) < 1e4 * eps()
+    end
+end
 
 @testset "Tensor product Gauss collocation" begin
     N = 3
@@ -271,6 +330,7 @@ ndims(::Hex) = 3
         rd = RefElemData(element_type, Polynomial{Gauss}(), N)
 
         # test that quadrature is equivalent to interpolation
+        @test StartUpDG._short_typeof(rd.approximation_type) == "Polynomial{Gauss}"
         @test size(rd.Vq, 1) == size(rd.Vq, 2)        
         @test length(rd.wq) == (N+1)^ndims(element_type)
     end
@@ -325,3 +385,9 @@ end
     end
 end
 
+@testset "RefElemData SBP keyword arguments" begin
+    for elem in [Line(), Tri(), Quad(), Hex()]
+        # make sure Nplot is accepted as a kwarg
+        @test_nowarn rd = RefElemData(elem, SBP(), 1; Nplot=11)
+    end
+end
