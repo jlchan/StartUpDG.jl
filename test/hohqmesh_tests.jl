@@ -40,8 +40,9 @@
     @test sum(md.wJq) ≈ 1.0
 
     # Tet meshes
-    filename = "testset_HOHQMesh_meshes/MSMappedTet4P4.mesh"
+    filename = "testset_HOHQMesh_meshes/TetMesh44.mesh"
     @test_nowarn hmd = read_HOHQMesh(filename, Tet())
-    # rd = RefElemData(Tet(), 4)
-    # md = MeshData(hmd, rd)
+    rd = RefElemData(Tet(), 4)
+    md = MeshData(hmd, rd)
+    @test all(md.J .> 0)
 end
