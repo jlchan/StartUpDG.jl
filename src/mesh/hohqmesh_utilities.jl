@@ -20,6 +20,7 @@ vertex_reordering(::Tri) = SVector(1, 3, 2)
 # for more details on HOHQMesh's face ordering. 
 get_HOHQMesh_to_StartUpDG_face_ordering(::Quad) = SVector(3, 2, 4, 1) 
 get_HOHQMesh_to_StartUpDG_face_ordering(::Tri) = SVector(1, 2, 3) 
+get_HOHQMesh_to_StartUpDG_face_ordering(::Tet) = 1:4
 
 function get_HOHQMesh_ids(::Quad, curved_faces, f_HOHQMesh, f, polydeg) 
     active_face_offset = max.(0, cumsum(curved_faces) .- 1) * (polydeg + 1)
@@ -169,8 +170,8 @@ end
 
 vertex_reordering(::Tet) = SVector(1, 2, 3, 4)
 function get_HOHQMesh_ids(::Tet, curved_faces, f_HOHQMesh, f, polydeg) 
-    active_face_offset = max.(0, cumsum(curved_faces) .- 1) * (polydeg + 1)
-    return (1:polydeg+1) .+ active_face_offset[f_HOHQMesh]
+    num_face_nodes = (polydeg + 1)^2
+    return (1:num_face_nodes) .+ (f_HOHQMesh - 1) * num_face_nodes #active_face_offset[f_HOHQMesh]
 end
 
 function abtors(a, b)
@@ -179,12 +180,11 @@ function abtors(a, b)
     return r, s
 end
 
+# for tetrahedral meshes
 function MeshData(hmd::HOHQMeshData{3}, rd::RefElemData{3, <:Tet})
     (; VXYZ, EToV) = hmd    
     md = MeshData(VXYZ, EToV[:, vertex_reordering(rd.element_type)], rd)
 
-    return md
-    
     # interpolation matrix from chebyshev_to_lobatto nodes
     a_chebyshev = vec([-cos(j * pi / hmd.polydeg) for j in 0:hmd.polydeg, i in 0:hmd.polydeg])
     b_chebyshev = vec([-cos(j * pi / hmd.polydeg) for i in 0:hmd.polydeg, j in 0:hmd.polydeg])
@@ -193,10 +193,16 @@ function MeshData(hmd::HOHQMeshData{3}, rd::RefElemData{3, <:Tet})
     chebyshev_to_lobatto = 
         vandermonde(face_type(rd.element_type), hmd.polydeg, nodes(face_type(rd.element_type), rd.N)...) / vandermonde(face_type(rd.element_type), hmd.polydeg, r_chebyshev, s_chebyshev)
 
-    warp_face_nodes_to_volume_nodes = 
-        face_basis(rd.element_type, rd.N, rd.rst...) / face_basis(rd.element_type, rd.N, rd.r[rd.Fmask], rd.s[rd.Fmask], rd.t[rd.Fmask])
+    # permute rows of chebyshev_to_lobatto according to the permutation between StartUpDG rd.Fmask 
+    # ordering  and nodes(face_type(Tet())) ordering
+    Fmask = reshape(rd.Fmask, :, 4) # 4 = number of tet faces
+    rf, sf = nodes(face_type(rd.element_type), rd.N)
+    rFmask, sFmask = rd.r[Fmask[:, 4]], rd.s[Fmask[:, 4]] # use face 4 nodes for which t = -1
+    permuted_face_ids = match_coordinate_vectors((rf, sf), (rFmask, sFmask))    
+    chebyshev_to_lobatto = chebyshev_to_lobatto[permuted_face_ids, :]                
 
-            
+    warp_face_nodes_to_volume_nodes = 
+        face_basis(rd.element_type, rd.N, rd.rst...) / face_basis(rd.element_type, rd.N, rd.r[rd.Fmask], rd.s[rd.Fmask], rd.t[rd.Fmask])            
 
     HOHQMesh_to_StartUpDG_face_ordering = get_HOHQMesh_to_StartUpDG_face_ordering(rd.element_type)
     curved_face_coordinates = ntuple(_ -> similar(reshape(md.x[rd.Fmask, 1], :, rd.num_faces)), 3)
@@ -227,12 +233,13 @@ function MeshData(hmd::HOHQMeshData{3}, rd::RefElemData{3, <:Tet})
     end
 
     md_curved = MeshData(rd, md, x, y, z) 
-
+    
     # find boundary tags
-    boundary_strings = unique(hmd.boundary_tags)
+    boundary_tags = hmd.boundary_tags[:, 1:num_faces(rd.element_type)] # ignore `#undef` entries in last columns 5 and 6
+    boundary_strings = unique(boundary_tags)
     deleteat!(boundary_strings, findfirst(boundary_strings .=== "---")) # remove non-boundary faces
     face_indices = [map(x -> global_face_index(x, rd.num_faces, HOHQMesh_to_StartUpDG_face_ordering), 
-                        findall(hmd.boundary_tags .== name)) for name in boundary_strings]
+                        findall(boundary_tags .== name)) for name in boundary_strings]
     boundary_faces = NamedTuple(Pair.(Symbol.(boundary_strings), face_indices))
 
     return @set md_curved.mesh_type = HOHQMeshType(hmd, boundary_faces)
@@ -256,7 +263,7 @@ end
 struct CurvedHOHQMeshElement
     element::Int
     curved_faces::Vector{Int}
-    curved_edge_coordinates::Matrix{Float64}
+    curved_edge_coordinates::Matrix{Float64} # TODO: change this to curved_face_coordinates for 2D/3D consistency 
 end
 
 # for hexes and quads
