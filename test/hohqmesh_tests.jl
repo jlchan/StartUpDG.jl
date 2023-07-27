@@ -45,5 +45,4 @@
     rd = RefElemData(Tet(), 4)
     md = MeshData(hmd, rd)
     @test all(md.J .> 0)
-    # TODO: implement curved reader 
 end
