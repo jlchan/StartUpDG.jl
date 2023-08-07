@@ -245,7 +245,7 @@ function MeshData(hmd::HOHQMeshData{3}, rd::RefElemData{3, <:Tet})
     return @set md_curved.mesh_type = HOHQMeshType(hmd, boundary_faces)
 end
 
-function read_HOHQMesh(filename::String)
+function read_HOHQMesh(filename::String, element_type=Quad())
     f = open(filename)
     lines = readlines(f)
 
