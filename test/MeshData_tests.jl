@@ -1,11 +1,11 @@
 @testset "1D and 2D MeshData tests" begin 
-    @testset "$approxType MeshData initialization" for approxType = [Polynomial(), SBP()]
+    @testset "$approx_type MeshData initialization" for approx_type = [Polynomial(), SBP()]
         @testset "1D mesh initialization" begin
             tol = 5e2*eps()
 
             N = 3
             K1D = 2
-            rd = RefElemData(Line(), approxType, N)        
+            rd = RefElemData(Line(), approx_type, N)        
             md = MeshData(uniform_mesh(Line(), K1D)..., rd)
             (; wq, Dr, Vq, Vf, wf  ) = rd
             (; Nfaces  ) = rd
@@ -50,6 +50,9 @@
             u = @. sin(pi * (.5 + x))
             uf = Vf * u
             @test uf ≈ uf[mapP]
+            
+            md = MeshData(uniform_mesh(Line(), K1D)..., rd; is_periodic=true)
+            @test isempty(md.mapB)
         end
 
         @testset "2D tri mesh initialization" begin
@@ -57,7 +60,7 @@
 
             N = 3
             K1D = 2
-            rd = RefElemData(Tri(), approxType, N)
+            rd = RefElemData(Tri(), approx_type, N)
             md = MeshData(uniform_mesh(Tri(), K1D)..., rd)
             (; wq, Dr, Ds, Vq, Vf, wf  ) = rd
             Nfaces = length(rd.fv)
@@ -118,13 +121,17 @@
             @test sum(norm.(md2.rstxyzJ .- md.rstxyzJ)) < tol
             @test sum(norm.(md2.nxyzJ .- md.nxyzJ)) < tol
             @test all(md2.xyzf .≈ (x->x .+ 1).(md.xyzf))
+
+            md = MeshData(uniform_mesh(rd.element_type, K1D)..., rd; is_periodic=true)
+            @test isempty(md.mapB)
+
         end
 
         @testset "2D quad mesh initialization" begin
             tol = 5e2*eps()
 
             N, K1D = 3, 2
-            rd = RefElemData(Quad(), approxType, N)        
+            rd = RefElemData(Quad(), approx_type, N)        
             md = MeshData(uniform_mesh(Quad(), K1D)..., rd)
             (; wq, Dr, Ds, Vq, Vf, wf  ) = rd
             Nfaces = length(rd.fv)
@@ -178,6 +185,10 @@
             u = @. sin(pi * (.5 + x)) * sin(pi * (.5 + y))
             uf = Vf * u
             @test uf ≈ uf[mapP]
+
+            md = MeshData(uniform_mesh(rd.element_type, K1D)..., rd; is_periodic=true)
+            @test isempty(md.mapB)
+
         end
 
         @testset "2D curved tests" begin
@@ -200,7 +211,8 @@ end
 approx_elem_types_to_test = [(Polynomial(), Hex()), 
                              (SBP(), Hex()), 
                              (Polynomial(), Tet()),
-                             (Polynomial(), Wedge())]
+                             (Polynomial(), Wedge()),
+                             (Polynomial(), Pyr())]
 @testset "3D MeshData tests" begin 
     @testset "$approximation_type $element_type MeshData initialization" for (approximation_type, element_type) in approx_elem_types_to_test
         tol = 5e2*eps()
@@ -220,7 +232,6 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         @test md.x == md.xyz[1]
 
         # check positivity of Jacobian
-        # @show J[1,:]
         @test all(J .> 0)
         h = estimate_h(rd, md)        
         @test h <= 2 / K1D + tol
@@ -272,8 +283,12 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         (; mapP  ) = md_periodic
         uf = Vf * u
         @test uf ≈ uf[mapP] 
+
+        md = MeshData(uniform_mesh(rd.element_type, K1D)..., rd; is_periodic=true)
+        @test isempty(md.mapB)
         
     end
+    
     @testset "TensorProductWedge MeshData" begin
         element_type = Wedge()
         tol = 5e2*eps()
@@ -293,6 +308,7 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
                 (; nxJ, nyJ, nzJ, sJ  ) = md
                 (; FToF, mapM, mapP, mapB  ) = md
 
+                @test StartUpDG._short_typeof(rd.approximation_type) == "TensorProductWedge{Polynomial, Polynomial}"
                 @test typeof(md.mesh_type) <: StartUpDG.VertexMappedMesh{<:typeof(rd.element_type)}
                 @test md.x == md.xyz[1]
                 @test md.y == md.xyz[2]
@@ -351,6 +367,10 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
                 (; mapP  ) = md_periodic
                 uf = Vf * u
                 @test uf ≈ uf[mapP] 
+
+                md = MeshData(uniform_mesh(rd.element_type, K1D)..., rd; is_periodic=true)
+                @test isempty(md.mapB)
+    
             end
         end
     end

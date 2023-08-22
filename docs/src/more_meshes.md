@@ -1,6 +1,6 @@
 # Additional mesh types
 
-In addition to more "standard" mesh types, StartUpDG.jl also has experimental supoprt for hybrid and cut-cell meshes. Both are currently restricted to two dimensions.
+In addition to more "standard" mesh types, StartUpDG.jl also has experimental support for hybrid and cut-cell meshes. Both are currently restricted to two dimensional domains.
 
 ## Hybrid meshes
 
@@ -56,8 +56,8 @@ The `mapP` field behaves similarly. If we interpolate the values of `u` for each
 quadrature nodes, we can use `mapP` to linearly index into the array to find neighbors. 
 ```julia
 uf = similar(md.xf)
-uf.Quad .= rds[Quad()].Vf * u.Quad
-uf.Tri .= rds[Tri()].Vf * u.Tri
+uf.Quad .= rds.Quad.Vf * u.Quad
+uf.Tri .= rds.Tri.Vf * u.Tri
 uf[md.mapP] # this returns the exterior node values
 ```
 

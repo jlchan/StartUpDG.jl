@@ -60,16 +60,6 @@ ConstructionBase.getproperties(rd::RefElemData) =
        rstq=rd.rstq, wq=rd.wq, Vq=rd.Vq, rstf=rd.rstf, wf=rd.wf, Vf=rd.Vf, nrstJ=rd.nrstJ, 
        M=rd.M, Pq=rd.Pq, Drst=rd.Drst, LIFT=rd.LIFT)
 
-function Base.show(io::IO, ::MIME"text/plain", rd::RefElemData)
-    @nospecialize rd
-    print(io,"RefElemData for a degree $(rd.N) $(rd.approximation_type) approximation on $(rd.element_type) element.")
-end
-
-function Base.show(io::IO, rd::RefElemData)
-    @nospecialize basis # reduce precompilation time
-    print(io,"RefElemData{N=$(rd.N), $(rd.approximation_type), $(rd.element_type)}.")
-end
-
 _propertynames(::Type{RefElemData}, private::Bool = false) = (:num_faces, :Np, :Nq, :Nfq)
 function Base.propertynames(x::RefElemData{1}, private::Bool=false) 
     return (fieldnames(RefElemData)..., _propertynames(RefElemData)...,
@@ -137,12 +127,6 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbo
         return length(getfield(x, :rstq)[1])
     elseif s==:Nfq
         return length(getfield(x, :rstf)[1])
-
-    # CamlCase will be deprecated in the next breaking release v0.17
-    elseif s==:approximationType
-        @warn "RefElemData property `approximationType` is deprecated and will be removed in v0.17. " * 
-              "Please use `approximation_type` instead."
-        return getfield(x, :approximation_type)
     else
         return getfield(x, s)
     end
@@ -150,20 +134,20 @@ end
 
 """
     function RefElemData(elem; N, kwargs...)
-    function RefElemData(elem, approxType; N, kwargs...)
+    function RefElemData(elem, approx_type; N, kwargs...)
 
 Keyword argument constructor for RefElemData (to "label" `N` via `rd = RefElemData(Line(), N=3)`)
 """
 RefElemData(elem; N, kwargs...) = RefElemData(elem, N; kwargs...)
-RefElemData(elem, approxType; N, kwargs...) = RefElemData(elem, approxType, N; kwargs...)
+RefElemData(elem, approx_type; N, kwargs...) = RefElemData(elem, approx_type, N; kwargs...)
 
 # default to Polynomial-type RefElemData
 RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs...)
 
 
 @inline Base.ndims(::Line) = 1
-@inline Base.ndims(::Union{Tri,Quad}) = 2
-@inline Base.ndims(::Union{Tet,Hex}) = 3
+@inline Base.ndims(::Union{Tri, Quad}) = 2
+@inline Base.ndims(::Union{Tet, Hex}) = 3
 
 @inline num_vertices(::Tri) = 3
 @inline num_vertices(::Union{Quad, Tet}) = 4
@@ -189,23 +173,44 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 # last two faces are triangles.
 @inline face_type(::Wedge, id) = (id <= 3) ? Quad() : Tri()
 
+# Pyramids have different types of faces depending on the face. 
+# We define the first four faces to be triangles and the 
+# last face to be a quadrilateral. 
+@inline face_type(::Pyr, id) = (id <= 4) ? Tri() : Quad()
 
 # ====================================================
 #          RefElemData approximation types
 # ====================================================
 
 """
-    `Polynomial{T}`
+    Polynomial{T}
 
 Represents polynomial approximation types (as opposed to finite differences). 
 By default, `Polynomial()` constructs a `Polynomial{StartUpDG.DefaultPolynomialType}`.
 Specifying a type parameters allows for dispatch on additional structure within a
 polynomial approximation (e.g., collocation, tensor product quadrature, etc). 
 """
-struct Polynomial{T} end 
+struct Polynomial{T} 
+    data::T
+end 
 
 struct DefaultPolynomialType end
-Polynomial() = Polynomial{DefaultPolynomialType}()
+Polynomial() = Polynomial{DefaultPolynomialType}(DefaultPolynomialType())
+
+"""
+    TensorProductQuadrature{T}
+
+A type parameter to `Polynomial` indicating that 
+"""
+struct TensorProductQuadrature{T}
+    quad_rule_1D::T  # 1D quadrature nodes and weights (rq, wq)
+end
+
+TensorProductQuadrature(r1D, w1D) = TensorProductQuadrature((r1D, w1D))
+
+# Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
+struct Gauss end 
+Polynomial{Gauss}() = Polynomial(Gauss())
 
 # ========= SBP approximation types ============
 
@@ -236,10 +241,33 @@ struct SBP{Type} end
 SBP() = SBP{DefaultSBPType}() # no-parameter default
 
 # sets default to TensorProductLobatto on Quads 
-RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N) = 
-    RefElemData(elem, SBP{TensorProductLobatto}(), N)
+RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N; kwargs...) = 
+    RefElemData(elem, SBP{TensorProductLobatto}(), N; kwargs...)
 
 # sets default to Kubatko{LobattoFaceNodes} on Tris
-RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N) = 
-    RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N)
+RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N; kwargs...) = 
+    RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N; kwargs...)
 
+# ====================================
+#              Printing 
+# ====================================
+
+function Base.show(io::IO, ::MIME"text/plain", rd::RefElemData)
+    @nospecialize rd
+    print(io,"RefElemData for a degree $(rd.N) $(_short_typeof(rd.approximation_type)) " * 
+             "approximation on a $(_short_typeof(rd.element_type)) element.")
+end
+
+function Base.show(io::IO, rd::RefElemData)
+    @nospecialize basis # reduce precompilation time
+    print(io,"RefElemData{N=$(rd.N), $(_short_typeof(rd.approximation_type)), $(_short_typeof(rd.element_type))}.")
+end
+
+_short_typeof(x) = typeof(x)
+
+_short_typeof(approx_type::Wedge) = "Wedge"
+_short_typeof(approx_type::Pyr) = "Pyr"
+
+_short_typeof(approx_type::Polynomial{<:DefaultPolynomialType}) = "Polynomial"
+_short_typeof(approx_type::Polynomial{<:Gauss}) = "Polynomial{Gauss}"
+_short_typeof(approx_type::Polynomial{<:TensorProductQuadrature}) = "Polynomial{TensorProductQuadrature}"

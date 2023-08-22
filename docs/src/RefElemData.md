@@ -1,7 +1,7 @@
 # `RefElemData` type
 
 [`RefElemData`](@ref) contains the following fields
-* `element_type::AbstractElemShape`: element shape. `Line, Tri, Quad, Hex, Tet` currently supported.
+* `element_type::AbstractElemShape`: element shape. `Line, Tri, Quad, Hex, Wedge, Pyr, Tet` currently supported.
 * `approximation_type`: approximation type. Defaults to `Polynomial()`, but `SBP()` is also supported (see [RefElemData based on SBP finite differences](@ref)).
 * `Nfaces`: number of faces on a given type of reference element.
 * `fv`: list of vertices defining faces, e.g., `[1,2], [2,3], [3,1]` for a triangle
@@ -22,15 +22,23 @@ Mass, differentiation, lifting, and interpolation matrices can be specialized. F
 
 # Setting up `rd::RefElemData`
 
-The struct `rd::RefElemData` contains data for a given element type. Currently, five types of reference elements are supported: `Line`, `Tri`, `Quad`, `Tet`, and `Hex`.
+The struct `rd::RefElemData` contains data for a given element type. All common reference elements are supported: `Line`, `Tri`, `Quad`, `Tet`, `Pyr`, `Wedge`, and `Hex`.
 
 To initalize a `RefElemData`, just specify the element type and polynomial degree.
 ```julia
 N = 3
+
+# 1D elements 
 rd = RefElemData(Line(), N)
+
+# 2D elements
 rd = RefElemData(Tri(), N)
 rd = RefElemData(Quad(), N)
+
+# 3D elements
 rd = RefElemData(Tet(), N)
+rd = RefElemData(Pyr(), N)
+rd = RefElemData(Wedge(), N)
 rd = RefElemData(Hex(), N)
 ```
 
@@ -49,9 +57,18 @@ wq = @. wr * ws
 rd = RefElemData(Quad(), N; quad_rule_vol = (rq, sq, wq),  
                            quad_rule_face = (r1D, w1D))
 ```
-This results in a DG spectral element method (DG-SEM) discretization, with a diagonal lumped mass matrix and differentiation matrices which satisfy a summation-by-parts property.
+This results in a DG spectral element method (DG-SEM) discretization, with a diagonal lumped mass matrix and differentiation matrices which satisfy a summation-by-parts property. 
 
-By default, `RefElemData` is constructed for a nodal basis (in order to facilitate curved meshes, connectivity, etc). There is not functionality to change interpolation nodes, since these transformations can be performed as algebraic changes of basis after setting up a `RefElemData`. 
+By default, `RefElemData` is constructed for a nodal basis (in order to facilitate curved meshes, connectivity, etc). The interpolation nodes are computed using an [interpolatory](https://doi.org/10.1137/141000105) version of the [warp-and-blend](https://doi.org/10.1007/s10665-006-9086-6) procedure. 
+
+!!! note
+    While specifying the quadrature rule changes the discretization, it is not reflected in the `RefElemData` type and thus cannot be specialized on. The following constructors produce `RefElemData` where the quadrature structure is reflected in the type parameters:
+    ```julia
+    rd = RefElemData(Hex(), Polynomial(TensorProductQuadrature(quad_nodes(Line(), N+1)), N)) # tensor product quadrature rules
+    rd = RefElemData(Quad(), Polynomial{Gauss}(), N) # (N+1)^d point tensor product Gauss quadrature
+    ```
+
+
 
 ## `RefElemData` based on SBP finite differences
 
@@ -62,7 +79,10 @@ Some examples:
 N = 3
 rd = RefElemData(Quad(), SBP(), N) # defaults to SBP{TensorProductLobatto}
 rd = RefElemData(Quad(), SBP{TensorProductLobatto}(), N) 
-rd = RefElemData(Hex(),  SBP{TensorProductLobatto}(), N) 
+
+rd = RefElemData(Hex(), SBP(), N) # defaults to SBP{TensorProductLobatto}
+rd = RefElemData(Hex(), SBP{TensorProductLobatto}(), N) 
+
 rd = RefElemData(Tri(),  SBP(), N) # defaults to SBP{Kubatko{LobattoFaceNodes}}
 rd = RefElemData(Tri(),  SBP{Hicken}(), N) 
 rd = RefElemData(Tri(),  SBP{Kubatko{LobattoFaceNodes}}(), N) 
@@ -87,6 +107,6 @@ There is experimental support for `RefElemData`s created from tensor products of
 ```julia
 line = RefElemData(Line(), N_line)
 tri  = RefElemData(Tri(), N_tri)
-rd = RefElemData(Wedge(), TensorProductWedge(tri, line))
+rd   = RefElemData(Wedge(), TensorProductWedge(tri, line))
 ```
 This new `rd::RefElemData` can then be used to create a wedge-based `MeshData`. The individual `RefElemData` objects can be accessed from `rd.approximation_type::TensorProductWedge`. 

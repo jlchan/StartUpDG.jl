@@ -1,8 +1,6 @@
 # dimension of a cut cell polynomial space
 @inline Np_cut(N) = (N + 1) * (N + 2) ÷ 2 
 
-@inline mean(x) = sum(x) / length(x)
-
 """
     `PhysicalFrame{NDIMS} <: AbstractElemShape{NDIMS}`
     

@@ -113,3 +113,109 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, fil
     return vtk_save(vtkfile)
 end
 
+"""
+MeshData_to_vtk(md, rd, dim, data, dataname, datatype, filename, write_data = false, equi_dist_nodes = true)
+
+Translate the given mesh into a vtk-file.
+`md` holds a `MeshData` object
+`rd` holds a reference element data/`RefElemData` of a TensorProductWedge
+`data` holds an array of arrays (of size `num_nodes` by `num_elements`) with plotting data
+`dataname` is an array of strings with name of the associated data
+`write_data`, flag if data should be written or not (e.g., if data is not written, only the mesh will be saved as output)
+`equi_dist_nodes` flag if points should be interpolated to equidstant nodes
+"""
+function MeshData_to_vtk(md::MeshData, rd::RefElemData{3, <:Wedge, <:TensorProductWedge}, data, dataname, filename, 
+                    write_data = false, equi_dist_nodes = true)
+    # Number of nodes in the triangular base
+    num_tri_nodes = length(rd.approximation_type.tri.r)
+    # Number of all wedges in the mesh
+    num_wedge_nodes = length(rd.r)
+    # Array to fill with the connectivity data for vtk
+    node_connection = Vector{Int}[]
+    # Shift for the number of nodes of the wedges we already computed
+    wedge_add = 0
+    for elems in 1:md.num_elements
+        # Iterate of the number of `levels` in the TensorProductWedge. Each level produces a new set of linear 'VTK_WEDGE'
+        # The node-ids increase columnwise. 
+        for k in 1:rd.N[1]
+            # A shift for the colums already passed. 
+            add = 0
+            # A shift to the buttom of the current wedge. 
+            bottom = (k-1)*num_tri_nodes
+            # A shift to the top of the current wedge. 
+            top = k*num_tri_nodes
+            # i and j iterate over the triangular base of the wedge. 
+            for i in rd.N[2]+1:-1:1
+                for j in 1:i-1
+                    # 3 buttom and 3 top nodes form a wedge. 
+                    push!(node_connection, [j+add+bottom + wedge_add, j+1+add+bottom + wedge_add, j+i+add+bottom + wedge_add, j+add+top + wedge_add, j+1+add+top + wedge_add, j+i+add+top + wedge_add])
+                    if j!=i && j!=1
+                        push!(node_connection,  [j+add+bottom + wedge_add, j+i+add+bottom + wedge_add, j+i+add-1+bottom + wedge_add, j+add+top + wedge_add, j+i+add+top + wedge_add, j+i+add-1+top + wedge_add])
+                    end
+                end
+                add = add + i
+            end
+        end
+        wedge_add = wedge_add + num_wedge_nodes
+    end
+
+    # The total number of written vtk-elements is higher than the number of md.num_elements
+    total_num_elems = length(node_connection)
+    vtk_cell_type = VTKCellTypes.VTK_WEDGE
+    # Fill the cells-Array for VTK
+    cells = [MeshCell(vtk_cell_type, node_connection[i]) for i in 1:total_num_elems]
+    # Coordinates for VTK
+    
+
+    if equi_dist_nodes
+        # Construct an interpolation matrix for the triangular basis. 
+        tri_interpolate = vandermonde(rd.approximation_type.tri.element_type, rd.approximation_type.tri.N, equi_nodes(rd.approximation_type.tri.element_type, rd.approximation_type.tri.N)...)/rd.approximation_type.tri.VDM
+        # Construct an interpolation matrix for the linear basis
+        line_interpolate = vandermonde(rd.approximation_type.line.element_type, rd.approximation_type.line.N, collect(LinRange(-1, 1, rd.approximation_type.line.N+1))) / rd.approximation_type.line.VDM
+        
+        # storage for the equi-distant nodes
+        coords = (similar(md.x), similar(md.y), similar(md.z))
+
+        # Get the number of points per element 
+        tri_num_points = length(rd.approximation_type.tri.r)
+        line_num_points = length(rd.approximation_type.line.r)
+
+        # equi-distant nodes for triangular basis (hence only consider x-y-coords. )
+        for dim in 1:2
+            # iterate over all elements
+            for elem in 1:md.num_elements
+                for i in 1:line_num_points
+                    # interpolate each slice of the wedge
+                    range = ((i-1)*tri_num_points + 1):(i*tri_num_points)
+                    coords[dim][range, elem] = tri_interpolate * md.xyz[dim][range, elem]
+                end
+            end
+        end  
+
+        # equi-distant nodes for linear basis (hence only consider z-coords)
+        for elem in 1:md.num_elements
+            # Get the z-coord of each wedge-slice
+            z_coords = [md.z[(i-1)*tri_num_points + 1, elem] for i in 1:line_num_points]
+            # interpolate
+            z_tmp = line_interpolate * z_coords
+            # each slice has 'tri_num_points' nodes. repeat the z-value 'tri_num_points' times and add to z-coords. 
+            for i in 1:line_num_points
+                range = ((i-1)*tri_num_points + 1):(i*tri_num_points)
+                coords[3][range, elem] = fill(z_tmp[i], tri_num_points)
+            end
+        end
+        coords = vec.(coords)  
+    else
+        coords = vec.(md.xyz)
+    end
+    vtkfile = vtk_grid(filename, coords..., cells)
+    
+    if write_data
+        for i in 1:length(dataname)
+            vtkfile[dataname[i]] = data[i]
+        end
+    end
+    return vtk_save(vtkfile)
+end
+
+
