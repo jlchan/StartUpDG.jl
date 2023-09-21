@@ -197,13 +197,13 @@ function count_num_elements(forest)
 end
 
 num_elements = count_num_elements(forest)
-faces_per_element = zeros(Int, num_elements)
 
 # coordinates
 VX = [zeros(StartUpDG.num_vertices(rd.element_type)) for _ in 1:num_elements]
 VY = [zeros(StartUpDG.num_vertices(rd.element_type)) for _ in 1:num_elements]
 
 # count faces per element and get coordinates
+faces_per_element = zeros(Int, num_elements)
 current_element = 1
 num_mortar_faces = 0
 num_local_trees = t8_forest_get_num_local_trees(forest)
@@ -257,9 +257,9 @@ num_element_faces = sum(faces_per_element)
 FToF = collect(1:(num_element_faces + num_mortar_faces))
 nonconforming_faces = Int[]
 
-# t8code supplies these
-EToE = [[[1] for _ in 1:faces_per_element[e]] for e in 1:num_elements]
-EToF = [[[1] for _ in 1:faces_per_element[e]] for e in 1:num_elements]
+# # t8code supplies these
+# EToE = [[[1] for _ in 1:faces_per_element[e]] for e in 1:num_elements]
+# EToF = [[[1] for _ in 1:faces_per_element[e]] for e in 1:num_elements]
 
 # Loop over all local trees in the forest. 
 current_element = 1
@@ -287,8 +287,8 @@ for itree = 0:num_local_trees-1
       dual_faces    = 1 .+ unsafe_wrap(Array, dual_faces_ref[], num_neighbors)
       neighids      = 1 .+ unsafe_wrap(Array, neighids_ref[], num_neighbors)
 
-      EToE[current_element][iface] = neighids
-      EToF[current_element][iface] = dual_faces
+      # EToE[current_element][iface] = neighids
+      # EToF[current_element][iface] = dual_faces
 
       current_face = iface + face_offsets[current_element]
       if num_neighbors == 1 # then it's a conforming face
