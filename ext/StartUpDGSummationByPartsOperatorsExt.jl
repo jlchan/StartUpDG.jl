@@ -1,13 +1,16 @@
 module StartUpDGSummationByPartsOperatorsExt
+
+    using LinearAlgebra: LinearAlgebra, Diagonal, diag, norm, UniformScaling
+    using SparseArrays: sparse, droptol!
+
     using StartUpDG
+
     using SummationByPartsOperators
     using SummationByPartsOperators: AbstractDerivativeOperator,
                                      AbstractNonperiodicDerivativeOperator, DerivativeOperator,
                                      AbstractPeriodicDerivativeOperator,
                                      PeriodicDerivativeOperator, grid
 
-    using LinearAlgebra: LinearAlgebra, Diagonal, diag, norm, UniformScaling
-    using SparseArrays: sparse, droptol!
 
 
     function construct_1d_operators(D::AbstractDerivativeOperator, tol)
