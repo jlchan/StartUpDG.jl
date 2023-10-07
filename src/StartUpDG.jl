@@ -1,4 +1,4 @@
-module StartUpDG 
+module StartUpDG
 
 using Reexport: @reexport
 
@@ -6,7 +6,8 @@ using ConstructionBase: ConstructionBase
 using FillArrays: Ones, Zeros, Fill
 using HDF5: h5open # used to read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
-using LinearAlgebra: cond, diagm, eigvals, Diagonal, UniformScaling, I, mul!, norm, qr, ColumnNorm, Symmetric
+using LinearAlgebra:
+    cond, diagm, eigvals, Diagonal, UniformScaling, I, mul!, norm, qr, ColumnNorm, Symmetric
 using NodesAndModes: meshgrid, find_face_nodes, face_vertices
 @reexport using NodesAndModes # for basis functions
 using PathIntersections: PathIntersections
@@ -77,8 +78,8 @@ export uniform_mesh
 include("mesh/gmsh_utilities.jl")
 export read_Gmsh_2D # unifies v2.2.8 and v4.1 mesh reading
 export readGmsh2D, readGmsh2D_v4 # TODO: deprecate
-export read_Gmsh_2D_v2, read_Gmsh_2D_v4 
-export MeshImportOptions 
+export read_Gmsh_2D_v2, read_Gmsh_2D_v4
+export MeshImportOptions
 include("mesh/hohqmesh_utilities.jl")
 export read_HOHQMesh
 
@@ -104,16 +105,16 @@ export ck45 # LSERK 45
 using Requires: @require
 
 function __init__()
-  @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" begin
-    include("TriangulatePlots.jl")
-  end
-
-  # Until Julia v1.9 is the minimum required version for StartUpDG.jl, we still support Requires.jl
-  @static if !isdefined(Base, :get_extension)
-    @require SummationByPartsOperators="9f78cca6-572e-554e-b819-917d2f1cf240" begin
-        include("../ext/StartUpDGSummationByPartsOperatorsExt.jl")
+    @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" begin
+        include("TriangulatePlots.jl")
     end
-  end 
+
+    # Until Julia v1.9 is the minimum required version for StartUpDG.jl, we still support Requires.jl
+    @static if !isdefined(Base, :get_extension)
+        @require SummationByPartsOperators = "9f78cca6-572e-554e-b819-917d2f1cf240" begin
+            include("../ext/StartUpDGSummationByPartsOperatorsExt.jl")
+        end
+    end
 end
-  
+
 end # module
