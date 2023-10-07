@@ -107,13 +107,13 @@ function __init__()
   @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" begin
     include("TriangulatePlots.jl")
   end
-end
 
-# Until Julia v1.9 is the minimum required version for StartUpDG.jl, we still support Requires.jl
-@static if !isdefined(Base, :get_extension)
+  # Until Julia v1.9 is the minimum required version for StartUpDG.jl, we still support Requires.jl
+  @static if !isdefined(Base, :get_extension)
     @require SummationByPartsOperators="9f78cca6-572e-554e-b819-917d2f1cf240" begin
         include("../ext/StartUpDGSummationByPartsOperatorsExt.jl")
     end
-end 
+  end 
+end
   
 end # module
