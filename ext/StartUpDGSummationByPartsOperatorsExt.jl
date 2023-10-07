@@ -5,11 +5,18 @@ module StartUpDGSummationByPartsOperatorsExt
 
     using StartUpDG
 
-    using SummationByPartsOperators
-    using SummationByPartsOperators: AbstractDerivativeOperator,
-                                     AbstractNonperiodicDerivativeOperator, DerivativeOperator,
-                                     AbstractPeriodicDerivativeOperator,
-                                     PeriodicDerivativeOperator, grid
+    # Required for visualization code
+    if isdefined(Base, :get_extension)
+        using SummationByPartsOperators: SummationByPartsOperators, DerivativeOperator, grid,
+                                         AbstractDerivativeOperator, AbstractNonperiodicDerivativeOperator, 
+                                         PeriodicDerivativeOperator, AbstractPeriodicDerivativeOperator
+    else
+        # Until Julia v1.9 is the minimum required version for Trixi.jl, we still support Requires.jl
+        using ..SummationByPartsOperators
+        using ..SummationByPartsOperators: AbstractDerivativeOperator, AbstractPeriodicDerivativeOperator,
+                                           AbstractNonperiodicDerivativeOperator, DerivativeOperator,                                         
+                                           PeriodicDerivativeOperator, grid
+    end
 
 
 
