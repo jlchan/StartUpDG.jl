@@ -1,5 +1,3 @@
-using SummationByPartsOperators
-
 @testset "StartUpDGSummationByPartsOperatorsExt tests" begin
 
     tol = 200*eps()

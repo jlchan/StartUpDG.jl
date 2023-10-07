@@ -1,6 +1,11 @@
 using Test
 using Suppressor
 using LinearAlgebra
+
+# we need to load this first before StartUpDG for Julia pre-v1.9 
+# since Requires.jl needs us to load this first.
+using SummationByPartsOperators
+
 using StartUpDG
 
 include("write_vtk_tests.jl")
