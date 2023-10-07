@@ -1,4 +1,4 @@
-@testset "SBP elements" begin
+@testset "Multidimensional SBP tests" begin
 
     tol = 200*eps()
 
@@ -63,6 +63,5 @@
         @test rd.Pq*rd.Vq ≈ I
         @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd)
     end
-
 
 end
