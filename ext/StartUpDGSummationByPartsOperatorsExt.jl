@@ -1,7 +1,7 @@
 module StartUpDGSummationByPartsOperatorsExt
 
     using LinearAlgebra: LinearAlgebra, Diagonal, diag, norm, UniformScaling
-    using SparseArrays: sparse, droptol!
+using SparseArrays: sparse, droptol!, spzeros
 
     using StartUpDG
 
