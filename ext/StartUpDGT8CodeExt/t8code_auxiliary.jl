@@ -1,3 +1,72 @@
+mutable struct T8codeMesh{NDIMS, RealT <: Real, IsParallel}               
+    forest      :: Ptr{t8_forest} # cpointer to forest
+
+    # TODO: add element type(s), is_periodic ??
+    # element_type::ElemType - add to type parameters
+    
+    is_parallel :: IsParallel
+
+    ninterfaces :: Int
+    nmortars    :: Int
+    nboundaries :: Int
+
+    # nodes: interpolation nodes
+    function T8codeMesh{NDIMS}(forest) where {NDIMS}
+        is_parallel = Static.False()
+
+        mesh = new{NDIMS, Float64, typeof(is_parallel)}(forest, is_parallel)
+
+        finalizer(mesh) do mesh
+            # When finalizing `mesh.forest`, `mesh.scheme` and `mesh.cmesh` are
+            # also cleaned up from within `t8code`. The cleanup code for
+            # `cmesh` does some MPI calls for deallocating shared memory
+            # arrays. Due to garbage collection in Julia the order of shutdown
+            # is not deterministic. The following code might happen after MPI
+            # is already in finalized state.
+            # If the environment variable `TRIXI_T8CODE_SC_FINALIZE` is set the
+            # `finalize_hook` of the MPI module takes care of the cleanup. See
+            # further down. However, this might cause a pile-up of `mesh`
+            # objects during long-running sessions.
+            if !MPI.Finalized()
+                t8_unref_forest(mesh.forest)
+            end
+        end
+
+        # This finalizer call is only recommended during development and not for
+        # production runs, especially long-running sessions since a reference to
+        # the `mesh` object will be kept throughout the lifetime of the session.
+        # See comments in `init_t8code()` in file `src/auxiliary/t8code.jl` for
+        # more information.
+        if haskey(ENV, "T8CODE_SC_FINALIZE")
+            MPI.add_finalize_hook!() do
+                t8_unref_forest(mesh.forest)
+            end
+        end
+
+        return mesh
+    end
+end
+
+const SerialT8codeMesh{NDIMS} = T8codeMesh{NDIMS, <:Real, <:Static.False}
+@inline mpi_parallel(mesh::SerialT8codeMesh) = False()
+
+@inline Base.ndims(::T8codeMesh{NDIMS}) where {NDIMS} = NDIMS
+
+@inline ntrees(mesh::T8codeMesh) = Int(t8_forest_get_num_local_trees(mesh.forest))
+import StartUpDG: num_elements
+@inline StartUpDG.num_elements(mesh::T8codeMesh) = Int(t8_forest_get_local_num_elements(mesh.forest))
+@inline ninterfaces(mesh::T8codeMesh) = mesh.ninterfaces
+@inline nmortars(mesh::T8codeMesh) = mesh.nmortars
+@inline nboundaries(mesh::T8codeMesh) = mesh.nboundaries
+
+function Base.show(io::IO, mesh::T8codeMesh)
+    print(io, "T8codeMesh{", ndims(mesh), "}")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", mesh::T8codeMesh)
+    print(io, "T8codeMesh{", ndims(mesh), "}")
+end
+
 """
     init_t8code()
 
