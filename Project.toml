@@ -20,8 +20,10 @@ Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 SimpleUnPack = "ce78b400-467f-4804-87d8-8f486da07d0a"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+T8code = "d0cc0030-9a40-4274-8435-baadcfd54fa1"
 Triangulate = "f7e6ffb2-c36d-4f8f-a77e-16e897189344"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
+t8code_jll = "4ee9bed8-4011-53f7-90c2-22363c2f500d"
 
 [weakdeps]
 SummationByPartsOperators = "9f78cca6-572e-554e-b819-917d2f1cf240"
