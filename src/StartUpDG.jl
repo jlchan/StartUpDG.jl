@@ -3,7 +3,7 @@ module StartUpDG
 using Reexport: @reexport
 
 using ConstructionBase: ConstructionBase
-using FillArrays: Ones, Zeros, Fill
+using FillArrays: Fill
 using HDF5: h5open # used to read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
 using LinearAlgebra:
