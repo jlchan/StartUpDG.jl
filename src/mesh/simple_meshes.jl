@@ -29,8 +29,8 @@ function uniform_mesh(elem::Tri, Kx, Ky)
             id2 = id(ex + 1, ey)
             id3 = id(ex + 1, ey + 1)
             id4 = id(ex, ey + 1)
-            EToV[2*sk-1, :] = [id1 id3 id2]
-            EToV[2*sk, :] = [id3 id1 id4]
+            EToV[2*sk-1, :] = [id1 id2 id3]
+            EToV[2*sk, :] = [id3 id4 id1]
             sk += 1
         end
     end
