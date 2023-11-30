@@ -19,7 +19,7 @@
     @test (@capture_out Base.show(stdout, MIME"text/plain"(), x)) == "(a = [1.0], b = [2.0])"
 
     using StructArrays
-    using StartUpDG: SVector
+    using StaticArrays: SVector
     x = NamedArrayPartition(a = StructArray{SVector{2, Float64}}((ones(5), 2*ones(5))),
                             b = StructArray{SVector{2, Float64}}((3 * ones(2,2), 4*ones(2,2))))
     @test typeof(x.a) <: StructVector{<:SVector{2}}
