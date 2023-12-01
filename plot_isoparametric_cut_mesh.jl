@@ -175,7 +175,7 @@ plot(getindex.(xy, 1),getindex.(xy, 2), linewidth=2, color=:black, label="")
 
 scatter!(vec(xq_cutcells[e]), vec(yq_cutcells[e]), label="Reference quadrature"); 
 scatter!(xq_pruned[e], yq_pruned[e], markersize=8, marker=:circle, 
-         z_order=:back, label="Caratheodory pruning", axis=([], false))
+         z_order=:back, label="Caratheodory pruning", axis=([], false), ratio=1)
 
 
 
