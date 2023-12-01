@@ -104,12 +104,7 @@ function MeshData(VXY, EToV, FToF, nonconforming_faces, rd::RefElemData{2, Quad}
     return MeshData((VX_local, VY_local), FToF, nonconforming_faces, rd)
 end
 
-function MeshData(VXY_local::Tuple{<:Vector{<:AbstractArray}, Vararg}, 
-                  FToF, nonconforming_faces, rd::RefElemData{2})
-
-    VX_local, VY_local = VXY_local
-    num_elements = length(VX_local)
-
+function compute_mortar_operators(rd::RefElemData{2})
     # assume each mortar face is a uniform subdivision
     num_face_points = length(rd.rf) ÷ num_faces(rd.element_type)
     if rd.element_type isa Quad
@@ -128,7 +123,15 @@ function MeshData(VXY_local::Tuple{<:Vector{<:AbstractArray}, Vararg},
 
     # L2 projection of mortars back to face nodes
     mortar_projection_matrix = mortar_mass_matrix \ (mortar_interpolation_matrix' * diagm(w_split))
-    
+    return mortar_interpolation_matrix, mortar_projection_matrix
+end
+
+function MeshData(VXY_local::Tuple{<:Vector{<:AbstractArray}, Vararg}, 
+                  FToF, nonconforming_faces, rd::RefElemData{2})
+
+    VX_local, VY_local = VXY_local
+    num_elements = length(VX_local)
+
     # construct element nodal coordinates
     (; V1 ) = rd
     x = zeros(size(V1, 1), length(VX_local))
@@ -137,6 +140,7 @@ function MeshData(VXY_local::Tuple{<:Vector{<:AbstractArray}, Vararg},
         view(x, :, e) .= V1 * VX_local[e]
         view(y, :, e) .= V1 * VY_local[e]
     end
+
 
     # construct face coordinates
     (; Vf ) = rd
