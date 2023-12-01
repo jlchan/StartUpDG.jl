@@ -464,7 +464,7 @@ etype = Tri()
 rd = RefElemData(etype, Polynomial(), npoly)
 
 # Initialize an adapted forest. 
-forest = build_forest_hypercube(rd.element_type, comm, level; do_adapt = true, is_periodic=true)
+forest = build_forest_hypercube(rd.element_type, comm, level; do_adapt = true, is_periodic=false)
 
 # Compute connectivity arrays.
 VX, VY, FToF, nonconforming_faces, orientations = compute_connectivity(forest, rd)
@@ -529,24 +529,24 @@ xM, yM = [xf xm], [yf ym]
 
 # # TODO: build mortar-to-mortar map MToM from FToF
 # # MToM has negative entries when a face is split
-# MToM = [1, 9, 16, 4, 5, 7, 6, 10, 2, 8, 11, 17, -13, 14, 15, 3, 12]
+MToM = [1, 9, 16, 4, 5, 7, 6, 10, 2, 8, 11, 17, -13, 14, 15, 3, 12]
 
-# mapM = reshape(1:length(xM), size(xM))
-# mapP = copy(mapM)
-# for (f, fnbr) in enumerate(MToM)
-#     # if fnbr < 0, it is a split face and we do not compute connectivity
-#     if fnbr > 0 && f != fnbr 
-#         if orientations[f] == orientations[fnbr]
-#             mapP[end:-1:1, f] = mapM[:, fnbr]
-#         else
-#             mapP[:, f] = mapM[:, fnbr]
-#         end
-#     end
-# end
+mapM = reshape(1:length(xM), size(xM))
+mapP = copy(mapM)
+for (f, fnbr) in enumerate(MToM)
+    # if fnbr < 0, it is a split face and we do not compute connectivity
+    if fnbr > 0 && f != fnbr 
+        if orientations[f] == orientations[fnbr]
+            mapP[end:-1:1, f] = mapM[:, fnbr]
+        else
+            mapP[:, f] = mapM[:, fnbr]
+        end
+    end
+end
 
-# # check that all node coordinates match
-# xy = [[xM[i, j], yM[i, j]] for i in axes(xM, 1), j in axes(xM, 2)]
-# norm(norm.(xy .- xy[mapP]))
+# check that all node coordinates match
+xy = [[xM[i, j], yM[i, j]] for i in axes(xM, 1), j in axes(xM, 2)]
+norm(norm.(xy .- xy[mapP]))
 
 # function number!(xyz...)
 #     annotate!(vec.(xyz)..., string.(1:length(first(xyz))))
