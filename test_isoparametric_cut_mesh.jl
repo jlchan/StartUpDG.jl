@@ -2,8 +2,8 @@ using NodesAndModes: face_basis
 using Plots
 using StartUpDG
 
-
-rd = RefElemData(Quad(), N=1, quad_rule_face = gauss_quad(0, 0, N))
+N = 4
+rd = RefElemData(Quad(), N, quad_rule_face = gauss_quad(0, 0, 2 * N))
 
 cells_per_dimension = 2
 circle = PresetGeometries.Circle(R=0.66, x0=0, y0=0)
@@ -161,67 +161,70 @@ for e in eachindex(xq_cutcells)
 end
 
 plot()
-for e in eachindex(xq_cutcells)
+for e in eachindex(xq_cutcells, yq_cutcells)
     scatter!(vec(xq_cutcells[e]), vec(yq_cutcells[e]), label="Reference quadrature"); 
     scatter!(xq_pruned[e], yq_pruned[e], markersize=8, marker=:circle, 
              z_order=:back, label="Caratheodory pruning", leg=false)
 end
 display(plot!(leg=false))
 
+e = 1
+path = md.mesh_type.cut_cell_data.cutcells[e]
+xy = path.(LinRange(0,1,2000))
+plot(getindex.(xy, 1),getindex.(xy, 2), linewidth=2, color=:black, label="")
 
-# compute normals
-cutcell = cutcells[1]
-plot()
-xf, yf, nxJ, nyJ = ntuple(_ -> zeros(size(rd_line.Vq, 1), length(cutcell.stop_pts)-1), 4)
-for f in 1:length(cutcell.stop_pts)-1
-    points = map(s -> cutcell(map_to_interval(s, cutcell.stop_pts[f:f+1]...)), r1D)
-    x = getindex.(points, 1)
-    y = getindex.(points, 2)
+scatter!(vec(xq_cutcells[e]), vec(yq_cutcells[e]), label="Reference quadrature"); 
+scatter!(xq_pruned[e], yq_pruned[e], markersize=8, marker=:circle, 
+         z_order=:back, label="Caratheodory pruning", axis=([], false))
 
-    # compute tangent vector
-    (; Vq, Dr) = rd_line
-    dxdr = Vq * Dr * x
-    dydr = Vq * Dr * y
 
-    tangent_vector = SVector.(dxdr, dydr)
-    scaling = (cutcell.stop_pts[f+1] - cutcell.stop_pts[f]) / 2
-    Jf = norm.(tangent_vector) .* scaling
-    raw_normal = SVector.(-dydr, dxdr)
-    scaled_normal = (raw_normal) / norm(raw_normal) .* Jf
 
-    @. nxJ[:, f] = getindex(scaled_normal, 1)
-    @. nyJ[:, f] = getindex(scaled_normal, 2)
+# # compute normals
+# cutcell = cutcells[1]
+# plot()
+# xf, yf, nxJ, nyJ = ntuple(_ -> zeros(size(rd_line.Vq, 1), length(cutcell.stop_pts)-1), 4)
+# for f in 1:length(cutcell.stop_pts)-1
+#     points = map(s -> cutcell(map_to_interval(s, cutcell.stop_pts[f:f+1]...)), r1D)
+#     x = getindex.(points, 1)
+#     y = getindex.(points, 2)
 
-    # interp face coordinates to face quad nodes
-    xf[:, f] .= Vq * x
-    yf[:, f] .= Vq * y
+#     # compute tangent vector
+#     (; Vq, Dr) = rd_line
+#     dxdr = Vq * Dr * x
+#     dydr = Vq * Dr * y
 
-    scatter!(Vq * x, Vq * y)
-    quiver!(Vq * x, Vq * y, quiver=(getindex.(scaled_normal, 1), getindex.(scaled_normal, 2)))
-end
-plot!(leg=false, ratio=1)
+#     tangent_vector = SVector.(dxdr, dydr)
+#     scaling = (cutcell.stop_pts[f+1] - cutcell.stop_pts[f]) / 2
+#     Jf = norm.(tangent_vector) .* scaling
+#     raw_normal = SVector.(-dydr, dxdr)
+#     scaled_normal = (raw_normal) / norm(raw_normal) .* Jf
 
-# test weak SBP property
-(; x, y) = md
-elem = md.mesh_type.physical_frame_elements[1]
-VDM = vandermonde(elem, rd.N, x.cut[:, 1], y.cut[:, 1])
-Vq, Vxq, Vyq = map(A -> A / VDM, basis(elem, rd.N, xq_pruned[1], yq_pruned[1]))
-M = Vq' * diagm(wJq_pruned[1]) * Vq
-Qx = Vq' * diagm(wJq_pruned[1]) * Vxq
-Vf = vandermonde(elem, rd.N, xf, yf) / VDM
+#     @. nxJ[:, f] = getindex(scaled_normal, 1)
+#     @. nyJ[:, f] = getindex(scaled_normal, 2)
+
+#     # interp face coordinates to face quad nodes
+#     xf[:, f] .= Vq * x
+#     yf[:, f] .= Vq * y
+
+#     scatter!(Vq * x, Vq * y)
+#     quiver!(Vq * x, Vq * y, quiver=(getindex.(scaled_normal, 1), getindex.(scaled_normal, 2)))
+# end
+# plot!(leg=false, ratio=1)
+
+# # test weak SBP property
+# (; x, y) = md
+# elem = md.mesh_type.physical_frame_elements[1]
+# VDM = vandermonde(elem, rd.N, x.cut[:, 1], y.cut[:, 1])
+# Vq, Vxq, Vyq = map(A -> A / VDM, basis(elem, rd.N, xq_pruned[1], yq_pruned[1]))
+# M = Vq' * diagm(wJq_pruned[1]) * Vq
+# Qx = Vq' * diagm(wJq_pruned[1]) * Vxq
+# Vf = vandermonde(elem, rd.N, xf, yf) / VDM
 
 # Dx, Dy = md.mesh_type.cut_cell_operators.differentiation_matrices[1]
 # Qx, Qy = M * Dx, M * Dy
 
-Bx = Diagonal(vec(Diagonal(rd_line.wq) * nxJ))
-# Bx = Diagonal(vec(Diagonal(rd_line.wq) * reshape(md.nxJ.cut[md.mesh_type.cut_face_nodes[1]], length(rd_line.wq), :)))
+# Bx = Diagonal(vec(Diagonal(rd_line.wq) * nxJ))
+# # Bx = Diagonal(vec(Diagonal(rd_line.wq) * reshape(md.nxJ.cut[md.mesh_type.cut_face_nodes[1]], length(rd_line.wq), :)))
 
-e = ones(size(Vf, 2))
-@show e' * (Qx + Qx')
-@show e' * Vf' * Bx * Vf
-
-# 3×3 Matrix{Float64}:
-#   0.507422  -0.103253   0.253711
-#  -0.103253  -0.300917  -0.253711
-#   0.253711  -0.253711   6.80375e-18
-
+# e = ones(size(Vf, 2))
+# [e' * Qx; e' * Vf' * Bx * Vf]'
