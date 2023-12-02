@@ -54,13 +54,6 @@ function build_forest_hypercube(element_type, comm, level; do_adapt = false, dim
     elseif element_type isa StartUpDG.Quad
         cmesh = is_periodic ? t8_cmesh_new_periodic(comm, dim) :
                 t8_cmesh_new_hypercube(T8_ECLASS_QUAD, comm, 0, 0, 0)
-    
-    # if element_type isa StartUpDG.Tri
-    #     cmesh = t8_cmesh_new_hypercube(T8_ECLASS_TRIANGLE, comm, 0, 0, 0)
-
-    # elseif element_type isa StartUpDG.Quad
-    #     cmesh = t8_cmesh_new_hypercube(T8_ECLASS_QUAD, comm, 0, 0, 0)
-
     else
         @error element_type
     end
