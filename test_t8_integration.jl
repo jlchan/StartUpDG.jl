@@ -372,6 +372,7 @@ function compute_connectivity(forest, rd)
 
                     # make connections between mortar faces
                     FToF[split_faces_indices] .= neighbor_faces
+                    FToF[neighbor_faces] .= split_faces_indices
                     orientations[split_faces_indices] .= orientation
 
                 else
@@ -520,13 +521,12 @@ mortar_interpolation_matrix, mortar_projection_matrix = StartUpDG.compute_mortar
 xm, ym = (x -> reshape(mortar_interpolation_matrix * x, :, 2 * length(nonconforming_faces))).((xf[:, nonconforming_faces], yf[:, nonconforming_faces]))
 xM, yM = [xf xm], [yf ym]
 
-# # TODO: build mortar-to-mortar map MToM from FToF
-# # MToM has negative entries when a face is split
-MToM = [1, 9, 16, 4, 5, 7, 6, 10, 2, 8, 11, 17, -13, 14, 15, 3, 12]
+    xM, yM = xf, yf
+end
 
 mapM = reshape(1:length(xM), size(xM))
 mapP = copy(mapM)
-for (f, fnbr) in enumerate(MToM)
+for (f, fnbr) in enumerate(FToF)
     # if fnbr < 0, it is a split face and we do not compute connectivity
     if fnbr > 0 && f != fnbr 
         if orientations[f] == orientations[fnbr]
