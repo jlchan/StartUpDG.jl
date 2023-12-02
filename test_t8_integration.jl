@@ -35,7 +35,7 @@ function adapt_callback(forest,
     level = t8_element_level(ts, elements[1])
 
     # Maximum refinement level
-    if level >= 1
+    if level >= 3
         return 0
     end
 
@@ -371,6 +371,9 @@ function compute_connectivity(forest, rd)
                     nonconforming_face_offset += num_neighbors
 
                     # make connections between mortar faces
+                    if in(197, neighbor_faces) || in(203, neighbor_faces)
+                        @show neighbor_faces, split_faces_indices
+                    end
                     FToF[split_faces_indices] .= neighbor_faces
                     FToF[neighbor_faces] .= split_faces_indices
                     orientations[split_faces_indices] .= orientation
