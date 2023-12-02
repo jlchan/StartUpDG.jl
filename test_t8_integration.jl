@@ -518,9 +518,10 @@ xf, yf = (x -> reshape(rd.Vf * x, rd.Nfq ÷ rd.num_faces, :)).((x, y))
 
 # (; mortar_interpolation_matrix) = md.mesh_type
 mortar_interpolation_matrix, mortar_projection_matrix = StartUpDG.compute_mortar_operators(rd)
-xm, ym = (x -> reshape(mortar_interpolation_matrix * x, :, 2 * length(nonconforming_faces))).((xf[:, nonconforming_faces], yf[:, nonconforming_faces]))
-xM, yM = [xf xm], [yf ym]
-
+if length(nonconforming_faces) > 0
+    xm, ym = (x -> reshape(mortar_interpolation_matrix * x, :, 2 * length(nonconforming_faces))).((xf[:, nonconforming_faces], yf[:, nonconforming_faces]))
+    xM, yM = [xf xm], [yf ym]
+else
     xM, yM = xf, yf
 end
 
