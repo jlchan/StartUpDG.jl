@@ -444,8 +444,10 @@ function RefElemData(element_type::Union{Line, Quad, Hex},
                      approximation_type::Polynomial{<:Gauss}, N; kwargs...) 
     # explicitly specify Gauss quadrature rule with (N+1)^d points 
     quad_rule_vol = tensor_product_quadrature(element_type, StartUpDG.gauss_quad(0, 0, N)...)
+
+    # hacky fix to call the default constructor
     rd = RefElemData(element_type, Polynomial(), N; quad_rule_vol)    
-    return @set rd.approximation_type = approximation_type
+    return @set rd.approximation_type = approximation_type 
 end
   
 RefElemData(element_type::Union{Line, Quad, Hex}, ::Gauss, N; kwargs...) = 
