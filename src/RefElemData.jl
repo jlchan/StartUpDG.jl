@@ -200,13 +200,14 @@ Polynomial() = Polynomial{DefaultPolynomialType}(DefaultPolynomialType())
 """
     TensorProductQuadrature{T}
 
-A type parameter to `Polynomial` indicating that 
+A type parameter to `Polynomial` indicating that the quadrature has a tensor 
+product structure. 
 """
 struct TensorProductQuadrature{T}
     quad_rule_1D::T  # 1D quadrature nodes and weights (rq, wq)
 end
 
-TensorProductQuadrature(r1D, w1D) = TensorProductQuadrature((r1D, w1D))
+TensorProductQuadrature(args...) = TensorProductQuadrature(args)
 
 # Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
 struct Gauss end 
