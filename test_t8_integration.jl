@@ -35,11 +35,11 @@ function adapt_callback(forest,
     level = t8_element_level(ts, elements[1])
 
     # Maximum refinement level
-    if level >= 3
+    if level >= 1
         return 0
     end
 
-    if centroid[2] < centroid[1]
+    if centroid[2] > centroid[1]
         return 1
     end
 
@@ -235,6 +235,9 @@ function compute_connectivity(forest, rd)
     VX = [zeros(StartUpDG.num_vertices(rd.element_type)) for _ in 1:num_elements]
     VY = [zeros(StartUpDG.num_vertices(rd.element_type)) for _ in 1:num_elements]
 
+    # local element vertex orientations
+    flipped_vertex_ordering = zeros(Bool, num_elements)
+
     # count faces per element and get coordinates
     faces_per_element = zeros(Int, num_elements)
     current_element = 1
@@ -252,7 +255,8 @@ function compute_connectivity(forest, rd)
 
             num_corners = t8_element_num_corners(eclass_scheme, element)
 
-            vertices, _ = t8_forest_element_vertices(forest, itree, eclass_scheme, element)
+            vertices, flipped = t8_forest_element_vertices(forest, itree, eclass_scheme, element)
+            flipped_vertex_ordering[current_element] = flipped
 
             for corner_number in 1:num_corners
                 VX[current_element][corner_number] = vertices[1, corner_number]
@@ -313,22 +317,17 @@ function compute_connectivity(forest, rd)
             element = t8_forest_get_element_in_tree(forest, itree, ielement)
             num_faces = t8_element_num_faces(eclass_scheme, element)
             for iface in 1:num_faces
-                num_neighbors, neighids, neighbors, dual_faces, orientation = t8_forest_canonical_leaf_face_neighbors(forest,
-                    itree,
-                    eclass_scheme,
-                    element,
-                    iface - 1)
+                num_neighbors, neighids, neighbors, dual_faces, orientation = 
+                    t8_forest_canonical_leaf_face_neighbors(forest, itree, 
+                                                            eclass_scheme, 
+                                                            element, iface - 1)
 
                 # Convert to 1-based indexing.
                 dual_faces .+= 1
                 neighids .+= 1
 
                 # Flipping node ordering is necessary for triangle meshes.
-                _, flipped = t8_forest_element_vertices(forest,
-                    itree,
-                    eclass_scheme,
-                    element)
-                if flipped
+                if flipped_vertex_ordering[current_element]
                     iface = flip_faces(iface)
                 end
 
@@ -344,12 +343,7 @@ function compute_connectivity(forest, rd)
                     orientations[current_face] = orientation
 
                     t8_productionf("itree = %d, ielement = (%d,%d), iface = (%d,%d), orientation = %d\n",
-                        itree + 1,
-                        current_element,
-                        neighids[1],
-                        iface,
-                        dual_faces[1],
-                        orientation)
+                        itree + 1, current_element, neighids[1], iface, dual_faces[1], orientation)
 
                     # t8_productionf("itree = %d, ielement = %d, iface = %d, neighid = %d, dual_face = %d, curr_face = %d, neigh_face = %d\n",
                     # itree + 1, ielement + 1, iface, neighids[1], dual_faces[1], current_face, neighbor_face)
@@ -368,24 +362,30 @@ function compute_connectivity(forest, rd)
                     split_faces_indices = @. num_element_faces + nonconforming_face_offset +
                                              (1:num_neighbors)
 
+                    # # if the orientation is flipped, flip the order of the 
+                    # # split faces on this element, as well as the orientation
+                    # if flipped_vertex_ordering[current_element]
+                    #     # reverse!(neighbor_faces)
+                    #     # orientations[neighbor_faces] .= -1
+                    #     @show split_faces_indices
+                    #     reverse!(split_faces_indices)
+                    #     orientation = -1
+                    # end
+
                     nonconforming_face_offset += num_neighbors
 
+                    # # set current face < 0 ---> it's a split face
+                    # FToF[current_face] = -current_face
+
                     # make connections between mortar faces
-                    if in(197, neighbor_faces) || in(203, neighbor_faces)
-                        @show neighbor_faces, split_faces_indices
-                    end
+                    @show neighbor_faces, split_faces_indices
                     FToF[split_faces_indices] .= neighbor_faces
                     FToF[neighbor_faces] .= split_faces_indices
                     orientations[split_faces_indices] .= orientation
 
                 else
                     t8_productionf("itree = %d, ielement = (%d,%d), iface = (%d,%d), orientation = %d\n",
-                        itree + 1,
-                        current_element,
-                        current_element,
-                        iface,
-                        iface,
-                        0)
+                        itree + 1, current_element, current_element, iface, iface, 0)
                 end
             end
 
@@ -395,7 +395,7 @@ function compute_connectivity(forest, rd)
         end
     end
 
-    return VX, VY, FToF, nonconforming_faces, orientations
+    return VX, VY, FToF, nonconforming_faces, orientations, flipped_vertex_ordering
 end
 
 function compute_coordinates(element_type, forest, rd, md)
@@ -429,12 +429,9 @@ function compute_coordinates(element_type, forest, rd, md)
                 ref_coords = r * e_r + s * e_s
                 out_coords = Vector{Cdouble}(undef, 3)
 
-                t8_forest_element_from_ref_coords(forest,
-                    itree,
-                    element,
-                    pointer(ref_coords),
-                    1,
-                    pointer(out_coords))
+                t8_forest_element_from_ref_coords(forest, itree, element, 
+                                                  pointer(ref_coords), 1, 
+                                                  pointer(out_coords))
 
                 x[i, current_element] = out_coords[1]
                 y[i, current_element] = out_coords[2]
@@ -464,7 +461,48 @@ rd = RefElemData(etype, Polynomial(), npoly)
 forest = build_forest_hypercube(rd.element_type, comm, level; do_adapt = true, is_periodic=false)
 
 # Compute connectivity arrays.
-VX, VY, FToF, nonconforming_faces, orientations = compute_connectivity(forest, rd)
+VX, VY, FToF, nonconforming_faces, orientations, flipped_vertex_ordering = 
+    compute_connectivity(forest, rd)
+
+# printing out stuff    
+current_element = 1
+num_local_trees = t8_forest_get_num_local_trees(forest)
+for itree in 0:(num_local_trees - 1)
+    tree_class = t8_forest_get_tree_class(forest, itree)
+    eclass_scheme = t8_forest_get_eclass_scheme(forest, tree_class)
+    num_elements_in_tree = t8_forest_get_tree_num_elements(forest, itree)
+    for ielement in 0:(num_elements_in_tree - 1)
+        element = t8_forest_get_element_in_tree(forest, itree, ielement)
+        num_faces = t8_element_num_faces(eclass_scheme, element)
+        
+        vertices, flipped = 
+            t8_forest_element_vertices(forest, itree, eclass_scheme, element)
+        @show current_element, flipped
+
+        for iface in 1:num_faces
+            num_neighbors, neighids, neighbors, dual_faces, orientation = 
+                t8_forest_canonical_leaf_face_neighbors(forest, itree, 
+                                                        eclass_scheme, 
+                                                        element, iface - 1)
+            neighids .+= 1
+            dual_faces .+= 1
+
+            # Flipping node ordering is necessary for triangle meshes.
+            if flipped
+                # with respect to t8 convention
+                iface = flip_faces(iface)
+            end
+
+            # Convert to StartUpDG face ordering convention.
+            iface = map_iface(rd.element_type, iface)
+            dual_faces = map_iface(rd.element_type, dual_faces)            
+            # TODO: flip neighids
+
+            @show current_element, iface, neighids, dual_faces, orientation
+        end
+        current_element += 1
+    end
+end    
 
 # Clean-up. t8code is not needed from here on.
 t8_forest_unref(Ref(forest)) # Destroy the forest.
@@ -534,18 +572,32 @@ for (f, fnbr) in enumerate(FToF)
     # if fnbr < 0, it is a split face and we do not compute connectivity
     if fnbr > 0 && f != fnbr 
         if orientations[f] == orientations[fnbr]
-            mapP[end:-1:1, f] = mapM[:, fnbr]
+            mapP[end:-1:1, f] .= mapM[:, fnbr]
         else
-            mapP[:, f] = mapM[:, fnbr]
+            @show f, fnbr
+            mapP[:, f] .= mapM[:, fnbr]
         end
     end
 end
 
 # check that all node coordinates match
 xy = [[xM[i, j], yM[i, j]] for i in axes(xM, 1), j in axes(xM, 2)]
-norm(norm.(xy .- xy[mapP]))
+xydiff = norm.(xy .- xy[mapP])
+@show norm(xydiff)
 
-# function number!(xyz...)
-#     annotate!(vec.(xyz)..., string.(1:length(first(xyz))))
-# end
+xc, yc = map(x -> vec(sum(x, dims=1)) / size(x, 1), (x, y))
+scatter(xM, yM, markersize=1)
+annotate!(xc, yc, string.(1:length(xc)), leg=false)
+
+xfc, yfc = map(x -> vec(sum(x, dims=1)) / size(x, 1), (xM, yM))
+for e in 1:length(xc)
+    for face in 1:3
+        f = face + (e-1) * 3
+        xfc[f] = xfc[f] + 0.25 * (xc[e] - xfc[f])
+        yfc[f] = yfc[f] + 0.25 * (yc[e] - yfc[f])
+    end
+end
+
+active_faces = findall(FToF .> 0)
+annotate!(xfc[active_faces], yfc[active_faces], string.(1:length(xfc))[active_faces], leg=false)
 
