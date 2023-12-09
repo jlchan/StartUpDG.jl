@@ -50,15 +50,11 @@ end
 
 
 """
-    RefElemData(elem::Line, N;
+    RefElemData(elem::Line, approximation_type, N;
                 quad_rule_vol = quad_nodes(elem, N+1))
-    RefElemData(elem::Union{Tri, Quad}, N;
-                 quad_rule_vol = quad_nodes(elem, N),
-                 quad_rule_face = gauss_quad(0, 0, N))
-    RefElemData(elem::Union{Hex, Tet}, N;
-                 quad_rule_vol = quad_nodes(elem, N),
-                 quad_rule_face = quad_nodes(Quad(), N))
-    RefElemData(elem; N, kwargs...) # version with keyword args
+    RefElemData(elem, approximation_type, N;
+                quad_rule_vol = quad_nodes(elem, N),
+                quad_rule_face = quad_nodes(face_type(elem), N))
 
 Constructor for `RefElemData` for different element types.
 """
