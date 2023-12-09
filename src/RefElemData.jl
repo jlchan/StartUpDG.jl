@@ -209,9 +209,15 @@ end
 
 TensorProductQuadrature(args...) = TensorProductQuadrature(args)
 
-# Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
-struct Gauss end 
-Polynomial{Gauss}() = Polynomial(Gauss())
+"""
+    TensorProductGaussCollocation
+
+Polynomial{TensorProductGaussCollocation} type indicates a tensor product 
+# (N+1)-point Gauss quadrature on tensor product elements. 
+"""
+struct TensorProductGaussCollocation end 
+const Gauss = TensorProductGaussCollocation
+Polynomial{TensorProductGaussCollocation}() = Polynomial(TensorProductGaussCollocation())
 
 # ========= SBP approximation types ============
 
@@ -270,5 +276,5 @@ _short_typeof(approx_type::Wedge) = "Wedge"
 _short_typeof(approx_type::Pyr) = "Pyr"
 
 _short_typeof(approx_type::Polynomial{<:DefaultPolynomialType}) = "Polynomial"
-_short_typeof(approx_type::Polynomial{<:Gauss}) = "Polynomial{Gauss}"
+_short_typeof(approx_type::Polynomial{<:TensorProductGaussCollocation}) = "Polynomial{Gauss}"
 _short_typeof(approx_type::Polynomial{<:TensorProductQuadrature}) = "Polynomial{TensorProductQuadrature}"
