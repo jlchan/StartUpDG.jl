@@ -76,7 +76,7 @@ function Base.propertynames(x::RefElemData{3}, private::Bool = false)
 end
 
 # convenience unpacking routines
-function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbol) where {Dim, ElementType, ApproxType}
+function Base.getproperty(x::RefElemData, s::Symbol) 
     if s==:r
         return getfield(x, :rst)[1]
     elseif s==:s
