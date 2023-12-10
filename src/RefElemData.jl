@@ -170,12 +170,12 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 
 # Wedges have different types of faces depending on the face. 
 # We define the first three faces to be quadrilaterals and the 
-# last two faces are triangles.
+# last two faces to be triangles.
 @inline face_type(::Wedge, id) = (id <= 3) ? Quad() : Tri()
 
 # Pyramids have different types of faces depending on the face. 
 # We define the first four faces to be triangles and the 
-# last face to be a quadrilateral. 
+# last face to be the quadrilateral face. 
 @inline face_type(::Pyr, id) = (id <= 4) ? Tri() : Quad()
 
 # ====================================================
