@@ -1,0 +1,215 @@
+# computes: VX, VY, levels, neighbor_ids, 
+#           dual_faces, orientations
+include("generate_t8_arrays.jl")
+
+# flip orientation of the second t8 face
+# to ensure consistent CCW orientation
+for e in eachindex(neighbor_ids)
+    # reverse the orientation of face 2
+    @. orientations[e][2] = !Bool(orientations[e][2])
+
+    # reverse orientations of face 2 neighbors
+    for nbr in eachindex(neighbor_ids[e][2])
+        enbr = neighbor_ids[e][2][nbr]
+        fnbr = dual_faces[e][2][nbr]
+        @. orientations[enbr][fnbr] = !Bool(orientations[enbr][fnbr])
+    end
+    
+    # reverse the order in which the neighbors and 
+    # neighboring faces are specified. This should
+    # only impact split (non-conforming) faces. 
+    reverse!(neighbor_ids[e][2])
+    reverse!(dual_faces[e][2])
+end
+
+# next, convert t8 face ordering to StartUpDG
+for e in eachindex(neighbor_ids)        
+    # Here, p[SDG_face] = t8_face 
+    p = SVector(3, 1, 2)
+
+    # Here, p_inverse[t8_face] = SDG_face
+    p_inverse = SVector(2, 3, 1) 
+    permute!(neighbor_ids[e], p)
+
+    permute!(dual_faces[e], p)
+    permute!(orientations[e], p)
+    for f in eachindex(dual_faces[e])
+        if length(dual_faces[e][f]) > 0
+            dual_faces[e][f] = p_inverse[dual_faces[e][f]]
+        end
+    end
+end      
+
+num_elements = length(levels)
+faces_per_element = length.(neighbor_ids)
+face_offsets = cumsum(faces_per_element) .- faces_per_element[1]
+num_faces = sum(faces_per_element)
+
+# compute indices of nonconforming faces
+conforming_to_mortar_face = [[f] for f in 1:num_faces]
+mortar_offset = 0
+for e in eachindex(neighbor_ids)
+    for f in eachindex(neighbor_ids[e])
+        if length(neighbor_ids[e][f]) > 1            
+
+            # store which faces are split
+            face_index = f + face_offsets[e]
+            mortar_index = eachindex(neighbor_ids[e][f]) .+ mortar_offset .+ num_faces
+            conforming_to_mortar_face[face_index] = mortar_index
+
+            # increment mortar count
+            mortar_offset += length(neighbor_ids[e][f]) 
+        end
+    end
+end
+
+# count new mortar faces produced by split faces
+nonconforming_faces = findall(length.(conforming_to_mortar_face) .> 1)
+num_mortar_faces = sum(length.(conforming_to_mortar_face[nonconforming_faces]))
+
+# create face-by-face orientation vectors
+face_orientations = ones(Int, num_faces + num_mortar_faces) 
+for e in eachindex(orientations) 
+    for f in eachindex(orientations[e])
+        face_global_index = f + face_offsets[e]
+        if length(orientations[e][f]) > 1
+            @. face_orientations[conforming_to_mortar_face[face_global_index]] = orientations[e][f]
+        else
+            face_orientations[face_global_index] = isempty(orientations[e][f]) ? 0 : first(orientations[e][f])
+        end
+    end
+end
+
+# determine face indices of mortar neighbors
+FToF = collect(1:(num_faces + num_mortar_faces))
+for e in eachindex(neighbor_ids)
+    for f in eachindex(neighbor_ids[e])
+        # if it's not a boundary node
+        if length(neighbor_ids[e][f]) > 0
+            enbr = neighbor_ids[e][f]
+            fnbr = dual_faces[e][f]
+
+            # if face is on a non-conforming interface
+            if any(levels[e] .!= levels[enbr])
+                if any(levels[e] .< levels[enbr]) # big face
+                    big_face = f + face_offsets[e]
+                    dual_face_global_indices = @. fnbr + face_offsets[enbr]
+                    face_global_indices = conforming_to_mortar_face[big_face]
+                    @show dual_face_global_indices, face_global_indices
+                    @. FToF[face_global_indices] = dual_face_global_indices
+                else # small face
+                    # since it's a small face, (enbr, fnbr) should both be 
+                    # one-element vectors with only a `first` entry.
+                    dual_big_face = first(dual_faces[e][f] + face_offsets[enbr])
+                    nbrs = neighbor_ids[first(enbr)][first(fnbr)]
+
+                    # determine whether e is the first or second neighbor
+                    # !!! todo: 3D
+                    inbr = nbrs[1] == e ? 1 : 2
+
+                    dual_face_global_indices = conforming_to_mortar_face[dual_big_face]
+                    face_global_indices = f .+ face_offsets[e]
+                    FToF[face_global_indices] = dual_face_global_indices[inbr]
+                end
+            else # if face is conforming
+                dual_face_global_indices = fnbr + face_offsets[enbr]
+                face_global_indices = f + face_offsets[e]
+                FToF[first(face_global_indices)] = first(dual_face_global_indices)
+            end            
+        end
+    end
+end
+
+
+function annotate_mesh(VX, VY, neighbor_ids, dual_faces, orientations)
+
+    # fv = ([2, 3], [1, 3], [1, 2]) # t8 Tri ordering
+    fv = ([1, 2], [2, 3], [3, 1]) # StartUpDG Tri ordering
+
+    avg(x) = sum(x) / length(x)
+
+    # t8_to_StartUpDG_face_ordering 
+    plot(size = 1000 .* (1, 1))
+    for e in eachindex(VX, VY)
+        xc, yc = avg(VX[e]), avg(VY[e])
+        annotate!([xc], [yc], [string(e)], markersize=8)
+        plot!(VX[e][[1,2,3,1]], VY[e][[1,2,3,1]])
+        for v in eachindex(VX[e])
+            xv, yv = VX[e][v], VY[e][v]            
+            annotate!([xc + 0.9 * (xv - xc)], [yc + 0.9 * (yv - yc)], string(v))
+        end
+        for f in eachindex(neighbor_ids[e])
+            global_f = f + face_offsets[e]
+            fids = fv[f]
+            plot!(VX[e][fids], VY[e][fids])
+            xfc = avg(VX[e][fids])
+            yfc = avg(VY[e][fids])
+            annotate!([xc + 0.85 * (xfc - xc)], [yc + 0.85 * (yfc - yc)], string(f) * "(" * string(global_f) * ")")
+        end
+    end
+    display(plot!(leg=false))
+end
+
+annotate_mesh(VX, VY, neighbor_ids, dual_faces, orientations)
+
+
+# plot!(size=1000 .* (1,1))
+
+
+
+
+
+# Create a StartUpDG mesh.
+
+# etype = Quad()
+etype = Tri()
+rd = RefElemData(etype, Polynomial(), 4)
+
+# construct element nodal coordinates
+VX_local = VX
+VY_local = VY
+
+(; V1) = rd
+x = zeros(size(V1, 1), length(VX_local))
+y = zeros(size(V1, 1), length(VX_local))
+for e in eachindex(VX_local)
+    view(x, :, e) .= V1 * VX_local[e]
+    view(y, :, e) .= V1 * VY_local[e]
+end
+
+xf, yf = (x -> reshape(rd.Vf * x, rd.Nfq ÷ rd.num_faces, :)).((x, y))
+
+# (; mortar_interpolation_matrix) = md.mesh_type
+mortar_interpolation_matrix, mortar_projection_matrix = StartUpDG.compute_mortar_operators(rd)
+if length(nonconforming_faces) > 0
+    xm, ym = (x -> reshape(mortar_interpolation_matrix * x, :, 2 * length(nonconforming_faces))).((xf[:, nonconforming_faces], yf[:, nonconforming_faces]))
+    xM, yM = [xf xm], [yf ym]
+else
+    xM, yM = xf, yf
+end
+
+mapM = reshape(1:length(xM), size(xM))
+mapP = copy(mapM)
+for (f, fnbr) in enumerate(FToF)
+    if f != fnbr # if it's not a boundary face
+        # face orientations should always be 
+        # opposite for CCW ordering
+        @. mapP[end:-1:1, f] = mapM[:, fnbr]
+    end
+end
+
+# check that all node coordinates match
+xy = [[xM[i, j], yM[i, j]] for i in axes(xM, 1), j in axes(xM, 2)]
+xydiff = norm.(xy .- xy[mapP])
+@show norm(xydiff)
+
+anim = @animate for i in eachindex(xy) 
+    scatter(xM, yM, color=:black, markersize=2)
+    scatter!(SVector.(xy[i])..., leg=false, marker=:star, markersize=8)
+    scatter!(SVector.(xy[mapP[i]])..., leg=false, marker=:star5, markersize=6)
+end when i !== mapP[i] 
+gif(anim, "check_mapP.gif", fps=4)
+
+
+
+using OrdinaryDiffEq
