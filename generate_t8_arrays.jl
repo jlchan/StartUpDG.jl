@@ -267,8 +267,8 @@ end
 # ========= Main =========== #
 
 # The uniform refinement level of the forest.
-ini_level = 0
-max_level = 1
+ini_level = 2
+max_level = 3
 figsize = 1000 .*(1,1) # increase if things are getting crowded
 
 # etype = Quad()

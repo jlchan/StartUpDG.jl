@@ -46,16 +46,17 @@ face_offsets = cumsum(faces_per_element) .- faces_per_element[1]
 num_faces = sum(faces_per_element)
 
 # compute indices of nonconforming faces
-conforming_to_mortar_face = [[f] for f in 1:num_faces]
+# nonconforming_to_mortar_face = Dict{Int, Vector{Int}}()
+nonconforming_to_mortar_face = [[f] for f in eachindex(neighbor_ids)]
 mortar_offset = 0
 for e in eachindex(neighbor_ids)
     for f in eachindex(neighbor_ids[e])
-        if length(neighbor_ids[e][f]) > 1            
+        if length(neighbor_ids[e][f]) > 1
 
             # store which faces are split
             face_index = f + face_offsets[e]
             mortar_index = eachindex(neighbor_ids[e][f]) .+ mortar_offset .+ num_faces
-            conforming_to_mortar_face[face_index] = mortar_index
+            nonconforming_to_mortar_face[face_index] = mortar_index
 
             # increment mortar count
             mortar_offset += length(neighbor_ids[e][f]) 
@@ -64,8 +65,9 @@ for e in eachindex(neighbor_ids)
 end
 
 # count new mortar faces produced by split faces
-nonconforming_faces = findall(length.(conforming_to_mortar_face) .> 1)
-num_mortar_faces = sum(length.(conforming_to_mortar_face[nonconforming_faces]))
+nonconforming_faces = findall(length.(nonconforming_to_mortar_face) .> 1)
+num_mortar_faces = sum(length.(nonconforming_to_mortar_face[nonconforming_faces]))
+mortar_faces = vcat(nonconforming_to_mortar_face[nonconforming_faces]...)
 
 # create face-by-face orientation vectors
 face_orientations = ones(Int, num_faces + num_mortar_faces) 
@@ -73,9 +75,9 @@ for e in eachindex(orientations)
     for f in eachindex(orientations[e])
         face_global_index = f + face_offsets[e]
         if length(orientations[e][f]) > 1
-            @. face_orientations[conforming_to_mortar_face[face_global_index]] = orientations[e][f]
+            @. face_orientations[nonconforming_to_mortar_face[face_global_index]] = orientations[e][f]
         else
-            face_orientations[face_global_index] = isempty(orientations[e][f]) ? 0 : first(orientations[e][f])
+            face_orientations[face_global_index] = isempty(orientations[e][f]) ? 1 : first(orientations[e][f])
         end
     end
 end
@@ -94,7 +96,7 @@ for e in eachindex(neighbor_ids)
                 if any(levels[e] .< levels[enbr]) # big face
                     big_face = f + face_offsets[e]
                     dual_face_global_indices = @. fnbr + face_offsets[enbr]
-                    face_global_indices = conforming_to_mortar_face[big_face]
+                    face_global_indices = nonconforming_to_mortar_face[big_face]
                     @show dual_face_global_indices, face_global_indices
                     @. FToF[face_global_indices] = dual_face_global_indices
                 else # small face
@@ -107,7 +109,7 @@ for e in eachindex(neighbor_ids)
                     # !!! todo: 3D
                     inbr = nbrs[1] == e ? 1 : 2
 
-                    dual_face_global_indices = conforming_to_mortar_face[dual_big_face]
+                    dual_face_global_indices = nonconforming_to_mortar_face[dual_big_face]
                     face_global_indices = f .+ face_offsets[e]
                     FToF[face_global_indices] = dual_face_global_indices[inbr]
                 end
@@ -163,7 +165,7 @@ annotate_mesh(VX, VY, neighbor_ids, dual_faces, orientations)
 
 # etype = Quad()
 etype = Tri()
-rd = RefElemData(etype, Polynomial(), 4)
+rd = RefElemData(etype, Polynomial(), 3)
 
 # construct element nodal coordinates
 VX_local = VX
@@ -179,8 +181,8 @@ end
 
 xf, yf = (x -> reshape(rd.Vf * x, rd.Nfq ÷ rd.num_faces, :)).((x, y))
 
-# (; mortar_interpolation_matrix) = md.mesh_type
 mortar_interpolation_matrix, mortar_projection_matrix = StartUpDG.compute_mortar_operators(rd)
+
 if length(nonconforming_faces) > 0
     xm, ym = (x -> reshape(mortar_interpolation_matrix * x, :, 2 * length(nonconforming_faces))).((xf[:, nonconforming_faces], yf[:, nonconforming_faces]))
     xM, yM = [xf xm], [yf ym]
@@ -192,8 +194,9 @@ mapM = reshape(1:length(xM), size(xM))
 mapP = copy(mapM)
 for (f, fnbr) in enumerate(FToF)
     if f != fnbr # if it's not a boundary face
-        # face orientations should always be 
-        # opposite for CCW ordering
+
+        # face orientations should consistently 
+        # be opposite for CCW ordering.
         @. mapP[end:-1:1, f] = mapM[:, fnbr]
     end
 end
@@ -203,13 +206,66 @@ xy = [[xM[i, j], yM[i, j]] for i in axes(xM, 1), j in axes(xM, 2)]
 xydiff = norm.(xy .- xy[mapP])
 @show norm(xydiff)
 
-anim = @animate for i in eachindex(xy) 
-    scatter(xM, yM, color=:black, markersize=2)
-    scatter!(SVector.(xy[i])..., leg=false, marker=:star, markersize=8)
-    scatter!(SVector.(xy[mapP[i]])..., leg=false, marker=:star5, markersize=6)
-end when i !== mapP[i] 
-gif(anim, "check_mapP.gif", fps=4)
+# anim = @animate for i in eachindex(xy) 
+#     scatter(xM, yM, color=:black, markersize=2)
+#     scatter!(SVector.(xy[i])..., leg=false, marker=:star, markersize=8)
+#     scatter!(SVector.(xy[mapP[i]])..., leg=false, marker=:star5, markersize=6)
+# end when i !== mapP[i] 
+# gif(anim, "check_mapP.gif", fps=4)
 
+rxJ, sxJ, ryJ, syJ, J = StartUpDG.geometric_factors(x, y, rd.Drst...)
+rstxyzJ = SMatrix{2, 2}(rxJ, ryJ, sxJ, syJ)
+nxJ, nyJ, Jf = StartUpDG.compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
+nxJf = reshape(nxJ, :, num_faces)
+nyJf = reshape(nyJ, :, num_faces)
+nxJm, nyJm = map(x -> reshape(mortar_interpolation_matrix * x, :, 2 * length(nonconforming_faces)), 
+                 (nxJf[:, nonconforming_faces], nyJf[:, nonconforming_faces]))
+nxJ = [nxJf nxJm]
+nyJ = [nyJf nyJm]
+Jf = @. sqrt(nxJ^2 + nyJ^2)
+
+nx, ny = nxJ ./ Jf, nyJ ./ Jf
+
+p = (; mapP, rxJ, sxJ, ryJ, syJ, J, nx, ny, Jf, rd, 
+       num_elements, num_faces, mortar_interpolation_matrix, mortar_projection_matrix,
+       nonconforming_faces, nonconforming_to_mortar_face, mortar_faces)
+
+function rhs!(du, u, p, t)
+    (; mapP, rxJ, sxJ, ryJ, syJ, J, nx, ny, Jf, rd, 
+       num_elements, num_faces, mortar_interpolation_matrix, mortar_projection_matrix,
+       nonconforming_faces, nonconforming_to_mortar_face, mortar_faces) = p
+
+    uf = reshape(rd.Vf * u, :, num_faces)
+
+    # interpolate to mortars 
+    um = reshape(mortar_interpolation_matrix * uf[:, nonconforming_faces], :, 2 * length(nonconforming_faces))
+    uM = [uf um]
+    uP = uM[mapP]
+    
+    # compute fluxes on mortars (and inactive faces) 
+    # TODO: keep track of active faces
+    mortar_fluxes = @. 0.5 * (uP - uM) * nxJ - 0.5 * abs(nx) * (uP - uM) * Jf
+    
+    projected_mortar_fluxes = 
+        mortar_projection_matrix * reshape(mortar_fluxes[:, mortar_faces], :, length(nonconforming_faces))
+
+    fluxes = mortar_fluxes[:, 1:num_faces]
+    fluxes[:, nonconforming_faces] .= projected_mortar_fluxes
+    fluxes = reshape(fluxes, :, num_elements)
+
+    du .= -(rxJ .* (rd.Dr * u) + sxJ .* (rd.Ds * u) + rd.LIFT * fluxes) ./ J
+end
 
 using OrdinaryDiffEq
+
+u = @. exp(-50 * ((x-0.5)^2 + (y-0.5)^2))
+tspan = (0, 2.0)
+ode = ODEProblem(rhs!, u, tspan, p)
+
+sol = solve(ode, Tsit5(), saveat=LinRange(tspan..., 25))
+# scatter(vec(rd.Vp * x), vec(rd.Vp * y), zcolor=vec(rd.Vp * sol.u[end]))
+anim = @animate for u in sol.u
+    scatter(vec(rd.Vp * x), vec(rd.Vp * y), zcolor=vec(rd.Vp * u), msw=0)
+end
+gif(anim, "advec.gif")
