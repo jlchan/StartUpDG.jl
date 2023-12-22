@@ -2,17 +2,22 @@
 #           dual_faces, orientations
 include("generate_t8_arrays.jl")
 
+old_orientations = deepcopy(orientations)
+
 # flip orientation of the second t8 face
 # to ensure consistent CCW orientation
 for e in eachindex(neighbor_ids)
     # reverse the orientation of face 2
-    @. orientations[e][2] = !Bool(orientations[e][2])
+    @. orientations[e][2] = !Bool(old_orientations[e][2])
 
-    # reverse orientations of face 2 neighbors
+    # if the neighbor face isn't face 2 (e.g., also flipped), 
+    # reverse orientations of face 2 neighbors.
     for nbr in eachindex(neighbor_ids[e][2])
         enbr = neighbor_ids[e][2][nbr]
         fnbr = dual_faces[e][2][nbr]
-        @. orientations[enbr][fnbr] = !Bool(orientations[enbr][fnbr])
+        if fnbr != 2
+            @. orientations[enbr][fnbr] = !Bool(old_orientations[enbr][fnbr])
+        end
     end
     
     # reverse the order in which the neighbors and 
@@ -194,10 +199,12 @@ mapM = reshape(1:length(xM), size(xM))
 mapP = copy(mapM)
 for (f, fnbr) in enumerate(FToF)
     if f != fnbr # if it's not a boundary face
-
-        # face orientations should consistently 
-        # be opposite for CCW ordering.
-        @. mapP[end:-1:1, f] = mapM[:, fnbr]
+        @assert face_orientations[f] == face_orientations[fnbr]
+        if face_orientations[f] == 1
+            @. mapP[end:-1:1, f] = mapM[:, fnbr]
+        else
+            @. mapP[:, f] = mapM[:, fnbr]
+        end
     end
 end
 
