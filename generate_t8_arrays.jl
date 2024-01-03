@@ -58,8 +58,8 @@ function build_forest_hypercube(element_type, comm, level; do_adapt = false, dim
     cmesh = t8_cmesh_new_periodic_tri(comm)
 
   elseif element_type isa StartUpDG.Quad
-    cmesh = t8_cmesh_new_hypercube(T8_ECLASS_QUAD, comm, 0, 0, 0)
-    # cmesh = t8_cmesh_new_periodic(comm, dim)
+    # cmesh = t8_cmesh_new_hypercube(T8_ECLASS_QUAD, comm, 0, 0, 0)
+    cmesh = t8_cmesh_new_periodic(comm, dim)
 
   else
     cmesh = t8_cmesh_new_periodic_hybrid(comm)
@@ -267,12 +267,12 @@ end
 # ========= Main =========== #
 
 # The uniform refinement level of the forest.
-ini_level = 2
-max_level = 3
-figsize = 1000 .*(1,1) # increase if things are getting crowded
+ini_level = 1
+max_level = 2
+figsize = 1000 .* (1, 1) # increase if things are getting crowded
 
-# etype = Quad()
-etype = Tri()
+etype = Quad()
+# etype = Tri()
 # etype = :hybrid # This actually works! :)
 
 # Initialize an adapted forest. 
