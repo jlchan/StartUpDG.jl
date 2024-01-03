@@ -52,7 +52,7 @@ num_faces = sum(faces_per_element)
 
 # compute indices of nonconforming faces
 # nonconforming_to_mortar_face = Dict{Int, Vector{Int}}()
-nonconforming_to_mortar_face = [[f] for f in eachindex(neighbor_ids)]
+nonconforming_to_mortar_face = [[f] for f in 1:num_faces]
 mortar_offset = 0
 for e in eachindex(neighbor_ids)
     for f in eachindex(neighbor_ids[e])
@@ -101,8 +101,7 @@ for e in eachindex(neighbor_ids)
                 if any(levels[e] .< levels[enbr]) # big face
                     big_face = f + face_offsets[e]
                     dual_face_global_indices = @. fnbr + face_offsets[enbr]
-                    face_global_indices = nonconforming_to_mortar_face[big_face]
-                    @show dual_face_global_indices, face_global_indices
+                    face_global_indices = nonconforming_to_mortar_face[big_face]                    
                     @. FToF[face_global_indices] = dual_face_global_indices
                 else # small face
                     # since it's a small face, (enbr, fnbr) should both be 
