@@ -135,39 +135,42 @@ for e in eachindex(neighbor_ids)
 end
 
 
-# function annotate_mesh(VX, VY, neighbor_ids, dual_faces, orientations)
+function annotate_mesh(etype, VX, VY, neighbor_ids, dual_faces, orientations)
 
-#     # fv = ([2, 3], [1, 3], [1, 2]) # t8 Tri ordering
-#     fv = ([1, 2], [2, 3], [3, 1]) # StartUpDG Tri ordering
-#     fv = ([1, 3], [2, 4], [1, 2], [3, 4]) # StartUpDG Quad ordering
+    # fv = ([2, 3], [1, 3], [1, 2]) # t8 Tri ordering
+    if etype isa Tri
+        fv = ([1, 2], [2, 3], [3, 1]) # StartUpDG Tri ordering
+        p_vertex = SVector(1, 2, 3, 1)
+    elseif etype isa Quad
+        fv = ([1, 3], [2, 4], [1, 2], [3, 4]) # StartUpDG Quad ordering
+        p_vertex = SVector(1, 2, 4, 3, 1)
+    end
+    
+    avg(x) = sum(x) / length(x)
 
-#     # num_vertices = 3
-#     p_vertex = SVector(1, 2, 4, 3, 1)
-#     avg(x) = sum(x) / length(x)
+    # t8_to_StartUpDG_face_ordering 
+    plot(size = 1000 .* (1, 1))
+    for e in eachindex(VX, VY)
+        xc, yc = avg(VX[e]), avg(VY[e])
+        annotate!([xc], [yc], [string(e)], markersize=8)
+        plot!(VX[e][p_vertex], VY[e][p_vertex])
+        for v in eachindex(VX[e])
+            xv, yv = VX[e][v], VY[e][v]            
+            annotate!([xc + 0.9 * (xv - xc)], [yc + 0.9 * (yv - yc)], string(v))
+        end
+        for f in eachindex(neighbor_ids[e])
+            global_f = f + face_offsets[e]
+            fids = fv[f]
+            plot!(VX[e][fids], VY[e][fids])
+            xfc = avg(VX[e][fids])
+            yfc = avg(VY[e][fids])
+            annotate!([xc + 0.85 * (xfc - xc)], [yc + 0.85 * (yfc - yc)], string(f) * "(" * string(global_f) * ")")
+        end
+    end
+    display(plot!(leg=false))
+end
 
-#     # t8_to_StartUpDG_face_ordering 
-#     plot(size = 1000 .* (1, 1))
-#     for e in eachindex(VX, VY)
-#         xc, yc = avg(VX[e]), avg(VY[e])
-#         annotate!([xc], [yc], [string(e)], markersize=8)
-#         plot!(VX[e][p_vertex], VY[e][p_vertex])
-#         for v in eachindex(VX[e])
-#             xv, yv = VX[e][v], VY[e][v]            
-#             annotate!([xc + 0.9 * (xv - xc)], [yc + 0.9 * (yv - yc)], string(v))
-#         end
-#         for f in eachindex(neighbor_ids[e])
-#             global_f = f + face_offsets[e]
-#             fids = fv[f]
-#             plot!(VX[e][fids], VY[e][fids])
-#             xfc = avg(VX[e][fids])
-#             yfc = avg(VY[e][fids])
-#             annotate!([xc + 0.85 * (xfc - xc)], [yc + 0.85 * (yfc - yc)], string(f) * "(" * string(global_f) * ")")
-#         end
-#     end
-#     display(plot!(leg=false))
-# end
-
-# annotate_mesh(VX, VY, neighbor_ids, dual_faces, orientations)
+annotate_mesh(etype, VX, VY, neighbor_ids, dual_faces, orientations)
 
 # Create a StartUpDG mesh. 
 # etype is defined in "generate_t8_arrays.jl"
@@ -252,7 +255,7 @@ function rhs!(du, u, p, t)
     uP = uM[mapP]
     
     # compute fluxes on mortars (and inactive faces) 
-    # TODO: keep track of active faces
+    # TODO: keep track of active faces to reduce work
     mortar_fluxes = @. 0.5 * (uP - uM) * nxJ - 0.5 * abs(nx) * (uP - uM) * Jf
     
     projected_mortar_fluxes = 
