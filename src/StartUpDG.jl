@@ -14,7 +14,7 @@ using PathIntersections: PathIntersections
 @reexport using PathIntersections: PresetGeometries
 using Printf: @sprintf
 using RecipesBase: RecipesBase
-using RecursiveArrayTools: NamedArrayPartition
+@reexport using RecursiveArrayTools: NamedArrayPartition
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
 @reexport using SimpleUnPack: @unpack
