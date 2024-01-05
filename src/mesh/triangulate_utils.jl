@@ -19,7 +19,6 @@ Computes `VX`,`VY`,`EToV` from a `TriangulateIO` object.
 function triangulateIO_to_VXYEToV(triout::TriangulateIO)
     VX,VY = (triout.pointlist[i,:] for i = 1:size(triout.pointlist,1))
     EToV = permutedims(triout.trianglelist)
-    Base.swapcols!(EToV,2,3) # to match MeshData ordering
     return (VX, VY), Matrix{Int}(EToV)
 end
 
@@ -37,8 +36,8 @@ function get_boundary_face_labels(triout::TriangulateIO, rd::RefElemData{2, Tri}
     for (f,boundary_face) in enumerate(boundary_faces)
         element = (boundary_face - 1) ÷ rd.Nfaces + 1
         face    = (boundary_face - 1) % rd.Nfaces + 1
-        vertices_on_face = sort(md.EToV[element,rd.fv[face]])
-        tag_id = findfirst(c->view(segmentlist,:,c)==vertices_on_face,axes(segmentlist,2))
+        vertices_on_face = sort(md.EToV[element, rd.fv[face]])
+        tag_id = findfirst(c -> view(segmentlist,:,c) == vertices_on_face,axes(segmentlist, 2))
         boundary_face_tags[f] = triout.segmentmarkerlist[tag_id]
     end
     return boundary_face_tags, boundary_faces

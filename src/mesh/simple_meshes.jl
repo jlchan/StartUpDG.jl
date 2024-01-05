@@ -29,8 +29,8 @@ function uniform_mesh(elem::Tri, Kx, Ky)
             id2 = id(ex + 1, ey)
             id3 = id(ex + 1, ey + 1)
             id4 = id(ex, ey + 1)
-            EToV[2*sk-1, :] = [id1 id3 id2]
-            EToV[2*sk, :] = [id3 id1 id4]
+            EToV[2*sk-1, :] = [id1 id2 id3]
+            EToV[2*sk, :] = [id3 id4 id1]
             sk += 1
         end
     end
@@ -123,15 +123,15 @@ function uniform_mesh(elem::Hex, Nx, Ny, Nz)
 end
 
 
-function uniform_mesh(elem::Wedge, Kx, Ky, Kz)
+function uniform_mesh(::Wedge, Kx, Ky, Kz)
     (VY, VX, VZ) = meshgrid(LinRange(-1, 1, Ky + 1), LinRange(-1, 1, Kx + 1), LinRange(-1, 1, Kz + 1))
     sk = 1
-    shift = (Kx+1)*(Ky+1)
+    shift = (Kx + 1) * (Ky + 1)
+    id(ex, ey, ez) = ex + (ey - 1) * (Kx + 1)  + (ez - 1) * (shift) # index function
     EToV = zeros(Int, 2 * Kx * Ky * Kz, 6)
     for ey = 1:Ky
         for ex = 1:Kx
             for ez = 1:Kz
-                id(ex, ey, ez) = ex + (ey - 1) * (Kx + 1)  + (ez - 1) * (shift)# index function
                 id1 = id(ex, ey, ez)
                 id2 = id(ex + 1, ey, ez)
                 id3 = id(ex, ey + 1, ez)
@@ -140,14 +140,13 @@ function uniform_mesh(elem::Wedge, Kx, Ky, Kz)
                 id6 = id(ex + 1, ey, ez + 1)
                 id7 = id(ex, ey + 1, ez + 1)
                 id8 = id(ex + 1, ey + 1, ez + 1)
-                EToV[2*sk-1, :] = [id1 id5 id4 id8 id2 id6]
-                EToV[2*sk, :] = [id1 id5 id3 id7 id4 id8]
+                EToV[2 * sk - 1, :] = [id1 id2 id4 id5 id6 id8] 
+                EToV[2 * sk, :]     = [id1 id4 id3 id5 id8 id7]   
                 sk += 1
             end
         end
     end
-    EToV .= EToV[:, SVector(1, 3, 5, 2, 4, 6)]
-    return (VX[:], VY[:], VZ[:]), EToV
+    return vec.((VX, VY, VZ)), EToV
 end
 
 # split each cube into 6 pyramids. Pyramid 1: 
