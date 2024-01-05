@@ -76,7 +76,7 @@ function Base.propertynames(x::RefElemData{3}, private::Bool = false)
 end
 
 # convenience unpacking routines
-function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbol) where {Dim, ElementType, ApproxType}
+function Base.getproperty(x::RefElemData, s::Symbol) 
     if s==:r
         return getfield(x, :rst)[1]
     elseif s==:s
@@ -170,12 +170,12 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 
 # Wedges have different types of faces depending on the face. 
 # We define the first three faces to be quadrilaterals and the 
-# last two faces are triangles.
+# last two faces to be triangles.
 @inline face_type(::Wedge, id) = (id <= 3) ? Quad() : Tri()
 
 # Pyramids have different types of faces depending on the face. 
 # We define the first four faces to be triangles and the 
-# last face to be a quadrilateral. 
+# last face to be the quadrilateral face. 
 @inline face_type(::Pyr, id) = (id <= 4) ? Tri() : Quad()
 
 # ====================================================
@@ -200,17 +200,24 @@ Polynomial() = Polynomial{DefaultPolynomialType}(DefaultPolynomialType())
 """
     TensorProductQuadrature{T}
 
-A type parameter to `Polynomial` indicating that 
+A type parameter to `Polynomial` indicating that the quadrature has a tensor 
+product structure. 
 """
 struct TensorProductQuadrature{T}
     quad_rule_1D::T  # 1D quadrature nodes and weights (rq, wq)
 end
 
-TensorProductQuadrature(r1D, w1D) = TensorProductQuadrature((r1D, w1D))
+TensorProductQuadrature(args...) = TensorProductQuadrature(args)
 
-# Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
-struct Gauss end 
-Polynomial{Gauss}() = Polynomial(Gauss())
+"""
+    TensorProductGaussCollocation
+
+Polynomial{TensorProductGaussCollocation} type indicates a tensor product 
+# (N+1)-point Gauss quadrature on tensor product elements. 
+"""
+struct TensorProductGaussCollocation end 
+const Gauss = TensorProductGaussCollocation
+Polynomial{TensorProductGaussCollocation}() = Polynomial(TensorProductGaussCollocation())
 
 # ========= SBP approximation types ============
 
@@ -269,5 +276,5 @@ _short_typeof(approx_type::Wedge) = "Wedge"
 _short_typeof(approx_type::Pyr) = "Pyr"
 
 _short_typeof(approx_type::Polynomial{<:DefaultPolynomialType}) = "Polynomial"
-_short_typeof(approx_type::Polynomial{<:Gauss}) = "Polynomial{Gauss}"
+_short_typeof(approx_type::Polynomial{<:TensorProductGaussCollocation}) = "Polynomial{Gauss}"
 _short_typeof(approx_type::Polynomial{<:TensorProductQuadrature}) = "Polynomial{TensorProductQuadrature}"
