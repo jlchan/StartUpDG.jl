@@ -29,14 +29,6 @@ struct CutCellMesh{T1, T2, T3, T4, T5}
 end
 
 # TODO: add isoparametric cut cell mesh with positive quadrature points
-# # This mesh type has a polynomial representation of objects, so we don't store the curve info
-# struct IsoparametricCutCellMesh{T1, T2, T3, T4}
-#     physical_frame_elements::T1
-#     cut_face_nodes::T2
-#     cut_cell_operators::T3
-#     cut_cell_data::T4
-# end
-
 
 function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, <:CutCellMesh}) where {DIM}
     @nospecialize md
