@@ -72,9 +72,22 @@ By default, `RefElemData` is constructed for a nodal basis (in order to facilita
 
 ## `RefElemData` based on SBP finite differences
 
-It is also possible to construct a [`RefElemData`](@ref) based on [multi-dimensional SBP finite difference operators](https://doi.org/10.1137/15M1038360). These utilize nodes constructed by [Tianheng Chen and Chi-Wang Shu](https://doi.org/10.1016/j.jcp.2017.05.025), [Ethan Kubatko](https://sites.google.com/site/chilatosu/ethan-bio), and [Jason Hicken](https://doi.org/10.1007/s10915-020-01154-8).
+It is also possible to construct a [`RefElemData`](@ref) based on both traditional finite difference SBP operators and [multi-dimensional SBP finite difference operators](https://doi.org/10.1137/15M1038360). The traditional finite difference SBP operators are built using [SummationByPartsOperators.jl](https://github.com/ranocha/SummationByPartsOperators.jl). The multi-dimensional SBP operators utilize nodes constructed by [Tianheng Chen and Chi-Wang Shu](https://doi.org/10.1016/j.jcp.2017.05.025), [Ethan Kubatko](https://sites.google.com/site/chilatosu/ethan-bio), and [Jason Hicken](https://doi.org/10.1007/s10915-020-01154-8). 
 
-Some examples:
+Some examples of traditional finite difference SBP operators on tensor product domains:
+```julia
+using StartUpDG
+using SummationByPartsOperators # this package must be loaded to enable extension
+
+D = derivative_operator(MattssonNordström2004(), 
+                        derivative_order=1, accuracy_order=N+1,
+                        xmin=-1.0, xmax=1.0, N=20)
+
+rd = RefElemData(Line(), D) 
+rd = RefElemData(Quad(), D)
+rd = RefElemData(Hex(), D)
+```
+Some examples of multi-dimensional SBP operators:
 ```julia
 N = 3
 rd = RefElemData(Quad(), SBP(), N) # defaults to SBP{TensorProductLobatto}

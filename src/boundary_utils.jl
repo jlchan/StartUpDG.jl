@@ -2,7 +2,7 @@
 function coordinate_face_centroids(xf, md)
     Nfaces = size(md.FToF, 1)
     Nfp = size(md.xf, 1) ÷ Nfaces
-    xc = reshape(xf, Nfp, Nfaces * md.K)
+    xc = reshape(xf, Nfp, :)
     return vec(typeof(xf)(sum(xc, dims=1) / size(xc, 1)))
 end
 
@@ -12,7 +12,7 @@ end
 Returns face centroids and `boundary_face_ids` on the boundaries of the domain given by md::MeshData.
 """
 function boundary_face_centroids(md)
-    compute_face_centroids(md) = map(x->coordinate_face_centroids(x, md), md.xyzf)
+    compute_face_centroids(md) = map(x -> coordinate_face_centroids(x, md), md.xyzf)
     xyzc = compute_face_centroids(md)
     boundary_face_ids = findall(vec(md.FToF) .== 1:length(md.FToF))
 

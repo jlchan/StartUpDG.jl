@@ -77,19 +77,18 @@ julia> mapM, mapP, mapB = build_node_maps(FToF, (xf, yf))
 ```
 """
 function build_node_maps(FToF, Xf; tol = 100 * eps())
-
-    # total number of faces 
-    num_faces_total = length(FToF)    
+    
+    num_faces_total = length(FToF)
     
     # num face points: assumes all faces have the same number of nodes
     num_nodes_per_face = length(Xf[1]) ÷ num_faces_total 
 
     # number nodes consecutively
-    mapM = reshape(collect(1:length(Xf[1])), num_nodes_per_face, num_faces_total);
+    mapM = reshape(collect(1:length(Xf[1])), num_nodes_per_face, :);
     mapP = copy(mapM);
 
     # reshape to be a face-first array
-    Xf = reshape.(Xf, num_nodes_per_face, num_faces_total)
+    Xf = reshape.(Xf, num_nodes_per_face, :)
 
     p = zeros(Int, num_nodes_per_face)
     for (f1, f2) in enumerate(FToF)

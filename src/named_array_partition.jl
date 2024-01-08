@@ -39,7 +39,7 @@ Base.propertynames(x::NamedArrayPartition) = propertynames(getfield(x, :names_to
 Base.getproperty(x::NamedArrayPartition, s::Symbol) =
     getindex(ArrayPartition(x).x, getproperty(getfield(x, :names_to_indices), s))
 
-# !!! this won't work if `v` isn't the same size as 
+# this enables x.s = some_array. 
 @inline function Base.setproperty!(x::NamedArrayPartition, s::Symbol, v) 
     index = getproperty(getfield(x, :names_to_indices), s)
     ArrayPartition(x).x[index] .= v
@@ -61,21 +61,6 @@ Base.mapreduce(f, op, x::NamedArrayPartition) = mapreduce(f, op, ArrayPartition(
 
 Base.similar(x::NamedArrayPartition{T, S, NT}) where {T, S, NT} = 
     NamedArrayPartition{T, S, NT}(similar(ArrayPartition(x)), getfield(x, :names_to_indices))
-
-# # return NamedArrayPartition when possible, otherwise next best thing of the correct size
-# function Base.similar(x::ArrayPartition, dims::NTuple{N,Int}) where {N}
-#     if dims == size(x)
-#         return similar(x)
-#     else
-#         return similar(ArrayPartition(x).x[1], eltype(x), dims)
-#     end
-# end
-
-# # similar array partition of common type
-# @inline function Base.similar(A::ArrayPartition, ::Type{T}) where {T}
-#     N = npartitions(A)
-#     ArrayPartition(i->similar(A.x[i], T), N)
-# end
 
 # broadcasting
 Base.BroadcastStyle(::Type{<:NamedArrayPartition}) = Broadcast.ArrayStyle{NamedArrayPartition}()
