@@ -267,12 +267,12 @@ end
 # ========= Main =========== #
 
 # The uniform refinement level of the forest.
-ini_level = 1
-max_level = 2
+ini_level = 2
+max_level = 3
 figsize = 1000 .* (1, 1) # increase if things are getting crowded
 
-etype = Quad()
-# etype = Tri()
+# etype = Quad()
+etype = Tri()
 # etype = :hybrid # This actually works! :)
 
 # Initialize an adapted forest. 
