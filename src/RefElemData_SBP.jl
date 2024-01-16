@@ -376,3 +376,89 @@ function sparse_low_order_SBP_operators(rd::RefElemData{3, Hex, <:Union{<:SBP, <
 
     return sparse.((Qr, Qs, Qt)), sparse(E)
 end
+
+# builds subcell operators D * R such that for r such that sum(r) = 0, 
+# D * Diagonal(θ) * R * r is also diagonal for any choice of θ. This is
+# useful in subcell limiting (see, for example  
+# https://doi.org/10.1016/j.compfluid.2022.105627 for a 1D example)
+function subcell_limiting_operators(Qr::AbstractMatrix; tol = 100 * eps())
+    Qr = sparse(Qr)
+    Sr = droptol!(Qr - Qr', tol)
+    Br = droptol!(Qr + Qr', tol)
+
+    num_interior_fluxes = nnz(Sr) ÷ 2
+    num_boundary_indices = nnz(Br)
+    num_fluxes = num_interior_fluxes + num_boundary_indices
+
+    interior_indices = findall(Sr .> tol)
+    boundary_indices = findall(abs.(Br) .> tol)
+
+    matrix_indices = zeros(Int, size(Sr))
+    for (i, ij) in enumerate(boundary_indices)
+        matrix_indices[ij] = i
+        matrix_indices[ij.I[2], ij.I[1]] = i
+    end
+
+    for (i, ij) in enumerate(interior_indices)
+        matrix_indices[ij] = i + length(boundary_indices)
+        matrix_indices[ij.I[2], ij.I[1]] = i + length(boundary_indices)
+    end
+
+    D = zeros(size(Qr, 2), num_fluxes)
+    for i in axes(matrix_indices, 1), j in axes(matrix_indices, 2)
+        if matrix_indices[i, j] !== 0
+            D[i, matrix_indices[i, j]] = Qr[i, j]    
+        end
+    end
+
+    d = (ones(size(D, 1))' * D)'
+    ids = findall(@. abs(d) > 1e2 * eps())
+
+    Z = nullspace(D)[ids, :]
+    A = pinv(D)[ids,:]
+    X = randn(size(Z, 2), size(D, 1))
+    y = randn(length(ids))
+    e = ones(size(D, 1))
+
+    # compute R via linear algebra
+    m, n = size(A)
+    z = size(Z, 2)
+    C = hcat(kron(I(n), Z), kron(ones(n), I(m)))
+    sol = pinv(C) * -vec(A)
+    X = reshape(sol[1:n*z], (z, n))
+    R = pinv(D) + nullspace(D) * X
+
+    # check if R satisfies our pseudoinverse condition
+    @assert norm(D * R - I(size(D,1))) < tol * length(D)
+
+    return D, R
+end
+
+"""
+    Δrst, Rrst = subcell_limiting_operators(rd::RefElemData)
+
+Returns tuples of subcell limiting operators Drst = (Δr, Δs, ...) and R = (Rr, Rs, ...) 
+such that for r where sum(r) = 0, sum(D * Diagonal(θ) * R * r) = 0 for any choice of θ. 
+These operators are useful for conservative subcell limiting techniques (see 
+https://doi.org/10.1016/j.compfluid.2022.105627 for an example of such an approach on 
+tensor product elements). 
+
+Sparse SBP operators used in an intermediate step when buidling these subcell 
+limiting operators; by default, these operators are constructed using
+`sparse_low_order_SBP_operators`. To construct subcell limiting operators for a 
+general SBP operator, one can use the following:
+
+    Δ, R = subcell_limiting_operators(Q::AbstractMatrix; tol = 100 * eps())
+"""
+function subcell_limiting_operators(rd::RefElemData)
+    Qrst, _ = sparse_low_order_SBP_operators(rd)
+    Δrst, Rrst = subcell_limiting_operators.(Qrst)
+    return zip(Δrst, Rrst)
+end    
+
+# specialize for single dimension
+function subcell_limiting_operators(rd::RefElemData{1})
+    Qrst, _ = sparse_low_order_SBP_operators(rd)
+    Δrst, Rrst = subcell_limiting_operators(Qrst[1])
+    return Δrst, Rrst
+end    
