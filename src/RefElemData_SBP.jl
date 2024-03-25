@@ -254,6 +254,9 @@ Returns operators `Qrst..., E ≈ Vf * Pq` that satisfy a generalized
 summation-by-parts (GSBP) property:
 
         `Q_i + Q_i^T = E' * B_i * E`
+
+`factor` is a scaling which determines how close a node must be to 
+another node to be considered a neighbor.
 """
 function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}; factor=1.01) where {NDIMS}
     (; Pq, Vf, rstq, wf, nrstJ) = rd
@@ -278,7 +281,10 @@ function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}; factor=1.01) whe
     sorted_eigvals = sort(eigvals(L))
 
     # check that there's only one zero null vector
-    @assert sorted_eigvals[2] > 100 * eps() 
+    if sorted_eigvals[2] < 10 * size(A, 1) * eps()
+        error("Warning: the connectivity between nodes yields a graph with " * 
+            "more than one connected component. Try increasing the value of `factor`.")
+    end
     
     E_dense = Vf * Pq
     E = zeros(size(E_dense))
