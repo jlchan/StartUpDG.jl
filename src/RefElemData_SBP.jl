@@ -247,7 +247,7 @@ end
 
 
 """
-    function sparse_low_order_SBP_operators(rd)
+    function sparse_low_order_SBP_operators(rd; factor=1.01)
 
 Constructs sparse low order SBP operators given a `RefElemData`. 
 Returns operators `Qrst..., E ≈ Vf * Pq` that satisfy a generalized 
@@ -255,7 +255,7 @@ summation-by-parts (GSBP) property:
 
         `Q_i + Q_i^T = E' * B_i * E`
 """
-function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
+function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}; factor=1.01) where {NDIMS}
     (; Pq, Vf, rstq, wf, nrstJ) = rd
 
     # if element is a simplex, convert nodes to an equilateral triangle for symmetry
@@ -269,7 +269,7 @@ function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}) where {NDIMS}
         # heuristic cutoff - we take NDIMS + 1 neighbors, but the smallest distance = 0, 
         # so we need to access the first NDIMS + 2 sorted distance entries.
         dist = sort(view(D, i, :))[NDIMS + 2] 
-        for j in findall(view(D, i, :) .< 1.01 * dist)
+        for j in findall(view(D, i, :) .< factor * dist)
             A[i, j] = 1
         end
     end
