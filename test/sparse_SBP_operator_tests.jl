@@ -60,9 +60,7 @@ end
             r = randn(size(Rrst[dim], 2))
             r = r .- sum(r) / length(r) # so that sum(r) = 0
             θ = rand(size(Rrst[dim], 1))
-            sum(Δrst[dim] * Diagonal(θ) * Rrst[dim] * r)
-            @show d
-            @test all(d .≈ d[1]) # test that d is a constant vector
+            @test abs(sum(Δrst[dim] * Diagonal(θ) * Rrst[dim] * r)) < 10 * length(r) * eps()
         end
     end
 end
