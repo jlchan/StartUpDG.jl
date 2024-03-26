@@ -286,6 +286,8 @@ function sparse_low_order_SBP_operators(rd::RefElemData{NDIMS}; factor=1.01) whe
             "more than one connected component. Try increasing the value of `factor`.")
     end
     
+    # note: this part doesn't do anything for a nodal SBP operator. In that case, E_dense = E = Vf 
+    # and E should just reduce to Vf, which is a face extraction operator. 
     E_dense = Vf * Pq
     E = zeros(size(E_dense))
     for i in axes(E, 1)
