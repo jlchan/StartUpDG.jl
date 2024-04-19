@@ -419,14 +419,11 @@ function subcell_limiting_operators(Qr::AbstractMatrix; tol = 100 * eps())
         end
     end
 
-    d = (ones(size(D, 1))' * D)'
+    d = vec(ones(size(D, 1))' * D)
     ids = findall(@. abs(d) > 1e2 * eps())
 
     Z = nullspace(D)[ids, :]
     A = pinv(D)[ids,:]
-    X = randn(size(Z, 2), size(D, 1))
-    y = randn(length(ids))
-    e = ones(size(D, 1))
 
     # compute R via linear algebra
     m, n = size(A)
