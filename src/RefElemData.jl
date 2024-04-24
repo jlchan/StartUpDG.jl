@@ -199,6 +199,18 @@ end
 struct DefaultPolynomialType end
 Polynomial() = Polynomial{DefaultPolynomialType}(DefaultPolynomialType())
 
+# this constructor enables us to construct a `Polynomial` type via
+# Polynomial{TensorProductQuadrature}() or Polynomial{MultidimensionalQuadrature}().  
+Polynomial{T}() where {T} = Polynomial(T())
+
+"""
+    MultidimensionalQuadrature
+
+A type parameter for `Polynomial` indicating that the quadrature 
+has no specific structure. 
+"""
+struct MultidimensionalQuadrature end
+
 """
     TensorProductQuadrature{T}
 
@@ -219,7 +231,6 @@ Polynomial{TensorProductGaussCollocation} type indicates a tensor product
 """
 struct TensorProductGaussCollocation end 
 const Gauss = TensorProductGaussCollocation
-Polynomial{TensorProductGaussCollocation}() = Polynomial(TensorProductGaussCollocation())
 
 # ========= SBP approximation types ============
 
@@ -277,6 +288,7 @@ _short_typeof(x) = typeof(x)
 _short_typeof(approx_type::Wedge) = "Wedge"
 _short_typeof(approx_type::Pyr) = "Pyr"
 
-_short_typeof(approx_type::Polynomial{<:DefaultPolynomialType}) = "Polynomial"
+# _short_typeof(approx_type::Polynomial{<:DefaultPolynomialType}) = "Polynomial"
+_short_typeof(approx_type::Polynomial{<:MultidimensionalQuadrature}) = "Polynomial"
 _short_typeof(approx_type::Polynomial{<:TensorProductGaussCollocation}) = "Polynomial{Gauss}"
 _short_typeof(approx_type::Polynomial{<:TensorProductQuadrature}) = "Polynomial{TensorProductQuadrature}"

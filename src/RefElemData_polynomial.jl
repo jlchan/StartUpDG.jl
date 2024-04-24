@@ -1,3 +1,20 @@
+# The following functions determine what default quadrature type to use 
+
+# simplices and pyramids default to multidimensional quadrature
+RefElemData(elem::Union{Line, Tri, Tet, Wedge, Pyr}, 
+            approx_type::Polynomial{DefaultPolynomialType}, 
+            N; kwargs...) = 
+    RefElemData(elem, Polynomial{MultidimensionalQuadrature}(), N; kwargs...)
+
+# on quad and hex elements, default to a tensor product quadrature 
+RefElemData(elem::Union{Quad, Hex}, approximation_type::Polynomial{DefaultPolynomialType}, N; kwargs...) = 
+    RefElemData(elem, Polynomial(TensorProductQuadrature(gauss_quad(0, 0, N+1))), N; kwargs...)
+
+# special case: for lines, tensor product and multidimensional quadrature are the same
+RefElemData(elem::Line, approx_type::Polynomial{<:TensorProductQuadrature}, N; kwargs...) = 
+    RefElemData(elem, Polynomial{MultidimensionalQuadrature}(), N; 
+                quad_rule_vol=approx_type.data.quad_rule_1D, kwargs...)
+
 """
     RefElemData(elem::Line, approximation_type, N;
                 quad_rule_vol = quad_nodes(elem, N+1))
@@ -8,9 +25,8 @@
 Constructor for `RefElemData` for different element types.
 """
 function RefElemData(elem::Line, 
-                     approx_type::Polynomial{DefaultPolynomialType}, N; 
-                     quad_rule_vol=quad_nodes(elem, N+1), 
-                     Nplot=10)
+                     approx_type::Polynomial{MultidimensionalQuadrature},
+                     N; quad_rule_vol=quad_nodes(elem, N+1), Nplot=10)
 
     fv = face_vertices(elem)
 
@@ -45,23 +61,12 @@ function RefElemData(elem::Line,
                        M, Pq, tuple(Dr), LIFT)
 end
 
-_default_approx_type(elem, approximation_type, N) = approximation_type
-_default_approx_type(::Union{Quad, Hex}, ::Polynomial, N) = 
-    Polynomial(TensorProductQuadrature(gauss_quad(0, 0, N+1)))
 
-function RefElemData(elem::Union{Tri, Quad}, 
-                     approx_type::Polynomial{DefaultPolynomialType}, N;
-                     kwargs...)    
-    return RefElemData2D(elem, _default_approx_type(elem, approx_type, N), 
-                         N; kwargs...)
-end
-
-# internal constructor used for dispatch
-function RefElemData2D(elem::Union{Tri, Quad}, 
-                       approx_type, N;
-                       quad_rule_vol=quad_nodes(elem, N),
-                       quad_rule_face=quad_nodes(face_type(elem), N),
-                       Nplot=10)
+function RefElemData(elem::Union{Tri, Quad},
+                     approx_type::Polynomial{MultidimensionalQuadrature}, N;
+                     quad_rule_vol=quad_nodes(elem, N),
+                     quad_rule_face=quad_nodes(face_type(elem), N),
+                     Nplot=10)
 
     fv = face_vertices(elem) # set faces for triangle
 
@@ -100,15 +105,14 @@ function RefElemData2D(elem::Union{Tri, Quad},
                        M, Pq, (Dr, Ds), LIFT)
 end
 
-
-function RefElemData(elem::Union{Hex, Tet}, 
-                     approx_type::Polynomial{DefaultPolynomialType}, N;
+function RefElemData(elem::Union{Tet, Hex},
+                     approx_type::Polynomial{MultidimensionalQuadrature}, N;
                      quad_rule_vol=quad_nodes(elem, N),
                      quad_rule_face=quad_nodes(face_type(elem), N),
                      Nplot=10)
 
     if elem isa Hex && N > 4
-        @warn "Since N > 4, we suggest using `RefElemData(Hex(), TensorProductQuadrature(gauss_quad(0, 0, $N+1)), $N)`, " * 
+        @warn "Since N > 4, we suggest using `RefElemData(Hex(), Polynomial(TensorProductQuadrature(gauss_quad(0, 0, $N+1))), $N)`, " * 
               "which is more efficient."
     end      
 
@@ -157,7 +161,8 @@ end
 
 Builds operators for prisms/wedges
 """
-function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
+function RefElemData(elem::Wedge, 
+                     approximation_type::Polynomial{MultidimensionalQuadrature}, N;
                      quad_rule_vol=quad_nodes(elem, N),
                      quad_rule_face_quad=quad_nodes(Quad(), N), 
                      quad_rule_face_tri=quad_nodes(Tri(), N), 
@@ -225,7 +230,8 @@ function RefElemData(elem::Wedge, approximation_type::Polynomial, N;
 end
 
 """
-    RefElemData(elem::Pyr, approximation_type::Polynomial, N;
+    RefElemData(elem::Pyr, 
+                approximation_type::Polynomial, N;
                 quad_rule_vol=quad_nodes(elem, N),
                 quad_rule_face_quad=quad_nodes(Quad(), N), 
                 quad_rule_face_tri=quad_nodes(Tri(), N), 
@@ -234,7 +240,8 @@ end
 
 Builds operators for pyramids.
 """
-function RefElemData(elem::Pyr, approximation_type::Polynomial, N;
+function RefElemData(elem::Pyr, 
+                     approximation_type::Polynomial{MultidimensionalQuadrature}, N;
                      quad_rule_vol=quad_nodes(elem, N),
                      quad_rule_face_quad=quad_nodes(Quad(), N), 
                      quad_rule_face_tri=quad_nodes(Tri(), N), 
@@ -307,16 +314,77 @@ function RefElemData(elem::Pyr, approximation_type::Polynomial, N;
 end
 
 """
-    RefElemData(elem::Hex, ::TensorProductQuadrature, N; Nplot = 10)
-    RefElemData(elem::Hex, approximation_type::Polynomial{<:TensorProductQuadrature}, N; Nplot = 10)
+    RefElemData(elem::Union{Quad, Hex}, approximation_type::TensorProductQuadrature, N)
+    RefElemData(elem::Union{Quad, Hex}, approximation_type::Polynomial{<:TensorProductQuadrature}, N)
 
-Constructor for hexahedral `RefElemData` where the quadrature is assumed to have tensor product structure.
+Constructor for quadrilateral and hexahedral `RefElemData` where the quadrature is assumed to have a 
+tensor product structure. 
 """
-RefElemData(elem::Hex, approximation_parameter::TensorProductQuadrature, N; Nplot = 10) = 
-    RefElemData(elem, Polynomial(approximation_parameter), N; Nplot)
+
+function RefElemData(elem::Quad, 
+                     approximation_type::Polynomial{<:TensorProductQuadrature}, N;
+                     quad_rule_face = approximation_type.data.quad_rule_1D,
+                     Nplot = 10)
+
+    fv = face_vertices(elem) 
+
+    # Construct matrices on reference elements
+    r, s = nodes(elem, N)
+    Fmask = hcat(find_face_nodes(elem, r, s)...)
+
+    # construct 1D operator for faster Kronecker solves
+    r1D = nodes(Line(), N)
+    rq1D, wq1D = approximation_type.data.quad_rule_1D
+    VDM_1D = vandermonde(Line(), N, r1D)
+    Vq1D = vandermonde(Line(), N, rq1D) / VDM_1D
+    invVDM_1D = inv(VDM_1D)
+    invM_1D = VDM_1D * VDM_1D'
+    M1D = Vq1D' * diagm(wq1D) * Vq1D
+
+    # form kronecker products of multidimensional matrices to invert/multiply
+    VDM = kronecker(VDM_1D, VDM_1D)
+    invVDM = kronecker(invVDM_1D, invVDM_1D)
+    invM = kronecker(invM_1D, invM_1D)
+
+    M = kronecker(M1D, M1D)
+
+    _, Vr, Vs = basis(elem, N, r, s)
+    Dr, Ds = (A -> A * invVDM).((Vr, Vs))
+
+    # low order interpolation nodes
+    r1, s1 = nodes(elem, 1)
+    V1 = vandermonde(elem, 1, r, s) / vandermonde(elem, 1, r1, s1)
+
+    # Nodes on faces, and face node coordinate
+    rf, sf, wf, nrJ, nsJ = init_face_data(elem, quad_rule_face=quad_rule_face)
+
+    # quadrature nodes - build from 1D nodes.    
+    rq, sq, wq = tensor_product_quadrature(elem, approximation_type.data.quad_rule_1D...)
+    Vq = kronecker(Vq1D, Vq1D) # vandermonde(elem, N, rq, sq, tq) * invVDM
+    Pq = invM * (Vq' * diagm(wq))
+
+    Vf = vandermonde(elem, N, rf, sf) * invVDM
+    LIFT = invM * (Vf' * diagm(wf))
+
+    # plotting nodes
+    rp1D = LinRange(-1, 1, Nplot + 1)
+    Vp1D = vandermonde(Line(), N, rp1D) / VDM_1D
+    Vp = kronecker(Vp1D, Vp1D, Vp1D)
+    rp, sp = vec.(StartUpDG.NodesAndModes.meshgrid(rp1D, rp1D))
+    
+    return RefElemData(elem, approximation_type, N, fv, V1,
+                       tuple(r, s), VDM, vec(Fmask),
+                       tuple(rp, sp), Vp, 
+                       tuple(rq, sq), wq, Vq,
+                       tuple(rf, sf), wf, Vf, tuple(nrJ, nsJ),
+                       M, Pq, (Dr, Ds), LIFT)
+end
 
 function RefElemData(elem::Hex, 
                      approximation_type::Polynomial{<:TensorProductQuadrature}, N;
+                     quad_rule_face =
+                        tensor_product_quadrature(face_type(elem), 
+                                                  approximation_type.data.quad_rule_1D...),
                      Nplot = 10)
 
     fv = face_vertices(elem) 
@@ -349,7 +417,6 @@ function RefElemData(elem::Hex,
     V1 = vandermonde(elem, 1, r, s, t) / vandermonde(elem, 1, r1, s1, t1)
 
     # Nodes on faces, and face node coordinate
-    quad_rule_face = tensor_product_quadrature(face_type(elem), approximation_type.data.quad_rule_1D...)
     rf, sf, tf, wf, nrJ, nsJ, ntJ = init_face_data(elem, quad_rule_face=quad_rule_face)
 
     # quadrature nodes - build from 1D nodes.    
@@ -374,19 +441,22 @@ function RefElemData(elem::Hex,
                        M, Pq, (Dr, Ds, Dt), LIFT)
 end
 
+RefElemData(elem::Hex, approximation_parameter::TensorProductQuadrature, N; Nplot = 10) = 
+    RefElemData(elem, Polynomial(approximation_parameter), N; Nplot)
 
+    
 function tensor_product_quadrature(::Line, r1D, w1D)
     return r1D, w1D
 end
   
-function tensor_product_quadrature(::Quad, r1D, w1D)
+function tensor_product_quadrature(::Union{Tri, Quad}, r1D, w1D)
     sq, rq = vec.(StartUpDG.NodesAndModes.meshgrid(r1D))
     ws, wr = vec.(StartUpDG.NodesAndModes.meshgrid(w1D))
     wq = wr .* ws
     return rq, sq, wq
 end
   
-function tensor_product_quadrature(::Hex, r1D, w1D)
+function tensor_product_quadrature(::Union{Tet, Hex}, r1D, w1D)
     rq, sq, tq = vec.(StartUpDG.NodesAndModes.meshgrid(r1D, r1D, r1D))
     wr, ws, wt = vec.(StartUpDG.NodesAndModes.meshgrid(w1D, w1D, w1D))
     wq = wr .* ws .* wt
@@ -396,17 +466,16 @@ end
 """
     RefElemData(elem::Union{Line, Quad, Hex}, approximation_type::Polynomial{Gauss}, N)
 
-Builds `rd::RefElemData` with (N+1)-point Gauss quadrature in each dimension. 
+Builds a `rd::RefElemData` with (N+1)-point Gauss quadrature in each dimension. 
 """
 function RefElemData(element_type::Union{Line, Quad, Hex}, 
-                     approximation_type::Polynomial{<:Gauss}, N; kwargs...) 
-    # explicitly specify Gauss quadrature rule with (N+1)^d points 
-    quad_rule_vol = tensor_product_quadrature(element_type, StartUpDG.gauss_quad(0, 0, N)...)
+                     approximation_type::Polynomial{<:TensorProductGaussCollocation}, 
+                     N; kwargs...) 
 
-    # hacky fix to call the default constructor
-    rd = RefElemData(element_type, Polynomial(), N; quad_rule_vol)    
+    quadrature_type = TensorProductQuadrature(gauss_quad(0, 0, N))
+    rd = RefElemData(element_type, Polynomial(quadrature_type), N; kwargs...)
     return @set rd.approximation_type = approximation_type 
 end
   
-RefElemData(element_type::Union{Line, Quad, Hex}, ::Gauss, N; kwargs...) = 
-    RefElemData(element_type, Polynomial{Gauss}(), N; kwargs...)
+RefElemData(element_type::Union{Line, Quad, Hex}, ::TensorProductGaussCollocation, N; kwargs...) = 
+    RefElemData(element_type, Polynomial{TensorProductGaussCollocation}(), N; kwargs...)
