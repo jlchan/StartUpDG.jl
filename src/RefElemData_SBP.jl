@@ -1,8 +1,8 @@
 """
-    function RefElemData(elementType::Line, approxType::SBP, N)
-    function RefElemData(elementType::Quad, approxType::SBP, N)
-    function RefElemData(elementType::Hex,  approxType::SBP, N)
-    function RefElemData(elementType::Tri,  approxType::SBP, N)
+    RefElemData(elementType::Line, approxType::SBP, N)
+    RefElemData(elementType::Quad, approxType::SBP, N)
+    RefElemData(elementType::Hex,  approxType::SBP, N)
+    RefElemData(elementType::Tri,  approxType::SBP, N)
     
 SBP reference element data for `Quad()`, `Hex()`, and `Tri()` elements. 
 
