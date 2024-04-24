@@ -133,16 +133,18 @@ function Base.getproperty(x::RefElemData, s::Symbol)
 end
 
 """
-    function RefElemData(elem; N, kwargs...)
-    function RefElemData(elem, approx_type; N, kwargs...)
+    RefElemData(elem; N, kwargs...)
+    RefElemData(elem, approx_type; N, kwargs...)
 
 Keyword argument constructor for RefElemData (to "label" `N` via `rd = RefElemData(Line(), N=3)`)
 """
 RefElemData(elem; N, kwargs...) = RefElemData(elem, N; kwargs...)
-RefElemData(elem, approx_type; N, kwargs...) = RefElemData(elem, approx_type, N; kwargs...)
+RefElemData(elem, approx_type; N, kwargs...) = 
+    RefElemData(elem, approx_type, N; kwargs...)
 
 # default to Polynomial-type RefElemData
-RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs...)
+RefElemData(elem, N::Int; kwargs...) = 
+    RefElemData(elem, Polynomial(), N; kwargs...)
 
 
 @inline Base.ndims(::Line) = 1
