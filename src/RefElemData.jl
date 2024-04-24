@@ -76,7 +76,7 @@ function Base.propertynames(x::RefElemData{3}, private::Bool = false)
 end
 
 # convenience unpacking routines
-function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbol) where {Dim, ElementType, ApproxType}
+function Base.getproperty(x::RefElemData, s::Symbol) 
     if s==:r
         return getfield(x, :rst)[1]
     elseif s==:s
@@ -133,16 +133,18 @@ function Base.getproperty(x::RefElemData{Dim, ElementType, ApproxType}, s::Symbo
 end
 
 """
-    function RefElemData(elem; N, kwargs...)
-    function RefElemData(elem, approx_type; N, kwargs...)
+    RefElemData(elem; N, kwargs...)
+    RefElemData(elem, approx_type; N, kwargs...)
 
 Keyword argument constructor for RefElemData (to "label" `N` via `rd = RefElemData(Line(), N=3)`)
 """
 RefElemData(elem; N, kwargs...) = RefElemData(elem, N; kwargs...)
-RefElemData(elem, approx_type; N, kwargs...) = RefElemData(elem, approx_type, N; kwargs...)
+RefElemData(elem, approx_type; N, kwargs...) = 
+    RefElemData(elem, approx_type, N; kwargs...)
 
 # default to Polynomial-type RefElemData
-RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs...)
+RefElemData(elem, N::Int; kwargs...) = 
+    RefElemData(elem, Polynomial(), N; kwargs...)
 
 
 @inline Base.ndims(::Line) = 1
@@ -170,12 +172,12 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 
 # Wedges have different types of faces depending on the face. 
 # We define the first three faces to be quadrilaterals and the 
-# last two faces are triangles.
+# last two faces to be triangles.
 @inline face_type(::Wedge, id) = (id <= 3) ? Quad() : Tri()
 
 # Pyramids have different types of faces depending on the face. 
 # We define the first four faces to be triangles and the 
-# last face to be a quadrilateral. 
+# last face to be the quadrilateral face. 
 @inline face_type(::Pyr, id) = (id <= 4) ? Tri() : Quad()
 
 # ====================================================
@@ -197,20 +199,38 @@ end
 struct DefaultPolynomialType end
 Polynomial() = Polynomial{DefaultPolynomialType}(DefaultPolynomialType())
 
+# this constructor enables us to construct a `Polynomial` type via
+# Polynomial{TensorProductQuadrature}() or Polynomial{MultidimensionalQuadrature}().  
+Polynomial{T}() where {T} = Polynomial(T())
+
+"""
+    MultidimensionalQuadrature
+
+A type parameter for `Polynomial` indicating that the quadrature 
+has no specific structure. 
+"""
+struct MultidimensionalQuadrature end
+
 """
     TensorProductQuadrature{T}
 
-A type parameter to `Polynomial` indicating that 
+A type parameter to `Polynomial` indicating that the quadrature has a tensor 
+product structure. 
 """
 struct TensorProductQuadrature{T}
     quad_rule_1D::T  # 1D quadrature nodes and weights (rq, wq)
 end
 
-TensorProductQuadrature(r1D, w1D) = TensorProductQuadrature((r1D, w1D))
+TensorProductQuadrature(args...) = TensorProductQuadrature(args)
 
-# Polynomial{Gauss} type indicates (N+1)-point Gauss quadrature on tensor product elements
-struct Gauss end 
-Polynomial{Gauss}() = Polynomial(Gauss())
+"""
+    TensorProductGaussCollocation
+
+Polynomial{TensorProductGaussCollocation} type indicates a tensor product 
+# (N+1)-point Gauss quadrature on tensor product elements. 
+"""
+struct TensorProductGaussCollocation end 
+const Gauss = TensorProductGaussCollocation
 
 # ========= SBP approximation types ============
 
@@ -223,7 +243,7 @@ struct TensorProductLobatto end
 struct Hicken end 
 struct Kubatko{FaceNodeType} end
 
-# face node types for Kubatko
+# face node types for Kubatko nodes
 struct LegendreFaceNodes end
 struct LobattoFaceNodes end
 
@@ -268,6 +288,7 @@ _short_typeof(x) = typeof(x)
 _short_typeof(approx_type::Wedge) = "Wedge"
 _short_typeof(approx_type::Pyr) = "Pyr"
 
-_short_typeof(approx_type::Polynomial{<:DefaultPolynomialType}) = "Polynomial"
-_short_typeof(approx_type::Polynomial{<:Gauss}) = "Polynomial{Gauss}"
+# _short_typeof(approx_type::Polynomial{<:DefaultPolynomialType}) = "Polynomial"
+_short_typeof(approx_type::Polynomial{<:MultidimensionalQuadrature}) = "Polynomial"
+_short_typeof(approx_type::Polynomial{<:TensorProductGaussCollocation}) = "Polynomial{Gauss}"
 _short_typeof(approx_type::Polynomial{<:TensorProductQuadrature}) = "Polynomial{TensorProductQuadrature}"

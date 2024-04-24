@@ -36,6 +36,57 @@ function map_face_nodes(::Tet, face_nodes...)
     return rf, sf, tf
 end
 
+function init_face_data(elem::Tri; quad_rule_face = gauss_quad(0,0,N))
+    r1D, w1D = quad_rule_face
+    e = ones(size(r1D)) 
+    z = zeros(size(r1D)) 
+    rf, sf = map_face_nodes(elem, r1D)
+    wf = vec(repeat(w1D, 3, 1));
+    nrJ = [z; e; -e]
+    nsJ = [-e; e; z]
+    return rf, sf, wf, nrJ, nsJ
+end
+
+function init_face_data(elem::Quad; quad_rule_face=gauss_quad(0, 0, N))
+    Nfaces = 4
+    r1D, w1D = quad_rule_face
+    e = ones(size(r1D))
+    z = zeros(size(r1D))
+    rf, sf = map_face_nodes(elem, r1D)
+    wf = vec(repeat(w1D, Nfaces, 1)) 
+    nrJ = [-e; e; z; z]
+    nsJ = [z; z; -e; e]
+
+    return rf, sf, wf, nrJ, nsJ
+end
+
+function init_face_data(elem::Hex; quad_rule_face=quad_nodes(Quad(), N))
+    rquad, squad, wquad = quad_rule_face
+    e = ones(size(rquad))
+    zz = zeros(size(rquad))
+    rf, sf, tf = map_face_nodes(elem, rquad, squad)
+    Nfaces = 6
+    wf = vec(repeat(wquad, Nfaces, 1));
+    nrJ = [-e;  e; zz; zz; zz; zz]
+    nsJ = [zz; zz; -e;  e; zz; zz]
+    ntJ = [zz; zz; zz; zz; -e;  e]
+    return rf, sf, tf, wf, nrJ, nsJ, ntJ
+end
+
+function init_face_data(elem::Tet; quad_rule_face=quad_nodes(Tri(), N))
+    rquad, squad, wquad = quad_rule_face
+    e = ones(size(rquad))
+    zz = zeros(size(rquad))
+    rf, sf, tf = map_face_nodes(elem, rquad, squad)
+    Nfaces = 4
+    wf = vec(repeat(wquad, Nfaces, 1));
+    nrJ = [zz; e; -e; zz]
+    nsJ = [-e; e; zz; zz]
+    ntJ = [zz; e; zz; -e]
+    return rf, sf, tf, wf, nrJ, nsJ, ntJ
+end
+
+
 """
     function inverse_trace_constant(rd::RefElemData)
 

@@ -1,8 +1,8 @@
 """
-    function RefElemData(elementType::Line, approxType::SBP, N)
-    function RefElemData(elementType::Quad, approxType::SBP, N)
-    function RefElemData(elementType::Hex,  approxType::SBP, N)
-    function RefElemData(elementType::Tri,  approxType::SBP, N)
+    RefElemData(elementType::Line, approxType::SBP, N)
+    RefElemData(elementType::Quad, approxType::SBP, N)
+    RefElemData(elementType::Hex,  approxType::SBP, N)
+    RefElemData(elementType::Tri,  approxType::SBP, N)
     
 SBP reference element data for `Quad()`, `Hex()`, and `Tri()` elements. 
 
@@ -20,38 +20,11 @@ function RefElemData(elementType::Line, approxType::SBP{TensorProductLobatto}, N
     return _convert_RefElemData_fields_to_SBP(rd, approxType)
 end
 
-function RefElemData(elementType::Quad, approxType::SBP{TensorProductLobatto}, N; tol = 100*eps(), kwargs...)
+function RefElemData(elementType::Union{Quad, Hex}, approxType::SBP{TensorProductLobatto}, N; tol = 100*eps(), kwargs...)
 
-    # make 2D SBP nodes/weights
-    r1D, w1D = gauss_lobatto_quad(0, 0, N)
-    sq, rq = vec.(NodesAndModes.meshgrid(r1D)) # this is to match ordering of nrstJ
-    wr, ws = vec.(NodesAndModes.meshgrid(w1D)) 
-    wq = wr .* ws
-    quad_rule_vol = (rq, sq, wq)
-    quad_rule_face = (r1D, w1D)
-
-    rd = RefElemData(elementType, N; quad_rule_vol = quad_rule_vol, quad_rule_face = quad_rule_face, kwargs...)
-
-    rd = @set rd.Vf = droptol!(sparse(rd.Vf), tol)
-    rd = @set rd.LIFT = Diagonal(rd.wq) \ (rd.Vf' * Diagonal(rd.wf)) # TODO: make this more efficient with LinearMaps?
-
-    return _convert_RefElemData_fields_to_SBP(rd, approxType)
-end
-
-function RefElemData(elementType::Hex, approxType::SBP{TensorProductLobatto}, N; tol = 100*eps(), kwargs...)
-
-    # make 2D SBP nodes/weights
-    r1D, w1D = gauss_lobatto_quad(0, 0, N)
-    rf, sf = vec.(NodesAndModes.meshgrid(r1D, r1D))
-    wr, ws = vec.(NodesAndModes.meshgrid(w1D, w1D))
-    wf = wr .* ws
-    sq, rq, tq = vec.(NodesAndModes.meshgrid(r1D, r1D, r1D)) # this is to match ordering of nrstJ
-    wr, ws, wt = vec.(NodesAndModes.meshgrid(w1D, w1D, w1D)) 
-    wq = wr .* ws .* wt
-    quad_rule_vol = (rq, sq, tq, wq)
-    quad_rule_face = (rf, sf, wf)
-
-    rd = RefElemData(elementType, N; quad_rule_vol = quad_rule_vol, quad_rule_face = quad_rule_face, kwargs...)
+    rd = RefElemData(elementType, 
+                     Polynomial(TensorProductQuadrature(gauss_lobatto_quad(0, 0, N))), 
+                     N; kwargs...)
 
     rd = @set rd.Vf = droptol!(sparse(rd.Vf), tol)
     rd = @set rd.LIFT = Diagonal(rd.wq) \ (rd.Vf' * Diagonal(rd.wf)) # TODO: make this more efficient with LinearMaps?

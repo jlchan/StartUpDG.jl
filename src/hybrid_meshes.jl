@@ -142,9 +142,11 @@ end
 
 typename(x) = typeof(x).name.name
 
-function RefElemData(element_types::NTuple{N, Union{Tri, Quad}}, args...; kwargs...) where {N} 
-    
-    rds = NamedTuple((typename(elem) => RefElemData(elem, args...; kwargs...) for elem in element_types))
+function RefElemData(element_types::NTuple{NT, Union{Tri, Quad}}, N::Int; 
+                     quad_rule_face=gauss_quad(0, 0, N), kwargs...) where {NT} 
+
+    rds = NamedTuple((typename(elem) => 
+        RefElemData(elem, N; quad_rule_face, kwargs...) for elem in element_types))
 
     # check if number of face nodes is the same 
     num_face_nodes = length.(getproperty.(values(rds), :rf)) .÷ num_faces.(getproperty.(values(rds), :element_type))
