@@ -232,7 +232,7 @@ struct TensorProductLobatto end
 struct Hicken end 
 struct Kubatko{FaceNodeType} end
 
-# face node types for Kubatko
+# face node types for Kubatko nodes
 struct LegendreFaceNodes end
 struct LobattoFaceNodes end
 
