@@ -29,7 +29,8 @@ include("RefElemData.jl")
 
 include("RefElemData_polynomial.jl")
 export RefElemData, Polynomial
-export TensorProductQuadrature, Gauss
+export MultidimensionalQuadrature, TensorProductQuadrature
+export TensorProductGaussCollocation, Gauss
 
 include("RefElemData_TensorProductWedge.jl")
 export TensorProductWedge
