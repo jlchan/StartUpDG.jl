@@ -134,16 +134,15 @@ end
 
 # recompute normals on cut cells
 cutcell = cutcells[1]
-plot()
 xf, yf, nxJ, nyJ = ntuple(_ -> zeros(size(rd_line.Vq, 1), length(cutcell.stop_pts)-1), 4)
 for f in 1:length(cutcell.stop_pts)-1
     points = map(s -> cutcell(map_to_interval(s, cutcell.stop_pts[f:f+1]...)), r1D)
-    x = getindex.(points, 1)
-    y = getindex.(points, 2)
+    xf_local = getindex.(points, 1)
+    yf_local = getindex.(points, 2)
 
     # compute tangent vector using polynomial mapping
-    dxdr = rd_line.Vq * rd_line.Dr * x
-    dydr = rd_line.Vq * rd_line.Dr * y
+    dxdr = rd_line.Vq * rd_line.Dr * xf_local
+    dydr = rd_line.Vq * rd_line.Dr * yf_local
 
     tangent_vector = SVector.(dxdr, dydr)
     scaling = (cutcell.stop_pts[f+1] - cutcell.stop_pts[f]) / 2
@@ -153,15 +152,20 @@ for f in 1:length(cutcell.stop_pts)-1
     @. nyJ[:, f] = getindex(scaled_normal, 2)
 
     # interp face coordinates to face quad nodes
-    xf[:, f] .= rd_line.Vq * x
-    yf[:, f] .= rd_line.Vq * y
+    xf[:, f] .= rd_line.Vq * xf_local
+    yf[:, f] .= rd_line.Vq * yf_local
 
-    scatter!(rd_line.Vq * x, rd_line.Vq * y)
-    quiver!(rd_line.Vq * x, rd_line.Vq * y, 
-            quiver=(getindex.(scaled_normal, 1), getindex.(scaled_normal, 2)))
+end
+
+# plot normals
+plot()
+for f in 1:length(cutcell.stop_pts)-1
+    scatter!(xf[:,f], yf[:,f])
+    quiver!(xf[:,f], yf[:,f], quiver=(nxJ[:,f], nyJ[:,f]))
 end
 plot!(leg=false, ratio=1)
 
+# plot pruned cells
 plot()
 for e in eachindex(xq_cutcells)
     scatter!(vec(xq_cutcells[e]), vec(yq_cutcells[e]), label="Reference quadrature"); 
