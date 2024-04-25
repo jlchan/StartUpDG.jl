@@ -63,11 +63,13 @@ function NodesAndModes.basis(elem::PhysicalFrame{2}, N, x, y)
     V, Vr, Vs = ntuple(x->zeros(length(r), Np), 3)
     for j = 0:N
         P_j = jacobiP(s, 0, 0, j)
+        dP_j = grad_jacobiP(s, 0, 0, j)
         for i = 0:N-j
             P_i = jacobiP(r, 0, 0, i)
-            V[:, sk]  = P_i .* P_j
-            Vr[:, sk] = grad_jacobiP(r, 0, 0, i) .* P_j * scaling[1]
-            Vs[:, sk] = P_i .* grad_jacobiP(s, 0, 0, j) * scaling[2]
+            dP_i = grad_jacobiP(r, 0, 0, i)
+            @. V[:, sk]  = P_i * P_j
+            @. Vr[:, sk] = dP_i * P_j * scaling[1]
+            @. Vs[:, sk] = P_i * dP_j * scaling[2]
             sk += 1
         end
     end    
