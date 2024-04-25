@@ -1,9 +1,10 @@
 using NodesAndModes: face_basis
 using Plots
+using LinearAlgebra
 using StartUpDG
 
-N = 4
-quad_rule_face = gauss_quad(0, 0, 2*N+1)
+N = 3
+quad_rule_face = gauss_quad(0, 0, 2 * N + 1)
 
 rd = RefElemData(Quad(), N; quad_rule_face)
 
@@ -76,21 +77,21 @@ for cutcell in cutcells
             vertices_on_face = sort(ids[face_vertices])
 
             # map each point to a physical element. 
+            # This assumes PathIntersections.jl uses a clockwise ordering of stop curve points.
             for i in eachindex(r1D)
-                # This assumes a PathIntersections.jl ordering of curve points.
                 # If the vertex indices are far apart, it's the last face/boundary curve
                 if (x->abs(x[2]-x[1]))(vertices_on_face) == length(VX) - 1 
-                    s = map_to_interval(r1D[i], cutcell.stop_pts[end-1:end]...)
+                    s = map_to_interval(r1D[i], reverse(cutcell.stop_pts[end-1:end])...)
                     point = cutcell(s)
                 
                 # if vertex indices are consecutive, it's a boundary face    
                 elseif (x->x[2]-x[1])(vertices_on_face) == 1 
                     
                     curve_id = minimum(ids[face_vertices])
-                    s = map_to_interval(r1D[i], cutcell.stop_pts[curve_id:curve_id+1]...)
+                    s = map_to_interval(r1D[i], reverse(cutcell.stop_pts[curve_id:curve_id+1])...)
                     point = cutcell(s)
 
-                else # it's an internal face
+                else # it's a non-boundary face, it's a straight line
                     point = SVector{2}.(map_to_interval(r1D[i], VX[ids[face_vertices]]...),
                                         map_to_interval(r1D[i], VY[ids[face_vertices]]...))
                 end
@@ -104,8 +105,8 @@ for cutcell in cutcells
         tri_warped_coords_x = warp_face_points_to_interp * vec(tri_face_coords_x) 
         tri_warped_coords_y = warp_face_points_to_interp * vec(tri_face_coords_y)
         
-        Jq_e = abs.(compute_geometric_determinant_J(tri_warped_coords_x, tri_warped_coords_y, 
-                                                    rd_tri.Vq * rd_tri.Dr, rd_tri.Vq * rd_tri.Ds))                                                            
+        Jq_e = compute_geometric_determinant_J(tri_warped_coords_x, tri_warped_coords_y, 
+                                               rd_tri.Vq * rd_tri.Dr, rd_tri.Vq * rd_tri.Ds)
 
         view(xq, :, e) .= rd_tri.Vq * tri_warped_coords_x
         view(yq, :, e) .= rd_tri.Vq * tri_warped_coords_y
@@ -186,7 +187,7 @@ for f in 1:length(cutcell.stop_pts)-1
     x = getindex.(points, 1)
     y = getindex.(points, 2)
 
-    # compute tangent vector
+    # compute tangent vector using polynomial mapping
     (; Vq, Dr) = rd_line
     dxdr = Vq * Dr * x
     dydr = Vq * Dr * y
