@@ -148,6 +148,15 @@ function map_nodes_to_background_cell(elem::PhysicalFrame{2}, r, s)
     return x, y
 end
 
+function triangulate_points(coordinates::AbstractMatrix)
+    triin=Triangulate.TriangulateIO()
+    triin.pointlist = coordinates
+    triout, _ = triangulate("Q", triin)
+    VX, VY = (triout.pointlist[i,:] for i = 1:size(triout.pointlist,1))
+    EToV = permutedims(triout.trianglelist)
+    return (VX, VY), EToV
+end
+
 """
     caratheodory_pruning_qr(V, w_in)
 

@@ -21,14 +21,7 @@ mt = md.mesh_type
 (; cutcells) = mt.cut_cell_data
 
 using Triangulate, StaticArrays
-function triangulate_points(coordinates::AbstractMatrix)
-    triin=Triangulate.TriangulateIO()
-    triin.pointlist = coordinates
-    triout, _ = triangulate("Q", triin)
-    VX, VY = (triout.pointlist[i,:] for i = 1:size(triout.pointlist,1))
-    EToV = permutedims(triout.trianglelist)
-    return (VX, VY), EToV
-end
+
 
 # degree N(N-1) + 2N-2 polynomial = N(N-1) + 2(N-1) = (N+2) * (N-1)
 N_phys_frame_geo = max(2 * rd.N, (rd.N-1) * (rd.N + 2)) 
@@ -60,13 +53,13 @@ end
 x_cutcells, y_cutcells, xq_cutcells, yq_cutcells, Jq_cutcells, wJq_cutcells = 
     ntuple(_ -> Matrix{eltype(rd_tri.wq)}[], 6)
 
+
 for cutcell in cutcells
-    # create subtriangulation. note that `cutcell.stop_pts[end] == cutcell.stop_pts[1]`
-    vxy = zeros(2, length(cutcell.stop_pts[1:end-1]))
-    for (i, pt) in enumerate(cutcell.stop_pts[1:end-1])
-        vxy[1, i], vxy[2, i] = cutcell(pt)    
-    end
-    (VX, VY), EToV = triangulate_points(vxy)
+
+    # vxy = matrix of the form [x_coordinates, y_coordinates] 
+    vxy = hcat(getindex.(cutcell.(cutcell.stop_pts[1:end-1]), 1), 
+               getindex.(cutcell.(cutcell.stop_pts[1:end-1]), 2))
+    (VX, VY), EToV = StartUpDG.triangulate_points(permutedims(vxy))
 
     xq, yq, Jq, wJq = ntuple(_ -> zeros(length(rd_tri.wq), size(EToV, 1)), 6)
     
