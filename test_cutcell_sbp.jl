@@ -78,6 +78,7 @@ for cutcell in cutcells
 
             # map each point to a physical element. 
             # This assumes PathIntersections.jl uses a clockwise ordering of stop curve points.
+            # Since StartUpDG uses a CCW ordering, we reverse the order for 
             for i in eachindex(r1D)
                 # If the vertex indices are far apart, it's the last face/boundary curve
                 if (x->abs(x[2]-x[1]))(vertices_on_face) == length(VX) - 1 
@@ -105,8 +106,9 @@ for cutcell in cutcells
         tri_warped_coords_x = warp_face_points_to_interp * vec(tri_face_coords_x) 
         tri_warped_coords_y = warp_face_points_to_interp * vec(tri_face_coords_y)
         
-        Jq_e = compute_geometric_determinant_J(tri_warped_coords_x, tri_warped_coords_y, 
-                                               rd_tri.Vq * rd_tri.Dr, rd_tri.Vq * rd_tri.Ds)
+        rxJq_e, sxJq_e, ryJq_e, syJq_e, Jq_e = 
+            StartUpDG.geometric_factors(tri_warped_coords_x, tri_warped_coords_y, 
+                                        rd_tri.Vq * rd_tri.Dr, rd_tri.Vq * rd_tri.Ds)
 
         view(xq, :, e) .= rd_tri.Vq * tri_warped_coords_x
         view(yq, :, e) .= rd_tri.Vq * tri_warped_coords_y
@@ -119,45 +121,11 @@ for cutcell in cutcells
     push!(wJq_cutcells, wJq)
 end
 
-# Caratheodory pruning
-function basic_removal(V, w_in)
-
-    if length(w_in) <= size(V, 2)
-        return w_in, eachindex(w_in)
-    end
-    w = copy(w_in)
-    M, N = size(V)
-    inds = collect(1:M)
-    m = M-N
-    Q, _ = qr(V)
-    Q = copy(Q)
-    for _ in 1:m
-        kvec = Q[:,end]
-
-        # for subtracting the kernel vector
-        idp = findall(@. kvec > 0)
-        alphap, k0p = findmin(w[inds[idp]] ./ kvec[idp])
-        k0p = idp[k0p]
-    
-        # for adding the kernel vector
-        idn = findall(@. kvec < 0);
-        alphan, k0n = findmax(w[inds[idn]] ./ kvec[idn])
-        k0n = idn[k0n];
-    
-        alpha, k0 = abs(alphan) < abs(alphap) ? (alphan, k0n) : (alphap, k0p)
-        w[inds] = w[inds] - alpha * kvec
-        deleteat!(inds, k0)
-        Q, _ = qr(V[inds, :])
-        Q = copy(Q)
-    end
-    return w, inds
-end
-
 xq_pruned, yq_pruned, wJq_pruned = ntuple(_ -> Vector{Float64}[], 3)
 for e in eachindex(xq_cutcells)
     V2N = vandermonde(mt.physical_frame_elements[e], 2 * rd.N, vec(xq_cutcells[e]), vec(yq_cutcells[e]))
     w = copy(vec(wJq_cutcells[e]))
-    w_pruned, inds = basic_removal(V2N, w)
+    w_pruned, inds = StartUpDG.caratheodory_pruning_qr(V2N, w)
 
     V = vandermonde(mt.physical_frame_elements[e], rd.N, vec(xq_cutcells[e]), vec(yq_cutcells[e]))
     # @show size(V[inds,:])
@@ -169,16 +137,7 @@ for e in eachindex(xq_cutcells)
     push!(wJq_pruned, vec(wJq_cutcells[e])[inds])
 end
 
-plot()
-for e in eachindex(xq_cutcells)
-    scatter!(vec(xq_cutcells[e]), vec(yq_cutcells[e]), label="Reference quadrature"); 
-    scatter!(xq_pruned[e], yq_pruned[e], markersize=8, marker=:circle, 
-             z_order=:back, label="Caratheodory pruning", leg=false)
-end
-display(plot!(leg=false))
-
-
-# recompute normals
+# recompute normals on cut cells
 cutcell = cutcells[1]
 plot()
 xf, yf, nxJ, nyJ = ntuple(_ -> zeros(size(rd_line.Vq, 1), length(cutcell.stop_pts)-1), 4)
@@ -188,27 +147,35 @@ for f in 1:length(cutcell.stop_pts)-1
     y = getindex.(points, 2)
 
     # compute tangent vector using polynomial mapping
-    (; Vq, Dr) = rd_line
-    dxdr = Vq * Dr * x
-    dydr = Vq * Dr * y
+    dxdr = rd_line.Vq * rd_line.Dr * x
+    dydr = rd_line.Vq * rd_line.Dr * y
 
     tangent_vector = SVector.(dxdr, dydr)
     scaling = (cutcell.stop_pts[f+1] - cutcell.stop_pts[f]) / 2
-    Jf = norm.(tangent_vector)# .* scaling
-    raw_normal = SVector.(-dydr, dxdr)
-    scaled_normal = (raw_normal) ./ norm.(raw_normal) .* Jf
+    scaled_normal = SVector.(-dydr, dxdr)
 
     @. nxJ[:, f] = getindex(scaled_normal, 1)
     @. nyJ[:, f] = getindex(scaled_normal, 2)
 
     # interp face coordinates to face quad nodes
-    xf[:, f] .= Vq * x
-    yf[:, f] .= Vq * y
+    xf[:, f] .= rd_line.Vq * x
+    yf[:, f] .= rd_line.Vq * y
 
-    scatter!(Vq * x, Vq * y)
-    quiver!(Vq * x, Vq * y, quiver=(getindex.(scaled_normal, 1), getindex.(scaled_normal, 2)))
+    scatter!(rd_line.Vq * x, rd_line.Vq * y)
+    quiver!(rd_line.Vq * x, rd_line.Vq * y, 
+            quiver=(getindex.(scaled_normal, 1), getindex.(scaled_normal, 2)))
 end
 plot!(leg=false, ratio=1)
+
+plot()
+for e in eachindex(xq_cutcells)
+    scatter!(vec(xq_cutcells[e]), vec(yq_cutcells[e]), label="Reference quadrature"); 
+    scatter!(xq_pruned[e], yq_pruned[e], markersize=8, marker=:circle, 
+             z_order=:back, label="Caratheodory pruning", leg=false)
+end
+display(plot!(leg=false))
+
+
 
 # # compute new normals for curved boundaries
 # mapB_boundary_cartesian = findall(@. abs(abs(md.xf) - 1) < 1e2 * eps() || abs(abs(md.yf) - 1) < 1e4 * eps())
@@ -236,6 +203,8 @@ Bx = Diagonal(vec(Diagonal(rd_line.wq) * reshape(nxJ, length(rd_line.wq), :)))
 By = Diagonal(vec(Diagonal(rd_line.wq) * reshape(nyJ, length(rd_line.wq), :)))
 
 e = ones(size(Qx, 2))
-display(sum(Qx - Vf' * Bx * Vf, dims=1))
+@show norm(sum(Qx - Vf' * Bx * Vf, dims=1))
+@show norm(sum(Qy - Vf' * By * Vf, dims=1))
+# display(sum(Qx - Vf' * Bx * Vf, dims=1))
 # display(e' * ((Qx + Qx') - Vf' * Bx * Vf))
 # display(e' * ((Qy + Qy') - Vf' * By * Vf))
