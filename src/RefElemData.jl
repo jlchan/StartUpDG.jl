@@ -207,7 +207,12 @@ Polynomial{T}() where {T} = Polynomial(T())
     MultidimensionalQuadrature
 
 A type parameter for `Polynomial` indicating that the quadrature 
-has no specific structure. 
+has no specific structure. Example usage: 
+```julia
+# these are both equivalent
+approximation_type = Polynomial{MultidimensionalQuadrature}() 
+approximation_type = Polynomial(MultidimensionalQuadrature())
+```
 """
 struct MultidimensionalQuadrature end
 
@@ -215,13 +220,19 @@ struct MultidimensionalQuadrature end
     TensorProductQuadrature{T}
 
 A type parameter to `Polynomial` indicating that the quadrature has a tensor 
-product structure. 
+product structure. Example usage: 
+```julia
+# these are both equivalent
+approximation_type = Polynomial{TensorProductQuadrature}(gauss_quad(0, 0, 1)) 
+approximation_type = Polynomial(TensorProductQuadrature(gauss_quad(0, 0, 1)))
+```
 """
 struct TensorProductQuadrature{T}
     quad_rule_1D::T  # 1D quadrature nodes and weights (rq, wq)
 end
 
 TensorProductQuadrature(args...) = TensorProductQuadrature(args)
+Polynomial{TensorProductQuadrature}(args) = Polynomial(TensorProductQuadrature(args))
 
 """
     TensorProductGaussCollocation

@@ -1,4 +1,6 @@
-# The following functions determine what default quadrature type to use 
+# The following functions determine what default quadrature type to use for each element.
+# For tensor product elements, we default to TensorProductQuadrature. 
+# For simplices, wedges, and pyramids, we default to MultidimensionalQuadrature
 
 # simplices and pyramids default to multidimensional quadrature
 RefElemData(elem::Union{Line, Tri, Tet, Wedge, Pyr}, 
