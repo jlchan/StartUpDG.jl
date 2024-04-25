@@ -17,6 +17,13 @@ RefElemData(elem::Line, approx_type::Polynomial{<:TensorProductQuadrature}, N; k
     RefElemData(elem, Polynomial{MultidimensionalQuadrature}(), N; 
                 quad_rule_vol=approx_type.data.quad_rule_1D, kwargs...)
 
+function RefElemData(elem::Union{Tri, Tet, Wedge, Pyr}, 
+            approx_type::Polynomial{<:TensorProductQuadrature}, 
+            N; kwargs...)
+    error("Tensor product quadrature constructors not yet implemented " * 
+          "for Tri, Tet, Wedge, Pyr elements.")
+end
+
 """
     RefElemData(elem::Line, approximation_type, N;
                 quad_rule_vol = quad_nodes(elem, N+1))
