@@ -145,3 +145,45 @@ function map_nodes_to_background_cell(elem::PhysicalFrame{2}, r, s)
     y = @. 0.5 * (1 + s) * dy + vy[1]
     return x, y
 end
+
+"""
+    caratheodory_pruning_qr(V, w_in)
+
+This performs Caratheodory pruning using a naive QR-based algorithm. 
+Returns (w, inds), where `inds` denotes sub-selected indices for a 
+reduced quadrature rule, and `w` is a vector of reduced positive weights.
+
+The original Matlab code this was based on was authored by Akil Narayan.
+""" 
+function caratheodory_pruning_qr(V, w_in)
+
+    if length(w_in) <= size(V, 2)
+        return w_in, eachindex(w_in)
+    end
+    w = copy(w_in)
+    M, N = size(V)
+    inds = collect(1:M)
+    m = M-N
+    Q, _ = qr(V)
+    Q = copy(Q)
+    for _ in 1:m
+        kvec = Q[:,end]
+
+        # for subtracting the kernel vector
+        idp = findall(@. kvec > 0)
+        alphap, k0p = findmin(w[inds[idp]] ./ kvec[idp])
+        k0p = idp[k0p]
+    
+        # for adding the kernel vector
+        idn = findall(@. kvec < 0);
+        alphan, k0n = findmax(w[inds[idn]] ./ kvec[idn])
+        k0n = idn[k0n];
+    
+        alpha, k0 = abs(alphan) < abs(alphap) ? (alphan, k0n) : (alphap, k0p)
+        w[inds] = w[inds] - alpha * kvec
+        deleteat!(inds, k0)
+        Q, _ = qr(V[inds, :])
+        Q = copy(Q)
+    end
+    return w, inds
+end
