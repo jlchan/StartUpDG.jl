@@ -69,7 +69,8 @@ for cutcell in cutcells
         for (face_index, face_vertices) in enumerate(SVector{2}.(fv))
             vertices_on_face = sort(ids[face_vertices])
 
-            # map each point to a physical element. 
+            # map face interpolation points to a physical element. 
+
             # This assumes PathIntersections.jl uses a clockwise ordering of stop curve points.
             # Since StartUpDG uses a CCW ordering, we reverse the order for 
             for i in eachindex(r1D)
@@ -94,8 +95,9 @@ for cutcell in cutcells
             end
         end
 
-        # this performs a least squares fit interpolation in the face basis, but is equivalent
-        # to isoparametric warp and blend if the face node locations are continuous.
+        # this performs a least squares fit interpolation by the face basis. It's 
+        # equivalent to isoparametric warp and blend if the face node locations are 
+        # representable by the face basis (e.g., polynomial). 
         tri_warped_coords_x = warp_face_points_to_interp * vec(tri_face_coords_x) 
         tri_warped_coords_y = warp_face_points_to_interp * vec(tri_face_coords_y)
         
