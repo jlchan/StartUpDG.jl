@@ -1,4 +1,6 @@
-# The following functions determine what default quadrature type to use 
+# The following functions determine what default quadrature type to use for each element.
+# For tensor product elements, we default to TensorProductQuadrature. 
+# For simplices, wedges, and pyramids, we default to MultidimensionalQuadrature
 
 # simplices and pyramids default to multidimensional quadrature
 RefElemData(elem::Union{Line, Tri, Tet, Wedge, Pyr}, 
@@ -14,6 +16,13 @@ RefElemData(elem::Union{Quad, Hex}, approximation_type::Polynomial{DefaultPolyno
 RefElemData(elem::Line, approx_type::Polynomial{<:TensorProductQuadrature}, N; kwargs...) = 
     RefElemData(elem, Polynomial{MultidimensionalQuadrature}(), N; 
                 quad_rule_vol=approx_type.data.quad_rule_1D, kwargs...)
+
+function RefElemData(elem::Union{Tri, Tet, Wedge, Pyr}, 
+            approx_type::Polynomial{<:TensorProductQuadrature}, 
+            N; kwargs...)
+    error("Tensor product quadrature constructors not yet implemented " * 
+          "for Tri, Tet, Wedge, Pyr elements.")
+end
 
 """
     RefElemData(elem::Line, approximation_type, N;

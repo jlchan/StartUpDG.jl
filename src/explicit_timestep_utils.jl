@@ -6,8 +6,10 @@ Runge Kutta method. Coefficients evolve the residual, solution, and local time, 
 
 # Example
 ```julia
-res = rk4a[i]*res + dt*rhs # i = RK stage
-@. u += rk4b[i]*res
+for i in eachindex(rk4a, rk4b)
+    @. res = rk4a[i] * res + dt * rhs # i = RK stage
+    @. u  += rk4b[i] * res
+end
 ```
 """
 function ck45()

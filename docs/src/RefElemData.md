@@ -6,6 +6,7 @@
 * `Nfaces`: number of faces on a given type of reference element.
 * `fv`: list of vertices defining faces, e.g., `[1,2], [2,3], [3,1]` for a triangle
 * `Fmask`: indices of interpolation nodes which lie on the faces
+* `VDM`: the generalized Vandermonde matrix, a square matrix whose columns are ``V_{ij} = \phi_{j}(x_i}``, where ``\phi_j`` are orthonormal basis functions and ``x_i`` are interpolation points.
 * `rst::NTuple{Dim, ...}`: tuple of vectors of length `N_p`, each of which contains coordinates of degree ``N`` optimized polynomial interpolation points.
 * `rstq::NTuple{Dim, ...}`,`wq`, `Vq`: tuple of volume quadrature points, vector of weights, and quadrature interpolation matrix. Each element of `rstq` and `wq` are vectors of length ``N_q``, and `Vq` is a matrix of size ``N_q \times N_p``.
 * `N_{\rm plot}`: the degree which determines the number of plotting points ``N_{p,{\rm plot}}``.
