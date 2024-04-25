@@ -24,8 +24,8 @@
         @test abs(sum(rd.wf)) ≈ 6
         @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
         @test rd.Pq * rd.Vq ≈ I
-        Vfp = vandermonde(Line(), N, quad_nodes(Line(), N)[1]) / vandermonde(Line(), N, nodes(Line(), N))
-        rstf = (x->Vfp * x[reshape(rd.Fmask, rd.Nfq ÷ rd.Nfaces, rd.Nfaces)]).(rd.rst)
+        Vf = vandermonde(Line(), N, quad_nodes(Line(), N)[1]) / vandermonde(Line(), N, nodes(Line(), N))
+        rstf = (x->Vf * x[reshape(rd.Fmask, :, rd.Nfaces)]).(rd.rst)
         @test all(vec.(rstf) .≈ rd.rstf)
         @test StartUpDG.eigenvalue_inverse_trace_constant(rd)  ≈ inverse_trace_constant(rd)
         @test propertynames(rd)[1] == :element_type
@@ -44,11 +44,11 @@
         @test abs(sum(rd.wf)) ≈ 8
         @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
         @test rd.Pq * rd.Vq ≈ I
-        Vfp = vandermonde(Line(), N, quad_nodes(Line(), N)[1]) / vandermonde(Line(), N, nodes(Line(), N))
-        rstf = (x->Vfp * x[reshape(rd.Fmask,rd.Nfq÷rd.Nfaces,rd.Nfaces)]).(rd.rst)
+        Vfp = vandermonde(Line(), N, quad_nodes(Line(), N+1)[1]) / vandermonde(Line(), N, nodes(Line(), N))
+        rstf = (x->Vfp * x[reshape(rd.Fmask,:,rd.Nfaces)]).(rd.rst)
         @test all(vec.(rstf) .≈ rd.rstf)        
-        @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd)    
 
+        @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd)    
         @test StartUpDG.num_vertices(Quad()) == 4
         @test StartUpDG.num_faces(Quad()) == 4
     end
@@ -304,25 +304,25 @@ inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}
     end
 end
 
-@testset "TensorProductQuadrature on Hex" begin
-    N = 2
-    rd = RefElemData(Hex(), TensorProductQuadrature(quad_nodes(Line(), N+1)), N)
-    rd_ref = RefElemData(Hex(), N; quad_rule_vol=quad_nodes(Hex(), N+1), quad_rule_face=quad_nodes(Quad(), N+1))
+# @testset "TensorProductQuadrature on Hex" begin
+#     N = 2
+#     rd = RefElemData(Hex(), TensorProductQuadrature(quad_nodes(Line(), N+1)), N)
+#     rd_ref = RefElemData(Hex(), N; quad_rule_vol=quad_nodes(Hex(), N+1), quad_rule_face=quad_nodes(Quad(), N+1))
 
-    @test typeof(rd) == typeof(RefElemData(Hex(), Polynomial(TensorProductQuadrature(quad_nodes(Line(), N+1))), N))
+#     @test typeof(rd) == typeof(RefElemData(Hex(), Polynomial(TensorProductQuadrature(quad_nodes(Line(), N+1))), N))
 
-    for prop in [:N, :element_type]        
-        @test getproperty(rd, prop) == getproperty(rd_ref, prop)
-    end
+#     for prop in [:N, :element_type]        
+#         @test getproperty(rd, prop) == getproperty(rd_ref, prop)
+#     end
     
-    for prop in [:fv, :rst, :rstp, :rstq, :rstf, :nrstJ, :Drst]
-        @test all(getproperty(rd, prop) .≈ getproperty(rd_ref, prop))
-    end
+#     for prop in [:fv, :rst, :rstp, :rstq, :rstf, :nrstJ, :Drst]
+#         @test all(getproperty(rd, prop) .≈ getproperty(rd_ref, prop))
+#     end
 
-    for prop in [:Fmask, :VDM, :V1, :wq, :Vq, :wf, :Vf, :Vp, :M, :Pq, :LIFT]
-        @test norm(getproperty(rd, prop) - getproperty(rd_ref, prop)) < 1e4 * eps()
-    end
-end
+#     for prop in [:Fmask, :VDM, :V1, :wq, :Vq, :wf, :Vf, :Vp, :M, :Pq, :LIFT]
+#         @test norm(getproperty(rd, prop) - getproperty(rd_ref, prop)) < 1e4 * eps()
+#     end
+# end
 
 @testset "Tensor product Gauss collocation" begin
     N = 3

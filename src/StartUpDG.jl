@@ -14,6 +14,7 @@ using PathIntersections: PathIntersections
 @reexport using PathIntersections: PresetGeometries
 using Printf: @sprintf
 using RecipesBase: RecipesBase
+@reexport using RecursiveArrayTools: NamedArrayPartition
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
 @reexport using SimpleUnPack: @unpack
@@ -28,7 +29,8 @@ include("RefElemData.jl")
 
 include("RefElemData_polynomial.jl")
 export RefElemData, Polynomial
-export TensorProductQuadrature, Gauss
+export MultidimensionalQuadrature, TensorProductQuadrature
+export TensorProductGaussCollocation, Gauss
 
 include("RefElemData_TensorProductWedge.jl")
 export TensorProductWedge
@@ -54,10 +56,6 @@ export make_periodic
 # for tagging faces on boundaries
 include("boundary_utils.jl")
 export boundary_face_centroids, tag_boundary_faces, tag_boundary_nodes
-
-# helper array type for cut cell and hybrid meshes
-include("named_array_partition.jl")
-export NamedArrayPartition
 
 include("hybrid_meshes.jl")
 export num_faces, num_vertices, HybridMeshExample
