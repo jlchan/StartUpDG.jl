@@ -49,49 +49,41 @@ xf_cut, yf_cut, nxJ_cut, nyJ_cut, wJf_cut, cut_face_node_indices =
 xq_pruned, yq_pruned, wJq_pruned = 
     StartUpDG.construct_cut_volume_quadrature(N, cutcells, physical_frame_elements)
 
-####################################################
-#                Mesh connectivity                 # 
-####################################################
-
-face_centroids = 
-    StartUpDG.compute_face_centroids(vx, vy, region_flags, cutcells)
-
-FToF = StartUpDG.connect_mesh(face_centroids, region_flags, cutcells)
-
 #######################################
 #        test weak SBP property       #
 #######################################
 
-elem = physical_frame_elements[1]
-xq, yq, wq = xq_pruned[:,1], yq_pruned[:,1], wJq_pruned[:,1]
+e = 5
+elem = physical_frame_elements[e]
+xq, yq, wq = xq_pruned[:,e], yq_pruned[:,e], wJq_pruned[:,e]
 
 Vq, Vxq, Vyq = basis(elem, rd.N, xq, yq)
-Vf = vandermonde(elem, rd.N, xf_cut[1], yf_cut[1]) 
+Vf = vandermonde(elem, rd.N, xf_cut[e], yf_cut[e]) 
 Qx, Qy = Vq' * diagm(wq) * Vxq, Vq' * diagm(wq) * Vyq
 
-Bx = Diagonal(wJf_cut[1] .* nxJ_cut[1])
-By = Diagonal(wJf_cut[1] .* nyJ_cut[1])
+Bx = Diagonal(wJf_cut[e] .* nxJ_cut[e])
+By = Diagonal(wJf_cut[e] .* nyJ_cut[e])
 
 # represent constant vector in basis
-e = Vq \ ones(size(Vq, 1))
-@show norm(e' * Qx - e' * Vf' * Bx * Vf)
-@show norm(e' * Qy - e' * Vf' * By * Vf)
+ee = Vq \ ones(size(Vq, 1))
+@show norm(ee' * Qx - ee' * Vf' * Bx * Vf)
+@show norm(ee' * Qy - ee' * Vf' * By * Vf)
 
-# plot pruned cells
+# # plot pruned cells
 
-# volume quadrature should be exact for degree N(N-1) + 2N-2 polynomials, 
-# or N(N-1) + 2(N-1) = (N+2) * (N-1) degrees
-N_phys_frame_geo = max(2 * N, (N-1) * (N + 2))     
-target_degree = 2 * N
-rd_tri = RefElemData(Tri(), Polynomial(MultidimensionalQuadrature()), N, 
-                    quad_rule_vol=NodesAndModes.quad_nodes_tri(N_phys_frame_geo))
-Np_target = StartUpDG.Np_cut(target_degree)
+# # volume quadrature should be exact for degree N(N-1) + 2N-2 polynomials, 
+# # or N(N-1) + 2(N-1) = (N+2) * (N-1) degrees
+# N_phys_frame_geo = max(2 * N, (N-1) * (N + 2))     
+# target_degree = 2 * N
+# rd_tri = RefElemData(Tri(), Polynomial(MultidimensionalQuadrature()), N, 
+#                     quad_rule_vol=NodesAndModes.quad_nodes_tri(N_phys_frame_geo))
+# Np_target = StartUpDG.Np_cut(target_degree)
 
-plot()
-for e in eachindex(cutcells)
-    xq, yq, _ = StartUpDG.subtriangulated_cutcell_quadrature(cutcells[e], rd_tri)
-    scatter!(vec(xq), vec(yq), label="Reference quadrature"); 
-    scatter!(xq_pruned[:,e], yq_pruned[:,e], markersize=8, marker=:circle, 
-             z_order=:back, label="Caratheodory pruning", leg=false)
-end
-display(plot!(leg=false))
+# plot()
+# for e in eachindex(cutcells)
+#     xq, yq, _ = StartUpDG.subtriangulated_cutcell_quadrature(cutcells[e], rd_tri)
+#     scatter!(vec(xq), vec(yq), label="Reference quadrature"); 
+#     scatter!(xq_pruned[:,e], yq_pruned[:,e], markersize=8, marker=:circle, 
+#              z_order=:back, label="Caratheodory pruning", leg=false)
+# end
+# display(plot!(leg=false))
