@@ -167,6 +167,38 @@ function generate_sampling_points(objects, elem, rd, Np_target; N_sampled = 4 * 
     return x_sampled[ids_in_element], y_sampled[ids_in_element]
 end
 
+
+# new version assuming that elements are Quad
+function generate_sampling_points(objects, elem, Np_target::Int, N_sampled::Int)
+
+    r_sampled, s_sampled = equi_nodes(Quad(), N_sampled) # oversampled nodes
+
+    # map sampled points to the background Cartesian cell
+    x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
+    is_in_domain = fill(true, length(x_sampled))
+    for (index, point) in enumerate(zip(x_sampled, y_sampled))
+        is_in_domain[index] = !any(map(obj -> PathIntersections.is_contained(obj, point), objects))
+    end
+    
+    # increase number of background points until we are left with `Np_target` sampling points 
+    while sum(is_in_domain) < Np_target
+
+        N_sampled *= 2 # double degree of sampling
+        r_sampled, s_sampled = equi_nodes(Quad(), N_sampled) # oversampled nodes
+        x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
+
+        # check if all the points are in all the objects
+        is_in_domain = fill(true, length(x_sampled))
+        for (index, point) in enumerate(zip(x_sampled, y_sampled))
+            is_in_domain[index] = !any(map(obj -> PathIntersections.is_contained(obj, point), objects))
+        end
+    end
+
+    ids_in_element = findall(is_in_domain)
+
+    return x_sampled[ids_in_element], y_sampled[ids_in_element]
+end
+
 # returns points (xf, yf), scaled normals (nxJ, nyJ), and face Jacobian (Jf) 
 # for a curve returned from PathIntersections. 
 # `out` should hold `xf, yf, nxJ, nyJ, Jf = ntuple(_ -> similar(points, (length(points), num_faces)), 5)`
