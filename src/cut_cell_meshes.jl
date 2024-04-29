@@ -1429,6 +1429,8 @@ function MeshData2(rd::RefElemData, objects,
             (xf_cartesian, yf_cartesian, nxJ_cartesian, nyJ_cartesian, wJf_cartesian),
             map(x -> vcat(x...), (xf_cut, yf_cut, nxJ_cut, nyJ_cut, wJf_cut)))
 
+    Jf = @. sqrt(nxJ^2 + nyJ^2)
+            
     ####################################################
     #                Mesh connectivity                 # 
     ####################################################
@@ -1510,10 +1512,9 @@ function MeshData2(rd::RefElemData, objects,
             Vf = vandermonde(elem, rd.N, xf.cut[cut_face_nodes[e]], 
                                          yf.cut[cut_face_nodes[e]]) / VDM
 
-            # don't include jacobian scaling in LIFT matrix (for consistency with the Cartesian mesh)            
-            _, w1D = quad_rule_face
-            num_cut_faces = length(cut_face_nodes[e]) ÷ length(w1D)
-            wf = vec(repeat(w1D, 1, num_cut_faces))
+            # don't include jacobian scaling in LIFT matrix (for consistency 
+            # with the Cartesian mesh)
+            wf = wJf.cut[cut_face_nodes[e]] ./ Jf.cut[cut_face_nodes[e]]
 
             push!(lift_matrices, M \ (Vf' * diagm(wf)))
             push!(face_interpolation_matrices, Vf)
@@ -1556,8 +1557,6 @@ function MeshData2(rd::RefElemData, objects,
 
     # pack geometric terms together                            
     rstxyzJ = SMatrix{2, 2, typeof(rxJ), 4}(rxJ, sxJ, ryJ, syJ) 
-
-    Jf = @. sqrt(nxJ^2 + nyJ^2)
 
     return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, 
                                 objects, cut_cell_operators, cut_cell_data), 
