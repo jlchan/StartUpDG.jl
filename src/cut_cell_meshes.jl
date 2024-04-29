@@ -1480,10 +1480,13 @@ function MeshData2(rd::RefElemData, objects,
                                             cells_per_dimension_y), 
                     ) # background Cartesian grid info
 
-    # get flattened indices of cut face nodes 
-    face_ids(e) = (1:(num_points_per_face * cut_faces_per_cell[e])) .+ 
-                   cut_face_offsets[e] * num_points_per_face
-    cut_face_node_ids = [face_ids(e) for e in 1:num_cut_cells]
+    # get flattened indices of cut face nodes. 
+    # note that `cut_face_node_indices = [[face_1_indices, face_2_indices, ...], ...]`
+    flattened_face_node_indices = 
+        map(x -> UnitRange(x[1][1], x[end][end]), cut_face_node_indices)
+    face_index_offsets = [0; cumsum(length.(flattened_face_node_indices)[1:end-1])]
+    cut_face_node_ids = 
+        map((x, y) -> x .+ y, flattened_face_node_indices, face_index_offsets)
 
     if precompute_operators == true
 
