@@ -63,7 +63,7 @@ function neighbor_across_face(f, ex, ey)
     end
 end
 
-function compute_face_centroids(rd, xf, yf, cutcell_data)
+function compute_face_centroids(rd::RefElemData, xf, yf, cutcell_data)
 
     (; region_flags, cut_faces_per_cell, cut_face_offsets ) = cutcell_data
     num_cut_cells = length(cut_faces_per_cell)
@@ -425,7 +425,7 @@ Inputs:
 - `region_flags`, `cutcells` are return arguments from `PathIntersections.define_regions`
 The keyword argument `tol` is the tolerance for matches between face centroids. 
 """    
-function connect_mesh(rd, face_centroids, cutcell_data; tol = 1e2 * eps())
+function connect_mesh(rd::RefElemData, face_centroids, cutcell_data; tol = 1e2 * eps())
 
     (; region_flags, cut_faces_per_cell, cut_face_offsets ) = cutcell_data
 
