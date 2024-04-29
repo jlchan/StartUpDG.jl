@@ -37,7 +37,7 @@ function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, <:CutCellMesh})
 end
 
 # maps x ∈ [-1,1] to [a,b]
-map_to_interval(x, a, b) = a + (b-a) * 0.5 * (1 + x)
+map_to_interval(x, a, b) = @. a + (b-a) * 0.5 * (1 + x)
 
 function count_cut_faces(cutcells)
     num_cut_faces = zeros(Int, length(cutcells))
