@@ -495,8 +495,6 @@ function connect_mesh(rd::RefElemData, face_centroids, cutcell_data; tol = 1e2 *
                             xy_nbr = SVector(face_centroids_x[j], face_centroids_y[j])
                             if norm(xy - xy_nbr) < tol * max(1, norm(xy), norm(xy_nbr))
                                 FToF[i] = j  
-                                # println("match found for f = $f, e=($ex, $ey), 
-                                #          enbr=($ex_nbr, $ey_nbr)")
                             end
                         end
                     end
