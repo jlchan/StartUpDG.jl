@@ -1143,7 +1143,8 @@ end
 
 Constructs cut surface quadrature using a degree `N` geometric mapping and a reference
 quadrature rule `quad_rule_1D`. Returns `xf, yf, nxJ, nyJ, wf` which are vectors, and 
-`face_node_indices`, which is a `Vector{Vector{Int}}` to index into each face.
+`face_node_indices`, which is a `Vector{Vector{Int}}` of global face node indices (which 
+index into `xf.cut`, `yf.cut`, etc) for each face of each cut element.
 
 On boundaries of cut cells, the surface quadrature is taken to be exact for degree 
 `N^2 + (N-1)` polynomials. This ensures satisfaction of a weak GSBP property.
@@ -1215,6 +1216,16 @@ function construct_cut_surface_quadrature(N, cutcells, quad_rule_1D = gauss_quad
             (xf, yf, nxJ, nyJ, wf), 
             (xf_element, yf_element, nxJ_element, nyJ_element, wf_element))
     end
+
+    # compute global cut face node indices
+    num_nodes_per_cut_element = map(x -> maximum(maximum.(x)), face_node_indices)
+    face_node_offsets = [0; cumsum(num_nodes_per_cut_element[1:end-1])]
+    for e in eachindex(face_node_indices)
+        for f in eachindex(face_node_indices[e])    
+            face_node_indices[e][f] = face_node_indices[e][f] .+ face_node_offsets[e]
+        end
+    end
+
     return xf, yf, nxJ, nyJ, wf, face_node_indices
 end
 
