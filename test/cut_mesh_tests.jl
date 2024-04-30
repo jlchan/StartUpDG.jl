@@ -100,3 +100,38 @@ using StartUpDG: PathIntersections
         @test norm(u .- ucopy) < 1e3 * eps()
     end
 end
+
+#######################################
+#        test weak SBP property       #
+#######################################
+@testset "Cut mesh weak SBP property" begin
+
+    cells_per_dimension = 2
+    circle = PresetGeometries.Circle(R=0.66, x0=.1, y0=0)
+
+    rd = RefElemData(Quad(), N=3)
+
+    md = MeshData(rd, (circle, ), cells_per_dimension; 
+                  precompute_operators=true)
+
+    mt = md.mesh_type
+    (; wJf) = md.mesh_type.cut_cell_data
+    wf = wJf ./ md.Jf
+
+    for (e, elem) in enumerate(mt.physical_frame_elements)
+        xq, yq, wq = md.xq.cut[:,e], md.yq.cut[:,e], md.wJq.cut[:,e]
+
+        Vq, Vxq, Vyq = basis(elem, rd.N, xq, yq)
+        face_ids = mt.cut_face_nodes[e]
+        Vf = vandermonde(elem, rd.N, md.xf.cut[face_ids], md.yf.cut[face_ids]) 
+        Qx, Qy = Vq' * diagm(wq) * Vxq, Vq' * diagm(wq) * Vyq
+
+        Bx = Diagonal(wf.cut[face_ids] .* md.nxJ.cut[face_ids])
+        By = Diagonal(wf.cut[face_ids] .* md.nyJ.cut[face_ids])
+
+        # represent constant vector in basis
+        ee = Vq \ ones(size(Vq, 1))
+        @test norm(ee' * Qx - ee' * Vf' * Bx * Vf) < 100 * eps()
+        @test norm(ee' * Qy - ee' * Vf' * By * Vf) < 100 * eps()
+    end
+end
