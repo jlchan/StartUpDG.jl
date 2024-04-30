@@ -1350,9 +1350,35 @@ function connect_mesh(face_centroids, region_flags,
     return FToF
 end
 
+"""
+    function MeshData(rd, geometry, vxyz...)
 
+Creates a cut-cell mesh where the boundary is given by `geometry`, which should be a tuple of functions. 
+These functions can be generated using PathIntersections.PresetGeometries, for example:
+```julia
+julia> geometry = (PresetGeometries.Circle(R=0.33, x0=0, y0=0), )
+```
+Here, `coordinates_min`, `coordinates_max` contain `(smallest value of x, smallest value of y)` and 
+`(largest value of x, largest value of y)`, and `cells_per_dimension_x/y` is the number of Cartesian grid 
+cells placed along each dimension. 
+"""
+MeshData(rd::RefElemData, objects, cells_per_dimension;  kwargs...) = 
+    MeshData(rd::RefElemData, objects, cells_per_dimension, cells_per_dimension;  kwargs...)
 
-function MeshData2(rd::RefElemData, objects, 
+function MeshData(rd::RefElemData, objects, 
+                  cells_per_dimension_x::Int, cells_per_dimension_y::Int; 
+                  quad_rule_face = get_1d_quadrature(rd), 
+                  coordinates_min=(-1.0, -1.0), coordinates_max=(1.0, 1.0),
+                  precompute_operators=false)
+
+    # compute intersections of curve with a background Cartesian grid.
+    vx = LinRange(coordinates_min[1], coordinates_max[1], cells_per_dimension_x + 1)
+    vy = LinRange(coordinates_min[2], coordinates_max[2], cells_per_dimension_y + 1)    
+
+    return MeshData(rd, objects, vx, vy; quad_rule_face, precompute_operators)
+end
+
+function MeshData(rd::RefElemData, objects, 
                   vx::AbstractVector, vy::AbstractVector; 
                   quad_rule_face=get_1d_quadrature(rd), 
                   precompute_operators=false)
@@ -1367,14 +1393,11 @@ function MeshData2(rd::RefElemData, objects,
     #   *  1: cut cell
     #   *  0: Cartesian cell
     #   * -1: excluded cells (in the cut-out region)
-    region_flags, cutcells = calculate_cutcells(vx, vy, objects)
+    region_flags, cutcells = StartUpDG.calculate_cutcells(vx, vy, objects)
 
     # pack useful cut cell information together. 
     num_cartesian_cells = sum(region_flags .== 0)
     num_cut_cells = sum(region_flags .> 0)
-    cut_faces_per_cell = count_cut_faces(cutcells)
-    cut_face_offsets = [0; cumsum(cut_faces_per_cell)[1:end-1]] 
-    cutcell_data = (; objects, region_flags, cutcells, cut_faces_per_cell, cut_face_offsets)
 
     N = rd.N
     
@@ -1383,13 +1406,13 @@ function MeshData2(rd::RefElemData, objects,
     ####################################################
 
     physical_frame_elements = 
-        construct_physical_frame_elements(region_flags, vx, vy, cutcells)
+        StartUpDG.construct_physical_frame_elements(region_flags, vx, vy, cutcells)
 
     x_cut, y_cut = 
-        construct_cut_interpolation_nodes(N, objects, physical_frame_elements)
+        StartUpDG.construct_cut_interpolation_nodes(N, objects, physical_frame_elements)
 
     xq_cut, yq_cut, wJq_cut = 
-        construct_cut_volume_quadrature(N, cutcells, physical_frame_elements)
+        StartUpDG.construct_cut_volume_quadrature(N, cutcells, physical_frame_elements)
 
     xf_cut, yf_cut, nxJ_cut, nyJ_cut, wf_cut, cut_face_node_indices = 
         StartUpDG.construct_cut_surface_quadrature(N, cutcells, quad_rule_face)
@@ -1402,12 +1425,12 @@ function MeshData2(rd::RefElemData, objects,
         StartUpDG.construct_cartesian_surface_quadrature(vx, vy, region_flags, quad_rule_face)    
 
     xq_cartesian, yq_cartesian, wJq_cartesian = 
-        construct_cartesian_volume_quadrature(vx, vy, region_flags, 
+        StartUpDG.construct_cartesian_volume_quadrature(vx, vy, region_flags, 
                                              (rd.rq, rd.sq, rd.wq))
 
     # reuse quadrature mapping to construct interpolation nodes                                             
     x_cartesian, y_cartesian, _ = 
-        construct_cartesian_volume_quadrature(vx, vy, region_flags, 
+        StartUpDG.construct_cartesian_volume_quadrature(vx, vy, region_flags, 
                                              (rd.r, rd.s, ones(size(rd.r))))
                                              
     ####################################################
@@ -1433,29 +1456,51 @@ function MeshData2(rd::RefElemData, objects,
     #                Mesh connectivity                 # 
     ####################################################
 
-    face_centroids = 
-        StartUpDG.compute_face_centroids(vx, vy, region_flags, cutcells)
+    # note: face_centroids_cartesian has dims [4, num_elements]
+    #       face_centroids_cut has dims [num_elements][num_faces_on_this_element]
+    face_centroids_cartesian, face_centroids_cut = 
+            StartUpDG.compute_face_centroids(vx, vy, region_flags, cutcells)
 
-    FToF = StartUpDG.connect_mesh(face_centroids, region_flags, cutcells)
+    face_centroids_x = NamedArrayPartition(cartesian = getindex.(face_centroids_cartesian, 1), 
+                                        cut = getindex.(vcat(face_centroids_cut...), 1))
+    face_centroids_y = NamedArrayPartition(cartesian = getindex.(face_centroids_cartesian, 2), 
+                                        cut = getindex.(vcat(face_centroids_cut...), 2))
+    face_centroids = (face_centroids_x, face_centroids_y)
+    FToF = StartUpDG.connect_mesh(face_centroids, region_flags, cutcells)  
 
-    # Compute node-to-node mappings
-    # !!! Warning: this only works if the same quadrature rule is used 
-    # !!! for both cut/cartesian faces!
-    num_total_faces = length(FToF)
-    num_points_per_face = length(rd.rf) ÷ num_faces(rd.element_type)
-    mapM = collect(reshape(1:num_points_per_face * num_total_faces, 
-                           num_points_per_face, num_total_faces))
+    # create arrays of node indices on each face, e.g., 
+    # xf.cut[cut_face_node_indices_by_face[f]] gives nodes on face f
+    cartesian_nodes_per_face = rd.Nfq ÷ rd.num_faces
+    cartesian_face_node_indices_by_face = 
+        [(1:cartesian_nodes_per_face) .+ (f - 1) * cartesian_nodes_per_face
+            for f in 1:num_cartesian_cells * rd.num_faces]
+    cut_face_node_indices_by_face = vcat(cut_face_node_indices...)
+
+    # create global index vector (note that we offset cut cell indices 
+    # by num_cartesian nodes).
+    face_node_indices_by_face = vcat(cartesian_face_node_indices_by_face, 
+                                    map(x -> x .+ (num_cartesian_cells * rd.Nfq), 
+                                        cut_face_node_indices_by_face))
+
+    # create node mappings
+    mapM_cartesian = reshape(eachindex(xf.cartesian), :, num_cartesian_cells)
+    mapM = NamedArrayPartition(cartesian = collect(mapM_cartesian), 
+                            cut = collect(eachindex(xf.cut) .+ length(mapM_cartesian)))
     mapP = copy(mapM)
-    p = zeros(Int, num_points_per_face) # temp storage for a permutation vector
+
     for f in eachindex(FToF)
-        idM, idP = view(mapM, :, f), view(mapM, :, FToF[f])
-        xyzM = (view(xf, idM), view(yf, idM))
-        xyzP = (view(xf, idP), view(yf, idP))
-        StartUpDG.match_coordinate_vectors!(p, xyzM, xyzP)
-        mapP[p, f] .= idP
+        # if it's not a boundary face
+        if f !== FToF[f]
+            idM = mapM[face_node_indices_by_face[f]]
+            idP = mapM[face_node_indices_by_face[FToF[f]]]
+            xyzM = (view(xf, idM), view(yf, idM))
+            xyzP = (view(xf, idP), view(yf, idP))
+            p = StartUpDG.match_coordinate_vectors(xyzM, xyzP)
+            mapP[idM[p]] .= idP
+        end
     end
     mapB = findall(vec(mapM) .== vec(mapP)) # determine boundary nodes
-        
+
     # default to non-periodic 
     is_periodic = (false, false)   
    
@@ -1480,18 +1525,15 @@ function MeshData2(rd::RefElemData, objects,
                                             cells_per_dimension_y), 
                     ) # background Cartesian grid info
 
-    # get flattened indices of cut face nodes. 
-    # note that `cut_face_node_indices = [[face_1_indices, face_2_indices, ...], ...]`
-    flattened_face_node_indices = 
+    # get flattened indices of cut face nodes. note that 
+    #   `cut_face_node_indices = [[face_1_indices, face_2_indices, ...], ...]`
+    cut_face_node_indices_by_cell = 
         map(x -> UnitRange(x[1][1], x[end][end]), cut_face_node_indices)
-    face_index_offsets = [0; cumsum(length.(flattened_face_node_indices)[1:end-1])]
-    cut_face_node_ids = 
-        map((x, y) -> x .+ y, flattened_face_node_indices, face_index_offsets)
 
     if precompute_operators == true
 
-        # precompute cut-cell operators and store them in the `md.mesh_type.cut_cell_operators` field
-        cut_face_nodes = cut_face_node_ids
+        # precompute cut-cell operators and store them in the `md.mesh_type.cut_cell_operators` field.
+        cut_face_nodes = cut_face_node_indices_by_cell
         face_interpolation_matrices = Matrix{eltype(x)}[]
         lift_matrices = Matrix{eltype(x)}[]
         differentiation_matrices = Tuple{Matrix{eltype(x)}, Matrix{eltype(x)}}[]
@@ -1507,12 +1549,13 @@ function MeshData2(rd::RefElemData, objects,
             Qs = Vq' * diagm(wJq.cut[:, e]) * Vsq    
             Dx_e, Dy_e = M \ Qr, M \ Qs
             
-            Vf = vandermonde(elem, rd.N, xf.cut[cut_face_nodes[e]], 
-                                         yf.cut[cut_face_nodes[e]]) / VDM
+            Vf = vandermonde(elem, rd.N, xf.cut[cut_face_node_indices_by_cell[e]], 
+                                         yf.cut[cut_face_node_indices_by_cell[e]]) / VDM
 
             # don't include jacobian scaling in LIFT matrix (for consistency 
             # with the Cartesian mesh)
-            wf = wJf.cut[cut_face_nodes[e]] ./ Jf.cut[cut_face_nodes[e]]
+            wf = wJf.cut[cut_face_node_indices_by_cell[e]] ./ 
+                    Jf.cut[cut_face_node_indices_by_cell[e]]
 
             push!(lift_matrices, M \ (Vf' * diagm(wf)))
             push!(face_interpolation_matrices, Vf)
@@ -1555,8 +1598,8 @@ function MeshData2(rd::RefElemData, objects,
 
     # pack geometric terms together                            
     rstxyzJ = SMatrix{2, 2, typeof(rxJ), 4}(rxJ, sxJ, ryJ, syJ) 
-
-    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, 
+    
+    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_indices_by_cell, 
                                 objects, cut_cell_operators, cut_cell_data), 
                     FToF, (x, y), (xf, yf), (xq, yq), wJq, 
                     mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
