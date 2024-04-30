@@ -626,10 +626,12 @@ function subtriangulated_cutcell_quadrature(cutcell, rd_tri,
 end
 
 struct MomentFitting end
+struct Subtriangulation end
 
 """
-    MeshData(quadrature_type::MomentFitting, rd::RefElemData, 
-             objects, vx::AbstractVector, vy::AbstractVector; 
+    MeshData(rd::RefElemData, objects, 
+             vx::AbstractVector, vy::AbstractVector,
+             quadrature_type::MomentFitting; 
              quad_rule_face=get_1d_quadrature(rd), 
              precompute_operators=false)
 
@@ -639,11 +641,14 @@ to construct
 
 !!! Warning: this may be deprecated or removed in future versions. 
 """
-MeshData(quadrature_type::MomentFitting, rd::RefElemData, objects, cells_per_dimension;  kwargs...) = 
-    MeshData(quadrature_type, rd::RefElemData, objects, cells_per_dimension, cells_per_dimension;  kwargs...)
+MeshData(rd::RefElemData, objects, cells_per_dimension, 
+         quadrature_type=Subtriangulation();  kwargs...) = 
+    MeshData(rd, objects, cells_per_dimension, cells_per_dimension, 
+             quadrature_type;  kwargs...)
 
-function MeshData(quadrature_type::MomentFitting, rd::RefElemData, objects, 
-                  cells_per_dimension_x::Int, cells_per_dimension_y::Int; 
+function MeshData(rd::RefElemData, objects, 
+                  cells_per_dimension_x::Int, cells_per_dimension_y::Int,
+                  quadrature_type=Subtriangulation(); 
                   quad_rule_face = get_1d_quadrature(rd), 
                   coordinates_min=(-1.0, -1.0), coordinates_max=(1.0, 1.0),
                   precompute_operators=false)
@@ -652,11 +657,13 @@ function MeshData(quadrature_type::MomentFitting, rd::RefElemData, objects,
     vx = LinRange(coordinates_min[1], coordinates_max[1], cells_per_dimension_x + 1)
     vy = LinRange(coordinates_min[2], coordinates_max[2], cells_per_dimension_y + 1)    
 
-    return MeshData(quadrature_type, rd, objects, vx, vy; quad_rule_face, precompute_operators)
+    return MeshData(rd, objects, vx, vy, quadrature_type; 
+                    quad_rule_face, precompute_operators)
 end
 
-function MeshData(::MomentFitting, rd::RefElemData, objects, 
-                  vx::AbstractVector, vy::AbstractVector; 
+function MeshData(rd::RefElemData, objects, 
+                  vx::AbstractVector, vy::AbstractVector,
+                  quadrature_type::MomentFitting; 
                   quad_rule_face=get_1d_quadrature(rd), 
                   precompute_operators=false)
 
@@ -1353,33 +1360,20 @@ end
 """
     function MeshData(rd, geometry, vxyz...)
 
-Creates a cut-cell mesh where the boundary is given by `geometry`, which should be a tuple of functions. 
-These functions can be generated using PathIntersections.PresetGeometries, for example:
+Creates a cut-cell mesh where the boundary is given by `geometry`, which should be a 
+tuple of functions. These functions can be generated using PathIntersections.PresetGeometries, 
+for example:
 ```julia
 julia> geometry = (PresetGeometries.Circle(R=0.33, x0=0, y0=0), )
 ```
-Here, `coordinates_min`, `coordinates_max` contain `(smallest value of x, smallest value of y)` and 
-`(largest value of x, largest value of y)`, and `cells_per_dimension_x/y` is the number of Cartesian grid 
-cells placed along each dimension. 
+Here, `coordinates_min`, `coordinates_max` contain `(smallest value of x, smallest value of y)` 
+and `(largest value of x, largest value of y)`, and `cells_per_dimension_x/y` is the number of 
+Cartesian grid cells placed along each dimension. 
 """
-MeshData(rd::RefElemData, objects, cells_per_dimension;  kwargs...) = 
-    MeshData(rd::RefElemData, objects, cells_per_dimension, cells_per_dimension;  kwargs...)
 
 function MeshData(rd::RefElemData, objects, 
-                  cells_per_dimension_x::Int, cells_per_dimension_y::Int; 
-                  quad_rule_face = get_1d_quadrature(rd), 
-                  coordinates_min=(-1.0, -1.0), coordinates_max=(1.0, 1.0),
-                  precompute_operators=false)
-
-    # compute intersections of curve with a background Cartesian grid.
-    vx = LinRange(coordinates_min[1], coordinates_max[1], cells_per_dimension_x + 1)
-    vy = LinRange(coordinates_min[2], coordinates_max[2], cells_per_dimension_y + 1)    
-
-    return MeshData(rd, objects, vx, vy; quad_rule_face, precompute_operators)
-end
-
-function MeshData(rd::RefElemData, objects, 
-                  vx::AbstractVector, vy::AbstractVector; 
+                  vx::AbstractVector, vy::AbstractVector, 
+                  quadrature_type::Subtriangulation; 
                   quad_rule_face=get_1d_quadrature(rd), 
                   precompute_operators=false)
 

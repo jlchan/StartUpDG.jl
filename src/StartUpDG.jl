@@ -63,7 +63,7 @@ export num_faces, num_vertices, HybridMeshExample
 include("physical_frame_basis.jl")
 include("cut_cell_meshes.jl")
 export PhysicalFrame, equi_nodes
-export MomentFitting
+export Subtriangulation, MomentFitting
 
 include("state_redistribution.jl")
 export StateRedistribution, apply!
