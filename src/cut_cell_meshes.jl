@@ -1483,7 +1483,8 @@ function MeshData(rd::RefElemData, objects,
                                         cut_face_node_indices_by_face))
 
     # create node mappings
-    mapM_cartesian = reshape(eachindex(xf.cartesian), :, num_cartesian_cells)
+    mapM_cartesian = num_cartesian_cells > 0 ? 
+        reshape(eachindex(xf.cartesian), :, num_cartesian_cells) : Int64[]
     mapM = NamedArrayPartition(cartesian = collect(mapM_cartesian), 
                             cut = collect(eachindex(xf.cut) .+ length(mapM_cartesian)))
     mapP = copy(mapM)
