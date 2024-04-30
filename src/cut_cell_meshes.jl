@@ -20,12 +20,13 @@ face interpolation, and lifting operators).
 
 The field `cut_cell_data` contains additional data from PathIntersections.
 """
-struct CutCellMesh{T1, T2, T3, T4, T5}
+struct CutCellMesh{T1, T2, T3, T4, T5, T6}
     physical_frame_elements::T1
     cut_face_nodes::T2
     objects::T3
     cut_cell_operators::T4
     cut_cell_data::T5
+    quadrature_type::T6
 end
 
 function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, <:CutCellMesh}) where {DIM}
@@ -897,7 +898,11 @@ function MeshData(rd::RefElemData, objects,
         cut_cell_operators = nothing
     end
                         
-    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, objects, cut_cell_operators, cut_cell_data), 
+    # added for consistency 
+    J = NamedArrayPartition(cartesian=Fill(J, size(x.cartesian)), 
+                            cut=Fill(1.0, size(x.cut)))
+    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_ids, objects, 
+                                cut_cell_operators, cut_cell_data, quadrature_type), 
                     FToF, (x, y), (xf, yf), (xq, yq), wJq, 
                     mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
 
@@ -1593,8 +1598,8 @@ function MeshData(rd::RefElemData, objects,
     # pack geometric terms together                            
     rstxyzJ = SMatrix{2, 2, typeof(rxJ), 4}(rxJ, sxJ, ryJ, syJ) 
     
-    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_indices_by_cell, 
-                                objects, cut_cell_operators, cut_cell_data), 
+    return MeshData(CutCellMesh(physical_frame_elements, cut_face_node_indices_by_cell, objects, 
+                                cut_cell_operators, cut_cell_data, quadrature_type), 
                     FToF, (x, y), (xf, yf), (xq, yq), wJq, 
                     mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
 
