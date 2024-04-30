@@ -1047,8 +1047,8 @@ function construct_cartesian_surface_quadrature(vx, vy, region_flags,
 
     num_cartesian_cells = sum(region_flags .== 0)
     Jf = zeros(num_faces(Quad()), num_cartesian_cells)
-    xf, yf, nxJ, nyJ, wJf = ntuple(_ -> zeros(num_faces(Quad()) * length(r1D), 
-                                    num_cartesian_cells), 5)
+    xf, yf, nxJ, nyJ, wf = ntuple(_ -> zeros(num_faces(Quad()) * length(r1D), 
+                                              num_cartesian_cells), 5)
 
     # the face Jacobian involves scaling between mapped and reference domain    
     # this is precomputed here since it's needed to compute the normals
@@ -1072,7 +1072,7 @@ function construct_cartesian_surface_quadrature(vx, vy, region_flags,
             yf[face_ids, e] .= map_to_interval(r1D, vy[ey], vy[ey+1])
             nxJ[face_ids, e] .= -Jf[face_index, e]
             nyJ[face_ids, e] .= zero(eltype(nyJ))
-            wJf[face_ids, e] .= w1D * Jf[face_index, e]
+            wf[face_ids, e] .= w1D
 
             # face 2: +r
             face_index = 2
@@ -1081,7 +1081,7 @@ function construct_cartesian_surface_quadrature(vx, vy, region_flags,
             yf[face_ids, e] .= map_to_interval(r1D, vy[ey], vy[ey+1])
             nxJ[face_ids, e] .= Jf[face_index, e]
             nyJ[face_ids, e] .= zero(eltype(nyJ))
-            wJf[face_ids, e] .= w1D * Jf[face_index, e]
+            wf[face_ids, e] .= w1D
 
             # face 3: -s
             face_index = 3
@@ -1090,7 +1090,7 @@ function construct_cartesian_surface_quadrature(vx, vy, region_flags,
             yf[face_ids, e] .= vy[ey]
             nxJ[face_ids, e] .= zero(eltype(nxJ))
             nyJ[face_ids, e] .= -Jf[face_index, e]
-            wJf[face_ids, e] .= w1D * Jf[face_index, e]
+            wf[face_ids, e] .= w1D
 
             # face 3: +s
             face_index = 4
@@ -1099,13 +1099,13 @@ function construct_cartesian_surface_quadrature(vx, vy, region_flags,
             yf[face_ids, e] .= vy[ey+1]
             nxJ[face_ids, e] .= zero(eltype(nxJ))
             nyJ[face_ids, e] .= Jf[face_index, e]
-            wJf[face_ids, e] .= w1D * Jf[face_index, e]
+            wf[face_ids, e] .= w1D
 
             e = e + 1
         end
     end   
 
-    return xf, yf, nxJ, nyJ, wJf
+    return xf, yf, nxJ, nyJ, wf
 end
 
 """
@@ -1393,15 +1393,15 @@ function MeshData2(rd::RefElemData, objects,
     xq_cut, yq_cut, wJq_cut = 
         construct_cut_volume_quadrature(N, cutcells, physical_frame_elements)
 
-    xf_cut, yf_cut, nxJ_cut, nyJ_cut, wJf_cut, cut_face_node_indices = 
-        construct_cut_surface_quadrature(N, cutcells, quad_rule_face)
+    xf_cut, yf_cut, nxJ_cut, nyJ_cut, wf_cut, cut_face_node_indices = 
+        StartUpDG.construct_cut_surface_quadrature(N, cutcells, quad_rule_face)
 
     ####################################################
     #          Construct Cartesian cells               # 
     ####################################################
 
-    xf_cartesian, yf_cartesian, nxJ_cartesian, nyJ_cartesian, wJf_cartesian = 
-        construct_cartesian_surface_quadrature(vx, vy, region_flags, quad_rule_face)    
+    xf_cartesian, yf_cartesian, nxJ_cartesian, nyJ_cartesian, wf_cartesian = 
+        StartUpDG.construct_cartesian_surface_quadrature(vx, vy, region_flags, quad_rule_face)    
 
     xq_cartesian, yq_cartesian, wJq_cartesian = 
         construct_cartesian_volume_quadrature(vx, vy, region_flags, 
@@ -1423,12 +1423,13 @@ function MeshData2(rd::RefElemData, objects,
                       (xq_cartesian, yq_cartesian, wJq_cartesian), 
                       (xq_cut, yq_cut, wJq_cut))                                                                
 
-    xf, yf, nxJ, nyJ, wJf = 
+    xf, yf, nxJ, nyJ, wf = 
         map((x, y) -> NamedArrayPartition((; cartesian=x, cut=y)), 
-            (xf_cartesian, yf_cartesian, nxJ_cartesian, nyJ_cartesian, wJf_cartesian),
-            map(x -> vcat(x...), (xf_cut, yf_cut, nxJ_cut, nyJ_cut, wJf_cut)))
+            (xf_cartesian, yf_cartesian, nxJ_cartesian, nyJ_cartesian, wf_cartesian),
+            map(x -> vcat(x...), (xf_cut, yf_cut, nxJ_cut, nyJ_cut, wf_cut)))
 
     Jf = @. sqrt(nxJ^2 + nyJ^2)
+    wJf = @. wf * Jf
             
     ####################################################
     #                Mesh connectivity                 # 
