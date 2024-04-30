@@ -28,8 +28,6 @@ struct CutCellMesh{T1, T2, T3, T4, T5}
     cut_cell_data::T5
 end
 
-# TODO: add isoparametric cut cell mesh with positive quadrature points
-
 function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, <:CutCellMesh}) where {DIM}
     @nospecialize md
     print(io,"Cut-cell MeshData of dimension $DIM with $(md.num_elements) elements " * 
