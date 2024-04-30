@@ -643,23 +643,22 @@ to construct
 !!! Warning: this may be deprecated or removed in future versions. 
 """
 MeshData(rd::RefElemData, objects, cells_per_dimension, 
-         quadrature_type=Subtriangulation();  kwargs...) = 
-    MeshData(rd, objects, cells_per_dimension, cells_per_dimension, 
-             quadrature_type;  kwargs...)
+         quadrature_type=Subtriangulation(); kwargs...) = 
+    MeshData(rd, objects, 
+             cells_per_dimension, cells_per_dimension, 
+             quadrature_type; kwargs...)
 
 function MeshData(rd::RefElemData, objects, 
                   cells_per_dimension_x::Int, cells_per_dimension_y::Int,
                   quadrature_type=Subtriangulation(); 
-                  quad_rule_face = get_1d_quadrature(rd), 
                   coordinates_min=(-1.0, -1.0), coordinates_max=(1.0, 1.0),
-                  precompute_operators=false)
+                  kwargs...)
 
     # compute intersections of curve with a background Cartesian grid.
     vx = LinRange(coordinates_min[1], coordinates_max[1], cells_per_dimension_x + 1)
     vy = LinRange(coordinates_min[2], coordinates_max[2], cells_per_dimension_y + 1)    
 
-    return MeshData(rd, objects, vx, vy, quadrature_type; 
-                    quad_rule_face, precompute_operators)
+    return MeshData(rd, objects, vx, vy, quadrature_type; kwargs...)
 end
 
 function MeshData(rd::RefElemData, objects, 
@@ -1380,6 +1379,7 @@ function MeshData(rd::RefElemData, objects,
                   vx::AbstractVector, vy::AbstractVector, 
                   quadrature_type::Subtriangulation; 
                   quad_rule_face=get_1d_quadrature(rd), 
+                  cut_quadrature_target_degree = 2 * rd.N,
                   precompute_operators=false)
 
     cells_per_dimension_x = length(vx) - 1
@@ -1405,31 +1405,32 @@ function MeshData(rd::RefElemData, objects,
     ####################################################
 
     physical_frame_elements = 
-        StartUpDG.construct_physical_frame_elements(region_flags, vx, vy, cutcells)
+        construct_physical_frame_elements(region_flags, vx, vy, cutcells)
 
     x_cut, y_cut = 
-        StartUpDG.construct_cut_interpolation_nodes(N, objects, physical_frame_elements)
+        construct_cut_interpolation_nodes(N, objects, physical_frame_elements)
 
     xq_cut, yq_cut, wJq_cut = 
-        StartUpDG.construct_cut_volume_quadrature(N, cutcells, physical_frame_elements)
+        construct_cut_volume_quadrature(N, cutcells, physical_frame_elements; 
+                                        target_degree = cut_quadrature_target_degree)
 
     xf_cut, yf_cut, nxJ_cut, nyJ_cut, wf_cut, cut_face_node_indices = 
-        StartUpDG.construct_cut_surface_quadrature(N, cutcells, quad_rule_face)
+        construct_cut_surface_quadrature(N, cutcells, quad_rule_face)
 
     ####################################################
     #          Construct Cartesian cells               # 
     ####################################################
 
     xf_cartesian, yf_cartesian, nxJ_cartesian, nyJ_cartesian, wf_cartesian = 
-        StartUpDG.construct_cartesian_surface_quadrature(vx, vy, region_flags, quad_rule_face)    
+        construct_cartesian_surface_quadrature(vx, vy, region_flags, quad_rule_face)    
 
     xq_cartesian, yq_cartesian, wJq_cartesian = 
-        StartUpDG.construct_cartesian_volume_quadrature(vx, vy, region_flags, 
+        construct_cartesian_volume_quadrature(vx, vy, region_flags, 
                                              (rd.rq, rd.sq, rd.wq))
 
     # reuse quadrature mapping to construct interpolation nodes                                             
     x_cartesian, y_cartesian, _ = 
-        StartUpDG.construct_cartesian_volume_quadrature(vx, vy, region_flags, 
+        construct_cartesian_volume_quadrature(vx, vy, region_flags, 
                                              (rd.r, rd.s, ones(size(rd.r))))
                                              
     ####################################################
