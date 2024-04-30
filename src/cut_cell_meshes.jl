@@ -1233,50 +1233,36 @@ end
 function compute_face_centroids(vx, vy, region_flags, 
                                 cutcells::AbstractVector{<:PathIntersections.PiecewiseCurve})
 
-    num_cartesian_cells = sum(region_flags .== 0)
-    num_cut_faces = sum(map(cutcell->length(cutcell.subcurves), cutcells))
+    num_cartesian_cells = sum(region_flags .== 0)   
+    face_centroids_cartesian = 
+        zeros(SVector{2, Float64}, num_faces(Quad()), num_cartesian_cells)
     
-    face_centroids_x = NamedArrayPartition(cartesian=zeros(num_faces(Quad()), num_cartesian_cells), 
-                                           cut=zeros(num_cut_faces))
-    face_centroids_y = similar(face_centroids_x)
+    num_faces_per_cut_cell = map(cutcell->length(cutcell.subcurves), cutcells)        
+    face_centroids_cut = [zeros(SVector{2, Float64}, num_faces_per_cut_cell[e]) 
+                            for e in eachindex(cutcells)]
 
     # calculate Cartesian centroids
     e = 1
     for ex in axes(region_flags, 1), ey in axes(region_flags, 2)
         if is_Cartesian(region_flags[ex, ey])
             # quad faces are -r, +r, -s, +s
-
-            # face 1
-            face_centroids_x.cartesian[1, e] = vx[ex]
-            face_centroids_y.cartesian[1, e] = 0.5 * (vy[ey+1] + vy[ey])
-
-            # face 2
-            face_centroids_x.cartesian[2, e] = vx[ex+1]
-            face_centroids_y.cartesian[2, e] = 0.5 * (vy[ey+1] + vy[ey])
-
-            # face 3
-            face_centroids_x.cartesian[3, e] = 0.5 * (vx[ex] + vx[ex+1])
-            face_centroids_y.cartesian[3, e] = vy[ey]
-
-            # face 4
-            face_centroids_x.cartesian[4, e] = 0.5 * (vx[ex] + vx[ex+1])
-            face_centroids_y.cartesian[4, e] = vy[ey+1]
+            face_centroids_cartesian[1, e] = SVector(vx[ex],   0.5 * (vy[ey+1] + vy[ey]))
+            face_centroids_cartesian[2, e] = SVector(vx[ex+1], 0.5 * (vy[ey+1] + vy[ey]))
+            face_centroids_cartesian[3, e] = SVector(0.5 * (vx[ex] + vx[ex+1]), vy[ey])
+            face_centroids_cartesian[4, e] = SVector(0.5 * (vx[ex] + vx[ex+1]), vy[ey+1])
             e += 1
         end
     end
 
-    face_index = 1
-    for cutcell in cutcells
+    for (e, cutcell) in enumerate(cutcells)
         for (f, face_parametrization) in enumerate(cutcell.subcurves)
             s_midpoint = 0.5 * sum(cutcell.sub_bounds[f])
             x, y = face_parametrization(s_midpoint)
-            face_centroids_x.cut[face_index] = x
-            face_centroids_y.cut[face_index] = y
-            face_index += 1
+            face_centroids_cut[e][f] = SVector(x, y)
         end
     end
 
-    return face_centroids_x, face_centroids_y
+    return face_centroids_cartesian, face_centroids_cut
 end
 
 num_faces(cutcell::PathIntersections.PiecewiseCurve) = length(cutcell.subcurves)
