@@ -1268,7 +1268,8 @@ end
 num_faces(cutcell::PathIntersections.PiecewiseCurve) = length(cutcell.subcurves)
 
 function connect_mesh(face_centroids, region_flags, 
-                      cutcells::Vector{<:PathIntersections.PiecewiseCurve}; tol = 1e2 * eps())
+                      cutcells::Vector{<:PathIntersections.PiecewiseCurve}; 
+                      tol = 1e2 * eps())
 
     num_cartesian_cells = sum(region_flags .== 0)
     cut_faces_per_cell = num_faces.(cutcells)
