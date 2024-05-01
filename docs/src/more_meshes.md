@@ -72,10 +72,15 @@ circle = PresetGeometries.Circle(R=0.33, x0=0, y0=0)
 cells_per_dimension_x, cells_per_dimension_y = 4, 4
 
 rd = RefElemData(Quad(), N=3)
-md = MeshData(rd, (circle, ), cells_per_dimension_x, cells_per_dimension_y; precompute_operators=true)
+md = MeshData(rd, (circle, ), cells_per_dimension_x, cells_per_dimension_y, Subtriangulation(); precompute_operators=true)
 ```
-The interpolation points on cut cells `md.x.cut` are determined from sampled points and a pivoted QR decomposition. The quadrature points on cut cells `md.xq.cut` are determined similarly. However, the cut-cell quadrature weights `md.wJq.cut` are not currently positive. The optional keyword argument `precompute_operators` specifies 
-whether to precompute differentiation, face interpolation, mass, and lifting matrices for each cut cell. If 
+Here, the final argument `quadrature_type = Subtriangulation()` determines how the quadrature on cut cells is determined. For `Subtriangulation()`, the quadrature on cut cells is constructed from a curved isoparametric subtriangulation of the cut cell. The number of quadrature points on a cut cell is then reduced (while preserving positivity) using Caratheodory pruning. If not specified, the `quadrature_type` argument defaults to `Subtriangulation()`. 
+
+Quadrature rules can also be constructed by specifying `quadrature_type = MomentFitting()`. The quadrature points on cut cells `md.xq.cut` are determined from sampling and a pivoted QR decomposition. This is not recommended, as it can be both slower, and the cut-cell quadrature weights `md.wJq.cut` are not guaranteed to be positive. 
+
+The interpolation points on cut cells `md.x.cut` are determined from sampled points and a pivoted QR decomposition. 
+
+The optional keyword argument `precompute_operators` specifies whether to precompute differentiation, face interpolation, mass, and lifting matrices for each cut cell. If 
 `precompute_operators=true`, these are stored in `md.mesh_type.cut_cell_operators`. 
 
 As with hybrid meshes, the nodal coordinates `md.x`, `md.y` are `NamedArrayPartition`s with `cartesian` and `cut` fields. For example, `md.x.cartesian` and `md.x.cut` are the x-coordinates of the Cartesian and cut cells, respectively. Likewise, `md.mapP` indexes linearly into the array of face coordinates and specifies exterior node indices. For example, we can interpolate a function to face nodes and compute exterior values via the following code:
