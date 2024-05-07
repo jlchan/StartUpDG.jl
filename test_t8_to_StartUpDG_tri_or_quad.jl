@@ -1,3 +1,5 @@
+using StartUpDG
+
 # computes: VX, VY, levels, neighbor_ids, 
 #           dual_faces, orientations
 include("generate_t8_arrays.jl")

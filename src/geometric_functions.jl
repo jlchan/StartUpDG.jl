@@ -77,7 +77,8 @@ function estimate_h(rd::RefElemData{DIM}, md::MeshData{DIM}) where {DIM}
         h_e = estimate_h(e, rd, md)
         hmin = min(hmin, h_e)
     end
-    return hmin * compute_domain_size(rd, md)^(1/DIM)
+    domain_size = sum(rd.M * md.J)
+    return hmin * domain_size^(1/DIM)
 end
 
 function estimate_h(e, rd::RefElemData, md::MeshData)
@@ -106,5 +107,4 @@ face_scaling(rd, f) = 1.0
 face_scaling(rd::RefElemData{2, Tri}, f) = f == 3 ? sqrt(2) : 1.0 # Jf incorporates length of long triangle edge
 face_scaling(rd::RefElemData{3, Tet}, f) = f == 2 ? sqrt(3) : 1.0 # Jf incorporates area of larger triangle face
 face_scaling(rd::RefElemData{3, Wedge}, f) = f == 2 ? sqrt(2) : 1.0 # Jf incorporates area of larger triangle face
-compute_domain_size(rd::RefElemData, md::MeshData) = sum(rd.M * md.J)
 
