@@ -351,7 +351,7 @@ end
 # points (e.g., QR-DEIM).
 function construct_cut_interpolation_nodes(N, objects, physical_frame_elements)
 
-    N_sampled = 4 * N
+    N_sampled = 4 * N # this is arbitrary
     num_cut_elements = length(physical_frame_elements)
     x, y = ntuple(_ -> zeros(Np_cut(N), num_cut_elements), 2)
 
@@ -362,6 +362,7 @@ function construct_cut_interpolation_nodes(N, objects, physical_frame_elements)
         
         x_sampled, y_sampled = 
             generate_sampling_points(objects, physical_frame_element, 2 * Np_cut(N), N_sampled)
+
         V = vandermonde(physical_frame_element, N, x_sampled, y_sampled) 
 
         # use pivoted QR to find good interpolation points
@@ -372,7 +373,7 @@ function construct_cut_interpolation_nodes(N, objects, physical_frame_elements)
         # number of sampled points. 
         condV_original = cond(V[ids, :])
         condV = condV_original
-        N_sampled = 10 * N
+        N_sampled = 8 * N
         iter, maxiters = 0, 100
         while condV > 1e8 && iter < maxiters
             x_sampled, y_sampled = 
@@ -384,17 +385,18 @@ function construct_cut_interpolation_nodes(N, objects, physical_frame_elements)
             QRfac = qr(V', ColumnNorm())
             ids = QRfac.p[1:Np_cut(N)]
             condV = cond(V[ids, :])
-            N_sampled += 5 * N
+            N_sampled += 2 * N
             
             if condV < 1e8
-                @warn "Conditioning of old VDM for element $e is $condV_original. " * 
+                @info "Conditioning of old VDM for element $e is $condV_original. " * 
                 "After recomputing with $(length(x_sampled)) samples: $condV."
             end
 
             iter += 1
         end
         if iter >= maxiters
-            @warn "Adaptive sampling of cut-cell element $e: maximum number of iterations $maxiters exceeded."
+            @warn "Adaptive sampling of cut-cell element $e: " * 
+                "maximum number of iterations $maxiters exceeded."
         end
 
         view(x, :, e) .= x_sampled[ids]
