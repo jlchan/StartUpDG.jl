@@ -285,18 +285,29 @@ function num_elements(md::MeshData{DIM, <:CutCellMesh}) where {DIM}
 end
 
 """
-    construct_cut_volume_quadrature(N, cutcells; target_degree = 2 * N)
+    construct_cut_volume_quadrature(N, cutcells; target_degree = 2 * N - 1)
 
 Constructs volume quadrature using subtriangulations of cut cells and 
 Caratheodory pruning. The resulting quadrature is exact for polynomials 
 of degree `target_degree`. 
+
+We set `target_degree` to `2 * N - 1` by default, which is sufficient to 
+ensure that ∫du/dx * v is integrated exactly so that integration by parts
+holds under the generated cut cell quadrature. 
 """
 function construct_cut_volume_quadrature(N, cutcells, physical_frame_elements; 
-                                         target_degree = 2 * N)
+                                         target_degree = 2 * N - 1)
 
-    # volume quadrature should be exact for degree N(N-1) + 2N-2 polynomials, 
-    # or N(N-1) + 2(N-1) = (N+2) * (N-1) degrees
-    N_phys_frame_geo = max(2 * N, (N-1) * (N + 2))     
+    # We make volume quadrature exact for degree N^2 + N(N-1) + 2(N-1) polynomials on the 
+    # reference element, which ensures that ∫du/dx * v * J is integrated exactly over D̂. 
+    # This is because du/dx * v ∈ P^{2N-1}(D^k) and (du/dx * v) ∘ x(r,s) ∈ P^{(2N-1) * N}). 
+    # 
+    # The minimum exactness of volume quadrature is degree N(N-1) + 2N-2 polynomials,
+    # which ensures Qh * 1 = 0, where Qh = hybridized SBP operator.
+
+    # Integral     ∫    v     du/dx        J     over reference element D̂
+    # TODO: why can we decrease this and still see exactness?
+    N_phys_frame_geo = N^2 + N * (N-1) + 2 * (N-1) 
 
     rd_tri = RefElemData(Tri(), Polynomial(MultidimensionalQuadrature()), N, 
                          quad_rule_vol=NodesAndModes.quad_nodes_tri(N_phys_frame_geo))
@@ -323,14 +334,12 @@ function construct_cut_volume_quadrature(N, cutcells, physical_frame_elements;
         w = vec(wJq)
         w_pruned, inds = StartUpDG.caratheodory_pruning_qr(Vtarget, w)
 
-        if target_degree >= 2*N
-            # test exactness of the pruned quadrature rule
+        # test exactness of the pruned quadrature rule if applicable
+        if target_degree >= 2 * N
             V = vandermonde(physical_frame_elements[e], N, vec(xq), vec(yq))        
             @assert norm(V' * diagm(w) * V - V' * diagm(w_pruned) * V) < 100 * eps()
-            # @show cond(V' * diagm(w_pruned) * V)
         end
 
-        # @show e, size(xq[inds]), size(xq_pruned)
         @. xq_pruned[:, e] = xq[inds]
         @. yq_pruned[:, e] = yq[inds]
         @. wJq_pruned[:, e] = w_pruned[inds]
