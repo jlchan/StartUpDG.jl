@@ -939,7 +939,7 @@ function MeshData(rd::RefElemData, objects,
 
             VDM = vandermonde(elem, rd.N, x.cut[:, e], y.cut[:, e])
             Vq, Vrq, Vsq = map(A -> A / VDM, 
-                               basis(elem, rd.N, xq.cut[:,e], yq.cut[:, e]))
+                               basis(elem, rd.N, view(xq.cut, :, e), view(yq.cut, :, e)))
         
             M  = Vq' * Diagonal(wJq.cut[:, e]) * Vq
             Qr = Vq' * Diagonal(wJq.cut[:, e]) * Vrq
