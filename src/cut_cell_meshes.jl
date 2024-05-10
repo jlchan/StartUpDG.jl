@@ -506,7 +506,7 @@ vertices of cut cells and the background cell location.
 """
 function construct_physical_frame_elements(region_flags, vx, vy, cutcells)
 
-    physical_frame_elements = PhysicalFrame{2}[] # populate this as we iterate through cut cells
+    physical_frame_elements = typeof(PhysicalFrame())[] # populate this as we iterate through cut cells
     e = 1
     for ex in axes(region_flags, 1), ey in axes(region_flags, 2)
         if StartUpDG.is_cut(region_flags[ex, ey])
