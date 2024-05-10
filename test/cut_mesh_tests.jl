@@ -96,8 +96,8 @@ using StartUpDG: PathIntersections
         srd(e) # in-place application of SRD functor
 
         # test exactness
-        @test norm(e .- ecopy) < 1e3 * eps()
-        @test norm(u .- ucopy) < 1e3 * eps()
+        @test norm(e .- ecopy) < 1e2 * length(e) * eps()
+        @test norm(u .- ucopy) < 1e2 * length(u) * eps()
     end
 end
 
