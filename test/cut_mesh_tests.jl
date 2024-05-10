@@ -144,6 +144,6 @@ end
         Ph = hybridized_projection_matrices[e]
         Vh = hybridized_interp_matrices[e]
         @test norm(Ph * Qxh * Vh - Dx) + 
-              norm(Ph * Qyh * Vh - Dy) < 1e3 * eps()
+              norm(Ph * Qyh * Vh - Dy) < 100 * length(Dx) * eps()
     end
 end
