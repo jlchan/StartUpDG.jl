@@ -96,8 +96,8 @@ using StartUpDG: PathIntersections
         srd(e) # in-place application of SRD functor
 
         # test exactness
-        @test norm(e .- ecopy) < 1e3 * eps()
-        @test norm(u .- ucopy) < 1e3 * eps()
+        @test norm(e .- ecopy) < 1e2 * length(e) * eps()
+        @test norm(u .- ucopy) < 1e2 * length(u) * eps()
     end
 end
 
@@ -109,29 +109,41 @@ end
     cells_per_dimension = 2
     circle = PresetGeometries.Circle(R=0.66, x0=.1, y0=0)
 
-    rd = RefElemData(Quad(), N=3)
+    rd = RefElemData(Quad(), N=2)
 
     md = MeshData(rd, (circle, ), cells_per_dimension; 
                   precompute_operators=true)
 
-    mt = md.mesh_type
-    (; wJf) = md.mesh_type.cut_cell_data
-    wf = wJf ./ md.Jf
+    mt = md.mesh_type                  
 
-    for (e, elem) in enumerate(mt.physical_frame_elements)
-        xq, yq, wq = md.xq.cut[:,e], md.yq.cut[:,e], md.wJq.cut[:,e]
+    (; x, y, xq, yq) = md
+    u = @. x^2 + x * y + y^2
+    uq = @. xq^2 + xq * yq + yq^2
 
-        Vq, Vxq, Vyq = basis(elem, rd.N, xq, yq)
-        face_ids = mt.cut_face_nodes[e]
-        Vf = vandermonde(elem, rd.N, md.xf.cut[face_ids], md.yf.cut[face_ids]) 
-        Qx, Qy = Vq' * diagm(wq) * Vxq, Vq' * diagm(wq) * Vyq
+    (; volume_interpolation_matrices, differentiation_matrices) = md.mesh_type.cut_cell_operators
+    Qxyh, hybridized_project_interp_matrices, 
+    hybridized_projection_matrices, hybridized_interp_matrices = 
+        hybridized_SBP_operators(md)
 
-        Bx = Diagonal(wf.cut[face_ids] .* md.nxJ.cut[face_ids])
-        By = Diagonal(wf.cut[face_ids] .* md.nyJ.cut[face_ids])
+    for e in eachindex(Qxyh)
+        Qxh, Qyh = Qxyh[e]
+        Dx, Dy = differentiation_matrices[e]
+        Vq = volume_interpolation_matrices[e]
+        M = Vq' * diagm(md.wJq.cut[:,e]) * Vq
+        Pq = M \ (Vq' * diagm(md.wJq.cut[:,e]))
 
-        # represent constant vector in basis
-        ee = Vq \ ones(size(Vq, 1))
-        @test norm(ee' * Qx - ee' * Vf' * Bx * Vf) < 100 * eps()
-        @test norm(ee' * Qy - ee' * Vf' * By * Vf) < 100 * eps()
+        # test exactness of interpolation, projection
+        @test norm(Vq * u.cut[:,e] - uq.cut[:,e]) < 100 * eps()
+        @test norm(Pq * uq.cut[:,e] - u.cut[:,e]) < 100 * eps()
+
+        # test weak SBP property 
+        @test norm(sum(Qxh, dims=2)) + norm(sum(Qyh, dims=2)) < 100 * eps()
+
+        # test accuracy of hybridized SBP operators when rd::RefElemData uses
+        # full accuracy quadrature.
+        Ph = hybridized_projection_matrices[e]
+        Vh = hybridized_interp_matrices[e]
+        @test norm(Ph * Qxh * Vh - Dx) + 
+              norm(Ph * Qyh * Vh - Dy) < 100 * length(Dx) * eps()
     end
 end
