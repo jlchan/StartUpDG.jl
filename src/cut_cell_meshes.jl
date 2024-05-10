@@ -918,6 +918,7 @@ function MeshData(rd::RefElemData, objects,
                        vxyz=(vx, vy), 
                        cells_per_dimension=(cells_per_dimension_x, 
                                             cells_per_dimension_y), 
+                       cut_face_node_indices_by_elem_by_face = cut_face_node_indices,
                     ) # background Cartesian grid info
 
     # get flattened indices of cut face nodes. note that 
