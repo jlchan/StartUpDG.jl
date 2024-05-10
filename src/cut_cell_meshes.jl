@@ -1006,3 +1006,51 @@ function MeshData(rd::RefElemData, objects,
                     mapM, mapP, mapB, rstxyzJ, J, (nxJ, nyJ), Jf, is_periodic)
 
 end
+
+function hybridized_SBP_operators(md::MeshData{2, <:CutCellMesh})
+    mt = md.mesh_type
+    (; volume_interpolation_matrices, 
+       face_interpolation_matrices, 
+       differentiation_matrices, 
+       mass_matrices) = mt.cut_cell_operators
+    (; wJf) = mt.cut_cell_data
+    wf = wJf ./ md.Jf
+    (; x, nxJ, nyJ) = md
+
+    hybridized_operators = Tuple{Matrix{eltype(x)}, Matrix{eltype(x)}}[]
+    interpolation_operators, projection_operators, project_and_interp_operators = 
+        ntuple(_ -> Matrix{eltype(x)}[], 3)
+    for e in eachindex(differentiation_matrices)           
+        Dx, Dy = differentiation_matrices[e]
+        Vq = volume_interpolation_matrices[e]
+        Vf = face_interpolation_matrices[e]
+        M = mass_matrices[e]
+
+        Pq = M \ (Vq' * Diagonal(md.wJq.cut[:, e]))
+        E = Vf * Pq
+
+        fids = mt.cut_face_nodes[e]
+        Bx = Diagonal(wf.cut[fids] .* nxJ.cut[fids])
+        By = Diagonal(wf.cut[fids] .* nyJ.cut[fids])
+
+        Qx = Pq' * M * Dx * Pq
+        Qy = Pq' * M * Dy * Pq
+        Qxh = 0.5 * [Qx - Qx' E' * Bx;
+                    -Bx * E   Bx     ]
+        Qyh = 0.5 * [Qy - Qy' E' * By;
+                    -By * E   By      ]
+
+        # interpolation matrices
+        Vh = [Vq; Vf]
+        VhP = Vh * Pq
+        Ph = M \ Vh'
+
+        push!(hybridized_operators, (Qxh, Qyh))
+        push!(interpolation_operators, Vh)
+        push!(projection_operators, Ph)
+        push!(project_and_interp_operators, VhP)
+    end
+    
+    return hybridized_operators, project_and_interp_operators, 
+           projection_operators, interpolation_operators 
+end
