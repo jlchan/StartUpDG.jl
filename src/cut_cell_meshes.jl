@@ -337,7 +337,7 @@ function construct_cut_volume_quadrature(N, cutcells, physical_frame_elements;
         # test exactness of the pruned quadrature rule if applicable
         if target_degree >= 2 * N
             V = vandermonde(physical_frame_elements[e], N, vec(xq), vec(yq))        
-            @assert norm(V' * diagm(w) * V - V' * diagm(w_pruned) * V) < 100 * eps()
+            @assert norm(V' * Diagonal(w) * V - V' * Diagonal(w_pruned) * V) < 100 * eps()
         end
 
         @. xq_pruned[:, e] = xq[inds]
@@ -941,9 +941,9 @@ function MeshData(rd::RefElemData, objects,
             Vq, Vrq, Vsq = map(A -> A / VDM, 
                                basis(elem, rd.N, xq.cut[:,e], yq.cut[:, e]))
         
-            M  = Vq' * diagm(wJq.cut[:, e]) * Vq
-            Qr = Vq' * diagm(wJq.cut[:, e]) * Vrq
-            Qs = Vq' * diagm(wJq.cut[:, e]) * Vsq    
+            M  = Vq' * Diagonal(wJq.cut[:, e]) * Vq
+            Qr = Vq' * Diagonal(wJq.cut[:, e]) * Vrq
+            Qs = Vq' * Diagonal(wJq.cut[:, e]) * Vsq    
             Dx_e, Dy_e = M \ Qr, M \ Qs
             
             xf_e = xf.cut[cut_face_node_indices_by_cell[e]]
@@ -959,7 +959,7 @@ function MeshData(rd::RefElemData, objects,
             push!(face_interpolation_matrices, Vf)
             push!(differentiation_matrices, (Dx_e, Dy_e))
             push!(mass_matrices, M)
-            push!(lift_matrices, M \ (Vf' * diagm(wf)))
+            push!(lift_matrices, M \ (Vf' * Diagonal(wf)))
         end
         cut_cell_operators = (; volume_interpolation_matrices, 
                                 face_interpolation_matrices, 
