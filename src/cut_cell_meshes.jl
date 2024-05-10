@@ -923,16 +923,17 @@ function MeshData(rd::RefElemData, objects,
     # get flattened indices of cut face nodes. note that 
     #   `cut_face_node_indices = [[face_1_indices, face_2_indices, ...], ...]`
     cut_face_node_indices_by_cell = 
-        map(x -> UnitRange(x[1][1], x[end][end]), cut_face_node_indices)
+        map(x -> UnitRange(first(x[1]), last(x[end])), cut_face_node_indices)
 
     if precompute_operators == true
 
         # precompute cut-cell operators and store them in the `md.mesh_type.cut_cell_operators` field.
-        cut_face_nodes = cut_face_node_indices_by_cell
-        face_interpolation_matrices = Matrix{eltype(x)}[]
-        lift_matrices = Matrix{eltype(x)}[]
         differentiation_matrices = Tuple{Matrix{eltype(x)}, Matrix{eltype(x)}}[]
-        mass_matrices = Matrix{eltype(x)}[]
+        volume_interpolation_matrices, face_interpolation_matrices = 
+            ntuple(_ -> Matrix{eltype(x)}[], 3)
+
+        # TODO: remove these? these can be computed from other matrices
+        mass_matrices, lift_matrices = ntuple(_ -> Matrix{eltype(x)}[], 2)
         for (e, elem) in enumerate(physical_frame_elements)
 
             VDM = vandermonde(elem, rd.N, x.cut[:, e], y.cut[:, e])
@@ -944,20 +945,24 @@ function MeshData(rd::RefElemData, objects,
             Qs = Vq' * diagm(wJq.cut[:, e]) * Vsq    
             Dx_e, Dy_e = M \ Qr, M \ Qs
             
-            Vf = vandermonde(elem, rd.N, xf.cut[cut_face_node_indices_by_cell[e]], 
-                                         yf.cut[cut_face_node_indices_by_cell[e]]) / VDM
+            xf_e = xf.cut[cut_face_node_indices_by_cell[e]]
+            yf_e = yf.cut[cut_face_node_indices_by_cell[e]]
+            Vf = vandermonde(elem, rd.N, xf_e, yf_e) / VDM
 
             # don't include jacobian scaling in LIFT matrix (for consistency 
             # with the Cartesian mesh)
             wf = wJf.cut[cut_face_node_indices_by_cell[e]] ./ 
                     Jf.cut[cut_face_node_indices_by_cell[e]]
 
-            push!(lift_matrices, M \ (Vf' * diagm(wf)))
+            push!(volume_interpolation_matrices, Vq)
             push!(face_interpolation_matrices, Vf)
             push!(differentiation_matrices, (Dx_e, Dy_e))
             push!(mass_matrices, M)
+            push!(lift_matrices, M \ (Vf' * diagm(wf)))
         end
-        cut_cell_operators = (; differentiation_matrices, face_interpolation_matrices, 
+        cut_cell_operators = (; volume_interpolation_matrices, 
+                                face_interpolation_matrices, 
+                                differentiation_matrices, 
                                 mass_matrices, lift_matrices)
 
     else
