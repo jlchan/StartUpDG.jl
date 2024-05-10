@@ -539,16 +539,14 @@ index into `xf.cut`, `yf.cut`, etc) for each face of each cut element.
 On boundaries of cut cells, the surface quadrature is taken to be exact for degree 
 `N^2 + (N-1)` polynomials. This ensures satisfaction of a weak GSBP property.
 """
-function construct_cut_surface_quadrature(N, cutcells, quad_rule_1D = gauss_quad(0, 0, N))
+function construct_cut_surface_quadrature(N, cutcells, 
+                                          quad_rule_1D = gauss_quad(0, 0, N),
+                                          quad_rule_boundary = get_boundary_quadrature(N)) 
 
     rd_line = RefElemData(Line(), N, quad_rule_vol = quad_rule_1D)
+    rq_boundary, wq_boundary = quad_rule_boundary
 
-    # we want to exactly integrate degree N^2 + (N-1) polynomials since our target 
-    # integrand is nxJ * u (nxJ is degree N-1 on the reference face, and u is degree 
-    # N on the physical face, but mapped back to the reference face it's N^2).
-    N_boundary = ceil(Int, (N^2 + (N-1) - 1) / 2)
-    rq1D, wq1D = gauss_quad(0, 0, N_boundary)
-    interp_to_cut_boundary = vandermonde(Line(), rd_line.N, rq1D) / rd_line.VDM
+    interp_to_cut_boundary = vandermonde(Line(), rd_line.N, rq_boundary) / rd_line.VDM
 
     xf, yf, nxJ, nyJ, wf = ntuple(_ -> Vector{Float64}[], 5)
 
@@ -584,7 +582,7 @@ function construct_cut_surface_quadrature(N, cutcells, quad_rule_1D = gauss_quad
             scaled_normal = SVector.(-dydr, dxdr)
             nxJ_face = @. getindex(scaled_normal, 1)
             nyJ_face = @. getindex(scaled_normal, 2)
-            wf_face = (is_boundary_face) ? wq1D : rd_line.wq
+            wf_face = (is_boundary_face) ? wq_boundary : rd_line.wq
             
             push!(xf_element, xfq_face)
             push!(yf_element, yfq_face)
@@ -740,6 +738,18 @@ function connect_mesh(face_centroids, region_flags,
     return FToF
 end
 
+# If we wish to exactly integrate ∫ u * v * (nx * Jf) and ∫ u * v * (ny * Jf), 
+# the reference quadrature must be exact for degree 2 * N^2 + (N-1) polynomials
+# on the reference line. 
+#
+# Note that we don't perform Caratheodory pruning for boundary faces at the moment.
+get_boundary_quadrature(rd::RefElemData) = get_boundary_quadrature(rd.N)
+function get_boundary_quadrature(N)
+    # N_boundary = ceil(Int, (N^2 + (N-1) - 1) / 2) # to ensure weak SBP
+    N_boundary = ceil(Int, (2 * N^2 + (N - 1) - 1) / 2) # to ensure GSBP property 
+    return gauss_quad(0, 0, N_boundary)
+end
+
 """
     function MeshData(rd, geometry, vxyz...)
 
@@ -758,7 +768,8 @@ function MeshData(rd::RefElemData, objects,
                   vx::AbstractVector, vy::AbstractVector, 
                   quadrature_type::Subtriangulation; 
                   quad_rule_face=get_1d_quadrature(rd), 
-                  cut_quadrature_target_degree = 2 * rd.N,
+                  quad_rule_boundary=get_boundary_quadrature(rd),
+                  cut_quadrature_target_degree = 2 * rd.N-1,
                   precompute_operators=false)
 
     cells_per_dimension_x = length(vx) - 1
@@ -793,8 +804,12 @@ function MeshData(rd::RefElemData, objects,
         construct_cut_volume_quadrature(N, cutcells, physical_frame_elements; 
                                         target_degree = cut_quadrature_target_degree)
 
+    # On the curved cut boundary, we want to exactly integrate degree N^2 + (N-1) 
+    # polynomials since our target integrand is nxJ * u (nxJ is degree N-1 on the 
+    # reference face, and u is degree N on the physical face, but mapped back to 
+    # the reference face it's N^2). quad_rule_boundary defaults to this degree.
     xf_cut, yf_cut, nxJ_cut, nyJ_cut, wf_cut, cut_face_node_indices = 
-        construct_cut_surface_quadrature(N, cutcells, quad_rule_face)
+        construct_cut_surface_quadrature(N, cutcells, quad_rule_face, quad_rule_boundary)
 
     ####################################################
     #          Construct Cartesian cells               # 
