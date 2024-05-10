@@ -883,15 +883,17 @@ function MeshData(rd::RefElemData, objects,
                             cut = collect(eachindex(xf.cut) .+ length(mapM_cartesian)))
     mapP = copy(mapM)
 
+    # allocate a vector for points on non-boundary faces
+    p = zeros(Int, length(first(quad_rule_face)))
     for f in eachindex(FToF)
         # if it's not a boundary face
         if f !== FToF[f]
-            idM = mapM[face_node_indices_by_face[f]]
-            idP = mapM[face_node_indices_by_face[FToF[f]]]
+            idM = view(mapM, face_node_indices_by_face[f])
+            idP = view(mapM, face_node_indices_by_face[FToF[f]])
             xyzM = (view(xf, idM), view(yf, idM))
             xyzP = (view(xf, idP), view(yf, idP))
-            p = StartUpDG.match_coordinate_vectors(xyzM, xyzP)
-            mapP[idM[p]] .= idP
+            StartUpDG.match_coordinate_vectors!(p, xyzM, xyzP)
+            @. mapP[idM[p]] = idP
         end
     end
     mapB = findall(vec(mapM) .== vec(mapP)) # determine boundary nodes
