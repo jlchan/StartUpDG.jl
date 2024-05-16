@@ -337,7 +337,7 @@ function construct_cut_volume_quadrature(N, cutcells, physical_frame_elements;
         # test exactness of the pruned quadrature rule if applicable
         if target_degree >= 2 * N
             V = vandermonde(physical_frame_elements[e], N, vec(xq), vec(yq))        
-            @assert norm(V' * diagm(w) * V - V' * diagm(w_pruned) * V) < 100 * eps()
+            @assert norm(V' * Diagonal(w) * V - V' * Diagonal(w_pruned) * V) < 100 * eps()
         end
 
         @. xq_pruned[:, e] = xq[inds]
@@ -506,7 +506,7 @@ vertices of cut cells and the background cell location.
 """
 function construct_physical_frame_elements(region_flags, vx, vy, cutcells)
 
-    physical_frame_elements = PhysicalFrame{2}[] # populate this as we iterate through cut cells
+    physical_frame_elements = typeof(PhysicalFrame())[] # populate this as we iterate through cut cells
     e = 1
     for ex in axes(region_flags, 1), ey in axes(region_flags, 2)
         if StartUpDG.is_cut(region_flags[ex, ey])
@@ -883,15 +883,17 @@ function MeshData(rd::RefElemData, objects,
                             cut = collect(eachindex(xf.cut) .+ length(mapM_cartesian)))
     mapP = copy(mapM)
 
+    # allocate a vector for points on non-boundary faces
+    p = zeros(Int, length(first(quad_rule_face)))
     for f in eachindex(FToF)
         # if it's not a boundary face
         if f !== FToF[f]
-            idM = mapM[face_node_indices_by_face[f]]
-            idP = mapM[face_node_indices_by_face[FToF[f]]]
+            idM = view(mapM, face_node_indices_by_face[f])
+            idP = view(mapM, face_node_indices_by_face[FToF[f]])
             xyzM = (view(xf, idM), view(yf, idM))
             xyzP = (view(xf, idP), view(yf, idP))
-            p = StartUpDG.match_coordinate_vectors(xyzM, xyzP)
-            mapP[idM[p]] .= idP
+            StartUpDG.match_coordinate_vectors!(p, xyzM, xyzP)
+            @. mapP[idM[p]] = idP
         end
     end
     mapB = findall(vec(mapM) .== vec(mapP)) # determine boundary nodes
@@ -939,11 +941,11 @@ function MeshData(rd::RefElemData, objects,
 
             VDM = vandermonde(elem, rd.N, x.cut[:, e], y.cut[:, e])
             Vq, Vrq, Vsq = map(A -> A / VDM, 
-                               basis(elem, rd.N, xq.cut[:,e], yq.cut[:, e]))
+                               basis(elem, rd.N, view(xq.cut, :, e), view(yq.cut, :, e)))
         
-            M  = Vq' * diagm(wJq.cut[:, e]) * Vq
-            Qr = Vq' * diagm(wJq.cut[:, e]) * Vrq
-            Qs = Vq' * diagm(wJq.cut[:, e]) * Vsq    
+            M  = Vq' * Diagonal(wJq.cut[:, e]) * Vq
+            Qr = Vq' * Diagonal(wJq.cut[:, e]) * Vrq
+            Qs = Vq' * Diagonal(wJq.cut[:, e]) * Vsq    
             Dx_e, Dy_e = M \ Qr, M \ Qs
             
             xf_e = xf.cut[cut_face_node_indices_by_cell[e]]
@@ -959,7 +961,7 @@ function MeshData(rd::RefElemData, objects,
             push!(face_interpolation_matrices, Vf)
             push!(differentiation_matrices, (Dx_e, Dy_e))
             push!(mass_matrices, M)
-            push!(lift_matrices, M \ (Vf' * diagm(wf)))
+            push!(lift_matrices, M \ (Vf' * Diagonal(wf)))
         end
         cut_cell_operators = (; volume_interpolation_matrices, 
                                 face_interpolation_matrices, 
@@ -1007,6 +1009,17 @@ function MeshData(rd::RefElemData, objects,
 
 end
 
+"""
+    hybridized_SBP_operators(md::MeshData{2, <:CutCellMesh})
+
+This constructs hybridized SBP operators using the approach taken in Chan (2019), 
+"Skew-Symmetric Entropy Stable Modal Discontinuous Galerkin Formulations". 
+[https://doi.org/10.1007/s10915-019-01026-w](https://doi.org/10.1007/s10915-019-01026-w)
+
+This function returns `hybridized_operators::Vector{Tuple{<:Matrix, <:Matrix}}` and 
+`project_and_interp_operators, projection_operators, interpolation_operators`, which are 
+all `Vector{<:Matrix}`, where each entry corresponds to a cut element.
+"""
 function hybridized_SBP_operators(md::MeshData{2, <:CutCellMesh})
     mt = md.mesh_type
     (; volume_interpolation_matrices, 
