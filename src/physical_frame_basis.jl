@@ -176,25 +176,23 @@ function caratheodory_pruning_qr(V, w_in)
     inds = collect(1:M)
     m = M-N
     Q, _ = qr(V)
-    Q = copy(Q)
     for _ in 1:m
-        kvec = Q[:,end]
+        kvec = view(Q, :, size(Q, 2))
 
         # for subtracting the kernel vector
         idp = findall(@. kvec > 0)
-        alphap, k0p = findmin(w[inds[idp]] ./ kvec[idp])
+        alphap, k0p = findmin(view(w, inds[idp]) ./ view(kvec, idp))
         k0p = idp[k0p]
     
         # for adding the kernel vector
-        idn = findall(@. kvec < 0);
-        alphan, k0n = findmax(w[inds[idn]] ./ kvec[idn])
-        k0n = idn[k0n];
+        idn = findall(@. kvec < 0)
+        alphan, k0n = findmax(view(w, inds[idn]) ./ view(kvec, idn))
+        k0n = idn[k0n]
     
         alpha, k0 = abs(alphan) < abs(alphap) ? (alphan, k0n) : (alphap, k0p)
-        w[inds] = w[inds] - alpha * kvec
+        @. w[inds] = w[inds] - alpha * kvec
         deleteat!(inds, k0)
         Q, _ = qr(V[inds, :])
-        Q = copy(Q)
     end
     return w, inds
 end
