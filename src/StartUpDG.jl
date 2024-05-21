@@ -24,7 +24,6 @@ using Triangulate: Triangulate, TriangulateIO, triangulate
 
 @inline mean(x) = sum(x) / length(x)
 
-# reference element utility functions
 include("RefElemData.jl")
 
 include("RefElemData_polynomial.jl")
@@ -38,7 +37,10 @@ export TensorProductWedge
 include("RefElemData_SBP.jl")
 export SBP, DefaultSBPType, TensorProductLobatto, Hicken, Kubatko # types for SBP node dispatch
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
-export hybridized_SBP_operators, sparse_low_order_SBP_operators
+export hybridized_SBP_operators
+
+include("low_order_sbp.jl")
+export sparse_low_order_SBP_operators
 export subcell_limiting_operators
 export inverse_trace_constant, face_type
 
