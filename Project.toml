@@ -23,10 +23,12 @@ Triangulate = "f7e6ffb2-c36d-4f8f-a77e-16e897189344"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [weakdeps]
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 SummationByPartsOperators = "9f78cca6-572e-554e-b819-917d2f1cf240"
 
 [extensions]
 StartUpDGSummationByPartsOperatorsExt = "SummationByPartsOperators"
+TriangulatePlotsExt = "Plots"
 
 [compat]
 ConstructionBase = "1"
