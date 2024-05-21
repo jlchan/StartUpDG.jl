@@ -48,6 +48,3 @@ SummationByPartsOperators = "0.5.52"
 Triangulate = "2"
 WriteVTK = "1"
 julia = "1.10"
-
-[extras]
-SummationByPartsOperators = "9f78cca6-572e-554e-b819-917d2f1cf240"
