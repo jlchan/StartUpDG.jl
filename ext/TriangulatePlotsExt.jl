@@ -1,8 +1,8 @@
-module TriangulatePlots
+module TriangulatePlotsExt
 
 using StartUpDG: BoundaryTagPlotter, RecipesBase
 
-using ..Plots: Plots
+using Plots: Plots
 
 RecipesBase.@recipe function f(m::BoundaryTagPlotter)
   triout = m.triout

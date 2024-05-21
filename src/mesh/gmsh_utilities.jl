@@ -103,7 +103,7 @@ Notes: the version 4 format has a more detailed block data format
 this leads to more complicated parser.
 """
 function read_Gmsh_2D_v4(filename::String, options::MeshImportOptions)
-    @unpack grouping, remap_group_name = options
+    (; grouping, remap_group_name) = options
 
     if !isfile(filename)
         throw(ArgumentError("file $filename does not exist"))

@@ -6,26 +6,14 @@ using SparseArrays: sparse, droptol!, spzeros
 using StartUpDG
 
 # Required for visualization code
-if isdefined(Base, :get_extension)
-    using SummationByPartsOperators:
-        SummationByPartsOperators,
-        DerivativeOperator,
-        grid,
-        AbstractDerivativeOperator,
-        AbstractNonperiodicDerivativeOperator,
-        PeriodicDerivativeOperator,
-        AbstractPeriodicDerivativeOperator
-else
-    # Until Julia v1.9 is the minimum required version for Trixi.jl, we still support Requires.jl
-    using ..SummationByPartsOperators
-    using ..SummationByPartsOperators:
-        AbstractDerivativeOperator,
-        AbstractPeriodicDerivativeOperator,
-        AbstractNonperiodicDerivativeOperator,
-        DerivativeOperator,
-        PeriodicDerivativeOperator,
-        grid
-end
+using SummationByPartsOperators:
+    SummationByPartsOperators,
+    DerivativeOperator,
+    grid,
+    AbstractDerivativeOperator,
+    AbstractNonperiodicDerivativeOperator,
+    PeriodicDerivativeOperator,
+    AbstractPeriodicDerivativeOperator
 
 function construct_1d_operators(D::AbstractDerivativeOperator, tol)
     nodes_1d = collect(grid(D))
