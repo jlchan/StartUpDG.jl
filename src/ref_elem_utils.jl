@@ -36,6 +36,81 @@ function map_face_nodes(::Tet, face_nodes...)
     return rf, sf, tf
 end
 
+function init_face_data(elem::Tri; quad_rule_face = gauss_quad(0,0,N))
+    r1D, w1D = quad_rule_face
+    e = ones(size(r1D)) 
+    z = zeros(size(r1D)) 
+    rf, sf = map_face_nodes(elem, r1D)
+    wf = vec(repeat(w1D, 3, 1));
+    nrJ = [z; e; -e]
+    nsJ = [-e; e; z]
+    return rf, sf, wf, nrJ, nsJ
+end
+
+function init_face_data(elem::Quad; quad_rule_face=gauss_quad(0, 0, N))
+    Nfaces = 4
+    r1D, w1D = quad_rule_face
+    e = ones(size(r1D))
+    z = zeros(size(r1D))
+    rf, sf = map_face_nodes(elem, r1D)
+    wf = vec(repeat(w1D, Nfaces, 1)) 
+    nrJ = [-e; e; z; z]
+    nsJ = [z; z; -e; e]
+
+    return rf, sf, wf, nrJ, nsJ
+end
+
+function init_face_data(elem::Hex; quad_rule_face=quad_nodes(Quad(), N))
+    rquad, squad, wquad = quad_rule_face
+    e = ones(size(rquad))
+    zz = zeros(size(rquad))
+    rf, sf, tf = map_face_nodes(elem, rquad, squad)
+    Nfaces = 6
+    wf = vec(repeat(wquad, Nfaces, 1));
+    nrJ = [-e;  e; zz; zz; zz; zz]
+    nsJ = [zz; zz; -e;  e; zz; zz]
+    ntJ = [zz; zz; zz; zz; -e;  e]
+    return rf, sf, tf, wf, nrJ, nsJ, ntJ
+end
+
+function init_face_data(elem::Tet; quad_rule_face=quad_nodes(Tri(), N))
+    rquad, squad, wquad = quad_rule_face
+    e = ones(size(rquad))
+    zz = zeros(size(rquad))
+    rf, sf, tf = map_face_nodes(elem, rquad, squad)
+    Nfaces = 4
+    wf = vec(repeat(wquad, Nfaces, 1));
+    nrJ = [zz; e; -e; zz]
+    nsJ = [-e; e; zz; zz]
+    ntJ = [zz; e; zz; -e]
+    return rf, sf, tf, wf, nrJ, nsJ, ntJ
+end
+
+# default to doing nothing
+map_nodes_to_symmetric_element(element_type, rst...) = rst
+
+# for triangles, map to an equilateral triangle
+function map_nodes_to_symmetric_element(::Tri, r, s)
+    # biunit right triangular vertices
+    v1, v2, v3 = SVector{2}.(zip(nodes(Tri(), 1)...))
+
+    denom = (v2[2] - v3[2]) * (v1[1] - v3[1]) + (v3[1] - v2[1]) * (v1[2] - v3[2])
+    L1 = @. ((v2[2] - v3[2]) * (r - v3[1]) + (v3[1] - v2[1]) * (s - v3[2])) / denom
+    L2 = @. ((v3[2] - v1[2]) * (r - v3[1]) + (v1[1] - v3[1]) * (s - v3[2])) / denom
+    L3 = @. 1 - L1 - L2
+
+    # equilateral vertices
+    v1 = SVector{2}(2 * [-.5, -sqrt(3) / 6])
+    v2 = SVector{2}(2 * [.5, -sqrt(3)/6])
+    v3 = SVector{2}(2 * [0, sqrt(3)/3])
+
+    x = @. v1[1] * L1 + v2[1] * L2 + v3[1] * L3
+    y = @. v1[2] * L1 + v2[2] * L2 + v3[2] * L3
+
+    return x, y
+end
+
+
 """
     function inverse_trace_constant(rd::RefElemData)
 

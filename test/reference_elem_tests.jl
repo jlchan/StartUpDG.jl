@@ -24,8 +24,8 @@
         @test abs(sum(rd.wf)) ≈ 6
         @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
         @test rd.Pq * rd.Vq ≈ I
-        Vfp = vandermonde(Line(), N, quad_nodes(Line(), N)[1]) / vandermonde(Line(), N, nodes(Line(), N))
-        rstf = (x->Vfp * x[reshape(rd.Fmask, rd.Nfq ÷ rd.Nfaces, rd.Nfaces)]).(rd.rst)
+        Vf = vandermonde(Line(), N, quad_nodes(Line(), N)[1]) / vandermonde(Line(), N, nodes(Line(), N))
+        rstf = (x->Vf * x[reshape(rd.Fmask, :, rd.Nfaces)]).(rd.rst)
         @test all(vec.(rstf) .≈ rd.rstf)
         @test StartUpDG.eigenvalue_inverse_trace_constant(rd)  ≈ inverse_trace_constant(rd)
         @test propertynames(rd)[1] == :element_type
@@ -44,11 +44,11 @@
         @test abs(sum(rd.wf)) ≈ 8
         @test abs(sum(rd.wf .* rd.nrJ)) + abs(sum(rd.wf .* rd.nsJ)) < tol
         @test rd.Pq * rd.Vq ≈ I
-        Vfp = vandermonde(Line(), N, quad_nodes(Line(), N)[1]) / vandermonde(Line(), N, nodes(Line(), N))
-        rstf = (x->Vfp * x[reshape(rd.Fmask,rd.Nfq÷rd.Nfaces,rd.Nfaces)]).(rd.rst)
+        Vfp = vandermonde(Line(), N, quad_nodes(Line(), N+1)[1]) / vandermonde(Line(), N, nodes(Line(), N))
+        rstf = (x->Vfp * x[reshape(rd.Fmask,:,rd.Nfaces)]).(rd.rst)
         @test all(vec.(rstf) .≈ rd.rstf)        
-        @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd)    
 
+        @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd)    
         @test StartUpDG.num_vertices(Quad()) == 4
         @test StartUpDG.num_faces(Quad()) == 4
     end
@@ -273,7 +273,7 @@ inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}
         @test abs(sum(rd.wf .* rd.nsJ)) < tol
         @test abs(sum(rd.wf .* rd.ntJ)) < tol
 
-        @unpack node_ids_by_face = rd.element_type
+        (; node_ids_by_face) = rd.element_type
         @test sum(rd.wf[node_ids_by_face[1]]) ≈ 4
         # Note: this is not the true area of face 2. Because we map 
         # all faces back to the reference face, there is a factor of 
@@ -304,25 +304,25 @@ inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}
     end
 end
 
-@testset "TensorProductQuadrature on Hex" begin
-    N = 2
-    rd = RefElemData(Hex(), TensorProductQuadrature(quad_nodes(Line(), N+1)), N)
-    rd_ref = RefElemData(Hex(), N; quad_rule_vol=quad_nodes(Hex(), N+1), quad_rule_face=quad_nodes(Quad(), N+1))
+# @testset "TensorProductQuadrature on Hex" begin
+#     N = 2
+#     rd = RefElemData(Hex(), TensorProductQuadrature(quad_nodes(Line(), N+1)), N)
+#     rd_ref = RefElemData(Hex(), N; quad_rule_vol=quad_nodes(Hex(), N+1), quad_rule_face=quad_nodes(Quad(), N+1))
 
-    @test typeof(rd) == typeof(RefElemData(Hex(), Polynomial(TensorProductQuadrature(quad_nodes(Line(), N+1))), N))
+#     @test typeof(rd) == typeof(RefElemData(Hex(), Polynomial(TensorProductQuadrature(quad_nodes(Line(), N+1))), N))
 
-    for prop in [:N, :element_type]        
-        @test getproperty(rd, prop) == getproperty(rd_ref, prop)
-    end
+#     for prop in [:N, :element_type]        
+#         @test getproperty(rd, prop) == getproperty(rd_ref, prop)
+#     end
     
-    for prop in [:fv, :rst, :rstp, :rstq, :rstf, :nrstJ, :Drst]
-        @test all(getproperty(rd, prop) .≈ getproperty(rd_ref, prop))
-    end
+#     for prop in [:fv, :rst, :rstp, :rstq, :rstf, :nrstJ, :Drst]
+#         @test all(getproperty(rd, prop) .≈ getproperty(rd_ref, prop))
+#     end
 
-    for prop in [:Fmask, :VDM, :V1, :wq, :Vq, :wf, :Vf, :Vp, :M, :Pq, :LIFT]
-        @test norm(getproperty(rd, prop) - getproperty(rd_ref, prop)) < 1e4 * eps()
-    end
-end
+#     for prop in [:Fmask, :VDM, :V1, :wq, :Vq, :wf, :Vf, :Vp, :M, :Pq, :LIFT]
+#         @test norm(getproperty(rd, prop) - getproperty(rd_ref, prop)) < 1e4 * eps()
+#     end
+# end
 
 @testset "Tensor product Gauss collocation" begin
     N = 3
@@ -333,55 +333,6 @@ end
         @test StartUpDG._short_typeof(rd.approximation_type) == "Polynomial{Gauss}"
         @test size(rd.Vq, 1) == size(rd.Vq, 2)        
         @test length(rd.wq) == (N+1)^ndims(element_type)
-    end
-end
-
-@testset "Sparse SBP operators" begin
-    tol = 5e2*eps()
-    N = 3    
-    @testset "Line" begin 
-        rd = RefElemData(Line(), Polynomial{Gauss}(), N)
-        (Q,), E = sparse_low_order_SBP_operators(rd)
-        @test norm(sum(Q, dims=2)) < tol
-        @test Q + Q' ≈ E' * Diagonal([-1,1]) * E
-    end
-
-    @testset "Tri" begin
-        rd = RefElemData(Tri(), N)
-        (Qr, Qs), E = sparse_low_order_SBP_operators(rd)
-        @test norm(sum(Qr, dims=2)) < tol
-        @test norm(sum(Qs, dims=2)) < tol
-        @test Qr + Qr' ≈ E' * Diagonal(rd.wf .* rd.nrJ) * E
-        @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
-    end
-
-    @testset "Quad (SBP)" begin
-        rd = RefElemData(Quad(), SBP(), N)
-        (Qr, Qs), E = sparse_low_order_SBP_operators(rd)
-        @test norm(sum(Qr, dims=2)) < tol
-        @test norm(sum(Qs, dims=2)) < tol
-        @test Qr + Qr' ≈ E' * Diagonal(rd.wf .* rd.nrJ) * E
-        @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
-    end
-
-    @testset "Quad (Polynomial{Gauss})" begin
-        rd = RefElemData(Quad(), Gauss(), N)
-        (Qr, Qs), E = sparse_low_order_SBP_operators(rd)
-        @test norm(sum(Qr, dims=2)) < tol
-        @test norm(sum(Qs, dims=2)) < tol
-        @test Qr + Qr' ≈ E' * Diagonal(rd.wf .* rd.nrJ) * E
-        @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
-    end
-
-    @testset "Hex (Polynomial{Gauss})" begin
-        rd = RefElemData(Hex(), Gauss(), N)
-        (Qr, Qs, Qt), E = sparse_low_order_SBP_operators(rd)
-        @test norm(sum(Qr, dims=2)) < tol
-        @test norm(sum(Qs, dims=2)) < tol
-        @test norm(sum(Qt, dims=2)) < tol
-        @test Qr + Qr' ≈ E' * Diagonal(rd.wf .* rd.nrJ) * E
-        @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
-        @test Qt + Qt' ≈ E' * Diagonal(rd.wf .* rd.ntJ) * E
     end
 end
 

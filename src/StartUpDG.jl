@@ -7,28 +7,28 @@ using FillArrays: Fill
 using HDF5: h5open # used to read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
 using LinearAlgebra:
-    cond, diagm, eigvals, Diagonal, UniformScaling, I, mul!, norm, qr, ColumnNorm, Symmetric
+    cond, diagm, eigvals, Diagonal, UniformScaling, I, mul!, norm, qr, ColumnNorm, Symmetric, nullspace, pinv
 using NodesAndModes: meshgrid, find_face_nodes, face_vertices
 @reexport using NodesAndModes # for basis functions
 using PathIntersections: PathIntersections
 @reexport using PathIntersections: PresetGeometries
 using Printf: @sprintf
 using RecipesBase: RecipesBase
+@reexport using RecursiveArrayTools: NamedArrayPartition
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
-@reexport using SimpleUnPack: @unpack
-using SparseArrays: sparse, droptol!, blockdiag
+using SparseArrays: sparse, droptol!, blockdiag, nnz
 using Triangulate: Triangulate, TriangulateIO, triangulate
 @reexport using WriteVTK
 
 @inline mean(x) = sum(x) / length(x)
 
-# reference element utility functions
 include("RefElemData.jl")
 
 include("RefElemData_polynomial.jl")
 export RefElemData, Polynomial
-export TensorProductQuadrature, Gauss
+export MultidimensionalQuadrature, TensorProductQuadrature
+export TensorProductGaussCollocation, Gauss
 
 include("RefElemData_TensorProductWedge.jl")
 export TensorProductWedge
@@ -36,7 +36,11 @@ export TensorProductWedge
 include("RefElemData_SBP.jl")
 export SBP, DefaultSBPType, TensorProductLobatto, Hicken, Kubatko # types for SBP node dispatch
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
-export hybridized_SBP_operators, sparse_low_order_SBP_operators
+export hybridized_SBP_operators
+
+include("low_order_sbp.jl")
+export sparse_low_order_SBP_operators
+export subcell_limiting_operators
 export inverse_trace_constant, face_type
 
 include("ref_elem_utils.jl")
@@ -55,16 +59,17 @@ export make_periodic
 include("boundary_utils.jl")
 export boundary_face_centroids, tag_boundary_faces, tag_boundary_nodes
 
-# helper array type for cut cell and hybrid meshes
-include("named_array_partition.jl")
-export NamedArrayPartition
-
 include("hybrid_meshes.jl")
 export num_faces, num_vertices, HybridMeshExample
 
 include("physical_frame_basis.jl")
 include("cut_cell_meshes.jl")
 export PhysicalFrame, equi_nodes
+export Subtriangulation 
+
+# ! this will be deprecated in a future release
+include("cut_cell_moment_fitting.jl") 
+export MomentFitting
 
 include("state_redistribution.jl")
 export StateRedistribution, apply!
@@ -100,21 +105,5 @@ export CircularDomain, PartialCircularDomain
 # simple explicit time-stepping included for conveniencea
 include("explicit_timestep_utils.jl")
 export ck45 # LSERK 45
-
-
-using Requires: @require
-
-function __init__()
-    @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" begin
-        include("TriangulatePlots.jl")
-    end
-
-    # Until Julia v1.9 is the minimum required version for StartUpDG.jl, we still support Requires.jl
-    @static if !isdefined(Base, :get_extension)
-        @require SummationByPartsOperators = "9f78cca6-572e-554e-b819-917d2f1cf240" begin
-            include("../ext/StartUpDGSummationByPartsOperatorsExt.jl")
-        end
-    end
-end
 
 end # module

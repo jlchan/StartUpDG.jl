@@ -95,7 +95,8 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
     wt, wrs = _wedge_tensor_product(line.wq, tri.wq)
     wq = wt .* wrs
 
-    # `line.Vq` is a `UniformScaling` type for `RefElemData` built from SummationByPartsOperators.jl in Trixi.jl
+    # `line.Vq` is a `UniformScaling` type for `RefElemData` built 
+    # from SummationByPartsOperators.jl
     Vq = line.Vq isa UniformScaling ? kron(I(num_line_nodes), tri.Vq) : kron(line.Vq, tri.Vq)
     M  = Vq' * diagm(wq) * Vq
     Pq = M \ (Vq' * diagm(wq))
@@ -104,7 +105,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
     # tensor product plotting nodes
     tp, rp  = _wedge_tensor_product(line.rp, tri.rp)
     _,  sp  = _wedge_tensor_product(line.rp, tri.sp)
-    # `line.Vp` is a `UniformScaling` type for `RefElemData` from SummationByPartsOperators.jl in Trixi.jl
+    # `line.Vp` is a `UniformScaling` type for `RefElemData` from SummationByPartsOperators.jl
     Vp = line.Vp isa UniformScaling ? kron(I(num_line_nodes), tri.Vp) : kron(line.Vp, tri.Vp)
 
     # set the polynomial degree as the tuple of the line and triangle degree for now
