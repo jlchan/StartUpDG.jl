@@ -9,16 +9,16 @@ Most of the major changes are tracked in this [PR](https://github.com/jlchan/Sta
 #### Added
 
 * Generation of cut-cell meshes using `Subtriangulation` quadrature by default, which ensures positive quadrature weights. The old behavior is retained by specifying a `MomentFitting` quadrature type. 
+* 
 
 #### Changed
 
 * `NamedArrayPartition` was moved to RecursiveArrayTools.jl. 
-* The required Julia version was increased to v1.10. This was to make StartUpDG.jl compatibility with RecursiveArrayTools.jl (see above).
+* The required Julia version was increased to v1.10. This was to make StartUpDG.jl compatibility with RecursiveArrayTools.jl v3.4+ (see above).
 * Removed SimpleUnpack.jl as a dependency. Loading StartUpDG.jl will no longer reexport `@unpack`, since destructuring via `(; propertyname) = x` is supported natively in Julia 1.7 and up.
-* Updated to NodesAndModes v1, which changed the ordering of triangle nodes to make them consistent with tet node ordering. 
+* Updated to NodesAndModes v1.0+, which changed the ordering of triangle nodes to make them consistent with tet node ordering. 
 * We introduced a `MultidimensionalQuadrature` type. All `Polynomial` approximation types now utilize either `MultidimensionalQuadrature` or `TensorProductQuadrature` as a type parameter. The previous type parameter `DefaultPolynomialType` is now simply used to determine the default quadrature type parameter. Note that this is internal behavior and should not impact standard usage of StartUpDG.jl.
 * Removed Requires.jl in favor of [package extensions](https://pkgdocs.julialang.org/v1/creating-packages/#Conditional-loading-of-code-in-packages-(Extensions)) for Plots.jl and SummationByPartsOperators.jl dependencies. 
-
 
 
 ## Changes when updating to v0.17
