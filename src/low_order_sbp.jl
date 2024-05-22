@@ -213,12 +213,12 @@ function subcell_limiting_operators(rd::RefElemData)
     return zip(Δrst, Rrst)
 end    
 
-# specialize for single dimension
+# specialize for single dimension to return tuples of operators
 function subcell_limiting_operators(rd::RefElemData{1})
     Qrst, _ = sparse_low_order_SBP_operators(rd)
     Δrst, Rrst = first(subcell_limiting_operators.(Qrst))
     return (Δrst,), (Rrst,)
-end    
+end
 
 # TODO: specialize for quadrilaterals and hex? 
 
