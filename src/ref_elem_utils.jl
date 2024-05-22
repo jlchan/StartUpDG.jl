@@ -86,6 +86,30 @@ function init_face_data(elem::Tet; quad_rule_face=quad_nodes(Tri(), N))
     return rf, sf, tf, wf, nrJ, nsJ, ntJ
 end
 
+# default to doing nothing
+map_nodes_to_symmetric_element(element_type, rst...) = rst
+
+# for triangles, map to an equilateral triangle
+function map_nodes_to_symmetric_element(::Tri, r, s)
+    # biunit right triangular vertices
+    v1, v2, v3 = SVector{2}.(zip(nodes(Tri(), 1)...))
+
+    denom = (v2[2] - v3[2]) * (v1[1] - v3[1]) + (v3[1] - v2[1]) * (v1[2] - v3[2])
+    L1 = @. ((v2[2] - v3[2]) * (r - v3[1]) + (v3[1] - v2[1]) * (s - v3[2])) / denom
+    L2 = @. ((v3[2] - v1[2]) * (r - v3[1]) + (v1[1] - v3[1]) * (s - v3[2])) / denom
+    L3 = @. 1 - L1 - L2
+
+    # equilateral vertices
+    v1 = SVector{2}(2 * [-.5, -sqrt(3) / 6])
+    v2 = SVector{2}(2 * [.5, -sqrt(3)/6])
+    v3 = SVector{2}(2 * [0, sqrt(3)/3])
+
+    x = @. v1[1] * L1 + v2[1] * L2 + v3[1] * L3
+    y = @. v1[2] * L1 + v2[2] * L2 + v3[2] * L3
+
+    return x, y
+end
+
 
 """
     function inverse_trace_constant(rd::RefElemData)

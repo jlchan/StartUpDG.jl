@@ -7,7 +7,7 @@ using FillArrays: Fill
 using HDF5: h5open # used to read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
 using LinearAlgebra:
-    cond, diagm, eigvals, Diagonal, UniformScaling, I, mul!, norm, qr, ColumnNorm, Symmetric
+    cond, diagm, eigvals, Diagonal, UniformScaling, I, mul!, norm, qr, ColumnNorm, Symmetric, nullspace, pinv
 using NodesAndModes: meshgrid, find_face_nodes, face_vertices
 @reexport using NodesAndModes # for basis functions
 using PathIntersections: PathIntersections
@@ -17,13 +17,12 @@ using RecipesBase: RecipesBase
 @reexport using RecursiveArrayTools: NamedArrayPartition
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
-using SparseArrays: sparse, droptol!, blockdiag
+using SparseArrays: sparse, droptol!, blockdiag, nnz
 using Triangulate: Triangulate, TriangulateIO, triangulate
 @reexport using WriteVTK
 
 @inline mean(x) = sum(x) / length(x)
 
-# reference element utility functions
 include("RefElemData.jl")
 
 include("RefElemData_polynomial.jl")
@@ -37,7 +36,11 @@ export TensorProductWedge
 include("RefElemData_SBP.jl")
 export SBP, DefaultSBPType, TensorProductLobatto, Hicken, Kubatko # types for SBP node dispatch
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
-export hybridized_SBP_operators, sparse_low_order_SBP_operators
+export hybridized_SBP_operators
+
+include("low_order_sbp.jl")
+export sparse_low_order_SBP_operators
+export subcell_limiting_operators
 export inverse_trace_constant, face_type
 
 include("ref_elem_utils.jl")
