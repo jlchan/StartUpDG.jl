@@ -9,7 +9,7 @@ Most of the major changes are tracked in this [PR](https://github.com/jlchan/Sta
 #### Added
 
 * Generation of cut-cell meshes using `Subtriangulation` quadrature by default, which ensures positive quadrature weights. The old behavior is retained by specifying a `MomentFitting` quadrature type. 
-* 
+* Added `subcell_limiting_operators`, which constructs multi-dimensional versions of subcell operators used in [Lin, Chan (2024)](https://doi.org/10.1016/j.jcp.2023.112677). These subcell operators are constructed from sparse operators returned by `sparse_low_order_SBP_operators(rd::RefElemData)`.
 
 #### Changed
 
