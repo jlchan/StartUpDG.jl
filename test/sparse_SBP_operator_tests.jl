@@ -48,7 +48,7 @@
 end
 
 @testset "Subcell limiting operators for approx_type <: SBP" begin    
-    @testset "$elem_type" for elem_type in [Tri()] # [Tri(), Quad(), Hex()]
+    @testset "$elem_type" for elem_type in [Tri()] 
         N = 3
         rd = RefElemData(elem_type, SBP(), N)
         Qrst, E = sparse_low_order_SBP_operators(rd)
@@ -61,6 +61,28 @@ end
             r = r .- sum(r) / length(r) # so that sum(r) = 0
             θ = rand(size(Rrst[dim], 1))
             @test abs(sum(Δrst[dim] * Diagonal(θ) * Rrst[dim] * r)) < 10 * length(r) * eps()
+        end
+    end
+
+    @testset "Tensor product elements: $elem_type" for elem_type in [Quad(), Hex()] 
+        N = 2
+        rd = RefElemData(elem_type, SBP(), N)
+        Qrst, E = sparse_low_order_SBP_operators(rd)
+        Δrst, Rrst = subcell_limiting_operators(rd)
+
+        for dim in eachindex(Rrst)
+            conservation_vectors = nullspace(Matrix(Qrst[dim]))
+            Δ = Δrst[dim]
+            R = Rrst[dim]
+
+            # make random conservative vector
+            r = randn(length(rd.r))
+            r = r - conservation_vectors * (conservation_vectors' * r)
+
+            # create limiting factors
+            θ = rand(size(R, 1))
+
+            @test norm(conservation_vectors' * (Δ * (θ .* (R * r)))) < 100 * eps()
         end
     end
 end
