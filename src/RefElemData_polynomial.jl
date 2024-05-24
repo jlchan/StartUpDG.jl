@@ -378,7 +378,7 @@ function RefElemData(elem::Quad,
     # plotting nodes
     rp1D = LinRange(-1, 1, Nplot + 1)
     Vp1D = vandermonde(Line(), N, rp1D) / VDM_1D
-    Vp = kronecker(Vp1D, Vp1D, Vp1D)
+    Vp = kronecker(Vp1D, Vp1D)
     rp, sp = vec.(StartUpDG.NodesAndModes.meshgrid(rp1D, rp1D))
     
     return RefElemData(elem, approximation_type, N, fv, V1,
