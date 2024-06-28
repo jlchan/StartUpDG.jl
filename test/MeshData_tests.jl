@@ -289,3 +289,26 @@ approx_elem_types_to_test = [(Polynomial(), Hex()),
         
     end
 end
+
+@testset "Very high orders" begin
+    @testset "Tet" begin 
+        N = 12
+        rd = RefElemData(Tet(), N)
+        md = MeshData(uniform_mesh(Tet(), 2), rd; is_periodic=true)
+
+        (; x, y, z) = md
+        u = @. sin(pi * x) * sin(pi * y) * sin(pi * z)
+        dudx_exact = @. pi * cos(pi * x) * sin(pi * y) * sin(pi * z)
+        dudy_exact = @. pi * sin(pi * x) * cos(pi * y) * sin(pi * z)
+        dudz_exact = @. pi * sin(pi * x) * sin(pi * y) * cos(pi * z)
+
+        dudr, duds, dudt = (D -> D * u).(rd.Drst)
+        dudx = @. (md.rxJ * dudr + md.sxJ * duds + md.txJ * dudt) / md.J
+        dudy = @. (md.ryJ * dudr + md.syJ * duds + md.tyJ * dudt) / md.J
+        dudz = @. (md.rzJ * dudr + md.szJ * duds + md.tzJ * dudt) / md.J
+
+        @test norm(dudx - dudx_exact, Inf) < 1e-3
+        @test norm(dudy - dudy_exact, Inf) < 1e-3
+        @test norm(dudz - dudz_exact, Inf) < 1e-3
+    end
+end

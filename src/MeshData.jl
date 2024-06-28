@@ -357,7 +357,9 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3}; is_periodic=(false, fals
                   periodicity)
 
     if any(is_periodic)
-        md = make_periodic(md, is_periodic)
+        # loosen the tolerance if N >> 1
+        tol = length(rd.r) * 100 * eps() 
+        md = make_periodic(md, is_periodic; tol)
     end
 
     return md
