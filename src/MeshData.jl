@@ -332,7 +332,7 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3}; is_periodic=(false, fals
     x, y, z = (x -> V1 * x[transpose(EToV)]).((VX, VY, VZ))
 
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
-    (; r, s, t, Vf ) = rd
+    (; r, s, t, Vf) = rd
     xf, yf, zf = (x -> Vf * x).((x, y, z))
     mapM, mapP, mapB = build_node_maps(rd, FToF, (xf, yf, zf))
     mapM = reshape(mapM, :, K)

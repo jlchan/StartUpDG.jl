@@ -166,7 +166,7 @@ end
 
 """
     make_periodic(md::MeshData{Dim}, is_periodic...) where {Dim}
-    make_periodic(md::MeshData{Dim}, is_periodic = ntuple(x->true,Dim)) where {Dim}
+    make_periodic(md::MeshData{Dim}, is_periodic = ntuple(x -> true, Dim)) where {Dim}
     make_periodic(md::MeshData, is_periodic = true)
 
 Returns new MeshData such that the node maps `mapP` and face maps `FToF` are now periodic.
@@ -230,7 +230,6 @@ function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
     ymin, ymax = extrema(yc)
 
     LX, LY = map((x -> x[2] - x[1]) ∘ extrema, (xf, yf))
-    #NODETOL = 100 * max(eps.((LX, LY))...)
     NODETOL = tol * max(LX, LY)
     if abs(abs(xmax - xmin) - LX) > NODETOL && is_periodic_x
         error("periodicity requested in x, but LX = $LX while abs(xmax-xmin) = $(abs(xmax-xmin))")
@@ -288,7 +287,6 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     Flist = 1:length(FToF)
     Bfaces = findall(vec(FToF) .== Flist)
 
-    # xc, yc, zc = compute_boundary_centroids(xf, yf, zf)
     xb, yb, zb = xf[mapB], yf[mapB], zf[mapB]
     Nfp = length(xf) ÷ NfacesTotal
     Nbfaces = length(xb) ÷ Nfp
