@@ -2,6 +2,14 @@ approx_elem_types_to_test = [(Polynomial(), Wedge()),
                              (Polynomial(), Pyr())]
 
 @testset "3D MeshData tests for wedges and pyramids" begin 
+
+    # tests initialization (mostly checking if tolerances)
+    @testset "Initialization test for $element_type" for (element_type, N) in [(Pyr(), 1), (Pyr(), 4), (Wedge(), 1), (Wedge(), 4)]
+        K1D = 2
+        rd = RefElemData(element_type, N)        
+        md = MeshData(uniform_mesh(element_type, K1D)..., rd; is_periodic=true)
+    end
+
     @testset "$approximation_type $element_type MeshData initialization" for (approximation_type, element_type) in approx_elem_types_to_test
         tol = 5e2*eps()
 

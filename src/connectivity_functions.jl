@@ -112,7 +112,7 @@ build_node_maps(rd::RefElemData{3, <:Union{Tet, Hex}}, FToF, Xf; kwargs...) =
 # in rd.element_type.node_ids_by_face.
 # !!! note: this version infers `num_elements` from the dimensions of `FToF::Matrix`. 
 # !!! this will not work for adaptive meshes, where `FToF` will be a `Vector`.
-function build_node_maps(rd::RefElemData{3, <:Union{Wedge, Pyr}}, FToF, Xf; tol = 100 * eps())    
+function build_node_maps(rd::RefElemData{3, <:Union{Wedge, Pyr}}, FToF, Xf; tol = 1e3 * eps())    
 
     _, num_elements = size(FToF)
     (; element_type) = rd
