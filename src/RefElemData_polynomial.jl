@@ -129,7 +129,8 @@ function RefElemData(elem::Union{Tet, Hex},
 
     # Construct matrices on reference elements
     r, s, t = nodes(elem, N)
-    Fmask = hcat(find_face_nodes(elem, r, s, t)...)
+    tol = 1e2 * eps() * length(r) # loosen the tolerance if N >> 1
+    Fmask = hcat(find_face_nodes(elem, r, s, t, tol)...)
     VDM, Vr, Vs, Vt = basis(elem, N, r, s, t)
     Dr, Ds, Dt = (A -> A / VDM).((Vr, Vs, Vt))
 
