@@ -166,7 +166,7 @@ end
 
 """
     make_periodic(md::MeshData{Dim}, is_periodic...) where {Dim}
-    make_periodic(md::MeshData{Dim}, is_periodic = ntuple(x->true,Dim)) where {Dim}
+    make_periodic(md::MeshData{Dim}, is_periodic = ntuple(x -> true, Dim)) where {Dim}
     make_periodic(md::MeshData, is_periodic = true)
 
 Returns new MeshData such that the node maps `mapP` and face maps `FToF` are now periodic.
@@ -230,7 +230,6 @@ function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
     ymin, ymax = extrema(yc)
 
     LX, LY = map((x -> x[2] - x[1]) ∘ extrema, (xf, yf))
-    #NODETOL = 100 * max(eps.((LX, LY))...)
     NODETOL = tol * max(LX, LY)
     if abs(abs(xmax - xmin) - LX) > NODETOL && is_periodic_x
         error("periodicity requested in x, but LX = $LX while abs(xmax-xmin) = $(abs(xmax-xmin))")
@@ -288,7 +287,6 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     Flist = 1:length(FToF)
     Bfaces = findall(vec(FToF) .== Flist)
 
-    # xc, yc, zc = compute_boundary_centroids(xf, yf, zf)
     xb, yb, zb = xf[mapB], yf[mapB], zf[mapB]
     Nfp = length(xf) ÷ NfacesTotal
     Nbfaces = length(xb) ÷ Nfp
@@ -322,16 +320,16 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     yfaces = map(x -> x[1], findall(@. (@. abs(yc - ymax) < NODETOL * LY) | (@. abs(yc - ymin) < NODETOL * LY)))
     zfaces = map(x -> x[1], findall(@. (@. abs(zc - zmax) < NODETOL * LZ) | (@. abs(zc - zmin) < NODETOL * LZ)))
 
-    D = zeros(eltype(xb), size(xb,1), size(xb,1))
-    ids = zeros(Int, size(xb, 1))
+    p = zeros(Int, size(xb, 1))
     if is_periodic_x # find matches in x faces
         for i in xfaces, j in xfaces
-            if i!=j
-                if abs(yc[i] - yc[j]) < NODETOL * LY && abs(zc[i] - zc[j]) < NODETOL * LZ && abs(abs(xc[i] - xc[j]) - LX) < NODETOL * LX
-                    # create distance matrix
-                    @. D = abs(yb[:,i] - yb[:,j]') + abs(zb[:,i] - zb[:,j]')
-                    map!(x->x[1], ids, findall(@. D < NODETOL * LY))
-                    @. mapPB[:,i] = mapMB[ids,j]
+            if i!=j                
+                if abs(yc[i] - yc[j]) < NODETOL * LY && 
+                   abs(zc[i] - zc[j]) < NODETOL * LZ && 
+                   abs(abs(xc[i] - xc[j]) - LX) < NODETOL * LX
+
+                    match_coordinate_vectors!(p, (yb[:,i], zb[:,i]), (yb[:,j], zb[:,j]))
+                    @. mapPB[:,i] = mapMB[p,j]
 
                     FToF[Bfaces[i]] = Bfaces[j]
                 end
@@ -343,10 +341,12 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     if is_periodic_y
         for i in yfaces, j = yfaces
             if i!=j
-                if abs(xc[i] - xc[j]) < NODETOL * LX && abs(zc[i] - zc[j]) < NODETOL * LZ && abs(abs(yc[i] - yc[j]) - LY) < NODETOL * LY
-                    @. D = abs(xb[:,i] - xb[:,j]') + abs(zb[:,i] - zb[:,j]')
-                    map!(x->x[1], ids, findall(@. D < NODETOL * LX))
-                    @. mapPB[:,i] = mapMB[ids,j]
+                if abs(xc[i] - xc[j]) < NODETOL * LX && 
+                   abs(zc[i] - zc[j]) < NODETOL * LZ && 
+                   abs(abs(yc[i] - yc[j]) - LY) < NODETOL * LY
+
+                    match_coordinate_vectors!(p, (xb[:,i], zb[:,i]), (xb[:,j], zb[:,j]))
+                    @. mapPB[:,i] = mapMB[p,j]
 
                     FToF[Bfaces[i]] = Bfaces[j]
                 end
@@ -358,10 +358,12 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     if is_periodic_z
         for i in zfaces, j in zfaces
             if i!=j
-                if abs(xc[i] - xc[j]) < NODETOL * LX && abs(yc[i] - yc[j]) < NODETOL * LY && abs(abs(zc[i] - zc[j]) - LZ) < NODETOL * LZ
-                    @. D = abs(xb[:,i] - xb[:,j]') + abs(yb[:,i] - yb[:,j]')
-                    map!(x->x[1], ids, findall(@. D < NODETOL * LX))
-                    @. mapPB[:,i] = mapMB[ids,j]
+                if abs(xc[i] - xc[j]) < NODETOL * LX && 
+                   abs(yc[i] - yc[j]) < NODETOL * LY && 
+                   abs(abs(zc[i] - zc[j]) - LZ) < NODETOL * LZ
+
+                    match_coordinate_vectors!(p, (xb[:,i], yb[:,i]), (xb[:,j], yb[:,j]))
+                    @. mapPB[:,i] = mapMB[p,j]
 
                     FToF[Bfaces[i]] = Bfaces[j]
                 end
