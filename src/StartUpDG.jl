@@ -14,7 +14,6 @@ using PathIntersections: PathIntersections
 @reexport using PathIntersections: PresetGeometries
 using Printf: @sprintf
 using RecipesBase: RecipesBase
-@reexport using RecursiveArrayTools: NamedArrayPartition
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
 using SparseArrays: sparse, droptol!, blockdiag, nnz
@@ -54,6 +53,10 @@ export geometric_factors, estimate_h
 # spatial connectivity routines
 include("connectivity_functions.jl")
 export make_periodic
+
+# helper array type for cut cell and hybrid meshes
+include("named_array_partition.jl")
+export NamedArrayPartition
 
 # for tagging faces on boundaries
 include("boundary_utils.jl")
