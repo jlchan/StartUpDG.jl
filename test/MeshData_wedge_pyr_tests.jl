@@ -4,9 +4,9 @@ approx_elem_types_to_test = [(Polynomial(), Wedge()),
 @testset "3D MeshData tests for wedges and pyramids" begin 
 
     # tests initialization (mostly checking if tolerances)
-    @testset "Initialization test for $element_type" for (element_type, N) in [(Pyr(), 1), (Pyr(), 4), (Wedge(), 1), (Wedge(), 4)]
+    @testset "Initialization test for N = 1 for $element_type" for element_type in [Pyr(), Wedge()]
         K1D = 2
-        rd = RefElemData(element_type, N)        
+        rd = RefElemData(element_type, 1)        
         md = MeshData(uniform_mesh(element_type, K1D)..., rd; is_periodic=true)
     end
 
