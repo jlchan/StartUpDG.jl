@@ -320,8 +320,7 @@ function build_periodic_boundary_maps!(xf, yf, zf,
     yfaces = map(x -> x[1], findall(@. (@. abs(yc - ymax) < NODETOL * LY) | (@. abs(yc - ymin) < NODETOL * LY)))
     zfaces = map(x -> x[1], findall(@. (@. abs(zc - zmax) < NODETOL * LZ) | (@. abs(zc - zmin) < NODETOL * LZ)))
 
-    D = zeros(eltype(xb), size(xb,1), size(xb,1))
-    ids = zeros(Int, size(xb, 1))
+    p = zeros(Int, size(xb, 1))
     if is_periodic_x # find matches in x faces
         for i in xfaces, j in xfaces
             if i!=j                
@@ -329,7 +328,7 @@ function build_periodic_boundary_maps!(xf, yf, zf,
                    abs(zc[i] - zc[j]) < NODETOL * LZ && 
                    abs(abs(xc[i] - xc[j]) - LX) < NODETOL * LX
 
-                    p = match_coordinate_vectors((yb[:,i], zb[:,i]), (yb[:,j], zb[:,j]))
+                    match_coordinate_vectors!(p, (yb[:,i], zb[:,i]), (yb[:,j], zb[:,j]))
                     @. mapPB[:,i] = mapMB[p,j]
 
                     FToF[Bfaces[i]] = Bfaces[j]
@@ -346,7 +345,7 @@ function build_periodic_boundary_maps!(xf, yf, zf,
                    abs(zc[i] - zc[j]) < NODETOL * LZ && 
                    abs(abs(yc[i] - yc[j]) - LY) < NODETOL * LY
 
-                    p = match_coordinate_vectors((xb[:,i], zb[:,i]), (xb[:,j], zb[:,j]))
+                    match_coordinate_vectors!(p, (xb[:,i], zb[:,i]), (xb[:,j], zb[:,j]))
                     @. mapPB[:,i] = mapMB[p,j]
 
                     FToF[Bfaces[i]] = Bfaces[j]
@@ -363,7 +362,7 @@ function build_periodic_boundary_maps!(xf, yf, zf,
                    abs(yc[i] - yc[j]) < NODETOL * LY && 
                    abs(abs(zc[i] - zc[j]) - LZ) < NODETOL * LZ
 
-                    p = match_coordinate_vectors((xb[:,i], yb[:,i]), (xb[:,j], yb[:,j]))
+                    match_coordinate_vectors!(p, (xb[:,i], yb[:,i]), (xb[:,j], yb[:,j]))
                     @. mapPB[:,i] = mapMB[p,j]
 
                     FToF[Bfaces[i]] = Bfaces[j]
