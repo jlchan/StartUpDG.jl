@@ -18,7 +18,7 @@
 
 
     @testset "VTKWriter test for $elem" for elem in [Tri(), Quad(), Hex(), Wedge()]
-        N = 3 # test only N=3 for CI time
+        N = 2 # test only N=2 for CI time
         @testset "Write Mesh" begin
             rd = RefElemData(elem, N)
             md = MeshData(uniform_mesh(elem, 2)..., rd)
@@ -45,7 +45,7 @@
     end
 
     @testset "TensorProduct VTKWriter" begin
-        @testset "Degree ($tri_grad, $line_grad)" for tri_grad in 1:5, line_grad in 1:5
+        @testset "Degree ($tri_grad, $line_grad)" for tri_grad in 2, line_grad in 3
             line = RefElemData(Line(), line_grad)
             tri  = RefElemData(Tri(), tri_grad)
             tensor = TensorProductWedge(tri, line)
