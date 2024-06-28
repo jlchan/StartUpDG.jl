@@ -30,13 +30,13 @@ end
 function map_face_nodes(::Tet, face_nodes...)
     r, s = face_nodes
     e = ones(size(r))
-    rf = [r; r; -e; r]
-    sf = [-e; s; r; s]
-    tf = [s; -(e + r + s); s; -e]
+    rf = [r; -(e + r + s); -e; r]
+    sf = [-e; r; r; s]
+    tf = [s; s; s; -e]
     return rf, sf, tf
 end
 
-function init_face_data(elem::Tri; quad_rule_face = gauss_quad(0,0,N))
+function init_face_data(elem::Tri; quad_rule_face = gauss_quad(0, 0, N))
     r1D, w1D = quad_rule_face
     e = ones(size(r1D)) 
     z = zeros(size(r1D)) 
