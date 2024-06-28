@@ -26,6 +26,7 @@
     @test typeof(x.b) <: StructArray{<:SVector{2}, 2}
     @test typeof((x->x[1]).(x)) <: NamedArrayPartition
     @test typeof(map(x->x[1], x)) <: NamedArrayPartition
+    @test typeof(similar(x)) == typeof(x)
 end
 
 # x = NamedArrayPartition(a = ones(10), b = rand(20)) 
