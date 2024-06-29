@@ -17,11 +17,11 @@ RefElemData(elem::Line, approx_type::Polynomial{<:TensorProductQuadrature}, N; k
     RefElemData(elem, Polynomial{MultidimensionalQuadrature}(), N; 
                 quad_rule_vol=approx_type.data.quad_rule_1D, kwargs...)
 
-function RefElemData(elem::Union{Tri, Tet, Wedge, Pyr}, 
+function RefElemData(elem::Union{Wedge}, 
             approx_type::Polynomial{<:TensorProductQuadrature}, 
             N; kwargs...)
     error("Tensor product quadrature constructors not yet implemented " * 
-          "for Tri, Tet, Wedge, Pyr elements.")
+          "for Wedge elements.")
 end
 
 """
@@ -471,6 +471,13 @@ function tensor_product_quadrature(::Union{Tet, Hex}, r1D, w1D)
     wr, ws, wt = vec.(StartUpDG.NodesAndModes.meshgrid(w1D, w1D, w1D))
     wq = wr .* ws .* wt
     return rq, sq, tq, wq
+end
+
+function RefElemData(elem::Union{Tri, Tet, Pyr}, approx_type::Polynomial{<:TensorProductQuadrature}, N; kwargs...)
+    rd = RefElemData(elem, Polynomial{MultidimensionalQuadrature}(), N; 
+                     quad_rule_vol=stroud_quad_nodes(elem, 2 * N), kwargs...)
+    @set rd.approximation_type = approx_type
+    return rd
 end
 
 """
