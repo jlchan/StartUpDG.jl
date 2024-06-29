@@ -17,13 +17,6 @@ RefElemData(elem::Line, approx_type::Polynomial{<:TensorProductQuadrature}, N; k
     RefElemData(elem, Polynomial{MultidimensionalQuadrature}(), N; 
                 quad_rule_vol=approx_type.data.quad_rule_1D, kwargs...)
 
-function RefElemData(elem::Union{Wedge}, 
-            approx_type::Polynomial{<:TensorProductQuadrature}, 
-            N; kwargs...)
-    error("Tensor product quadrature constructors not yet implemented " * 
-          "for Wedge elements.")
-end
-
 """
     RefElemData(elem::Line, approximation_type, N;
                 quad_rule_vol = quad_nodes(elem, N+1))
@@ -479,6 +472,27 @@ function RefElemData(elem::Union{Tri, Tet, Pyr}, approx_type::Polynomial{<:Tenso
     @set rd.approximation_type = approx_type
     return rd
 end
+
+function RefElemData(elem::Union{Wedge}, 
+                     approx_type::Polynomial{<:TensorProductQuadrature}, N; 
+                     quad_rule_tri = stroud_quad_nodes(Tri(), 2 * N),
+                     quad_rule_line = gauss_quad(0, 0, N),
+                     kwargs...)
+
+    rq_tri, sq_tri, wq_tri = quad_rule_tri
+    rq_1D, wq_1D = quad_rule_line
+    rq = repeat(rq_tri, length(rq_1D))
+    sq = repeat(sq_tri, length(rq_1D))
+    tq = repeat(rq_1D, length(rq_tri))
+    wq = repeat(wq_tri, length(wq_1D)) .* repeat(wq_1D, length(wq_tri))
+    quad_rule_vol = (rq, sq, tq, wq)
+
+    rd = RefElemData(elem, Polynomial{MultidimensionalQuadrature}(), N; 
+                     quad_rule_vol, kwargs...)
+    @set rd.approximation_type = approx_type
+    return rd          
+end
+
 
 """
     RefElemData(elem::Union{Line, Quad, Hex}, approximation_type::Polynomial{Gauss}, N)
