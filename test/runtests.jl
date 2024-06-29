@@ -8,6 +8,7 @@ using SummationByPartsOperators
 
 using StartUpDG
 
+include("named_array_partition_tests.jl")
 include("write_vtk_tests.jl")
 include("triangulate_tests.jl")
 include("reference_elem_tests.jl")
