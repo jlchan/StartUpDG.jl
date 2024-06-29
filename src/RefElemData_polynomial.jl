@@ -466,6 +466,19 @@ function tensor_product_quadrature(::Union{Tet, Hex}, r1D, w1D)
     return rq, sq, tq, wq
 end
 
+"""
+    RefElemData(elem::Union{Tri, Tet, Pyr}, approx_type::Polynomial{<:TensorProductQuadrature}, N; kwargs...)
+    RefElemData(elem::Union{Wedge}, 
+                     approx_type::Polynomial{<:TensorProductQuadrature}, N; 
+                     quad_rule_tri = stroud_quad_nodes(Tri(), 2 * N),
+                     quad_rule_line = gauss_quad(0, 0, N),
+                     kwargs...)
+
+Uses collapsed coordinate volume quadrature. Should be called via
+```julia
+RefElemData(Tri(), Polynomial(TensorProductQuadrature()), N)
+```
+"""
 function RefElemData(elem::Union{Tri, Tet, Pyr}, approx_type::Polynomial{<:TensorProductQuadrature}, N; kwargs...)
     rd = RefElemData(elem, Polynomial{MultidimensionalQuadrature}(), N; 
                      quad_rule_vol=stroud_quad_nodes(elem, 2 * N), kwargs...)
