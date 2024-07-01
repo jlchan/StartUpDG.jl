@@ -221,6 +221,12 @@
 
         @test StartUpDG._short_typeof(rd.element_type) == "Pyr"
     end
+
+    @testset "Collapsed coordinate quadratures" for elem in [Tri(), Tet(), Wedge(), Pyr()]
+        rd = RefElemData(elem, Polynomial(), 2)
+        rd_tp = RefElemData(elem, Polynomial(TensorProductQuadrature()), 2)
+        @test rd.M ≈ rd_tp.M
+    end
 end
 
 inverse_trace_constant_compare(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}) = 
