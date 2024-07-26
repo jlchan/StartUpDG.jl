@@ -406,9 +406,10 @@ function RefElemData(elem::Hex,
     M1D = Vq1D' * diagm(wq1D) * Vq1D
 
     # form kronecker products of multidimensional matrices to invert/multiply
-    # use dense matrix "kron" if N is 4 or lower; use memory-saving "kronecker" otherwise
-    build_kronecker_product = (N < 5) ? kron : kronecker 
-        
+    # use dense matrix "kron" if N is small.
+    # use memory-saving "kronecker" if N is large.
+    build_kronecker_product = (N < 8) ? kron : kronecker 
+
     VDM = build_kronecker_product(VDM_1D, VDM_1D, VDM_1D)
     invVDM = build_kronecker_product(invVDM_1D, invVDM_1D, invVDM_1D)
     invM = build_kronecker_product(invM_1D, invM_1D, invM_1D)
