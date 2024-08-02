@@ -417,7 +417,7 @@ function RefElemData(elem::Hex,
     M = build_kronecker_product(M1D, M1D, M1D)
 
     _, Vr, Vs, Vt = basis(elem, N, r, s, t)
-    Dr, Ds, Dt = (A -> A * invVDM).((Vr, Vs, Vt))
+    Dr, Ds, Dt = (A -> Matrix(A * invVDM)).((Vr, Vs, Vt))
 
     # low order interpolation nodes
     r1, s1, t1 = nodes(elem, 1)
