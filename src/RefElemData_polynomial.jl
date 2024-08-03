@@ -10,7 +10,7 @@ RefElemData(elem::Union{Line, Tri, Tet, Wedge, Pyr},
 
 # on quad and hex elements, default to a tensor product quadrature 
 RefElemData(elem::Union{Quad, Hex}, approximation_type::Polynomial{DefaultPolynomialType}, N; kwargs...) = 
-    RefElemData(elem, Polynomial(TensorProductQuadrature(gauss_quad(0, 0, N+1))), N; kwargs...)
+    RefElemData(elem, Polynomial(TensorProductQuadrature(gauss_quad(0, 0, N))), N; kwargs...)
 
 # special case: for lines, tensor product and multidimensional quadrature are the same
 RefElemData(elem::Line, approx_type::Polynomial{<:TensorProductQuadrature}, N; kwargs...) = 
