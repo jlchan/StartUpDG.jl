@@ -139,7 +139,7 @@ function calculate_cutcells(vx, vy, objects, ds = 1e-3, arc_tol = 1e-10, corner_
 
     # Calculate cutcells
     region_flags, cutcell_indices, cutcells = 
-        PathIntersections.define_regions((vx, vy), objects, stop_pts, binary_regions=false)
+        PathIntersections.define_regions((vx, vy), objects, stop_pts, binary_regions=true)
 
     cells_per_dimension_x = length(vx) - 1
     cells_per_dimension_y = length(vy) - 1
@@ -357,12 +357,12 @@ function construct_cut_interpolation_nodes(N, objects, physical_frame_elements)
 
     # Compute interpolation points on cut elements
     for e in eachindex(physical_frame_elements)
-
+        
         physical_frame_element = physical_frame_elements[e]
         
         x_sampled, y_sampled = 
             generate_sampling_points(objects, physical_frame_element, 2 * Np_cut(N), N_sampled)
-
+            
         V = vandermonde(physical_frame_element, N, x_sampled, y_sampled) 
 
         # use pivoted QR to find good interpolation points

@@ -98,7 +98,6 @@ function compute_neighbor_list(md; threshold_score=-Inf, score_type=VolumeScore(
         while length(neighbors) > 0 && merged_score < threshold_score
             best_nbhr = neighbors[1]
             best_score = compute_nbhd_score(score_type, vcat(merge_nbhds[e], neighbors[1]), score_params)
-            
             for e_nbhr in neighbors[2:end]
                 new_score = compute_nbhd_score(score_type, vcat(merge_nbhds[e], e_nbhr), score_params)
                 if new_score >= best_score
@@ -112,17 +111,17 @@ function compute_neighbor_list(md; threshold_score=-Inf, score_type=VolumeScore(
             merged_score = best_score
 
             # Remove the just-merged element from the list of neighbors
-            filter!((e)-> e == best_nbhr, neighbors)
+            filter!((e)-> e != best_nbhr, neighbors)
 
             # Add the just-merged cell's neighbors to the list of neighbors
             new_neighbors = get_cartesian_nbhrs(best_nbhr, md)
             for nbhr in new_neighbors
-                if nbhr in merge_nbhds[e]
+                if !(nbhr in merge_nbhds[e])
                     push!(neighbors, nbhr)
                 end
             end
             unique!(neighbors)
-
+            
         end # while score is not good enough
     end # for each cut cell
 
@@ -139,7 +138,7 @@ struct StateRedistribution{TP, TN, TE, TO, TU}
     u_tmp::TU # temporary storage for operations
 end
 
-function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCellMesh})
+function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCellMesh}, array_type)
     (; physical_frame_elements) = md.mesh_type
 
     neighbor_list = compute_neighbor_list(md)    
@@ -208,7 +207,7 @@ function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCell
     end 
 
     # temporary storage for state redistribution - stores output of projection operators
-    u_tmp = [zeros(size(projection_operators[e], 2)) for e in eachindex(projection_operators)]
+    u_tmp = [zeros(array_type, size(projection_operators[e], 2)) for e in eachindex(projection_operators)]
 
     return StateRedistribution(projection_operators, projection_indices, 
                                projection_indices_by_element, overlap_counts, u_tmp)
