@@ -26,6 +26,21 @@ function RefElemData(elementType::Union{Quad, Hex}, approxType::SBP{TensorProduc
                      Polynomial(TensorProductQuadrature(gauss_lobatto_quad(0, 0, N))), 
                      N; kwargs...)
 
+    println("Brute force Fmask determination")
+    # manually determine Fmask so that rd.rf = rd.r[rd.Fmask], ...
+    new_Fmask = copy(rd.Fmask)    
+    for fid in eachindex(rd.rf)
+        rstf = SVector(getindex.(rd.rstf, fid))
+        for i in eachindex(rd.r)
+            rst = SVector(getindex.(rd.rst, i))
+            if rstf ≈ rst
+                new_Fmask[fid] = i
+                break
+            end
+        end
+    end
+    rd = @set rd.Fmask = new_Fmask;                     
+
     rd = @set rd.Vf = droptol!(sparse(rd.Vf), tol)
     rd = @set rd.LIFT = Diagonal(rd.wq) \ (rd.Vf' * Diagonal(rd.wf)) # TODO: make this more efficient with LinearMaps?
 
