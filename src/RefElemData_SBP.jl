@@ -26,8 +26,7 @@ function RefElemData(elementType::Union{Quad, Hex}, approxType::SBP{TensorProduc
                      Polynomial(TensorProductQuadrature(gauss_lobatto_quad(0, 0, N))), 
                      N; kwargs...)
 
-    println("Brute force Fmask determination")
-    # manually determine Fmask so that rd.rf = rd.r[rd.Fmask], ...
+    # brute-force determine Fmask so that rd.rf = rd.r[rd.Fmask], etc.
     new_Fmask = copy(rd.Fmask)    
     for fid in eachindex(rd.rf)
         rstf = SVector(getindex.(rd.rstf, fid))
