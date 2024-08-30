@@ -47,6 +47,9 @@
     @testset "TensorProductLobatto Hex" begin
         rd = RefElemData(Hex(),SBP(),N)
         @test propertynames(rd)[1] == :element_type
+        @test rd.rf == rd.r[rd.Fmask]
+        @test rd.sf == rd.s[rd.Fmask]
+        @test rd.tf == rd.t[rd.Fmask]
         @test rd.t == rd.rst[3]
         @test rd.tf == rd.rstf[3]    
         @test rd.tq == rd.rstq[3]
