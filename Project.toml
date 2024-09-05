@@ -30,7 +30,7 @@ StartUpDGSummationByPartsOperatorsExt = "SummationByPartsOperators"
 TriangulatePlotsExt = "Plots"
 
 [compat]
-ConstructionBase = "1.5"
+ConstructionBase = "1.1"
 FillArrays = "0.13, 1"
 HDF5 = "0.17"
 Kronecker = "0.5"
