@@ -1,4 +1,4 @@
-module StartUpDG 
+module StartUpDG
 
 using Reexport: @reexport
 
