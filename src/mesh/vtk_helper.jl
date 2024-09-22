@@ -224,6 +224,94 @@ function hex_vtk_order(corner_verts, order, dim, skip = false)
 end
 
 """
+    tet_vtk_order(corner_verts, order, dim, skip = false)
+
+Compute the coordinates of a VTK_LAGRANGE_TETRAHEDRON of a quad of order `order`
+defined by the coordinates of the vertices given in `corner_verts`. `dim` is the
+dimension of the coordinates given.
+
+Inspired by: https://github.com/ju-kreber/paraview-scripts/blob/master/node_ordering.py
+"""
+function tet_vtk_order(corner_verts, order, dim, skip = false)
+
+    @assert order >= 0 "`order` must be non-negative."
+
+    coords = copy(corner_verts) 
+
+    if order == 0
+        return coords
+    end
+
+    # Edges.
+    num_nodes_on_edge = order - 1
+    edges = SVector(
+      # VTK ordering. https://www.kitware.com/modeling-arbitrary-order-lagrange-finite-elements-in-the-visualization-toolkit/
+      (1,2), (2, 3), (3, 1), (1, 4), (2, 4), (3, 4)
+    )
+    for (frm, to) in edges
+        tmp = n_verts_between(num_nodes_on_edge, corner_verts[:, frm], corner_verts[:, to])
+        tmp_vec = Vector{Float64}(undef, dim)
+        for i in 1:num_nodes_on_edge
+            for j in 1:dim
+                tmp_vec[j] = tmp[j][i]
+            end
+            coords = hcat(coords, tmp_vec)
+        end
+    end
+
+    # Faces.
+    tri_faces = SVector(
+        # VTK ordering. 
+        (1, 2, 4), # left
+        (3, 4, 2), # right
+        (1, 4, 3), # front
+        (1, 3, 2), # back
+        )
+    for indices in tri_faces
+        tmp_vec = Vector{Float64}(undef, dim)
+        tri_nodes = Matrix{Float64}(undef, dim, 0)
+        for j in indices
+            tri_nodes = hcat(tri_nodes, corner_verts[:, j])
+        end
+        face_coords = triangle_vtk_order(tri_nodes, order, 3, true)
+        if length(face_coords) > 0
+            for i in 1:size(face_coords)[2]
+                for j in 1:dim
+                    tmp_vec[j] = face_coords[j,i]
+                end
+                coords = hcat(coords, tmp_vec)
+            end
+        end
+    end
+
+    # Volume. Recursively find nodes in volume.
+    e_12 = (corner_verts[:,2] - corner_verts[:, 1]) ./ order
+    e_13 = (corner_verts[:,3] - corner_verts[:, 1]) ./ order
+    e_14 = (corner_verts[:,4] - corner_verts[:, 1]) ./ order
+    e_23 = (corner_verts[:,3] - corner_verts[:, 2]) ./ order
+    e_24 = (corner_verts[:,4] - corner_verts[:, 2]) ./ order
+    e_34 = (corner_verts[:,4] - corner_verts[:, 3]) ./ order
+
+    # Find inner corners of reduced order tetrahedron
+    a_1 = corner_verts[:, 1] + e_12 + e_13 + e_14
+    a_2 = corner_verts[:, 2] - e_12 + e_23 + e_24
+    a_3 = corner_verts[:, 3] - e_13 - e_23 + e_34
+    a_4 = corner_verts[:, 4] - e_34 - e_24 - e_14
+
+    interior_verts = hcat(a_1, a_2, a_3, a_4)
+    if order > 4
+        tmp_coords = tet_vtk_order(interior_verts, order - 4, dim)
+        coords = hcat(coords, tmp_coords)
+    # Order 4 tetrahedra will have one node in the center, we do this to account for not having an implementation for N = 0.
+    elseif order == 4
+        center = (corner_verts[:, 1] + corner_verts[:, 2] + corner_verts[:, 3] + corner_verts[:, 4]) / 4
+        coords = hcat(coords, center)
+    end
+
+    return coords
+end
+
+"""
     wedge_vtk_order(corner_verts, order, dim)
 
 Compute the coordinates of a VTK_LAGRANGE_WEDGE of order `order` 
@@ -363,6 +451,20 @@ function vtk_order(::Wedge, order)
 end
 
 """
+    vtk_order(elem::Tet, order)
+
+Construct all node-points of a VTK_LAGRANGE_TETRAHEDRON of order `order`. The corner-nodes are
+given by the reference-tet used by StartUpDG
+"""
+function vtk_order(::Tet, order)
+    tet_sud_vertices = permutedims(hcat(nodes(Tet(), 1)...))
+    perm = SVector(1, 2, 3, 4)
+    tet_vtk_vertices = tet_sud_vertices[:, perm]
+    return tet_vtk_order(tet_vtk_vertices, order, 3)
+end
+
+
+"""
     SUD_to_vtk_order(rd::RefElemData, dim)
 
 Compute the permutation of the nodes between StartUpDG and VTK
@@ -413,5 +515,10 @@ function type_to_vtk(elem::Wedge)
     return VTKCellTypes.VTK_LAGRANGE_WEDGE
 end
 
-
-
+"""
+    type_to_vtk(elem::Tet)
+    return the VTK-type
+"""
+function type_to_vtk(elem::Tet)
+    return VTKCellTypes.VTK_LAGRANGE_TETRAHEDRON
+end
