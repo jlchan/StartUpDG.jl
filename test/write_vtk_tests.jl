@@ -14,10 +14,13 @@
     deg_one_order(::Wedge) = [-1.0  -1.0   1.0  -1.0  -1.0   1.0
                               -1.0   1.0  -1.0  -1.0   1.0  -1.0
                               -1.0  -1.0  -1.0   1.0   1.0   1.0]
-    deg_zero_order(elem::Union{Quad, Hex, Wedge}) = deg_one_order(elem)
+    deg_one_order(::Tet) = [-1.0  1.0 -1.0 -1.0;
+                            -1.0 -1.0  1.0 -1.0;
+                            -1.0 -1.0 -1.0  1.0]
+    deg_zero_order(elem::Union{Quad, Hex, Wedge, Tet}) = deg_one_order(elem)
 
 
-    @testset "VTKWriter test for $elem" for elem in [Tri(), Quad(), Hex(), Wedge()]
+    @testset "VTKWriter test for $elem" for elem in [Tri(), Quad(), Hex(), Wedge(), Tet()]
         N = 2 # test only N=2 for CI time
         @testset "Write Mesh" begin
             rd = RefElemData(elem, N)
