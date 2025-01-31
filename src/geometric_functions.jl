@@ -54,8 +54,9 @@ function geometric_factors(x, y, z, Dr, Ds, Dt, Filters=(I, I, I))
     return rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J
 end
 
-# physical normals are computed via G * nhatJ, where G = matrix of J-scaled geometric terms
-# Here, Vf is a face interpolation matrix which maps interpolation nodes to face nodes. 
+# physical outward normals are computed via Nanson's formula: G * nhatJ, where 
+# G = matrix of J-scaled geometric terms. Here, Vf is a face interpolation matrix 
+# which maps interpolation nodes to face nodes. 
 function compute_normals(geo::SMatrix{Dim, Dim}, Vf, nrstJ...) where {Dim}
     nxyzJ = ntuple(x -> zeros(size(Vf, 1), size(first(geo), 2)), Dim)
     for i = 1:Dim, j = 1:Dim
