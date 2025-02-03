@@ -4,7 +4,9 @@
 [![Build status](https://github.com/jlchan/StartUpDG.jl/workflows/CI/badge.svg)](https://github.com/jlchan/StartUpDG.jl/actions)
 [![Codecov](https://codecov.io/gh/jlchan/StartUpDG.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/jlchan/StartUpDG.jl)
 
-This package contains routines to initialize reference element operators, physical mesh arrays, and connectivity arrays for nodal discontinuous Galerkin (DG) methods. The codes are roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007). The original port from Matlab to Julia was by [Yimin Lin](https://github.com/yiminllin), with subsequent modifications by Jesse Chan and other contributors. 
+This package contains routines to initialize reference element operators, physical mesh arrays, and connectivity arrays for nodal discontinuous Galerkin (DG) methods. It is intended to quick-start the implementation of from-scratch high order time-domain nodal DG solvers for partial differential equations (PDEs), and is designed for flexibility and experimentation. 
+
+The codes are roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007). The original port from Matlab to Julia was by [Yimin Lin](https://github.com/yiminllin), with subsequent modifications by Jesse Chan and other contributors. 
 
 This package is registered and can be installed via `] add StartUpDG` or `using Pkg; Pkg.add("StartUpDG")`.
 
