@@ -83,8 +83,8 @@ Translate the given mesh into a vtk-file.
 `write_data`, flag if data should be written or not (e.g., if data is not written, only the mesh will be saved as output)
 `equi_dist_nodes` flag if points should be interpolated to equidstant nodes
 """
-function MeshData_to_vtk(md::MeshData, rd::RefElemData{DIM}, data, dataname, filename, 
-                         write_data = false, equi_dist_nodes = true) where {DIM}
+function MeshData_to_vtk(md::MeshData, rd::RefElemData, data, dataname, filename, 
+                         write_data = false, equi_dist_nodes = true) 
                          
     # Compute the permutation between the StartUpDG order of points and vtk
     perm = SUD_to_vtk_order(rd)
