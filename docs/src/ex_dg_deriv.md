@@ -1,6 +1,6 @@
 # Example: approximating derivatives using DG
 
-`MeshData` can be used to compute DG derivatives. Suppose ``f`` is a differentiable function and the domain ``\Omega`` can be decomposed into non-overlapping elements ``D^k``. The approximation of ``\frac{\partial f}{\partial x}`` can be approximated using the following formulation: find piecewise polynomial ``u`` such that for all piecewise polynomials ``v``
+`RefElemData` and `MeshData` can be used to compute DG derivatives. Suppose ``f`` is a differentiable function and the domain ``\Omega`` can be decomposed into non-overlapping elements ``D^k``. The approximation of ``\frac{\partial f}{\partial x}`` can be approximated using the following formulation: find piecewise polynomial ``u`` such that for all piecewise polynomials ``v``
 ```math
 \int_{\Omega} u v = \sum_k \left( \int_{D^k} \frac{\partial u}{\partial x}v + \int_{\partial D^k} \frac{1}{2} \left[u\right]n_x v \right)
 ```
