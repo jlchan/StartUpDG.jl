@@ -14,6 +14,7 @@ makedocs(
         "`MeshData`" => "MeshData.md",
         "Example: computing DG derivatives" => "ex_dg_deriv.md",
         "Additional mesh types" => "more_meshes.md",
+        "Visualization" => "visualization.md",        
         "Timestepping" => "tstep_usage.md",
         "Reference" => "index_refs.md",
     ]
