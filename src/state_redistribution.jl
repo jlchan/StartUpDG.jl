@@ -112,12 +112,12 @@ function compute_neighbor_list(md; threshold_score=-Inf, score_type=VolumeScore(
             merged_score = best_score
 
             # Remove the just-merged element from the list of neighbors
-            filter!((e)-> e == best_nbhr, neighbors)
+            filter!((e)-> e != best_nbhr, neighbors)
 
             # Add the just-merged cell's neighbors to the list of neighbors
             new_neighbors = get_cartesian_nbhrs(best_nbhr, md)
             for nbhr in new_neighbors
-                if nbhr in merge_nbhds[e]
+                if !(nbhr in merge_nbhds[e])
                     push!(neighbors, nbhr)
                 end
             end
@@ -139,7 +139,7 @@ struct StateRedistribution{TP, TN, TE, TO, TU}
     u_tmp::TU # temporary storage for operations
 end
 
-function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCellMesh})
+function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCellMesh}; solution_eltype=Float64)
     (; physical_frame_elements) = md.mesh_type
 
     neighbor_list = compute_neighbor_list(md)    
@@ -208,7 +208,8 @@ function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCell
     end 
 
     # temporary storage for state redistribution - stores output of projection operators
-    u_tmp = [zeros(size(projection_operators[e], 2)) for e in eachindex(projection_operators)]
+    u_tmp = [zeros(solution_eltype, size(projection_operators[e], 2)) 
+        for e in eachindex(projection_operators)]
 
     return StateRedistribution(projection_operators, projection_indices, 
                                projection_indices_by_element, overlap_counts, u_tmp)
