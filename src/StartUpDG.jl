@@ -2,6 +2,7 @@ module StartUpDG
 
 using Reexport: @reexport
 
+using CaratheodoryPruning: CaratheodoryPruning
 using ConstructionBase: ConstructionBase
 using FillArrays: Fill
 using HDF5: h5open # used to read in SBP triangular node data
