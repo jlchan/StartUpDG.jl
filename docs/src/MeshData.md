@@ -77,9 +77,8 @@ More generally, one can create a copy of a `MeshData` with certain fields modifi
 StartUpDG.jl also includes additional utilities based on Triangulate.jl for creating and visualizing meshes. Several pre-defined geometries are included in StartUpDG.jl. A few examples are `SquareDomain`, `RectangularDomainWithHole`, `Scramjet`, and `CircularDomain`. See [`triangulate_example_meshes.jl`](https://github.com/jlchan/StartUpDG.jl/blob/main/src/mesh/triangulate_example_meshes.jl) for a more complete list and field arguments. These can each be called using `triangulate_domain`, for example the following code will create a mesh of a scramjet:
 ```julia
 meshIO = triangulate_domain(Scramjet())
-(VX, VY), EToV = triangulateIO_to_VXYEToV(meshIO)
 rd = RefElemData(Tri(), 7)
-md = MeshData((VX, VY), EToV, rd)
+md = MeshData(meshIO, rd)
 ```
 A quick plot of the face nodes via 
 ```julia
