@@ -65,6 +65,9 @@
 
     @testset "TensorProduct VTKWriter" begin
         @testset "Degree ($tri_N, $line_N)" for tri_N in 2, line_N in 3
+            function quad(x, y)
+                return (x + y)^2
+            end
             line = RefElemData(Line(), line_N)
             tri  = RefElemData(Tri(), tri_N)
             tensor = TensorProductWedge(tri, line)
