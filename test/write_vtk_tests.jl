@@ -35,7 +35,8 @@
             # ======= check `export_to_vtk` interfaces
             
             # copy of MeshData_to_vtk but with rd, md reversed for consistency
-            vtu_name = export_to_vtk(rd, md, pdata, ["(x+y)^2"], filename)
+            vtu_name = export_to_vtk(rd, md, pdata, ["(x+y)^2"], filename; 
+                                     equi_dist_nodes=false)
             @test vtu_name[1] == check
             rm(check) # remove created file after test is done
 
@@ -46,7 +47,7 @@
 
             # with data/dataname specified via Dict
             data = quad.(interpolate * md.x, interpolate * md.y)
-            vtu_name = export_to_vtk(rd, md, Dict("(x+y)^2" => data), filename)            
+            vtu_name = export_to_vtk(rd, md, Dict("(x+y)^2" => data), filename)
             @test vtu_name[1] == check
             rm(check) # remove created file after test is done
         end
