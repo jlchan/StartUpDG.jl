@@ -139,6 +139,16 @@ struct StateRedistribution{TP, TN, TE, TO, TU}
     u_tmp::TU # temporary storage for operations
 end
 
+"""
+    function StateRedistribution(rd::RefElemData{2, Quad}, 
+        md::MeshData{2, <:CutCellMesh}; solution_eltype=Float64)
+
+Constructs a state redistribution instance `srd`, which can be applied to a DG solution via
+`apply!(u, srd::StateRedistribution)` or `srd(u)`. 
+
+Note that, by default, the constructor assumes that the solution `u` has eltype `Float64`; if 
+this is not the case, then `solution_eltype` should be specified in the constructor.
+"""
 function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCellMesh}; solution_eltype=Float64)
     (; physical_frame_elements) = md.mesh_type
 
