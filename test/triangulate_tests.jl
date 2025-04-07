@@ -11,9 +11,11 @@ mean(x) = sum(x) / length(x)
 
     @testset "Triangulate utils/example meshes" begin
         # test triangulate
-        meshIO = triangulate_domain(SquareDomain())
+        meshIO = triangulate_domain(SquareDomain())        
         rd = RefElemData(Tri(), 2)
         md = MeshData(meshIO, rd)
+
+        (VX, VY), EToV = triangulateIO_to_VXYEToV(meshIO)
         @test size(EToV, 1) == md.num_elements == 620
         @test length(VX) == length(VY) == 338
         @test sort(unique(get_node_boundary_tags(meshIO, rd, md))) == [0, 1, 2, 3, 4]
