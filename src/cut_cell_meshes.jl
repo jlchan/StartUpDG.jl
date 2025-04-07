@@ -139,7 +139,7 @@ function calculate_cutcells(vx, vy, objects, ds = 1e-3, arc_tol = 1e-10, corner_
 
     # Calculate cutcells
     region_flags, cutcell_indices, cutcells = 
-        PathIntersections.define_regions((vx, vy), objects, stop_pts, binary_regions=false)
+        PathIntersections.define_regions((vx, vy), objects, stop_pts, binary_regions=true)
 
     cells_per_dimension_x = length(vx) - 1
     cells_per_dimension_y = length(vy) - 1
