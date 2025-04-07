@@ -73,6 +73,37 @@ RecipesBase.@recipe function f(m::VertexMeshPlotter{2})
 end
 
 """
+    function export_to_vtk(rd, md, data::{AbstractArray{T}}, filename; 
+                           write_data = false, equi_dist_nodes = true) where {T <: Real}
+    function export_to_vtk(rd, md, data::AbstractDict{String, AbstractArray{T}}, filename; 
+                           write_data = false, equi_dist_nodes = true) where {T <: Real}
+
+Exports `data` into a vtk-file for visualization.
+- `rd` is a reference element data/`RefElemData` object. 
+- `md` is a `MeshData` object
+- `dataname` is an array of strings with names of the associated data
+- `equi_dist_nodes` flag if points should be interpolated to equidstant nodes
+
+The argument `data` can be any of the following:
+- an array of matrices of plotting data, where each matrix is size `num_nodes` by `num_elements`.
+- a `Dict{String, AbstractArray{T}} where {T <: Real}`, where the keys correspond to names of each field
+"""
+export_to_vtk(rd, md, data::AbstractDict, filename; kwargs...) =
+    export_to_vtk(rd, md, values(data), collect(keys(data)), filename; kwargs...)
+
+# this assumes `data` is a container (e.g., vector or tuple) or matrices
+export_to_vtk(rd, md, data, filename; kwargs...) = 
+    export_to_vtk(rd, md, data, "Field " .* string.(eachindex(data)), filename; kwargs...)
+
+# this is the same interface as `MeshData_to_vtk` but with `rd, md` arguments ordered differently
+# for consistency and without the `write_data` kwarg
+function export_to_vtk(rd, md, data, dataname, filename; equi_dist_nodes = true)
+    write_data = true 
+    return MeshData_to_vtk(md, rd, data, dataname, filename,
+                           write_data, equi_dist_nodes)
+end
+
+"""
     MeshData_to_vtk(md, rd, data, dataname, filename, write_data = false, equi_dist_nodes = true)
 
 Translate the given mesh into a vtk-file.
@@ -105,8 +136,8 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData, data, dataname, filename
     vtkfile = vtk_grid(filename, coords..., cells)
 
     if write_data
-        for i in 1:length(dataname)
-            vtkfile[dataname[i]] = data[i]
+        for (i, data_i) in enumerate(data)
+            vtkfile[dataname[i]] = data_i
         end
     end
 
