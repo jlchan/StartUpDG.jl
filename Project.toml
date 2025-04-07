@@ -4,6 +4,7 @@ authors = ["Jesse Chan", "Yimin Lin"]
 version = "1.1.5"
 
 [deps]
+CaratheodoryPruning = "ab320bfc-8242-4797-bfc4-9370c33880e7"
 ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
