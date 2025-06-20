@@ -1,5 +1,16 @@
 
 """
+    function MeshData(io::TriangulateIO, rd::RefElemData; kwargs...)
+
+Convenience routine to construct a MeshData object given a TriangulateIO object.
+"""
+function MeshData(meshIO::TriangulateIO, rd::RefElemData; kwargs...)
+    (VX, VY), EToV = triangulateIO_to_VXYEToV(meshIO)    
+    md = MeshData((VX, VY), EToV, rd)
+    return md
+end
+
+"""
     function Triangulate.triangulate(triin::TriangulateIO, maxarea, minangle=20)
 
 Convenience routine to avoid writing out `@sprintf` each time. Returns a `TriangulateIO` object.

@@ -1,7 +1,7 @@
 name = "StartUpDG"
 uuid = "472ebc20-7c99-4d4b-9470-8fde4e9faa0f"
 authors = ["Jesse Chan", "Yimin Lin"]
-version = "1.1.5"
+version = "1.1.6"
 
 [deps]
 CaratheodoryPruning = "ab320bfc-8242-4797-bfc4-9370c33880e7"
@@ -36,7 +36,7 @@ FillArrays = "1"
 HDF5 = "0.17"
 Kronecker = "0.5"
 NodesAndModes = "1"
-PathIntersections = "0.1, 0.2"
+PathIntersections = "0.1, 0.2, 0.3"
 Plots = "1.10"
 RecipesBase = "1"
 RecursiveArrayTools = "2.38, 3"
