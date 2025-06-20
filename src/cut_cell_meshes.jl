@@ -332,7 +332,7 @@ function construct_cut_volume_quadrature(N, cutcells, physical_frame_elements;
         # perform Caratheodory pruning
         Vtarget = vandermonde(physical_frame_elements[e], target_degree, vec(xq), vec(yq))
         w = vec(wJq)
-        w_pruned, inds = StartUpDG.caratheodory_pruning_qr(Vtarget, w)
+        w_pruned, inds = CaratheodoryPruning.caratheodory_pruning(Vtarget, w)
 
         # test exactness of the pruned quadrature rule if applicable
         if target_degree >= 2 * N
