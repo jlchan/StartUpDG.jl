@@ -1,9 +1,10 @@
 name = "StartUpDG"
 uuid = "472ebc20-7c99-4d4b-9470-8fde4e9faa0f"
 authors = ["Jesse Chan", "Yimin Lin"]
-version = "1.1.5"
+version = "1.2.0"
 
 [deps]
+CaratheodoryPruning = "ab320bfc-8242-4797-bfc4-9370c33880e7"
 ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
@@ -31,11 +32,12 @@ TriangulatePlotsExt = "Plots"
 
 [compat]
 ConstructionBase = "1.1"
+CaratheodoryPruning = "0.1"
 FillArrays = "1"
 HDF5 = "0.17"
 Kronecker = "0.5"
 NodesAndModes = "1"
-PathIntersections = "0.1, 0.2"
+PathIntersections = "0.1, 0.2, 0.3"
 Plots = "1.10"
 RecipesBase = "1"
 RecursiveArrayTools = "2.38, 3"

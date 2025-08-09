@@ -146,23 +146,28 @@ RefElemData(elem, approx_type; N, kwargs...) =
 RefElemData(elem, N::Int; kwargs...) = 
     RefElemData(elem, Polynomial(), N; kwargs...)
 
-
+@inline Base.ndims(rd::RefElemData) = Base.ndims(rd.element_type)
 @inline Base.ndims(::Line) = 1
 @inline Base.ndims(::Union{Tri, Quad}) = 2
 @inline Base.ndims(::Union{Tet, Hex}) = 3
 
+@inline num_vertices(rd::RefElemData) = num_vertices(rd.element_type)
+@inline num_vertices(::Line) = 2
 @inline num_vertices(::Tri) = 3
 @inline num_vertices(::Union{Quad, Tet}) = 4
 @inline num_vertices(::Hex) = 8
 @inline num_vertices(::Wedge) = 6
 @inline num_vertices(::Pyr) = 5
 
+@inline num_faces(rd::RefElemData) = num_faces(rd.element_type)
 @inline num_faces(::Line) = 2
 @inline num_faces(::Tri) = 3
 @inline num_faces(::Union{Quad, Tet}) = 4
 @inline num_faces(::Union{Wedge, Pyr}) = 5
 @inline num_faces(::Hex) = 6
 
+@inline face_type(rd::RefElemData) = face_type(rd.element_type)
+@inline face_type(rd::RefElemData, id) = face_type(rd.element_type, id)
 @inline face_type(::Union{Tri, Quad}) = Line()
 @inline face_type(::Hex) = Quad()
 @inline face_type(::Tet) = Tri()
