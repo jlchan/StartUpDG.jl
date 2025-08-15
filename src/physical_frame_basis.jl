@@ -24,6 +24,20 @@ end
 # defaults to 2D for now
 PhysicalFrame() = PhysicalFrame(Val{2}())
 
+function get_shifting_and_scaling_cg(x,y)
+    shifting = SVector(mean(x), mean(y))
+    scaling = SVector( 1 / maximum(abs.(x .- shifting[1])), 1 / maximum(abs.(y .- shifting[2])) )
+
+    return shifting, scaling
+end
+
+function get_shifting_and_scaling_maxfill(x,y)
+    scaling = SVector(map(x -> 2 / (x[2] - x[1]), (extrema(x), extrema(y))))
+    shifting = SVector( mean(extrema(x)), mean(extrema(y)) )
+
+    return shifting, scaling
+end
+
 # default shifting and scaling
 function PhysicalFrame(ndims::Val{2}) 
     shifting = SVector(0.0, 0.0)
@@ -33,14 +47,12 @@ function PhysicalFrame(ndims::Val{2})
 end
 
 function PhysicalFrame(x, y)
-    shifting = SVector(mean(x), mean(y))
-    scaling = SVector(map(x -> 2 / (x[2] - x[1]), (extrema(x), extrema(y))))
+    shifting, scaling = get_shifting_and_scaling_cg(x,y)
     return PhysicalFrame(shifting, scaling, nothing)
 end
 
 function PhysicalFrame(x, y, vx, vy)
-    shifting = SVector(mean(x), mean(y))
-    scaling = SVector(map(x -> 2 / (x[2] - x[1]), (extrema(x), extrema(y))))
+    shifting, scaling = get_shifting_and_scaling_cg(x,y)
     vxyz = (vx, vy)
     return PhysicalFrame(shifting, scaling, vxyz)
 end
@@ -134,7 +146,7 @@ to `elem`, with points inside of `curve` removed.
 function NodesAndModes.equi_nodes(elem::PhysicalFrame{2}, curve, N)
     (; vxyz ) = elem
     r, s = equi_nodes(Quad(), N)
-    x, y = map_nodes_to_background_cell(elem, r, s)
+    x, y = map_nodes_to_cutcell_boundingbox(elem, r, s)
     ids = .!PathIntersections.is_contained.(curve, zip(x, y))
     return x[ids], y[ids]
 end
@@ -145,6 +157,14 @@ function map_nodes_to_background_cell(elem::PhysicalFrame{2}, r, s)
     dx, dy = diff(vx), diff(vy)
     x = @. 0.5 * (1 + r) * dx + vx[1]
     y = @. 0.5 * (1 + s) * dy + vy[1]
+    return x, y
+end
+
+function map_nodes_to_cutcell_boundingbox(elem::PhysicalFrame{2}, r, s)
+    (; shifting, scaling ) = elem 
+    
+    x = @. r / scaling[1] + shifting[1]
+    y = @. s / scaling[2] + shifting[2]
     return x, y
 end
 
