@@ -24,7 +24,7 @@ end
 # defaults to 2D for now
 PhysicalFrame() = PhysicalFrame(Val{2}())
 
-function get_shifting_and_scaling_cg(x,y)
+function get_shifting_and_scaling_centroid(x,y)
     shifting = SVector(mean(x), mean(y))
     scaling = SVector( 1 / maximum(abs.(x .- shifting[1])), 1 / maximum(abs.(y .- shifting[2])) )
 
