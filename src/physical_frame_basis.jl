@@ -47,7 +47,7 @@ function PhysicalFrame(ndims::Val{2})
 end
 
 function PhysicalFrame(x, y)
-    shifting, scaling = get_shifting_and_scaling_cg(x,y)
+    shifting, scaling = get_shifting_and_scaling_centroid(x,y)
     return PhysicalFrame(shifting, scaling, nothing)
 end
 
