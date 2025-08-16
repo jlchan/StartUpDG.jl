@@ -341,6 +341,8 @@ function construct_cut_volume_quadrature(N, cutcells, physical_frame_elements;
             @assert norm(V' * Diagonal(w) * V - V' * Diagonal(w_pruned) * V) < 100 * eps()
         end
 
+        # the number of pruned nodes can be smaller than Np_target; if so, we simply pad with some extra points with zero weight
+        # TODO: turn off the flag for trimming extra points in CaratheodoryPruning.jl
         if length(inds) < Np_target
             ind_dest = 1:length(inds)
             @. xq_pruned[ind_dest, e]  = xq[inds]
