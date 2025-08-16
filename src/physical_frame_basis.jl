@@ -52,7 +52,7 @@ function PhysicalFrame(x, y)
 end
 
 function PhysicalFrame(x, y, vx, vy)
-    shifting, scaling = get_shifting_and_scaling_cg(x,y)
+    shifting, scaling = get_shifting_and_scaling_centroid(x,y)
     vxyz = (vx, vy)
     return PhysicalFrame(shifting, scaling, vxyz)
 end
