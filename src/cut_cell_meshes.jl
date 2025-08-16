@@ -95,7 +95,7 @@ function generate_sampling_points(objects, elem, Np_target::Int, N_sampled::Int)
     r_sampled, s_sampled = equi_nodes(Quad(), N_sampled) # oversampled nodes
 
     # map sampled points to the background Cartesian cell
-    x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
+    x_sampled, y_sampled = map_nodes_to_cutcell_boundingbox(elem, r_sampled, s_sampled)
     is_in_domain = fill(true, length(x_sampled))
     for (index, point) in enumerate(zip(x_sampled, y_sampled))
         is_in_domain[index] = !any(map(obj -> PathIntersections.is_contained(obj, point), objects))
@@ -106,7 +106,7 @@ function generate_sampling_points(objects, elem, Np_target::Int, N_sampled::Int)
 
         N_sampled *= 2 # double degree of sampling
         r_sampled, s_sampled = equi_nodes(Quad(), N_sampled) # oversampled nodes
-        x_sampled, y_sampled = map_nodes_to_background_cell(elem, r_sampled, s_sampled)
+        x_sampled, y_sampled = map_nodes_to_cutcell_boundingbox(elem, r_sampled, s_sampled)
 
         # check if all the points are in all the objects
         is_in_domain = fill(true, length(x_sampled))
@@ -295,6 +295,7 @@ We set `target_degree` to `2 * N - 1` by default, which is sufficient to
 ensure that ∫du/dx * v is integrated exactly so that integration by parts
 holds under the generated cut cell quadrature. 
 """
+# TODO: time this function
 function construct_cut_volume_quadrature(N, cutcells, physical_frame_elements; 
                                          target_degree = 2 * N - 1)
 
@@ -340,9 +341,23 @@ function construct_cut_volume_quadrature(N, cutcells, physical_frame_elements;
             @assert norm(V' * Diagonal(w) * V - V' * Diagonal(w_pruned) * V) < 100 * eps()
         end
 
-        @. xq_pruned[:, e] = xq[inds]
-        @. yq_pruned[:, e] = yq[inds]
-        @. wJq_pruned[:, e] = w_pruned[inds]
+        # the number of pruned nodes can be smaller than Np_target; if so, we simply pad with some extra points with zero weight
+        # TODO: turn off the flag for trimming extra points in CaratheodoryPruning.jl
+        if length(inds) < Np_target
+            ind_dest = 1:length(inds)
+            @. xq_pruned[ind_dest, e]  = xq[inds]
+            @. yq_pruned[ind_dest, e]  = yq[inds]
+            @. wJq_pruned[ind_dest, e] = w_pruned[inds]
+
+            ind_remainder = length(inds)+1:Np_target
+            xq_pruned[ind_remainder, e]  .= xq_pruned[1,e]
+            yq_pruned[ind_remainder, e]  .= yq_pruned[1,e]
+            wJq_pruned[ind_remainder, e] .= 0.0
+        else
+            @. xq_pruned[:, e] = xq[inds]
+            @. yq_pruned[:, e] = yq[inds]
+            @. wJq_pruned[:, e] = w_pruned[inds]
+        end
     end
     return xq_pruned, yq_pruned, wJq_pruned
 end
@@ -508,12 +523,16 @@ function construct_physical_frame_elements(region_flags, vx, vy, cutcells)
 
     physical_frame_elements = typeof(PhysicalFrame())[] # populate this as we iterate through cut cells
     e = 1
+    s_sampling = 0:0.001:1
     for ex in axes(region_flags, 1), ey in axes(region_flags, 2)
         if StartUpDG.is_cut(region_flags[ex, ey])
 
             # get extremal points (vertices) of the cut cell
             cutcell = cutcells[e]
             coordinates = cutcell.(cutcell.stop_pts[1:end-1])
+            stop_pts = cutcell.(cutcell.stop_pts[1:end-1])
+            boundary_sample_pts = cutcell.(s_sampling)
+            coordinates = [stop_pts; boundary_sample_pts]
 
             # store vertex nodes and coordinates of background Cartesian cell
             physical_frame_element = 
