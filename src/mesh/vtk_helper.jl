@@ -470,12 +470,23 @@ end
 Compute the permutation of the nodes between StartUpDG and VTK
 """
 function SUD_to_vtk_order(rd::RefElemData{DIM}) where {DIM}
+
+    # For tensor-product elements in which the polynomial degree is a tuple, we currently
+    # only support elements with the same polynomial degree in all directions.
+    if length(rd.N) > 1
+        @assert length(Set(rd.N)) == 1 "`order` must have equal elements."
+        order = first(rd.N)
+    else
+        order = rd.N
+    end
+
     #nodes in vtk order
-    vtk_nodes = vtk_order(rd.element_type, rd.N)
+    vtk_nodes = vtk_order(rd.element_type, order)
     vtk_formatted = ntuple(i -> vtk_nodes[i, :], DIM)
         
     #nodes in StartUpDG order
-    interpolate = vandermonde(rd.element_type, rd.N, equi_nodes(rd.element_type, rd.N)...) / rd.VDM
+    interpolate = vandermonde(rd.element_type, order, 
+                              equi_nodes(rd.element_type, order)...) / rd.VDM
     equi_dist_vertices = map(x->interpolate * x, rd.rst)
 
     #permutation
