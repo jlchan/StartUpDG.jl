@@ -242,8 +242,8 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData{3, <:Wedge, <:TensorProdu
     vtkfile = vtk_grid(filename, coords..., cells)
     
     if write_data
-        for i in 1:length(dataname)
-            vtkfile[dataname[i]] = data[i]
+        for (i, data_i) in enumerate(data)
+            vtkfile[dataname[i]] = data_i
         end
     end
     return vtk_save(vtkfile)
