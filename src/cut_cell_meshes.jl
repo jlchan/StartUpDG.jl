@@ -912,7 +912,9 @@ function MeshData(rd::RefElemData, objects,
             xyzM = (view(xf, idM), view(yf, idM))
             xyzP = (view(xf, idP), view(yf, idP))
             StartUpDG.match_coordinate_vectors!(p, xyzM, xyzP)
-            @. mapP[idM[p]] = idP
+            for (i, id) in enumerate(p)
+                mapP[idM[id]] = idP[i]
+            end
         end
     end
     mapB = findall(vec(mapM) .== vec(mapP)) # determine boundary nodes
