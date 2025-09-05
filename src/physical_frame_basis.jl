@@ -144,9 +144,8 @@ Returns back `Np(N)` equally spaced nodes on the background quadrilateral corres
 to `elem`, with points inside of `curve` removed.
 """
 function NodesAndModes.equi_nodes(elem::PhysicalFrame{2}, curve, N)
-    (; vxyz ) = elem
     r, s = equi_nodes(Quad(), N)
-    x, y = map_nodes_to_cutcell_boundingbox(elem, r, s)
+    x, y = map_nodes_to_background_cell(elem, r, s)
     ids = .!PathIntersections.is_contained.(curve, zip(x, y))
     return x[ids], y[ids]
 end
