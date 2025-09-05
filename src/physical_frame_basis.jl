@@ -24,6 +24,9 @@ end
 # defaults to 2D for now
 PhysicalFrame() = PhysicalFrame(Val{2}())
 
+# This is an alternative method of computing shifting/scaling factors, 
+# but results in nodes on [-1,1]^2 being mapped outside the background element. 
+# This is currently unused. 
 function get_shifting_and_scaling_centroid(x,y)
     shifting = SVector(mean(x), mean(y))
     scaling = SVector( 1 / maximum(abs.(x .- shifting[1])), 1 / maximum(abs.(y .- shifting[2])) )
@@ -63,6 +66,23 @@ function shift_and_scale(elem::PhysicalFrame{2}, x, y)
     s = @. (y - shifting[2]) * scaling[2]
     return r, s
 end
+
+function map_nodes_to_background_cell(elem::PhysicalFrame{2}, r, s)
+    (; vxyz ) = elem
+    vx, vy = vxyz
+    dx, dy = diff(vx), diff(vy)
+    x = @. 0.5 * (1 + r) * dx + vx[1]
+    y = @. 0.5 * (1 + s) * dy + vy[1]
+    return x, y
+end
+
+function map_nodes_to_cutcell_boundingbox(elem::PhysicalFrame{2}, r, s)
+    (; shifting, scaling ) = elem 
+    x = @. r / scaling[1] + shifting[1]
+    y = @. s / scaling[2] + shifting[2]
+    return x, y
+end
+
 
 function NodesAndModes.basis(elem::PhysicalFrame{2}, N, x, y)
     Np = (N + 1) * (N + 2) ÷ 2
@@ -148,23 +168,6 @@ function NodesAndModes.equi_nodes(elem::PhysicalFrame{2}, curve, N)
     x, y = map_nodes_to_background_cell(elem, r, s)
     ids = .!PathIntersections.is_contained.(curve, zip(x, y))
     return x[ids], y[ids]
-end
-
-function map_nodes_to_background_cell(elem::PhysicalFrame{2}, r, s)
-    (; vxyz ) = elem
-    vx, vy = vxyz
-    dx, dy = diff(vx), diff(vy)
-    x = @. 0.5 * (1 + r) * dx + vx[1]
-    y = @. 0.5 * (1 + s) * dy + vy[1]
-    return x, y
-end
-
-function map_nodes_to_cutcell_boundingbox(elem::PhysicalFrame{2}, r, s)
-    (; shifting, scaling ) = elem 
-    
-    x = @. r / scaling[1] + shifting[1]
-    y = @. s / scaling[2] + shifting[2]
-    return x, y
 end
 
 function triangulate_points(coordinates::AbstractMatrix)

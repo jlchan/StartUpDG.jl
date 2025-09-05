@@ -94,7 +94,9 @@ function generate_sampling_points(objects, elem, Np_target::Int, N_sampled::Int)
 
     r_sampled, s_sampled = equi_nodes(Quad(), N_sampled) # oversampled nodes
 
-    # map sampled points to the background Cartesian cell
+    # Here, we map sampled points on [-1, 1]^2 to the smallest bounding box around the cut element. 
+    # These mapped points should still lie within the background element but be clustered around the 
+    # cut cell, and should be more efficient than a uniform sampling of the background element.
     x_sampled, y_sampled = map_nodes_to_cutcell_boundingbox(elem, r_sampled, s_sampled)
     is_in_domain = fill(true, length(x_sampled))
     for (index, point) in enumerate(zip(x_sampled, y_sampled))
