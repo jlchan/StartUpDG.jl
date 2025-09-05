@@ -159,6 +159,14 @@ function map_nodes_to_background_cell(elem::PhysicalFrame{2}, r, s)
     return x, y
 end
 
+function map_nodes_to_cutcell_boundingbox(elem::PhysicalFrame{2}, r, s)
+    (; shifting, scaling ) = elem 
+    
+    x = @. r / scaling[1] + shifting[1]
+    y = @. s / scaling[2] + shifting[2]
+    return x, y
+end
+
 function triangulate_points(coordinates::AbstractMatrix)
     triin=Triangulate.TriangulateIO()
     triin.pointlist = coordinates
