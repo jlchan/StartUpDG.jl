@@ -50,12 +50,12 @@ function PhysicalFrame(ndims::Val{2})
 end
 
 function PhysicalFrame(x, y)
-    shifting, scaling = get_shifting_and_scaling_centroid(x,y)
+    shifting, scaling = get_shifting_and_scaling_maxfill(x,y)
     return PhysicalFrame(shifting, scaling, nothing)
 end
 
 function PhysicalFrame(x, y, vx, vy)
-    shifting, scaling = get_shifting_and_scaling_centroid(x,y)
+    shifting, scaling = get_shifting_and_scaling_maxfill(x,y)
     vxyz = (vx, vy)
     return PhysicalFrame(shifting, scaling, vxyz)
 end
