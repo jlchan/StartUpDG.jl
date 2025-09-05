@@ -956,8 +956,7 @@ function MeshData(rd::RefElemData, objects,
         volume_interpolation_matrices, face_interpolation_matrices = 
             ntuple(_ -> Matrix{eltype(x)}[], 3)
 
-        # TODO: remove these? these can be computed from other matrices
-        mass_matrices, lift_matrices = ntuple(_ -> Matrix{eltype(x)}[], 2)
+        mass_matrices, lift_matrices, projection_matrices = ntuple(_ -> Matrix{eltype(x)}[], 3)
         for (e, elem) in enumerate(physical_frame_elements)
 
             VDM = vandermonde(elem, rd.N, x.cut[:, e], y.cut[:, e])
@@ -983,11 +982,13 @@ function MeshData(rd::RefElemData, objects,
             push!(differentiation_matrices, (Dx_e, Dy_e))
             push!(mass_matrices, M)
             push!(lift_matrices, M \ (Vf' * Diagonal(wf)))
+            push!(projection_matrices, M \ (Vq' * Diagonal(wJq.cut[:, e])))
         end
         cut_cell_operators = (; volume_interpolation_matrices, 
                                 face_interpolation_matrices, 
                                 differentiation_matrices, 
-                                mass_matrices, lift_matrices)
+                                mass_matrices, lift_matrices, 
+                                projection_matrices)
 
     else
 
