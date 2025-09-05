@@ -76,6 +76,10 @@ using StartUpDG: PathIntersections
         @test 0 < length(x) <= length(first(equi_nodes(Quad(), 10))) 
         # no points should be contained in the circle
         @test !all(PathIntersections.is_contained.(circle, zip(x, y))) 
+        # all points should lie within the background element
+        vx, vy = physical_frame_elements[1].vxyz
+        tol = 100 * eps()
+        @test all(@. (vx[1] - tol < x < vx[2] + tol) && (@. vy[1] - tol < y < vy[2] + tol))
 
     end
         
