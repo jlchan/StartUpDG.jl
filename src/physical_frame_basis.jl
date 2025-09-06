@@ -170,6 +170,17 @@ function NodesAndModes.equi_nodes(elem::PhysicalFrame{2}, curve, N)
     return x[ids], y[ids]
 end
 
+function NodesAndModes.equi_nodes(elem::PhysicalFrame{2}, 
+                                  curves::Union{<:Tuple, <:AbstractArray}, N)
+    r, s = equi_nodes(Quad(), N)
+    x, y = map_nodes_to_cutcell_boundingbox(elem, r, s)
+    ids = .!PathIntersections.is_contained.(first(curves), zip(x, y))
+    for curve in Base.tail(curves)
+        ids = ids .&& .!PathIntersections.is_contained.(curve, zip(x, y))
+    end
+    return x[ids], y[ids]
+end
+
 function triangulate_points(coordinates::AbstractMatrix)
     triin=Triangulate.TriangulateIO()
     triin.pointlist = coordinates
