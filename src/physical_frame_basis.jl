@@ -163,16 +163,20 @@ import NodesAndModes: equi_nodes
 Returns back `Np(N)` equally spaced nodes on the background quadrilateral corresponding 
 to `elem`, with points inside of `curve` removed.
 """
-function NodesAndModes.equi_nodes(elem::PhysicalFrame{2}, curves, N)
+function NodesAndModes.equi_nodes(elem::PhysicalFrame{2}, curve, N)
     r, s = equi_nodes(Quad(), N)
     x, y = map_nodes_to_cutcell_boundingbox(elem, r, s)
-    if length(curves) == 1 # if there is a single object
-        ids = .!PathIntersections.is_contained.(curves, zip(x, y))
-    else # if there are multiple cut objects
-        ids = .!PathIntersections.is_contained.(first(curves), zip(x, y))
-        for curve in Base.tail(curves)
-            ids = ids .&& .!PathIntersections.is_contained.(curve, zip(x, y))
-        end
+    ids = .!PathIntersections.is_contained.(curve, zip(x, y))
+    return x[ids], y[ids]
+end
+
+function NodesAndModes.equi_nodes(elem::PhysicalFrame{2}, 
+                                  curves::Union{<:Tuple, <:AbstractArray}, N)
+    r, s = equi_nodes(Quad(), N)
+    x, y = map_nodes_to_cutcell_boundingbox(elem, r, s)
+    ids = .!PathIntersections.is_contained.(first(curves), zip(x, y))
+    for curve in Base.tail(curves)
+        ids = ids .&& .!PathIntersections.is_contained.(curve, zip(x, y))
     end
     return x[ids], y[ids]
 end
