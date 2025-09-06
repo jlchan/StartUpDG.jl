@@ -555,6 +555,7 @@ function map_points_to_cut_cell_faces!(out, points, curve)
     return vec.((xf, yf, nxJ, nyJ, Jf))
 end
 
+# TODO: remove this and use the `generate_sampling_points` in cut_cell_meshes.jl
 # generates at least Np_target sampling points within a cut cell defined by `curve`
 # returns both x_sampled, y_sampled (physical points inside the cut cell), as well as 
 # r_sampled, y_sampled (reference points which correspond to x_sampled, y_sampled).
