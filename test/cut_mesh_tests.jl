@@ -81,6 +81,11 @@ using StartUpDG: PathIntersections
         tol = 100 * eps()
         @test all(@. (vx[1] - tol < x < vx[2] + tol) && (@. vy[1] - tol < y < vy[2] + tol))
 
+        # check multiple objects
+        @test_nowarn equi_nodes(physical_frame_elements[1], (circle,), 10)
+        circle2 = PresetGeometries.Circle(R=0.33, x0=1.0, y0=0)
+        @test_nowarn equi_nodes(physical_frame_elements[1], (circle, circle2), 10)
+
     end
         
     @testset "State redistribution" begin     
