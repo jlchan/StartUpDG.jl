@@ -304,13 +304,14 @@ function construct_cut_volume_quadrature(N, cutcells, physical_frame_elements;
     # We make volume quadrature exact for degree N^2 + N(N-1) + 2(N-1) polynomials on the 
     # reference element, which ensures that ∫du/dx * v * J is integrated exactly over D̂. 
     # This is because du/dx * v ∈ P^{2N-1}(D^k) and (du/dx * v) ∘ x(r,s) ∈ P^{(2N-1) * N}). 
+    # Thus, du/dx * v is a degree 2N^2-N polynomial, and J is degree 2(N-1)
     # 
     # The minimum exactness of volume quadrature is degree N(N-1) + 2N-2 polynomials,
     # which ensures Qh * 1 = 0, where Qh = hybridized SBP operator.
 
     # Integral     ∫    v     du/dx        J     over reference element D̂
     # TODO: why can we decrease this and still see exactness?
-    N_phys_frame_geo = N^2 + N * (N-1) + 2 * (N-1) 
+    N_phys_frame_geo = 2 * N^2 - N + 2 * (N-1) 
 
     rd_tri = RefElemData(Tri(), Polynomial(MultidimensionalQuadrature()), N, 
                          quad_rule_vol=NodesAndModes.quad_nodes_tri(N_phys_frame_geo))
