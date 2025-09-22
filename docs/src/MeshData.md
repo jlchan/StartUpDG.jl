@@ -37,6 +37,13 @@ Given unstructured mesh information (tuple of vertex coordinates `VXYZ` and inde
 ```julia
 md = MeshData(VXYZ, EToV, rd)
 ```
+One can also construct `MeshData` for a Cartesian domain by specifying `cells_per_dimension` and the bounding coordinates of the Cartesian domain. For example, the following creates a 2-by-4 element mesh on [-1,1] x [-2,2]. 
+```julia
+rd = RefElemData(Tri(), 3)
+cells_per_dimension_x, cells_per_dimension_y = 2, 4
+md = MeshData(cells_per_dimension_x, cells_per_dimension_y, rd; 
+              coordinates_min=(-1, -2), coordinates_max=(1, 2))
+```
 
 ## Enforcing periodic boundary conditions
 
