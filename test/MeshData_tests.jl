@@ -1,4 +1,21 @@
 @testset "1D and 2D MeshData tests" begin 
+    @testset "MeshData constructors" begin
+        rd = RefElemData(Line(), 3)
+        @test_nowarn MeshData(2, rd; coordinates_min=(-1, ), coordinates_max=(1,), is_periodic=true)
+        
+        for elem in [Tri(), Quad()]
+            rd = RefElemData(elem, 3)
+            @test_nowarn MeshData(2, 4, rd; coordinates_min=(-1, -2), coordinates_max=(1, 2), is_periodic=true)
+            @test_nowarn MeshData(2, rd; coordinates_min=(-1, -2), coordinates_max=(1, 2), is_periodic=true)
+        end
+
+        for elem in [Hex(), Tet(), Pyr(), Wedge()]
+            rd = RefElemData(elem, 3)
+            @test_nowarn MeshData(2, 4, 8, rd; coordinates_min=(-1, -2, -4), coordinates_max=(1, 2, 4), is_periodic=true)
+            @test_nowarn MeshData(2, rd; coordinates_min=(-1, -2, -4), coordinates_max=(1, 2, 4), is_periodic=true)
+        end
+    end
+    
     @testset "$approx_type MeshData initialization" for approx_type = [Polynomial(), SBP()]
         @testset "1D mesh initialization" begin
             tol = 5e2*eps()
