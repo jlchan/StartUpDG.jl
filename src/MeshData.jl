@@ -231,11 +231,24 @@ Returns a `MeshData` initialized on a uniform mesh with `cells_per_dimension` el
 dimension scaled to the following tensor product domain: 
 `[coordinates_min[1], coordinates_max[1]]x[coordinates_min[2], coordinates_max[2]], ...`. 
 """
-function MeshData(cells_per_dimension, rd::RefElemData{NDIMS}; 
+MeshData(cells_per_dimension::Int, rd::RefElemData{1}; kwargs...) = 
+    MeshData((cells_per_dimension, ), rd; kwargs...)
+MeshData(cells_per_dimension_x::Int, cells_per_dimension_y::Int, rd::RefElemData{2}; kwargs...) = 
+    MeshData((cells_per_dimension_x, cells_per_dimension_y), rd; kwargs...)
+MeshData(cells_per_dimension_x::Int, cells_per_dimension_y::Int, 
+         cells_per_dimension_z::Int, rd::RefElemData{3}; kwargs...) = 
+    MeshData((cells_per_dimension_x, cells_per_dimension_y, cells_per_dimension_z), rd; kwargs...)
+
+
+function MeshData(cells_per_dimension::Int, rd::RefElemData{NDIMS}; kwargs...) where {NDIMS}
+    return MeshData(ntuple(_ -> cells_per_dimension, NDIMS), rd; kwargs...)
+end
+
+function MeshData(cells_per_dimension::NTuple{NDIMS, <:Int}, rd::RefElemData{NDIMS}; 
                   coordinates_min = ntuple(_ -> -1.0, NDIMS), 
                   coordinates_max = ntuple(_ -> 1.0, NDIMS),  
                   is_periodic=ntuple(_ -> false, NDIMS)) where {NDIMS}
-    VXYZ, EToV = uniform_mesh(rd.element_type, cells_per_dimension)
+    VXYZ, EToV = uniform_mesh(rd.element_type, cells_per_dimension...)
     VXYZ = map((x, xmin, xmax) -> (@. 0.5 * (x + 1) * (xmax - xmin) + xmin), 
                 VXYZ, coordinates_min, coordinates_max)
     return MeshData(VXYZ, EToV, rd; is_periodic)                
