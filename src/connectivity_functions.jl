@@ -403,7 +403,7 @@ end
 
 # specialize on 3D elements with different types of faces
 function make_periodic(md::MeshData{3, <:VertexMappedMesh{<:Union{<:Wedge, <:Pyr}}}, 
-                       is_periodic::NTuple{3}; tol=1e-12, kwargs...)
+                       is_periodic::NTuple{3}; tol=100 * eps(), kwargs...)
 
     NDIMS = 3
     (; mapM) = md
@@ -469,7 +469,8 @@ function make_periodic(md::MeshData{3, <:VertexMappedMesh{<:Union{<:Wedge, <:Pyr
     end
 
     # keep only non-periodic boundary nodes
-    mapB_periodic = findall(vec(vcat(mapM...)) .== vec(mapP_periodic)) 
+    #mapB_periodic = findall(vec(vcat(mapM...)) .== vec(mapP_periodic)) 
+    mapB_periodic = findall(vec(mapM) .== vec(mapP_periodic)) 
 
     return setproperties(md, (; mapB=mapB_periodic, mapP = mapP_periodic, 
                                 FToF = FToF_periodic, is_periodic = is_periodic)) # from Setfield.jl    
