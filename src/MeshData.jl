@@ -237,12 +237,9 @@ MeshData(cells_per_dimension_x::Int, cells_per_dimension_y::Int, rd::RefElemData
     MeshData((cells_per_dimension_x, cells_per_dimension_y), rd; kwargs...)
 MeshData(cells_per_dimension_x::Int, cells_per_dimension_y::Int, 
          cells_per_dimension_z::Int, rd::RefElemData{3}; kwargs...) = 
-    MeshData((cells_per_dimension_x, cells_per_dimension_y, cells_per_dimension_z), rd; kwargs...)
-
-
-function MeshData(cells_per_dimension::Int, rd::RefElemData{NDIMS}; kwargs...) where {NDIMS}
-    return MeshData(ntuple(_ -> cells_per_dimension, NDIMS), rd; kwargs...)
-end
+    MeshData((cells_per_dimension_x, cells_per_dimension_y, cells_per_dimension_z), rd; kwargs...)    
+MeshData(cells_per_dimension::Int, rd::RefElemData{NDIMS}; kwargs...) where {NDIMS} = 
+    MeshData(ntuple(_ -> cells_per_dimension, NDIMS), rd; kwargs...)
 
 function MeshData(cells_per_dimension::NTuple{NDIMS, <:Int}, rd::RefElemData{NDIMS}; 
                   coordinates_min = ntuple(_ -> -1.0, NDIMS), 
