@@ -1,6 +1,6 @@
 # Overview
 
-This package contains routines to initialize reference element operators, physical mesh arrays, and connectivity arrays for nodal DG methods. The codes roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007).
+This package contains routines to initialize reference element operators, physical mesh arrays, and connectivity arrays for nodal DG methods. The codes are roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007).
 
 StartUpDG.jl is intended mainly to aid in the implementation of `rhs!` functions for DG discretizations of time-dependent partial differential equations, which can then be used with the OrdinaryDiffEq.jl library to evolve a solution in time. For example, it has been used in most publications since 2020 by the authors [Jesse Chan](https://scholar.google.com/citations?user=rqGSShYAAAAJ&hl=en) and [Yimin Lin](https://scholar.google.com/citations?hl=en&user=yCrSttgAAAAJ), as well as in the following external publications: 
 * [Efficient entropy-stable discontinuous spectral-element methods using tensor-product summation-by-parts operators on triangles and tetrahedra](https://doi.org/10.1016/j.jcp.2024.113360) by Montoya and Zingg (2024).

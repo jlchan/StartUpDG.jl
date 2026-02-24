@@ -77,6 +77,8 @@ end
                            write_data = false, equi_dist_nodes = true) where {T <: Real}
     function export_to_vtk(rd, md, data::AbstractDict{String, AbstractArray{T}}, filename; 
                            write_data = false, equi_dist_nodes = true) where {T <: Real}
+    function export_to_vtk(rd, md, data::AbstractArray, dataname::AbstractArray, filename; 
+                           equi_dist_nodes = true)                           
 
 Exports `data` into a vtk-file for visualization.
 - `rd` is a reference element data/`RefElemData` object. 
