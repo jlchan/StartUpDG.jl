@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        downgrade_mode: ['deps']
+        downgrade_mode: ['forcedeps']
         julia-version: ['1.10', '1']
     steps:
       - uses: actions/checkout@v6
@@ -24,7 +24,10 @@ jobs:
           version: ${{ matrix.julia-version }}
       - uses: julia-actions/julia-downgrade-compat@v1
         with:
+          projects: ., test
           mode: ${{ matrix.downgrade_mode }}
-          skip: Pkg,TOML
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+        with:
+          allow_reresolve: false
+          force_latest_compatible_version: false
