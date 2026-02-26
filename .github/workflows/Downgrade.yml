@@ -18,11 +18,11 @@ jobs:
         downgrade_mode: ['forcedeps']
         julia-version: ['1.10', '1']
     steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v1
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.julia-version }}
-      - uses: julia-actions/julia-downgrade-compat@v2
+      - uses: julia-actions/julia-downgrade-compat@v1
         with:
           projects: ., test
           mode: ${{ matrix.downgrade_mode }}
