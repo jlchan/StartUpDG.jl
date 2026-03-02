@@ -42,3 +42,4 @@ dudx = (rxJ .* (Dr * u) + sxJ .* (Ds * u)) ./ J
 * [Hendrik Ranocha](https://ranocha.de) contributed to array types used in cut-cell and hybrid meshes. 
 * [Mason McCallum](https://github.com/masonamccallum) contributed Gmsh reading capabilities
 * [David Knapp](https://github.com/Davknapp) contributed VTK visualization capabilities and tensor product wedges.
+ 
