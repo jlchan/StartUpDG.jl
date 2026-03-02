@@ -11,7 +11,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 [compat]
 HOHQMesh = "0.2"
 Plots = "1.10.1"
-StaticArrays = "1.5"
+StaticArrays = "1.5.17"
 StructArrays = "0.6, 0.7"
 SummationByPartsOperators = "0.5.52"
 Suppressor = "0.2"
