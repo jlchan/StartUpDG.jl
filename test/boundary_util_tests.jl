@@ -35,7 +35,7 @@
         #test build_periodic_boundary_maps
         rd = RefElemData(Tri(),3);
 
-        VXY, EToV, g = read_Gmsh_2D_v4(joinpath(@__DIR__, "testset_Gmsh_meshes" "periodicity_mesh_v4.msh"),true);
+        VXY, EToV, g = read_Gmsh_2D_v4(joinpath(@__DIR__, "testset_Gmsh_meshes", "periodicity_mesh_v4.msh"),true);
         md = MeshData(VXY, EToV, rd);
         md_test = make_periodic(md, tol=4e-12)
         @test md_test.xf[md_test.mapB] != md.xf[md.mapB]
