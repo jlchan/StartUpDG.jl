@@ -398,6 +398,50 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3}; is_periodic=(false, fals
     return md
 end
 
+function MeshData(VX, VY, VZ, EToV, rd::RefElemData{2}; is_periodic=(false, false, false))
+
+    (; fv ) = rd
+    FToF = connect_mesh(EToV, fv)
+    Nfaces, K = size(FToF)
+
+    #Construct global coordinates
+    (; V1 ) = rd
+    x, y, z = (x -> V1 * x[transpose(EToV)]).((VX, VY, VZ))
+
+    #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
+    (; r, s, Vf) = rd
+    xf, yf, zf = (x -> Vf * x).((x, y, z))
+    mapM, mapP, mapB = build_node_maps(FToF, (xf, yf, zf))
+    mapM = reshape(mapM, :, K)
+    mapP = reshape(mapP, :, K)
+    
+    #Compute geometric factors and surface normals
+    (; Dr, Ds) = rd
+    rxJ, sxJ, ryJ, syJ, rzJ, szJ, J = geometric_factors(x, y, z, Dr, Ds)
+    rstxyzJ = SMatrix{2, 3}(rxJ, ryJ, rzJ, sxJ, syJ, szJ)
+    nrstJ = (rd.nrstJ..., zeros(size(rd.nrstJ[1])))
+    (; Vq, wq ) = rd
+    xq, yq, zq = (x -> Vq * x).((x, y, z))
+    wJq = diagm(wq) * (Vq * J)
+
+    nxJ, nyJ, nzJ, Jf = compute_normals(rstxyzJ, rd.Vf, nrstJ...)
+
+    periodicity = (false, false, false)
+    md = MeshData(VertexMappedMesh(rd.element_type, tuple(VX, VY, VZ), EToV), FToF,
+                  tuple(x, y, z), tuple(xf, yf, zf), tuple(xq, yq, zq), wJq,
+                  mapM, mapP, mapB,
+                  rstxyzJ, J, tuple(nxJ, nyJ, nzJ), Jf, 
+                  periodicity)
+
+    if any(is_periodic)
+        # loosen the tolerance if N >> 1
+        tol = length(rd.r) * 100 * eps() 
+        md = make_periodic(md, is_periodic; tol)
+    end
+
+    return md
+end
+
 function recompute_geometry(rd::RefElemData{Dim}, xyz) where {Dim}
     # compute new quad and plotting points
     xyzf = map(x -> rd.Vf * x, xyz)
