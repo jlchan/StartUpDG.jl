@@ -114,7 +114,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
                        tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
-                       M, Pq, Drst, LIFT, Nplot)
+                       M, Pq, Drst, LIFT, (line.Nplot, tri.Nplot))
 end
 
 # TODO: add link to proof when we write it up
