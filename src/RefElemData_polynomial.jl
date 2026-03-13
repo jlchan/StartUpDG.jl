@@ -60,7 +60,7 @@ function RefElemData(elem::Line,
                        tuple(rp), Vp,
                        tuple(rq), wq, Vq,
                        tuple(rf), wf, Vf, tuple(nrJ),
-                       M, Pq, tuple(Dr), LIFT)
+                       M, Pq, tuple(Dr), LIFT, Nplot)
 end
 
 
@@ -104,7 +104,7 @@ function RefElemData(elem::Union{Tri, Quad},
                        tuple(rp, sp), Vp,
                        tuple(rq, sq), wq, Vq,
                        tuple(rf, sf), wf, Vf, tuple(nrJ, nsJ),
-                       M, Pq, (Dr, Ds), LIFT)
+                       M, Pq, (Dr, Ds), LIFT, Nplot)
 end
 
 function RefElemData(elem::Union{Tet, Hex},
@@ -151,7 +151,7 @@ function RefElemData(elem::Union{Tet, Hex},
                        tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        tuple(rf, sf, tf), wf, Vf, tuple(nrJ, nsJ, ntJ),
-                       M, Pq, (Dr, Ds, Dt), LIFT)
+                       M, Pq, (Dr, Ds, Dt), LIFT, Nplot)
 end
 
 """
@@ -229,7 +229,7 @@ function RefElemData(elem::Wedge,
                        tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
-                       M, Pq, Drst, LIFT)
+                       M, Pq, Drst, LIFT, Nplot)
 end
 
 """
@@ -313,7 +313,7 @@ function RefElemData(elem::Pyr,
                        tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
-                       M, Pq, Drst, LIFT)
+                       M, Pq, Drst, LIFT, Nplot)
 end
 
 """
@@ -380,7 +380,7 @@ function RefElemData(elem::Quad,
                        tuple(rp, sp), Vp, 
                        tuple(rq, sq), wq, Vq,
                        tuple(rf, sf), wf, Vf, tuple(nrJ, nsJ),
-                       M, Pq, (Dr, Ds), LIFT)
+                       M, Pq, (Dr, Ds), LIFT, Nplot)
 end
 
 function RefElemData(elem::Hex, 
@@ -448,7 +448,7 @@ function RefElemData(elem::Hex,
                        tuple(rp, sp, tp), Vp, 
                        tuple(rq, sq, tq), wq, Vq,
                        tuple(rf, sf, tf), wf, Vf, tuple(nrJ, nsJ, ntJ),
-                       M, Pq, (Dr, Ds, Dt), LIFT)
+                       M, Pq, (Dr, Ds, Dt), LIFT, Nplot)
 end
 
 RefElemData(elem::Hex, approximation_parameter::TensorProductQuadrature, N; Nplot = 10) = 

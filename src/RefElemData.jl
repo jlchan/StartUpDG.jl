@@ -13,7 +13,7 @@ rd = RefElemData(Tri(), N)
 """ 
 struct RefElemData{Dim, ElemShape <: AbstractElemShape{Dim}, ApproximationType, 
                    NT, FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM, 
-                   VQ, VF, MM, P, D, L, VP, V1Type, WQ, WF} 
+                   VQ, VF, MM, P, D, L, VP, V1Type, WQ, WF, NP} 
 
     element_type::ElemShape
     approximation_type::ApproximationType # Polynomial / SBP{...}
@@ -46,6 +46,7 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape{Dim}, ApproximationType,
     # Nodal DG operators
     Drst::D              # differentiation operators
     LIFT::L              # lift matrix
+    Nplot::NP            # polynomial degree for plotting nodes
 end
 
 # need this to use @set outside of StartUpDG
