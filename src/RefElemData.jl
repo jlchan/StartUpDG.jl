@@ -46,6 +46,7 @@ struct RefElemData{Dim, ElemShape <: AbstractElemShape{Dim}, ApproximationType,
     # Nodal DG operators
     Drst::D              # differentiation operators
     LIFT::L              # lift matrix
+    Nplot::Int           # polynomial degree for plotting nodes
 end
 
 # need this to use @set outside of StartUpDG

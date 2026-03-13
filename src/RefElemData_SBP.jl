@@ -78,9 +78,6 @@ function RefElemData(elementType::Tri, approxType::SBP, N; tol = 100*eps(), kwar
     # make V1 the interpolation matrix from triangle vertices to SBP nodal points
     rd = @set rd.V1 = vandermonde(elementType, N, rd.rst...) / rd.VDM * rd.V1
 
-    # Vp operator = projects SBP nodal vector onto degree N polynomial, then interpolates to plotting points
-    rd = @set rd.Vp = vandermonde(elementType, N, rd.rstp...) / rd.VDM * rd.Pq
-
     return _convert_RefElemData_fields_to_SBP(rd, approxType)
 end
 
@@ -188,6 +185,8 @@ function _convert_RefElemData_fields_to_SBP(rd, approx_type::SBP)
     rd = @set rd.Pq = I
     rd = @set rd.Vq = I
     rd = @set rd.approximation_type = approx_type
+    rd = @set rd.Vp = vandermonde(rd.element_type, rd.N, rd.rstp...) / 
+                        vandermonde(rd.element_type, rd.N, rd.rst...)
     return rd
 end
 
