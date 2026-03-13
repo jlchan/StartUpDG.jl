@@ -40,7 +40,8 @@ end
 
 function StartUpDG.RefElemData(element_type::Line,
     D::AbstractDerivativeOperator;
-    tol = 100 * eps(),)
+    tol = 100 * eps(),
+    Nplot = 10,)
     approximation_type = D
     N = SummationByPartsOperators.accuracy_order(D) # kind of polynomial degree
 
@@ -104,12 +105,14 @@ function StartUpDG.RefElemData(element_type::Line,
         M,
         Pq,
         Drst,
-        LIFT)
+        LIFT,
+        Nplot)
 end
 
 function StartUpDG.RefElemData(element_type::Quad,
     D::AbstractDerivativeOperator;
-    tol = 100 * eps(),)
+    tol = 100 * eps(),
+    Nplot = 10,)
     approximation_type = D
     N = SummationByPartsOperators.accuracy_order(D) # kind of polynomial degree
 
@@ -177,12 +180,14 @@ function StartUpDG.RefElemData(element_type::Quad,
         M,
         Pq,
         Drst,
-        LIFT)
+        LIFT,
+        Nplot)
 end
 
 function StartUpDG.RefElemData(element_type::Hex,
     D::AbstractDerivativeOperator;
-    tol = 100 * eps(),)
+    tol = 100 * eps(),
+    Nplot = 10,)
     approximation_type = D
     N = SummationByPartsOperators.accuracy_order(D) # kind of polynomial degree
 
@@ -251,13 +256,15 @@ function StartUpDG.RefElemData(element_type::Hex,
         M,
         Pq,
         Drst,
-        LIFT)
+        LIFT,
+        Nplot)
 end
 
 # specialized Hex constructor in 3D to reduce memory usage.
 function StartUpDG.RefElemData(element_type::Hex,
     D::AbstractPeriodicDerivativeOperator;
-    tol = 100 * eps(),)
+    tol = 100 * eps(),
+    Nplot = 10,)
     approximation_type = D
     N = SummationByPartsOperators.accuracy_order(D) # kind of polynomial degree
 
@@ -319,7 +326,8 @@ function StartUpDG.RefElemData(element_type::Hex,
         M,
         Pq,
         Drst,
-        LIFT)
+        LIFT,
+        Nplot)
 end
 
 function Base.show(io::IO,
