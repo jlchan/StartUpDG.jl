@@ -185,6 +185,7 @@ function _convert_RefElemData_fields_to_SBP(rd, approx_type::SBP)
     rd = @set rd.Pq = I
     rd = @set rd.Vq = I
     rd = @set rd.approximation_type = approx_type
+    # Vp operator = projects SBP nodal vector onto degree N polynomial, then interpolates to plotting points
     rd = @set rd.Vp = vandermonde(rd.element_type, rd.N, rd.rstp...) / 
                         vandermonde(rd.element_type, rd.N, rd.rst...)
     return rd
