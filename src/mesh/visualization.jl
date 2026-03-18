@@ -132,7 +132,11 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData, data, dataname, filename
         coords = map(x -> vec(rd.Vp * x), md.xyz)
         data = [rd.Vp * data_i for data_i in data]
     else # don't interpolate
-        coords = vec.(md.xyz) 
+        if (rd.approximation_type isa SBP) && (rd.element_type isa Union{Tri, Tet})
+            error("Support for non-interpolated SBP approximations is not supported on simplices.")
+        else # if polynomial
+            coords = vec.(md.xyz) 
+        end
     end   
     
     vtkfile = vtk_grid(filename, coords..., cells)
