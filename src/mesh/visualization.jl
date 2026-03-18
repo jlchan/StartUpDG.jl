@@ -130,7 +130,6 @@ function MeshData_to_vtk(md::MeshData, rd::RefElemData, data, dataname, filename
 
     if equi_dist_nodes == true
         coords = map(x -> vec(rd.Vp * x), md.xyz)
-        coords = map(x -> vec(rd.Vp * x), md.xyz)
         data = [rd.Vp * data_i for data_i in data]
     else # don't interpolate
         coords = vec.(md.xyz) 
