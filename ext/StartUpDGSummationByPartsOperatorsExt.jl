@@ -112,7 +112,7 @@ end
 function StartUpDG.RefElemData(element_type::Quad,
     D::AbstractDerivativeOperator;
     tol = 100 * eps(),
-    Nplot = 10,)
+    Nplot = 10)
     approximation_type = D
     N = SummationByPartsOperators.accuracy_order(D) # kind of polynomial degree
 
