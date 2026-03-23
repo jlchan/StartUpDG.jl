@@ -102,6 +102,10 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
     Pq = M \ (Vq' * diagm(wq))
     LIFT = M \ (Vf' * diagm(wf))
 
+    if line.Nplot != tri.Nplot
+        error("Unequal Nplot values for line and triangle are not currently supported.")
+    end
+
     # tensor product plotting nodes
     tp, rp  = _wedge_tensor_product(line.rp, tri.rp)
     _,  sp  = _wedge_tensor_product(line.rp, tri.sp)
@@ -114,7 +118,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
                        tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
-                       M, Pq, Drst, LIFT)
+                       M, Pq, Drst, LIFT, (line.Nplot, tri.Nplot))
 end
 
 # TODO: add link to proof when we write it up

@@ -473,11 +473,11 @@ function SUD_to_vtk_order(rd::RefElemData{DIM}) where {DIM}
 
     # For tensor-product elements in which the polynomial degree is a tuple, we currently
     # only support elements with the same polynomial degree in all directions.
-    if length(rd.N) > 1
-        @assert length(Set(rd.N)) == 1 "`order` must have equal elements."
-        order = first(rd.N)
+    if length(rd.Nplot) > 1
+        @assert length(Set(rd.Nplot)) == 1 "`order` must have equal elements."
+        order = first(rd.Nplot)
     else
-        order = rd.N
+        order = rd.Nplot
     end
 
     #nodes in vtk order
@@ -485,9 +485,7 @@ function SUD_to_vtk_order(rd::RefElemData{DIM}) where {DIM}
     vtk_formatted = ntuple(i -> vtk_nodes[i, :], DIM)
         
     #nodes in StartUpDG order
-    interpolate = vandermonde(rd.element_type, order, 
-                              equi_nodes(rd.element_type, order)...) / rd.VDM
-    equi_dist_vertices = map(x->interpolate * x, rd.rst)
+    equi_dist_vertices = rd.rstp
 
     #permutation
     return match_coordinate_vectors(vtk_formatted, equi_dist_vertices, tol = 100 * eps())
