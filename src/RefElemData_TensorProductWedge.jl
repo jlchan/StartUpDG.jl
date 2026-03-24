@@ -123,6 +123,17 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
         end
     end
 
+    if tri.approximation_type isa SBP && line.approximation_type isa SBP
+        Fmask = []
+        for i in eachindex(rf)
+            for j in eachindex(r)
+                if Vf[i, j] != 0
+                    push!(Fmask, j)
+                end
+            end
+        end
+    end
+
     # create tensor product quadrature rule
     tq, rq  = _wedge_tensor_product(line.rq, tri.rq)
     _,  sq  = _wedge_tensor_product(line.rq, tri.sq)
