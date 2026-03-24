@@ -18,7 +18,7 @@ using RecipesBase: RecipesBase
 @reexport using RecursiveArrayTools: NamedArrayPartition 
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
-using SparseArrays: sparse, droptol!, blockdiag, nnz
+using SparseArrays: sparse, spzeros, droptol!, blockdiag, nnz
 using Triangulate: Triangulate, TriangulateIO, triangulate
 @reexport using WriteVTK
 

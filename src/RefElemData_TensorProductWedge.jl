@@ -13,10 +13,6 @@ end
 # for clarity that we're taking a tensor product of nodes
 _wedge_tensor_product(line, tri) = vec.(meshgrid(line, tri))
 
-function Base.kron(A::UniformScaling, B::UniformScaling)
-    return UniformScaling(A.λ * B.λ)
-end
-
 function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs...)
 
     (; tri, line) = approximation_type
@@ -38,7 +34,10 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
     Ds  = kron(I(line.Np), tri.Ds)
     Dt  = kron(line.Dr, I(tri.Np))
     Drst = (Dr, Ds, Dt)
-
+    
+    # assumes interpolation nodes contain face nodes
+    Fmask = find_face_nodes(elem, r, s, t)
+    
     # build face quadrature nodes
     rft, sft = map(x->reshape(x, :, 3), tri.rstf)
     tf1, rf1 = vec.(meshgrid(line.rq, view(rft, :, 1)))
@@ -62,23 +61,69 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
     num_line_nodes = length(line.wq)
     num_tri_single_face_nodes = size(wft, 1)
     num_quad_face_nodes = num_line_nodes * num_tri_single_face_nodes
-    num_tri_face_nodes = length(tri.wq)
+    num_tri_nodes = length(tri.wq)
     quad_face_ids(f) = (1:num_quad_face_nodes) .+ (f-1) * num_quad_face_nodes
-    tri_face_ids(f) = (1:num_tri_face_nodes) .+ (f-1) * num_tri_face_nodes .+ 3 * num_quad_face_nodes
+    tri_face_ids(f) = (1:num_tri_nodes) .+ (f-1) * num_tri_nodes .+ 3 * num_quad_face_nodes
     node_ids_by_face = (quad_face_ids(1), quad_face_ids(2), quad_face_ids(3), 
                         tri_face_ids(1), tri_face_ids(2))
                         
     # for nrJ and nsJ normal on face 1-3 coincide with the triangular normals
-    zt, zq = zeros(num_tri_face_nodes), zeros(num_quad_face_nodes)
-    et, eq = ones(num_tri_face_nodes), ones(num_quad_face_nodes)
+    zt, zq = zeros(num_tri_nodes), zeros(num_quad_face_nodes)
+    et, eq = ones(num_tri_nodes), ones(num_quad_face_nodes)
     
     nrJ = [zq; eq; -eq; zt; zt]
     nsJ = [-eq; eq; zq; zt; zt]
     ntJ = [zq; zq; zq; -et; et] 
+    
+    # Create face interpolation matrix
+    if tri.approximation_type isa Polynomial
+        Vf_tri, _, _ = basis(tri.element_type, tri.N, rf, sf)
+        Vf_tri = Vf_tri / tri.VDM
+    elseif tri.approximation_type isa SBP
+        tri_Vq = tri.Vq isa UniformScaling ? I(num_tri_nodes) : tri.Vq
+        
+        # the rows of tri.Vf are ordered by nodes, then by faces. we construct the 
+        # interpolation operator to quadrilateral faces by extracting rows corresponding 
+        # to each face of the triangle and repeating it line.Nq times 
+        num_points_per_tri_face = size(tri.Vf, 1) ÷ 3
+        interp_to_quad_faces = 
+            vcat(kron(ones(line.Nq), tri.Vf[(1:num_points_per_tri_face), :]), 
+                 kron(ones(line.Nq), tri.Vf[num_points_per_tri_face .+ (1:num_points_per_tri_face), :]), 
+                 kron(ones(line.Nq), tri.Vf[2 * num_points_per_tri_face .+ (1:num_points_per_tri_face), :]))
 
-    # Create face interpolation matrix and Face node mask
-    Vf, Fmask = wedge_Vf_Fmask((r, s, t), (rf, sf, tf), VDM, line, tri)
+        # the interpolation to triangular faces is simply the interpolation to 
+        # triangular quadrature nodes, once for the top triangular face and once 
+        # for the bottom triangular face. 
+        interp_to_tri_faces = vcat(tri_Vq, tri_Vq)
+        Vf_tri = vcat(interp_to_quad_faces, interp_to_tri_faces)
+    else 
+        error("approximation type $(tri.approximation_type) not yet supported")
+    end
 
+    if line.approximation_type isa Polynomial
+        Vf_line, _ = basis(line.element_type, line.N, tf)
+        Vf_line = Vf_line / line.VDM
+    elseif line.approximation_type isa SBP
+        # 3 = number of quad faces
+        line_Vq = line.Vq isa UniformScaling ? I(num_line_nodes) : line.Vq
+        interp_to_quad_faces = repeat(kron(line_Vq, ones(tri.Nfq ÷ 3)), 3, 1) 
+
+        interp_to_tri_faces = kron(line.Vf, ones(tri.Nq)) 
+        Vf_line = vcat(interp_to_quad_faces, interp_to_tri_faces)
+    else 
+        error("approximation type $(line.approximation_type) not yet supported")
+    end
+
+    Vf = spzeros(length(rf), length(r))
+    id = 1
+    for j in axes(Vf_line, 2)
+        for i in axes(Vf_tri, 2)
+            @. Vf[:, id] = Vf_tri[:, i] * Vf_line[:, j]
+            id += 1
+        end
+    end
+
+    # create tensor product quadrature rule
     tq, rq  = _wedge_tensor_product(line.rq, tri.rq)
     _,  sq  = _wedge_tensor_product(line.rq, tri.sq)
     wt, wrs = _wedge_tensor_product(line.wq, tri.wq)
@@ -86,9 +131,8 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
 
     # `line.Vq` is a `UniformScaling` type for `RefElemData` built 
     # from SummationByPartsOperators.jl
-    Vq = kron(line.Vq isa UniformScaling ? I : line.Vq,
-                  tri.Vq isa UniformScaling ? I : tri.Vq)
-                  
+    Vq = kron(line.Vq isa UniformScaling ? I(num_line_nodes) : line.Vq,
+              tri.Vq isa UniformScaling ? I(num_tri_nodes) : tri.Vq)
     M  = Vq' * diagm(wq) * Vq
     Pq = tri.Pq isa UniformScaling && line.Pq isa UniformScaling ? 
             I : M \ (Vq' * diagm(wq))
@@ -116,38 +160,3 @@ end
 # TODO: add link to proof when we write it up
 inverse_trace_constant(rd::RefElemData{3, <:Wedge, <:TensorProductWedge}) = 
     inverse_trace_constant(rd.approximation_type.line) + inverse_trace_constant(rd.approximation_type.tri)
-
-function wedge_Vf_Fmask(rst, rstf, VDM, line::RefElemData{1, <:Line, <:Polynomial}, tri::RefElemData{2, <:Tri, <:Polynomial})
-    r, s, t = rst
-    (rf, sf, tf) = rstf
-
-    Fmask = find_face_nodes(Wedge(), r, s, t)
-    Fmask = vcat(Fmask...)
-
-    vandermonde_tensor_wedge = zeros(length(rf), size(VDM, 2))
-    V_tri, _, _ = basis(Tri(), tri.N, rf, sf)
-    V_line, _ = basis(Line(), line.N, tf)
-    id = 1
-    for j in axes(V_line, 2)
-        for i in axes(V_tri, 2)
-            @. vandermonde_tensor_wedge[:, id] = V_tri[:, i] * V_line[:,j]
-            id += 1
-        end
-    end
-
-    Vf = vandermonde_tensor_wedge / VDM
-    return Vf, Fmask
-end
-
-function wedge_Vf_Fmask(rst, rstf, VDM, line::RefElemData{1, <:Line, <:SBP}, tri::RefElemData{2, <:Tri, <:SBP}; tol = 100 * eps())
-    r, s, t = rst
-    (rf, sf, tf) = rstf
-    Vf = zeros(length(rf), length(r))
-    Fmask = zeros(Int, length(rf))
-    for i in eachindex(r)
-        id = findall(@. abs(r[i]-rf[:]) + abs(s[i]-sf[:]) + abs(t[i]-tf[:]) .< tol)
-        Fmask[id] .= i
-        Vf[id, i] .= 1
-    end
-    return Vf, Fmask
-end
