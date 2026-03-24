@@ -129,10 +129,12 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
     wt, wrs = _wedge_tensor_product(line.wq, tri.wq)
     wq = wt .* wrs
 
-    # `line.Vq` is a `UniformScaling` type for `RefElemData` built 
-    # from SummationByPartsOperators.jl
-    Vq = kron(line.Vq isa UniformScaling ? I(num_line_nodes) : line.Vq,
-              tri.Vq isa UniformScaling ? I(num_tri_nodes) : tri.Vq)
+    if line.Vq isa UniformScaling && tri.Vq isa UniformScaling
+        Vq = I
+    else
+        Vq = kron(line.Vq isa UniformScaling ? I(num_line_nodes) : line.Vq,
+                  tri.Vq isa UniformScaling ? I(num_tri_nodes) : tri.Vq)
+    end
     M  = Vq' * diagm(wq) * Vq
     Pq = tri.Pq isa UniformScaling && line.Pq isa UniformScaling ? 
             I : M \ (Vq' * diagm(wq))
