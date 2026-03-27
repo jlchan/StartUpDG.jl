@@ -125,3 +125,27 @@ function triangulate_domain(domain::PartialCircularDomain; h = .1)
     triout = triangulate(triin, h^2)
     return triout
 end
+
+# TriangularWedge embedded in domain [-0.5, 0.5] x [0, 0.5]
+Base.@kwdef struct TriangularWedge{Ti}
+    # segment marker legend: 1 = wall, 2 = inflow, 3 = outflow 
+    segment_markers::SVector{7, Ti} = SVector{7}(1, 1, 1, 1, 3, 1, 2)
+end
+
+function triangulate_domain(domain::TriangularWedge; h = .1)
+    (; segment_markers ) = domain
+    x_left = -0.65
+    triin=Triangulate.TriangulateIO()
+    triin.pointlist=Matrix{Cdouble}([x_left 0.0;
+                                     -0.2 0.0;
+                                     0.1 1/6;
+                                     0.1 0.0;
+                                     0.5 0.0;
+                                     0.5 0.5;
+                                     x_left 0.5;
+                                    ]')
+    triin.segmentlist=Matrix{Cint}([1 2; 2 3; 3 4; 4 5; 5 6; 6 7; 7 1]')
+    triin.segmentmarkerlist=Vector{Int32}(segment_markers)
+    triout = triangulate(triin, h^2)
+    return triout
+end

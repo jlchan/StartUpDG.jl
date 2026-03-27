@@ -101,7 +101,7 @@ export BoundaryTagPlotter
 include("mesh/triangulate_example_meshes.jl")
 export triangulate_domain
 export Scramjet, SquareDomain, RectangularDomain, RectangularDomainWithHole
-export CircularDomain, PartialCircularDomain
+export CircularDomain, PartialCircularDomain, TriangularWedge
 
 # simple explicit time-stepping included for conveniencea
 include("explicit_timestep_utils.jl")
