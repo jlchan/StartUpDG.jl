@@ -4,7 +4,7 @@
     md = MeshData(NonConformingQuadMeshExample(), rd)
 
     (; x, y) = md
-    u = x^2 + 2 * y^3
+    u = @. x^2 + 2 * y^3
 
     # interpolate to faces
     num_total_faces = num_faces(rd.element_type) * md.num_elements
