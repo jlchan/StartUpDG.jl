@@ -309,7 +309,8 @@ function RefElemData(elem::Pyr,
     Vp = vandermonde(elem, N, rp, sp, tp) / VDM
 
     return RefElemData(Pyr(node_ids_by_face), approximation_type, N, fv, V1,
-                       tuple(r, s, t), VDM, Fmask,
+                       tuple(r, s, t), VDM, 
+                       vcat(Fmask...), # flatten Fmask to a single vector
                        tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
