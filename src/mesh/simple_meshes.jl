@@ -13,34 +13,32 @@ Returns `(VX,VY,VZ)`, `EToV`. When only one `K` is specified, it assumes a unifo
 """
 function uniform_mesh(elem::Line, K1D)
     VX = collect(LinRange(-1, 1, K1D + 1))
-    EToV = transpose(reshape(sort([1:K1D; 2:K1D+1]), 2, K1D))
+    EToV = transpose(reshape(sort([1:K1D; 2:(K1D + 1)]), 2, K1D))
     return (VX,), Matrix(EToV)
 end
 
 function uniform_mesh(elem::Tri, Kx, Ky)
-
     (VY, VX) = meshgrid(LinRange(-1, 1, Ky + 1), LinRange(-1, 1, Kx + 1))
     sk = 1
     EToV = zeros(Int, 2 * Kx * Ky, 3)
-    for ey = 1:Ky
-        for ex = 1:Kx
+    for ey in 1:Ky
+        for ex in 1:Kx
             id(ex, ey) = ex + (ey - 1) * (Kx + 1) # index function
             id1 = id(ex, ey)
             id2 = id(ex + 1, ey)
             id3 = id(ex + 1, ey + 1)
             id4 = id(ex, ey + 1)
-            EToV[2*sk-1, :] = [id1 id2 id3]
-            EToV[2*sk, :] = [id3 id4 id1]
+            EToV[2 * sk - 1, :] = [id1 id2 id3]
+            EToV[2 * sk, :] = [id3 id4 id1]
             sk += 1
         end
     end
     return (VX[:], VY[:]), EToV
 end
 
-uniform_mesh(elem::Union{Tri,Quad}, Kx) = uniform_mesh(elem, Kx, Kx)
+uniform_mesh(elem::Union{Tri, Quad}, Kx) = uniform_mesh(elem, Kx, Kx)
 
 function uniform_mesh(elem::Quad, Nx, Ny)
-
     Nxp = Nx + 1
     Nyp = Ny + 1
     Nv = convert(Int, Nxp * Nyp)
@@ -53,9 +51,9 @@ function uniform_mesh(elem::Quad, Nx, Ny)
     inds = @. (I - 1) * Ny + (J + I - 1)
     EToV = zeros(Int, K, 4)
     k = 1
-    for i = 1:Ny
-        for j = 1:Nx
-            EToV[k, :] = [inds[i, j] inds[i, j+1] inds[i+1, j] inds[i+1, j+1]]
+    for i in 1:Ny
+        for j in 1:Nx
+            EToV[k, :] = [inds[i, j] inds[i, j + 1] inds[i + 1, j] inds[i + 1, j + 1]]
             k += 1
         end
     end
@@ -66,7 +64,6 @@ function uniform_mesh(elem::Quad, Nx, Ny)
     return (VX[:], VY[:]), EToV
 end
 
-
 # hack to work with old vertex ordering
 function mymeshgrid(x1D, y1D, z1D)
     Np = length(x1D) * length(y1D) * length(z1D)
@@ -74,9 +71,9 @@ function mymeshgrid(x1D, y1D, z1D)
     y = zeros(Np)
     z = zeros(Np)
     sk = 1
-    for k = 1:length(z1D)
-        for j = 1:length(y1D)
-            for i = 1:length(x1D)
+    for k in 1:length(z1D)
+        for j in 1:length(y1D)
+            for i in 1:length(x1D)
                 x[sk] = x1D[i]
                 y[sk] = y1D[j]
                 z[sk] = z1D[k]
@@ -102,7 +99,7 @@ function uniform_mesh(elem::Hex, Nx, Ny, Nz)
 
     EToV = zeros(Int, K, 8)
     k = 1
-    for e = 1:K
+    for e in 1:K
         em = e - 1
         k = div(em, (Nx * Ny))
         j = div(em - k * Nx * Ny, Nx)
@@ -122,16 +119,16 @@ function uniform_mesh(elem::Hex, Nx, Ny, Nz)
     return (x[:], y[:], z[:]), EToV
 end
 
-
 function uniform_mesh(::Wedge, Kx, Ky, Kz)
-    (VY, VX, VZ) = meshgrid(LinRange(-1, 1, Ky + 1), LinRange(-1, 1, Kx + 1), LinRange(-1, 1, Kz + 1))
+    (VY, VX, VZ) = meshgrid(LinRange(-1, 1, Ky + 1), LinRange(-1, 1, Kx + 1),
+                            LinRange(-1, 1, Kz + 1))
     sk = 1
     shift = (Kx + 1) * (Ky + 1)
-    id(ex, ey, ez) = ex + (ey - 1) * (Kx + 1)  + (ez - 1) * (shift) # index function
+    id(ex, ey, ez) = ex + (ey - 1) * (Kx + 1) + (ez - 1) * (shift) # index function
     EToV = zeros(Int, 2 * Kx * Ky * Kz, 6)
-    for ey = 1:Ky
-        for ex = 1:Kx
-            for ez = 1:Kz
+    for ey in 1:Ky
+        for ex in 1:Kx
+            for ez in 1:Kz
                 id1 = id(ex, ey, ez)
                 id2 = id(ex + 1, ey, ez)
                 id3 = id(ex, ey + 1, ez)
@@ -140,8 +137,8 @@ function uniform_mesh(::Wedge, Kx, Ky, Kz)
                 id6 = id(ex + 1, ey, ez + 1)
                 id7 = id(ex, ey + 1, ez + 1)
                 id8 = id(ex + 1, ey + 1, ez + 1)
-                EToV[2 * sk - 1, :] = [id1 id2 id4 id5 id6 id8] 
-                EToV[2 * sk, :]     = [id1 id4 id3 id5 id8 id7]   
+                EToV[2 * sk - 1, :] = [id1 id2 id4 id5 id6 id8]
+                EToV[2 * sk, :] = [id1 id4 id3 id5 id8 id7]
                 sk += 1
             end
         end
@@ -164,7 +161,6 @@ end
 # 1                 3
 
 function uniform_mesh(elem::Pyr, Nx, Ny, Nz)
-
     Nxp = Nx + 1
     Nyp = Ny + 1
     Nzp = Nz + 1
@@ -182,7 +178,7 @@ function uniform_mesh(elem::Pyr, Nx, Ny, Nz)
     # 6 pyramids per cube    
     EToV = zeros(Int, 6 * K, 5)
     ee = 1
-    for e = 1:K
+    for e in 1:K
         em = e - 1
         k = div(em, (Nx * Ny))
         j = div(em - k * Nx * Ny, Nx)
@@ -204,39 +200,39 @@ function uniform_mesh(elem::Pyr, Nx, Ny, Nz)
         EToV[ee, 5] = centroid_id # last entry is the cell centroid vertex
 
         # pyramid 2: +r face
-        EToV[ee+1, 1] = id(i + 1, j, k + 1)
-        EToV[ee+1, 2] = id(i + 1, j, k)
-        EToV[ee+1, 3] = id(i + 1, j + 1, k + 1)
-        EToV[ee+1, 4] = id(i + 1, j + 1, k)
-        EToV[ee+1, 5] = centroid_id # last entry is the cell centroid vertex
+        EToV[ee + 1, 1] = id(i + 1, j, k + 1)
+        EToV[ee + 1, 2] = id(i + 1, j, k)
+        EToV[ee + 1, 3] = id(i + 1, j + 1, k + 1)
+        EToV[ee + 1, 4] = id(i + 1, j + 1, k)
+        EToV[ee + 1, 5] = centroid_id # last entry is the cell centroid vertex
 
         # pyramid 3: +s face
-        EToV[ee+2, 1] = id(i, j + 1, k + 1)
-        EToV[ee+2, 2] = id(i + 1, j + 1, k + 1)
-        EToV[ee+2, 3] = id(i, j + 1, k)
-        EToV[ee+2, 4] = id(i + 1, j + 1, k)
-        EToV[ee+2, 5] = centroid_id # last entry is the cell centroid vertex
+        EToV[ee + 2, 1] = id(i, j + 1, k + 1)
+        EToV[ee + 2, 2] = id(i + 1, j + 1, k + 1)
+        EToV[ee + 2, 3] = id(i, j + 1, k)
+        EToV[ee + 2, 4] = id(i + 1, j + 1, k)
+        EToV[ee + 2, 5] = centroid_id # last entry is the cell centroid vertex
 
         # pyramid 4: -r face
-        EToV[ee+3, 1] = id(i, j, k + 1)
-        EToV[ee+3, 2] = id(i, j + 1, k + 1)
-        EToV[ee+3, 3] = id(i, j, k)
-        EToV[ee+3, 4] = id(i, j + 1, k)
-        EToV[ee+3, 5] = centroid_id # last entry is the cell centroid vertex
+        EToV[ee + 3, 1] = id(i, j, k + 1)
+        EToV[ee + 3, 2] = id(i, j + 1, k + 1)
+        EToV[ee + 3, 3] = id(i, j, k)
+        EToV[ee + 3, 4] = id(i, j + 1, k)
+        EToV[ee + 3, 5] = centroid_id # last entry is the cell centroid vertex
 
         # pyramid 5: -s face
-        EToV[ee+4, 1] = id(i, j, k)
-        EToV[ee+4, 2] = id(i + 1, j, k)
-        EToV[ee+4, 3] = id(i, j, k + 1)
-        EToV[ee+4, 4] = id(i + 1, j, k + 1)
-        EToV[ee+4, 5] = centroid_id # last entry is the cell centroid vertex
+        EToV[ee + 4, 1] = id(i, j, k)
+        EToV[ee + 4, 2] = id(i + 1, j, k)
+        EToV[ee + 4, 3] = id(i, j, k + 1)
+        EToV[ee + 4, 4] = id(i + 1, j, k + 1)
+        EToV[ee + 4, 5] = centroid_id # last entry is the cell centroid vertex
 
         # face 6: top face
-        EToV[ee+5, 1] = id(i, j, k + 1)
-        EToV[ee+5, 2] = id(i + 1, j, k + 1)
-        EToV[ee+5, 3] = id(i, j + 1, k + 1)
-        EToV[ee+5, 4] = id(i + 1, j + 1, k + 1)
-        EToV[ee+5, 5] = centroid_id # last entry is the cell centroid vertex
+        EToV[ee + 5, 1] = id(i, j, k + 1)
+        EToV[ee + 5, 2] = id(i + 1, j, k + 1)
+        EToV[ee + 5, 3] = id(i, j + 1, k + 1)
+        EToV[ee + 5, 4] = id(i + 1, j + 1, k + 1)
+        EToV[ee + 5, 5] = centroid_id # last entry is the cell centroid vertex
 
         ee += 6
     end
@@ -246,7 +242,6 @@ function uniform_mesh(elem::Pyr, Nx, Ny, Nz)
 end
 
 function uniform_mesh(elem::Tet, Nx, Ny, Nz)
-
     Nxp = Nx + 1
     Nyp = Ny + 1
     Nzp = Nz + 1
@@ -264,7 +259,7 @@ function uniform_mesh(elem::Tet, Nx, Ny, Nz)
     # 6 tets per cube
     EToV = zeros(Int, 6 * K, 4)
     ee = 1
-    for e = 1:K
+    for e in 1:K
         em = e - 1
         k = div(em, (Nx * Ny))
         j = div(em - k * Nx * Ny, Nx)
@@ -275,30 +270,30 @@ function uniform_mesh(elem::Tet, Nx, Ny, Nz)
         EToV[ee, 3] = id(i + 1, j + 1, k)
         EToV[ee, 4] = id(i, j, k + 1)
 
-        EToV[ee+1, 1] = id(i + 1, j, k)
-        EToV[ee+1, 2] = id(i + 1, j, k + 1)
-        EToV[ee+1, 3] = id(i + 1, j + 1, k)
-        EToV[ee+1, 4] = id(i, j, k + 1)
+        EToV[ee + 1, 1] = id(i + 1, j, k)
+        EToV[ee + 1, 2] = id(i + 1, j, k + 1)
+        EToV[ee + 1, 3] = id(i + 1, j + 1, k)
+        EToV[ee + 1, 4] = id(i, j, k + 1)
 
-        EToV[ee+2, 1] = id(i, j, k + 1)
-        EToV[ee+2, 2] = id(i + 1, j + 1, k + 1)
-        EToV[ee+2, 3] = id(i + 1, j, k + 1)
-        EToV[ee+2, 4] = id(i + 1, j + 1, k)
+        EToV[ee + 2, 1] = id(i, j, k + 1)
+        EToV[ee + 2, 2] = id(i + 1, j + 1, k + 1)
+        EToV[ee + 2, 3] = id(i + 1, j, k + 1)
+        EToV[ee + 2, 4] = id(i + 1, j + 1, k)
 
-        EToV[ee+3, 1] = id(i, j + 1, k + 1)
-        EToV[ee+3, 2] = id(i + 1, j + 1, k + 1)
-        EToV[ee+3, 3] = id(i, j, k + 1)
-        EToV[ee+3, 4] = id(i + 1, j + 1, k)
+        EToV[ee + 3, 1] = id(i, j + 1, k + 1)
+        EToV[ee + 3, 2] = id(i + 1, j + 1, k + 1)
+        EToV[ee + 3, 3] = id(i, j, k + 1)
+        EToV[ee + 3, 4] = id(i + 1, j + 1, k)
 
-        EToV[ee+4, 1] = id(i, j + 1, k)
-        EToV[ee+4, 2] = id(i, j + 1, k + 1)
-        EToV[ee+4, 3] = id(i, j, k + 1)
-        EToV[ee+4, 4] = id(i + 1, j + 1, k)
+        EToV[ee + 4, 1] = id(i, j + 1, k)
+        EToV[ee + 4, 2] = id(i, j + 1, k + 1)
+        EToV[ee + 4, 3] = id(i, j, k + 1)
+        EToV[ee + 4, 4] = id(i + 1, j + 1, k)
 
-        EToV[ee+5, 1] = id(i, j, k)
-        EToV[ee+5, 2] = id(i + 1, j + 1, k)
-        EToV[ee+5, 3] = id(i, j + 1, k)
-        EToV[ee+5, 4] = id(i, j, k + 1)
+        EToV[ee + 5, 1] = id(i, j, k)
+        EToV[ee + 5, 2] = id(i + 1, j + 1, k)
+        EToV[ee + 5, 3] = id(i, j + 1, k)
+        EToV[ee + 5, 4] = id(i, j, k + 1)
 
         ee += 6
     end

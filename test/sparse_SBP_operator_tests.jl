@@ -1,18 +1,18 @@
 @testset "Sparse SBP operators for approx_type <: Polynomial" begin
-    tol = 5e2*eps()
-    N = 3    
-    @testset "Line" begin 
+    tol = 5e2 * eps()
+    N = 3
+    @testset "Line" begin
         rd = RefElemData(Line(), Polynomial{Gauss}(), N)
         (Q,), E = sparse_low_order_SBP_operators(rd)
-        @test norm(sum(Q, dims=2)) < tol
-        @test Q + Q' ≈ E' * Diagonal([-1,1]) * E
+        @test norm(sum(Q, dims = 2)) < tol
+        @test Q + Q' ≈ E' * Diagonal([-1, 1]) * E
     end
 
     @testset "Tri" begin
         rd = RefElemData(Tri(), N)
         (Qr, Qs), E = sparse_low_order_SBP_operators(rd)
-        @test norm(sum(Qr, dims=2)) < tol
-        @test norm(sum(Qs, dims=2)) < tol
+        @test norm(sum(Qr, dims = 2)) < tol
+        @test norm(sum(Qs, dims = 2)) < tol
         @test Qr + Qr' ≈ E' * Diagonal(rd.wf .* rd.nrJ) * E
         @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
     end
@@ -20,8 +20,8 @@
     @testset "Quad (SBP)" begin
         rd = RefElemData(Quad(), SBP(), N)
         (Qr, Qs), E = sparse_low_order_SBP_operators(rd)
-        @test norm(sum(Qr, dims=2)) < tol
-        @test norm(sum(Qs, dims=2)) < tol
+        @test norm(sum(Qr, dims = 2)) < tol
+        @test norm(sum(Qs, dims = 2)) < tol
         @test Qr + Qr' ≈ E' * Diagonal(rd.wf .* rd.nrJ) * E
         @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
     end
@@ -29,8 +29,8 @@
     @testset "Quad (Polynomial{Gauss})" begin
         rd = RefElemData(Quad(), Gauss(), N)
         (Qr, Qs), E = sparse_low_order_SBP_operators(rd)
-        @test norm(sum(Qr, dims=2)) < tol
-        @test norm(sum(Qs, dims=2)) < tol
+        @test norm(sum(Qr, dims = 2)) < tol
+        @test norm(sum(Qs, dims = 2)) < tol
         @test Qr + Qr' ≈ E' * Diagonal(rd.wf .* rd.nrJ) * E
         @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
     end
@@ -38,17 +38,17 @@
     @testset "Hex (Polynomial{Gauss})" begin
         rd = RefElemData(Hex(), Gauss(), N)
         (Qr, Qs, Qt), E = sparse_low_order_SBP_operators(rd)
-        @test norm(sum(Qr, dims=2)) < tol
-        @test norm(sum(Qs, dims=2)) < tol
-        @test norm(sum(Qt, dims=2)) < tol
+        @test norm(sum(Qr, dims = 2)) < tol
+        @test norm(sum(Qs, dims = 2)) < tol
+        @test norm(sum(Qt, dims = 2)) < tol
         @test Qr + Qr' ≈ E' * Diagonal(rd.wf .* rd.nrJ) * E
         @test Qs + Qs' ≈ E' * Diagonal(rd.wf .* rd.nsJ) * E
         @test Qt + Qt' ≈ E' * Diagonal(rd.wf .* rd.ntJ) * E
     end
 end
 
-@testset "Subcell limiting operators for approx_type <: SBP" begin    
-    @testset "$elem_type" for elem_type in [Tri()] 
+@testset "Subcell limiting operators for approx_type <: SBP" begin
+    @testset "$elem_type" for elem_type in [Tri()]
         N = 3
         rd = RefElemData(elem_type, SBP(), N)
         Qrst, E = sparse_low_order_SBP_operators(rd)
@@ -64,7 +64,7 @@ end
         end
     end
 
-    @testset "Tensor product elements: $elem_type" for elem_type in [Quad(), Hex()] 
+    @testset "Tensor product elements: $elem_type" for elem_type in [Quad(), Hex()]
         N = 2
         rd = RefElemData(elem_type, SBP(), N)
         Qrst, E = sparse_low_order_SBP_operators(rd)

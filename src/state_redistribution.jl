@@ -10,12 +10,18 @@ _propertyname(::CellIndex{Cut}) = :cut
 _propertyname(::CellIndex{Cartesian}) = :cartesian
 
 getcolumns(x, i::CellIndex) = view(getproperty(x, _propertyname(i)), :, i.index)
-getcolumns(x, indices::AbstractVector{<:CellIndex}) = (getcolumns(x, i.index) for i in indices)
+function getcolumns(x, indices::AbstractVector{<:CellIndex})
+    (getcolumns(x, i.index) for i in indices)
+end
 
-vcat_columns(x, list::AbstractVector{<:CellIndex}) = vcat((vec(getcolumns(x, i)) for i in list)...)
+function vcat_columns(x, list::AbstractVector{<:CellIndex})
+    vcat((vec(getcolumns(x, i)) for i in list)...)
+end
 
 get_face_nodes(x, i::CellIndex{Cartesian}, args...) = view(x.cartesian, :, i.index)
-get_face_nodes(x, i::CellIndex{Cut}, md::MeshData) = view(x.cut, md.mesh_type.cut_face_nodes[i.index])
+function get_face_nodes(x, i::CellIndex{Cut}, md::MeshData)
+    view(x.cut, md.mesh_type.cut_face_nodes[i.index])
+end
 
 # ================== neighborhood computation code ================
 struct VolumeScore end
@@ -48,41 +54,40 @@ function create_cell_index(e, flag)
     end
 end
 
-function get_cartesian_nbhrs(e::CellIndex{T}, md) where T
+function get_cartesian_nbhrs(e::CellIndex{T}, md) where {T}
     if T == Cut
-        ex, ey = md.mesh_type.cut_cell_data.linear_to_cartesian_element_indices.cut[e.index];
+        ex, ey = md.mesh_type.cut_cell_data.linear_to_cartesian_element_indices.cut[e.index]
     elseif T == Cartesian
-        ex, ey = md.mesh_type.cut_cell_data.linear_to_cartesian_element_indices.cartesian[e.index];
+        ex, ey = md.mesh_type.cut_cell_data.linear_to_cartesian_element_indices.cartesian[e.index]
     end
     neighbors = CellIndex[]
 
-    if is_inside_domain(ex+1, ey, md.mesh_type.cut_cell_data.region_flags)
-        e_nbhr = md.mesh_type.cut_cell_data.cartesian_to_linear_element_indices[ex+1,ey]
-        flag = md.mesh_type.cut_cell_data.region_flags[ex+1, ey]
+    if is_inside_domain(ex + 1, ey, md.mesh_type.cut_cell_data.region_flags)
+        e_nbhr = md.mesh_type.cut_cell_data.cartesian_to_linear_element_indices[ex + 1, ey]
+        flag = md.mesh_type.cut_cell_data.region_flags[ex + 1, ey]
         push!(neighbors, create_cell_index(e_nbhr, flag))
     end
-    if is_inside_domain(ex-1, ey, md.mesh_type.cut_cell_data.region_flags)
-        e_nbhr = md.mesh_type.cut_cell_data.cartesian_to_linear_element_indices[ex-1,ey]
-        flag = md.mesh_type.cut_cell_data.region_flags[ex-1, ey]
+    if is_inside_domain(ex - 1, ey, md.mesh_type.cut_cell_data.region_flags)
+        e_nbhr = md.mesh_type.cut_cell_data.cartesian_to_linear_element_indices[ex - 1, ey]
+        flag = md.mesh_type.cut_cell_data.region_flags[ex - 1, ey]
         push!(neighbors, create_cell_index(e_nbhr, flag))
     end
-    if is_inside_domain(ex, ey+1, md.mesh_type.cut_cell_data.region_flags)
-        e_nbhr = md.mesh_type.cut_cell_data.cartesian_to_linear_element_indices[ex,ey+1]
-        flag = md.mesh_type.cut_cell_data.region_flags[ex, ey+1]
+    if is_inside_domain(ex, ey + 1, md.mesh_type.cut_cell_data.region_flags)
+        e_nbhr = md.mesh_type.cut_cell_data.cartesian_to_linear_element_indices[ex, ey + 1]
+        flag = md.mesh_type.cut_cell_data.region_flags[ex, ey + 1]
         push!(neighbors, create_cell_index(e_nbhr, flag))
     end
-    if is_inside_domain(ex, ey-1, md.mesh_type.cut_cell_data.region_flags)
-        e_nbhr = md.mesh_type.cut_cell_data.cartesian_to_linear_element_indices[ex,ey-1]
-        flag = md.mesh_type.cut_cell_data.region_flags[ex, ey-1]
+    if is_inside_domain(ex, ey - 1, md.mesh_type.cut_cell_data.region_flags)
+        e_nbhr = md.mesh_type.cut_cell_data.cartesian_to_linear_element_indices[ex, ey - 1]
+        flag = md.mesh_type.cut_cell_data.region_flags[ex, ey - 1]
         push!(neighbors, create_cell_index(e_nbhr, flag))
     end
 
     return neighbors
 end
 
-
-function compute_neighbor_list(md; threshold_score=-Inf, score_type=VolumeScore(), score_params=md)
-
+function compute_neighbor_list(md; threshold_score = -Inf, score_type = VolumeScore(),
+                               score_params = md)
     if threshold_score == -Inf
         threshold_score = default_threshold_score(score_type, score_params)
     end
@@ -94,13 +99,15 @@ function compute_neighbor_list(md; threshold_score=-Inf, score_type=VolumeScore(
 
         # Find the neighbors of the initial cut cell
         neighbors = get_cartesian_nbhrs(CellIndex{Cut}(e), md)
-        
+
         while length(neighbors) > 0 && merged_score < threshold_score
             best_nbhr = neighbors[1]
-            best_score = compute_nbhd_score(score_type, vcat(merge_nbhds[e], neighbors[1]), score_params)
-            
+            best_score = compute_nbhd_score(score_type, vcat(merge_nbhds[e], neighbors[1]),
+                                            score_params)
+
             for e_nbhr in neighbors[2:end]
-                new_score = compute_nbhd_score(score_type, vcat(merge_nbhds[e], e_nbhr), score_params)
+                new_score = compute_nbhd_score(score_type, vcat(merge_nbhds[e], e_nbhr),
+                                               score_params)
                 if new_score >= best_score
                     best_score = new_score
                     best_nbhr = e_nbhr
@@ -112,7 +119,7 @@ function compute_neighbor_list(md; threshold_score=-Inf, score_type=VolumeScore(
             merged_score = best_score
 
             # Remove the just-merged element from the list of neighbors
-            filter!((e)-> e != best_nbhr, neighbors)
+            filter!((e) -> e != best_nbhr, neighbors)
 
             # Add the just-merged cell's neighbors to the list of neighbors
             new_neighbors = get_cartesian_nbhrs(best_nbhr, md)
@@ -122,7 +129,6 @@ function compute_neighbor_list(md; threshold_score=-Inf, score_type=VolumeScore(
                 end
             end
             unique!(neighbors)
-
         end # while score is not good enough
     end # for each cut cell
 
@@ -149,15 +155,16 @@ Constructs a state redistribution instance `srd`, which can be applied to a DG s
 Note that, by default, the constructor assumes that the solution `u` has eltype `Float64`; if 
 this is not the case, then `solution_eltype` should be specified in the constructor.
 """
-function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCellMesh}; solution_eltype=Float64)
+function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCellMesh};
+                             solution_eltype = Float64)
     (; physical_frame_elements) = md.mesh_type
 
-    neighbor_list = compute_neighbor_list(md)    
+    neighbor_list = compute_neighbor_list(md)
 
     # indexing by elements is a little tricky. for consistency, we store overlap counts
     # separately for cut and cartesian cells. 
-    overlap_counts = NamedArrayPartition(cartesian=ones(Int, num_cartesian_elements(md)), 
-                                         cut=zeros(Int, num_cut_elements(md)))
+    overlap_counts = NamedArrayPartition(cartesian = ones(Int, num_cartesian_elements(md)),
+                                         cut = zeros(Int, num_cut_elements(md)))
     for neighbors in neighbor_list
         for e in neighbors
             # equivalent to `overlap_counts.cut[e] +=1` (similarly for `cartesian`)
@@ -167,8 +174,9 @@ function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCell
 
     # cartesian first, then cut     
     cut_indices = (1:length(md.x.cut)) .+ length(md.x.cartesian)
-    indices = NamedArrayPartition(cartesian=reshape(1:length(md.x.cartesian), size(md.x.cartesian)),
-                                  cut=reshape(cut_indices, size(md.x.cut)))
+    indices = NamedArrayPartition(cartesian = reshape(1:length(md.x.cartesian),
+                                                      size(md.x.cartesian)),
+                                  cut = reshape(cut_indices, size(md.x.cut)))
 
     # scale weights by overlap counts
     wJq = copy(md.wJq)
@@ -180,24 +188,24 @@ function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCell
     projection_indices_by_element = Vector{Vector{eltype(indices)}}[]
     projection_indices = Vector{eltype(indices)}[]
     for neighbors in neighbor_list
-
         xf = vcat((get_face_nodes(md.xf, e, md) for e in neighbors)...)
         yf = vcat((get_face_nodes(md.yf, e, md) for e in neighbors)...)
         merged_elem = PhysicalFrame(xf, yf)
 
         # "merged" Vandermonde matrix
         wq = vcat_columns(wJq, neighbors)
-        Vq = vandermonde(merged_elem, rd.N, vcat_columns(md.xq, neighbors), vcat_columns(md.yq, neighbors))
+        Vq = vandermonde(merged_elem, rd.N, vcat_columns(md.xq, neighbors),
+                         vcat_columns(md.yq, neighbors))
         M = Vq' * Diagonal(wq) * Vq
 
         # individual cell Vandermonde matrices
         Vq_list = typeof(Vq)[]
         for e in neighbors
             if _propertyname(e) == :cut
-                VDM = vandermonde(physical_frame_elements[e.index], rd.N, 
-                                view(md.x.cut, :, e.index), view(md.y.cut, :, e.index))
-                Vq_e = vandermonde(physical_frame_elements[e.index], rd.N, 
-                                view(md.xq.cut, :, e.index), view(md.yq.cut, :, e.index))                                  
+                VDM = vandermonde(physical_frame_elements[e.index], rd.N,
+                                  view(md.x.cut, :, e.index), view(md.y.cut, :, e.index))
+                Vq_e = vandermonde(physical_frame_elements[e.index], rd.N,
+                                   view(md.xq.cut, :, e.index), view(md.yq.cut, :, e.index))
                 push!(Vq_list, Vq_e / VDM)
             else # vandermonde matrix for a nodal basis
                 Vq_cartesian = vandermonde(rd.element_type, rd.N, rd.rstq...)
@@ -208,20 +216,20 @@ function StateRedistribution(rd::RefElemData{2, Quad}, md::MeshData{2, <:CutCell
         # blockdiag is only defined for sparse matrices
         B = Vq' * Diagonal(wq) * blockdiag(sparse.(Vq_list)...)
 
-        eval_at_nodal_points = 
-            vandermonde(merged_elem, rd.N, vcat_columns(md.x, neighbors), vcat_columns(md.y, neighbors))
+        eval_at_nodal_points = vandermonde(merged_elem, rd.N, vcat_columns(md.x, neighbors),
+                                           vcat_columns(md.y, neighbors))
         projection_operator = eval_at_nodal_points * (M \ B)
 
-        push!(projection_operators, projection_operator)        
+        push!(projection_operators, projection_operator)
         push!(projection_indices_by_element, [getcolumns(indices, e) for e in neighbors])
         push!(projection_indices, vcat_columns(indices, neighbors))
-    end 
+    end
 
     # temporary storage for state redistribution - stores output of projection operators
-    u_tmp = [zeros(solution_eltype, size(projection_operators[e], 2)) 
-        for e in eachindex(projection_operators)]
+    u_tmp = [zeros(solution_eltype, size(projection_operators[e], 2))
+             for e in eachindex(projection_operators)]
 
-    return StateRedistribution(projection_operators, projection_indices, 
+    return StateRedistribution(projection_operators, projection_indices,
                                projection_indices_by_element, overlap_counts, u_tmp)
 end
 
@@ -235,7 +243,7 @@ function apply!(u, srd::StateRedistribution)
     # cell merging
     for i in eachindex(projection_indices, projection_operators)
         mul!(u_tmp[i], projection_operators[i], view(u, projection_indices[i]))
-    end    
+    end
 
     # zero out cut cell solutions (these will be overwritten by projections)
     fill!(u.cut, zero(eltype(u)))
@@ -245,7 +253,7 @@ function apply!(u, srd::StateRedistribution)
         offset = zero(eltype(first(projection_indices)))
         for (id, element_indices) in enumerate(projection_indices_by_element[i])
             local_ids = (1:length(projection_indices_by_element[i][id])) .+ offset
-            view(u, element_indices) .+= u_tmp[i][local_ids] 
+            view(u, element_indices) .+= u_tmp[i][local_ids]
             offset += length(projection_indices_by_element[i][id])
         end
     end
