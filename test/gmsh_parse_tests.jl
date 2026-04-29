@@ -2,6 +2,8 @@
 # malpasset.msh was previously a 2.2 file. Exported version
 # of 4.1 has been added for testing
 
+using StaticArrays: SVector
+
 @testset "Gmsh" begin
     @testset "Gmsh reading" begin
         VXY, EToV = read_Gmsh_2D(joinpath(@__DIR__, "testset_Gmsh_meshes", "squareCylinder2D.msh"))
@@ -144,4 +146,30 @@
             end
         end
     end
+
+    @testset "Gmsh 3D tet mesh (v2.2)" begin
+        path = joinpath(@__DIR__, "testset_Gmsh_meshes", "cube1.msh")
+        (VX, VY, VZ), EToV = read_Gmsh_3D(path)
+        @test length(VX) == 14
+        @test size(EToV) == (24, 4)
+        @test extrema(VX) == (-0.5, 0.5)
+        @test extrema(VY) == (-0.5, 0.5)
+        @test extrema(VZ) == (-0.5, 0.5)
+        for e in axes(EToV, 1)
+            v_ids = @view EToV[e, :]
+            A, B, C, D = (SVector(VX[v_ids[i]], VY[v_ids[i]], VZ[v_ids[i]]) for i in 1:4)
+            tet = SVector{4}(A, B, C, D)
+            v = StartUpDG.compute_tet_signed_volume(tet)
+            @test v > 0
+            # check that the signed volume is the same after permuting the vertices.
+            # compute_tet_signed_volume should permute the vertices to correct the 
+            # sign of the volume if it's negative.
+            v_permute = StartUpDG.compute_tet_signed_volume(tet[[4, 1, 3, 2]])
+            @test v_permute ≈ v
+        end
+        rd = RefElemData(Tet(), 1)
+        md = MeshData(VX, VY, VZ, EToV, rd)
+        @test all(md.J .> 0)
+    end
+
 end
