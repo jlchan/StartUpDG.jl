@@ -178,11 +178,11 @@ vertex locations and element-to-vertex connectivities. For example, these includ
 affine triangular meshes or bilinear quadrilateral or trilinear hexahedral meshes.
 
 # Fields
-element_type :: TE <: AbstractElemShape \\
+element_type :: TE <: AbstractElementShape \\
 VXYZ :: TV \\
 EToV :: TEV
 """
-struct VertexMappedMesh{TE <: AbstractElemShape, TV, TEV}
+struct VertexMappedMesh{TE <: AbstractElementShape, TV, TEV}
     element_type::TE
     VXYZ::TV
     EToV::TEV

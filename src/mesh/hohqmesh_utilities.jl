@@ -354,7 +354,7 @@ function _read_HOHQMesh(lines, mesh_format)
 end
 
 # reads a curved triangular .mesh file (not a public HOHQMesh utility yet)
-function read_HOHQMesh(filename::String, element_type::Union{Tri, Tet})
+function read_HOHQMesh(filename::String, element_type::AbstractSimplexElement)
     f = open(filename)
     lines = readlines(f)
 
