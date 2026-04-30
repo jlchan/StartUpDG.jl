@@ -1,6 +1,6 @@
 
 @testset "Nonconforming MeshData" begin
-    rd = RefElemData(Quad(), N=3)
+    rd = RefElemData(Quad(), N = 3)
     md = MeshData(NonConformingQuadMeshExample(), rd)
 
     (; x, y) = md
@@ -12,9 +12,9 @@
 
     # interpolate faces to mortars (`uf` denotes mortar faces for `NonConformingMesh` types)
     (; nonconforming_faces, mortar_interpolation_matrix) = md.mesh_type
-    u_mortar = reshape(mortar_interpolation_matrix * uf[:, nonconforming_faces], :, 
+    u_mortar = reshape(mortar_interpolation_matrix * uf[:, nonconforming_faces], :,
                        num_mortars_per_face(rd) * length(nonconforming_faces))
-    
+
     # construct interior (uM = u⁻ "minus") values and exterior (uP = u⁺ "plus") values
     uM = hcat(uf, u_mortar)
     uP = uM[md.mapP]

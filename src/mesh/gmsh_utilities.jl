@@ -31,7 +31,7 @@ end
  ## Notes: Gmsh includes elements in a .msh file of multiple dimensions. We want a count of how many
  2D elements are in our file. This corisponds to the number of elements in our tri mesh.
 """
-function get_num_elements(lines::Vector{String}, Dim=2)
+function get_num_elements(lines::Vector{String}, Dim = 2)
     elem_start = findline("\$Elements", lines) + 1
     temp_num_blocks = split(lines[elem_start])[1]
     num_blocks = parse(Int, temp_num_blocks)
@@ -59,7 +59,7 @@ remap_element_grouping([16,16,17,17]) -> [1,1,2,2]
 function remap_element_grouping(eg::Vector{Int})
     groupids = unique(eg)
     newids = 1:length(groupids)
-    map = Dict{Int,Int}()
+    map = Dict{Int, Int}()
     for (i, id) in enumerate(groupids)
         map[id] = newids[i]
     end
@@ -141,11 +141,11 @@ function read_Gmsh_2D_v4(filename::String, options::MeshImportOptions)
 
         surface_start_line = entities_start_line + numPoints + numCurves
         @info "Expecting Surface data to start on line $surface_start_line of .msh file"
-        surfaceData = Dict{Int,Int}()
+        surfaceData = Dict{Int, Int}()
         for i in 1:numSurfaces
-            surfaceInfo = split(lines[i+surface_start_line])
+            surfaceInfo = split(lines[i + surface_start_line])
             surfTag, numPhysTag, PhysTag = [parse(Int, c) for c in surfaceInfo[[1, 8, 9]]]
-            @assert numPhysTag == 1 "Surfaces must have one physical tag associated you have $numPhysTag"
+            @assert numPhysTag==1 "Surfaces must have one physical tag associated you have $numPhysTag"
             surfaceData[surfTag] = PhysTag
         end
         @info "Tag grouping: $surfaceData"
@@ -194,7 +194,7 @@ function read_Gmsh_2D_v4(filename::String, options::MeshImportOptions)
         if elem_block_dim == 2 # only interesed in 2d triangle elements
             for e_idx in 1:num_elem_in_block
                 elem_global_idx = elem_global_idx + 1
-                vals = [parse(Int, c) for c in split(lines[e_idx+block_line_start])]
+                vals = [parse(Int, c) for c in split(lines[e_idx + block_line_start])]
                 _, nodeA, nodeB, nodeC = vals
                 EToV[elem_global_idx, :] .= [nodeA, nodeB, nodeC]
                 if grouping
@@ -266,7 +266,8 @@ For brevity when grouping is the only supported feature.
     example: VXY, EToV, grouping = read_Gmsh_2D_v4("file.msh",true)
     example: VXY, EToV = read_Gmsh_2D_v4("file.msh",false)
 """
-function read_Gmsh_2D_v4(filename::String, groupOpt::Bool=false, remap_group_name::Bool=false)
+function read_Gmsh_2D_v4(filename::String, groupOpt::Bool = false,
+                         remap_group_name::Bool = false)
     options = MeshImportOptions(groupOpt, remap_group_name)
     return read_Gmsh_2D_v4(filename, options)
 end
@@ -294,8 +295,8 @@ function read_Gmsh_2D_v2(filename::String)
     node_start = findline("\$Nodes", lines) + 1
     Nv = parse(Int64, lines[node_start])
     VX, VY, VZ = ntuple(x -> zeros(Float64, Nv), 3)
-    for i = 1:Nv
-        vals = [parse(Float64, c) for c in split(lines[i+node_start])]
+    for i in 1:Nv
+        vals = [parse(Float64, c) for c in split(lines[i + node_start])]
         # first entry =
         VX[i] = vals[2]
         VY[i] = vals[3]
@@ -304,16 +305,16 @@ function read_Gmsh_2D_v2(filename::String)
     elem_start = findline("\$Elements", lines) + 1
     K_all = parse(Int64, lines[elem_start])
     K = 0
-    for e = 1:K_all
-        if length(split(lines[e+elem_start])) == 8
+    for e in 1:K_all
+        if length(split(lines[e + elem_start])) == 8
             K = K + 1
         end
     end
     EToV = zeros(Int64, K, 3)
     sk = 1
-    for e = 1:K_all
-        if length(split(lines[e+elem_start])) == 8
-            vals = [parse(Int64, c) for c in split(lines[e+elem_start])]
+    for e in 1:K_all
+        if length(split(lines[e + elem_start])) == 8
+            vals = [parse(Int64, c) for c in split(lines[e + elem_start])]
             EToV[sk, :] .= vals[6:8]
             sk = sk + 1
         end
@@ -322,6 +323,102 @@ function read_Gmsh_2D_v2(filename::String)
     EToV = correct_negative_Jacobians!((VX, VY), EToV)
 
     return (VX, VY), EToV
+end
+
+"""
+    read_Gmsh_3D(filename)
+
+Read a tetrahedral mesh from a Gmsh file. Currently **Gmsh format 2.2** is supported.
+Returns `(VX, VY, VZ), EToV` where `EToV` is `K × 4` (Gmsh type-4 elements only).
+
+Gmsh 4.1 3D files are not implemented yet.
+
+# Examples
+```julia
+VXYZ, EToV = read_Gmsh_3D(\"test/testset_Gmsh_meshes/cube1.msh\")
+```
+"""
+function read_Gmsh_3D(filename::String)
+    if !isfile(filename)
+        throw(ArgumentError("file $filename does not exist"))
+    end
+    lines = readlines(filename)
+    format_line = findline("\$MeshFormat", lines) + 1
+    version, _ = split(lines[format_line])
+    gmsh_version = parse(Float64, version)
+    if gmsh_version == 2.2
+        @info "reading 3D Gmsh file with format $gmsh_version"
+        return read_Gmsh_3D_v2(filename)
+    elseif gmsh_version == 4.1
+        throw(ArgumentError("Gmsh 4.1 3D meshes are not supported by read_Gmsh_3D yet; export as v2.2 or extend read_Gmsh_3D_v4"))
+    else
+        throw(ArgumentError("Gmsh file version $gmsh_version is not supported for read_Gmsh_3D"))
+    end
+end
+
+"""
+    read_Gmsh_3D_v2(filename)
+
+Read tetrahedra (Gmsh element type 4) from a Gmsh **2.2** `.msh` file.
+Returns `(VX, VY, VZ), EToV` with `EToV` of size `(K, 4)`.
+
+Surface triangles and other element types in the file are skipped.
+
+https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_0029
+"""
+function read_Gmsh_3D_v2(filename::String)
+    if !isfile(filename)
+        throw(ArgumentError("file $filename does not exist"))
+    end
+    lines = readlines(filename)
+
+    format_line = findline("\$MeshFormat", lines) + 1
+    version, _, _ = split(lines[format_line])
+    gmsh_version = parse(Float64, version)
+    @assert gmsh_version == 2.2
+
+    node_start = findline("\$Nodes", lines) + 1
+    Nv = parse(Int64, lines[node_start])
+    VX, VY, VZ = ntuple(_ -> zeros(Float64, Nv), 3)
+    for i in 1:Nv
+        vals = [parse(Float64, c) for c in split(lines[i + node_start])]
+        VX[i] = vals[2]
+        VY[i] = vals[3]
+        VZ[i] = vals[4]
+    end
+
+    elem_start = findline("\$Elements", lines) + 1
+    K_all = parse(Int64, lines[elem_start])
+    K = 0
+    for e in 1:K_all
+        parts = split(lines[e + elem_start])
+        length(parts) < 2 && continue
+        typ = parse(Int, parts[2])
+        if typ == 4
+            K += 1
+        end
+    end
+
+    EToV = zeros(Int64, K, 4)
+    sk = 1
+    for e in 1:K_all
+        parts = split(lines[e + elem_start])
+        length(parts) < 2 && continue
+        typ = parse(Int, parts[2])
+        if typ == 4
+            ntags = parse(Int, parts[3])
+            first_node = 4 + ntags
+            @assert length(parts)>=first_node + 3 "invalid tetrahedron line: $(lines[e+elem_start])"
+            for j in 1:4
+                EToV[sk, j] = parse(Int, parts[first_node + j - 1])
+            end
+            sk += 1
+        end
+    end
+
+    EToV = correct_negative_tet_jacobians!((VX, VY, VZ), EToV)
+
+    return (VX, VY, VZ), EToV
 end
 
 #     compute_triangle_area(tri)
@@ -344,6 +441,39 @@ function correct_negative_Jacobians!((VX, VY), EToV)
         # so the area is positive
         if area < 0
             view(EToV, e, :) .= (v_ids[2], v_ids[1], v_ids[3])
+        end
+    end
+    return EToV
+end
+
+#     compute_tet_signed_volume(tet)
+#
+# Signed volume V = (1/6) (B-A) · ((C-A) × (D-A)) for a tetrahedron given `tet`, an
+# `SVector{4}` whose entries are vertices `A, B, C, D` as `SVector{3}`.
+function compute_tet_signed_volume(tet)
+    A, B, C, D = tet
+    b = B - A
+    c = C - A
+    d = D - A
+    return (b[1] * (c[2] * d[3] - c[3] * d[2]) +
+            b[2] * (c[3] * d[1] - c[1] * d[3]) +
+            b[3] * (c[1] * d[2] - c[2] * d[1])) / 6
+end
+
+function correct_negative_tet_jacobians!((VX, VY, VZ), EToV)
+    for e in 1:size(EToV, 1)
+        v_ids = view(EToV, e, :)
+        A, B, C, D = (SVector(VX[v_ids[i]], VY[v_ids[i]], VZ[v_ids[i]]) for i in 1:4)
+        tet = SVector{4}(A, B, C, D)
+        vol = compute_tet_signed_volume(tet)
+        if vol < 0
+            view(EToV, e, :) .= (v_ids[4], v_ids[1], v_ids[2], v_ids[3])
+            A, B, C, D = (SVector(VX[v_ids[i]], VY[v_ids[i]], VZ[v_ids[i]]) for i in 1:4)
+            tet = SVector{4}(A, B, C, D)
+            vol2 = compute_tet_signed_volume(tet)
+            if vol2 < 0
+                error("After applying a cyclic permutation of the tetrahedron vertices to fix orientation, signed volume is still negative.")
+            end
         end
     end
     return EToV

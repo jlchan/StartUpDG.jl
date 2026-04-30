@@ -8,14 +8,15 @@ using FillArrays: Fill
 using HDF5: h5open # used to read in SBP triangular node data
 using Kronecker: kronecker # for Hex element matrix manipulations
 using LinearAlgebra:
-    cond, diagm, eigvals, Diagonal, UniformScaling, I, mul!, norm, qr, ColumnNorm, Symmetric, nullspace, pinv
+                     cond, diagm, eigvals, Diagonal, UniformScaling, I, mul!, norm, qr,
+                     ColumnNorm, Symmetric, nullspace, pinv
 using NodesAndModes: meshgrid, find_face_nodes, face_vertices
 @reexport using NodesAndModes # for basis functions
 using PathIntersections: PathIntersections
 @reexport using PathIntersections: PresetGeometries
 using Printf: @sprintf
 using RecipesBase: RecipesBase
-@reexport using RecursiveArrayTools: NamedArrayPartition 
+@reexport using RecursiveArrayTools: NamedArrayPartition
 using StaticArrays: SVector, SMatrix
 using Setfield: setproperties, @set # for "modifying" structs (setproperties)
 using SparseArrays: sparse, droptol!, blockdiag, nnz
@@ -66,10 +67,10 @@ export num_faces, num_vertices, HybridMeshExample
 include("physical_frame_basis.jl")
 include("cut_cell_meshes.jl")
 export PhysicalFrame, equi_nodes
-export Subtriangulation 
+export Subtriangulation
 
 # ! this will be deprecated in a future release
-include("cut_cell_moment_fitting.jl") 
+include("cut_cell_moment_fitting.jl")
 export MomentFitting
 
 include("state_redistribution.jl")
@@ -85,6 +86,7 @@ include("mesh/gmsh_utilities.jl")
 export read_Gmsh_2D # unifies v2.2.8 and v4.1 mesh reading
 export readGmsh2D, readGmsh2D_v4 # TODO: deprecate
 export read_Gmsh_2D_v2, read_Gmsh_2D_v4
+export read_Gmsh_3D, read_Gmsh_3D_v2
 export MeshImportOptions
 include("mesh/hohqmesh_utilities.jl")
 export read_HOHQMesh

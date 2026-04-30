@@ -16,7 +16,7 @@ setPolynomialOrder!(cylinder_flow, 3)
 # set the background grid
 x0 = [-2.0, -2.0, 0.0] # bottom left corner
 dx = [1.0, 1.0, 0.0] # the size of elements in the x and y directions respectively
-N  = [4, 4, 0] # number of element in x and then y
+N = [4, 4, 0] # number of element in x and then y
 
 addBackgroundGrid!(cylinder_flow, x0, dx, N)
 
