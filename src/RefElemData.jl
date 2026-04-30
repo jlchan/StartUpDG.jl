@@ -10,11 +10,10 @@ N = 3
 rd = RefElemData(Tri(), N)
 (; r, s ) = rd
 ```
-""" 
-struct RefElemData{Dim, ElemShape <: AbstractElemShape{Dim}, ApproximationType, 
-                   NT, FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM, 
-                   VQ, VF, MM, P, D, L, VP, V1Type, WQ, WF, NP} 
-
+"""
+struct RefElemData{Dim, ElemShape <: AbstractElemShape{Dim}, ApproximationType,
+                   NT, FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM,
+                   VQ, VF, MM, P, D, L, VP, V1Type, WQ, WF, NP}
     element_type::ElemShape
     approximation_type::ApproximationType # Polynomial / SBP{...}
 
@@ -51,18 +50,21 @@ end
 
 # need this to use @set outside of StartUpDG
 function ConstructionBase.setproperties(rd::RefElemData, patch::NamedTuple)
-    fields = (haskey(patch, symbol) ? getproperty(patch, symbol) : getproperty(rd, symbol) for symbol in fieldnames(typeof(rd)))         
+    fields = (haskey(patch, symbol) ? getproperty(patch, symbol) : getproperty(rd, symbol) for symbol in fieldnames(typeof(rd)))
     return RefElemData(fields...)
 end
 
-ConstructionBase.getproperties(rd::RefElemData) = 
-    (; element_type=rd.element_type, approximation_type=rd.approximation_type, N=rd.N, fv=rd.fv, V1=rd.V1, 
-       rst=rd.rst, VDM=rd.VDM, Fmask=rd.Fmask, rstp=rd.rstp, Vp=rd.Vp, 
-       rstq=rd.rstq, wq=rd.wq, Vq=rd.Vq, rstf=rd.rstf, wf=rd.wf, Vf=rd.Vf, nrstJ=rd.nrstJ, 
-       M=rd.M, Pq=rd.Pq, Drst=rd.Drst, LIFT=rd.LIFT)
+function ConstructionBase.getproperties(rd::RefElemData)
+    (; element_type = rd.element_type, approximation_type = rd.approximation_type, N = rd.N,
+     fv = rd.fv, V1 = rd.V1,
+     rst = rd.rst, VDM = rd.VDM, Fmask = rd.Fmask, rstp = rd.rstp, Vp = rd.Vp,
+     rstq = rd.rstq, wq = rd.wq, Vq = rd.Vq, rstf = rd.rstf, wf = rd.wf, Vf = rd.Vf,
+     nrstJ = rd.nrstJ,
+     M = rd.M, Pq = rd.Pq, Drst = rd.Drst, LIFT = rd.LIFT)
+end
 
 _propertynames(::Type{RefElemData}, private::Bool = false) = (:num_faces, :Np, :Nq, :Nfq)
-function Base.propertynames(x::RefElemData{1}, private::Bool=false) 
+function Base.propertynames(x::RefElemData{1}, private::Bool = false)
     return (fieldnames(RefElemData)..., _propertynames(RefElemData)...,
             :r, :rq, :rf, :rp, :nrJ, :Dr)
 end
@@ -72,61 +74,61 @@ function Base.propertynames(x::RefElemData{2}, private::Bool = false)
 end
 function Base.propertynames(x::RefElemData{3}, private::Bool = false)
     return (fieldnames(RefElemData)..., _propertynames(RefElemData)...,
-            :r, :s, :t, :rq, :sq, :tq, :rf, :sf, :tf, 
+            :r, :s, :t, :rq, :sq, :tq, :rf, :sf, :tf,
             :rp, :sp, :tp, :nrJ, :nsJ, :ntJ, :Dr, :Ds, :Dt)
 end
 
 # convenience unpacking routines
-function Base.getproperty(x::RefElemData, s::Symbol) 
-    if s==:r
+function Base.getproperty(x::RefElemData, s::Symbol)
+    if s == :r
         return getfield(x, :rst)[1]
-    elseif s==:s
+    elseif s == :s
         return getfield(x, :rst)[2]
-    elseif s==:t
+    elseif s == :t
         return getfield(x, :rst)[3]
 
-    elseif s==:rq
+    elseif s == :rq
         return getfield(x, :rstq)[1]
-    elseif s==:sq
+    elseif s == :sq
         return getfield(x, :rstq)[2]
-    elseif s==:tq
+    elseif s == :tq
         return getfield(x, :rstq)[3]
 
-    elseif s==:rf
+    elseif s == :rf
         return getfield(x, :rstf)[1]
-    elseif s==:sf
+    elseif s == :sf
         return getfield(x, :rstf)[2]
-    elseif s==:tf
+    elseif s == :tf
         return getfield(x, :rstf)[3]
 
-    elseif s==:rp
+    elseif s == :rp
         return getfield(x, :rstp)[1]
-    elseif s==:sp
+    elseif s == :sp
         return getfield(x, :rstp)[2]
-    elseif s==:tp
+    elseif s == :tp
         return getfield(x, :rstp)[3]
 
-    elseif s==:nrJ
+    elseif s == :nrJ
         return getfield(x, :nrstJ)[1]
-    elseif s==:nsJ
+    elseif s == :nsJ
         return getfield(x, :nrstJ)[2]
-    elseif s==:ntJ
+    elseif s == :ntJ
         return getfield(x, :nrstJ)[3]
 
-    elseif s==:Dr
+    elseif s == :Dr
         return getfield(x, :Drst)[1]
-    elseif s==:Ds
+    elseif s == :Ds
         return getfield(x, :Drst)[2]
-    elseif s==:Dt
+    elseif s == :Dt
         return getfield(x, :Drst)[3]
-        
-    elseif s==:Nfaces || s==:num_faces
+
+    elseif s == :Nfaces || s == :num_faces
         return num_faces(getfield(x, :element_type))
-    elseif s==:Np
+    elseif s == :Np
         return length(getfield(x, :rst)[1])
-    elseif s==:Nq
+    elseif s == :Nq
         return length(getfield(x, :rstq)[1])
-    elseif s==:Nfq
+    elseif s == :Nfq
         return length(getfield(x, :rstf)[1])
     else
         return getfield(x, s)
@@ -140,12 +142,10 @@ end
 Keyword argument constructor for RefElemData (to "label" `N` via `rd = RefElemData(Line(), N=3)`)
 """
 RefElemData(elem; N, kwargs...) = RefElemData(elem, N; kwargs...)
-RefElemData(elem, approx_type; N, kwargs...) = 
-    RefElemData(elem, approx_type, N; kwargs...)
+RefElemData(elem, approx_type; N, kwargs...) = RefElemData(elem, approx_type, N; kwargs...)
 
 # default to Polynomial-type RefElemData
-RefElemData(elem, N::Int; kwargs...) = 
-    RefElemData(elem, Polynomial(), N; kwargs...)
+RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs...)
 
 @inline Base.ndims(rd::RefElemData) = Base.ndims(rd.element_type)
 @inline Base.ndims(::Line) = 1
@@ -198,9 +198,9 @@ By default, `Polynomial()` constructs a `Polynomial{StartUpDG.DefaultPolynomialT
 Specifying a type parameters allows for dispatch on additional structure within a
 polynomial approximation (e.g., collocation, tensor product quadrature, etc). 
 """
-struct Polynomial{T} 
+struct Polynomial{T}
     data::T
-end 
+end
 
 struct DefaultPolynomialType end
 Polynomial() = Polynomial{DefaultPolynomialType}(DefaultPolynomialType())
@@ -246,7 +246,7 @@ Polynomial{TensorProductQuadrature}(args) = Polynomial(TensorProductQuadrature(a
 Polynomial{TensorProductGaussCollocation} type indicates a tensor product 
 # (N+1)-point Gauss quadrature on tensor product elements. 
 """
-struct TensorProductGaussCollocation end 
+struct TensorProductGaussCollocation end
 const Gauss = TensorProductGaussCollocation
 
 # ========= SBP approximation types ============
@@ -257,7 +257,7 @@ struct DefaultSBPType end
 struct TensorProductLobatto end
 
 # triangle node types
-struct Hicken end 
+struct Hicken end
 struct Kubatko{FaceNodeType} end
 
 # face node types for Kubatko nodes
@@ -273,17 +273,20 @@ Specifying a type parameters allows for dispatch on additional structure within 
 polynomial approximation (e.g., collocation, tensor product quadrature, etc). 
 """
 # SBP approximation type: the more common diagonal E and diagonal-norm SBP operators on tri/quads.
-struct SBP{Type} end 
+struct SBP{Type} end
 
 SBP() = SBP{DefaultSBPType}() # no-parameter default
 
 # sets default to TensorProductLobatto on Quads 
-RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N; kwargs...) = 
+function RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N;
+                     kwargs...)
     RefElemData(elem, SBP{TensorProductLobatto}(), N; kwargs...)
+end
 
 # sets default to Kubatko{LobattoFaceNodes} on Tris
-RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N; kwargs...) = 
+function RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N; kwargs...)
     RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N; kwargs...)
+end
 
 # ====================================
 #              Printing 
@@ -291,13 +294,15 @@ RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N; kwargs...) =
 
 function Base.show(io::IO, ::MIME"text/plain", rd::RefElemData)
     @nospecialize rd
-    print(io,"RefElemData for a degree $(rd.N) $(_short_typeof(rd.approximation_type)) " * 
-             "approximation on a $(_short_typeof(rd.element_type)) element.")
+    print(io,
+          "RefElemData for a degree $(rd.N) $(_short_typeof(rd.approximation_type)) " *
+          "approximation on a $(_short_typeof(rd.element_type)) element.")
 end
 
 function Base.show(io::IO, rd::RefElemData)
     @nospecialize basis # reduce precompilation time
-    print(io,"RefElemData{N=$(rd.N), $(_short_typeof(rd.approximation_type)), $(_short_typeof(rd.element_type))}.")
+    print(io,
+          "RefElemData{N=$(rd.N), $(_short_typeof(rd.approximation_type)), $(_short_typeof(rd.element_type))}.")
 end
 
 _short_typeof(x) = typeof(x)
@@ -307,5 +312,9 @@ _short_typeof(approx_type::Pyr) = "Pyr"
 
 # _short_typeof(approx_type::Polynomial{<:DefaultPolynomialType}) = "Polynomial"
 _short_typeof(approx_type::Polynomial{<:MultidimensionalQuadrature}) = "Polynomial"
-_short_typeof(approx_type::Polynomial{<:TensorProductGaussCollocation}) = "Polynomial{Gauss}"
-_short_typeof(approx_type::Polynomial{<:TensorProductQuadrature}) = "Polynomial{TensorProductQuadrature}"
+function _short_typeof(approx_type::Polynomial{<:TensorProductGaussCollocation})
+    "Polynomial{Gauss}"
+end
+function _short_typeof(approx_type::Polynomial{<:TensorProductQuadrature})
+    "Polynomial{TensorProductQuadrature}"
+end
