@@ -4,6 +4,35 @@
 
 using StaticArrays: SVector
 
+# Weak DG x-derivative (volume + central LIFT flux), used by mesh regression tests.
+function calc_dg_derivative(u, rd::RefElemData{2}, md::MeshData{2})
+    (; Vf, LIFT, Dr, Ds) = rd
+    (; rxJ, sxJ, J, mapP, nxJ) = md
+
+    dudr, duds = (D -> D * u).((Dr, Ds))
+    dudxJ = @. (rxJ * dudr + sxJ * duds)
+
+    uM = Vf * u
+    uP = uM[mapP]
+    dudxJ += LIFT * (@. (0.5 * (uP - uM) .* nxJ))
+
+    return dudxJ ./ J
+end
+
+function calc_dg_derivative(u, rd::RefElemData{3}, md::MeshData{3})
+    (; Vf, LIFT, Dr, Ds, Dt) = rd
+    (; rxJ, sxJ, txJ, J, mapP, nxJ) = md
+
+    dudr, duds, dudt = (D -> D * u).((Dr, Ds, Dt))
+    dudxJ = @. (rxJ * dudr + sxJ * duds + txJ * dudt)
+
+    uM = Vf * u
+    uP = uM[mapP]
+    dudxJ += LIFT * (@. (0.5 * (uP - uM) .* nxJ))
+
+    return dudxJ ./ J
+end
+
 @testset "Gmsh" begin
     @testset "Gmsh reading" begin
         VXY, EToV = read_Gmsh_2D(joinpath(@__DIR__, "testset_Gmsh_meshes",
@@ -181,4 +210,33 @@ using StaticArrays: SVector
         @test all(md.J .> 0)
     end
 
+    # Polynomial() only: unstructured Gmsh meshes are exercised here; SBP is covered on uniform meshes.
+    @testset "Test DG derivatives on unstructured Gmsh meshes" begin
+        N = 3
+        tol = 5e3 * eps()
+
+        @testset "2D tri DG derivative on unstructured Gmsh mesh" begin
+            path = joinpath(@__DIR__, "testset_Gmsh_meshes", "mesh_no_pert.msh")
+            VXY, EToV = read_Gmsh_2D(path)
+            rd = RefElemData(Tri(), N)
+            md = MeshData(VXY, EToV, rd)
+            (; x, y) = md
+            u = @. x^2 + 2 * x * y
+            dudx_exact = @. 2 * x + 2 * y
+            dudx_num = calc_dg_derivative(u, rd, md)
+            @test norm(dudx_num - dudx_exact, Inf) / norm(dudx_exact, Inf) < tol
+        end
+
+        @testset "3D tet weak DG derivative on unstructured Gmsh mesh" begin
+            path = joinpath(@__DIR__, "testset_Gmsh_meshes", "cube1.msh")
+            (VX, VY, VZ), EToV = read_Gmsh_3D(path)
+            rd = RefElemData(Tet(), N)
+            md = MeshData(VX, VY, VZ, EToV, rd)
+            (; x, y, z) = md
+            u = @. x^2 + 2 * x * y + x * z
+            dudx_exact = @. 2 * x + 2 * y + z
+            dudx_num = calc_dg_derivative(u, rd, md)
+            @test norm(dudx_num - dudx_exact, Inf) / norm(dudx_exact, Inf) < tol
+        end
+    end
 end
