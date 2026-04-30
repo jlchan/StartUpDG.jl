@@ -2,6 +2,37 @@
 # malpasset.msh was previously a 2.2 file. Exported version
 # of 4.1 has been added for testing
 
+using StaticArrays: SVector
+
+# Weak DG x-derivative (volume + central LIFT flux), used by mesh regression tests.
+function calc_dg_derivative(u, rd::RefElemData{2}, md::MeshData{2})
+    (; Vf, LIFT, Dr, Ds) = rd
+    (; rxJ, sxJ, J, mapP, nxJ) = md
+
+    dudr, duds = (D -> D * u).((Dr, Ds))
+    dudxJ = @. (rxJ * dudr + sxJ * duds)
+
+    uM = Vf * u
+    uP = uM[mapP]
+    dudxJ += LIFT * (@. (0.5 * (uP - uM) .* nxJ))
+
+    return dudxJ ./ J
+end
+
+function calc_dg_derivative(u, rd::RefElemData{3}, md::MeshData{3})
+    (; Vf, LIFT, Dr, Ds, Dt) = rd
+    (; rxJ, sxJ, txJ, J, mapP, nxJ) = md
+
+    dudr, duds, dudt = (D -> D * u).((Dr, Ds, Dt))
+    dudxJ = @. (rxJ * dudr + sxJ * duds + txJ * dudt)
+
+    uM = Vf * u
+    uP = uM[mapP]
+    dudxJ += LIFT * (@. (0.5 * (uP - uM) .* nxJ))
+
+    return dudxJ ./ J
+end
+
 @testset "Gmsh" begin
     @testset "Gmsh reading" begin
         VXY, EToV = read_Gmsh_2D(joinpath(@__DIR__, "testset_Gmsh_meshes",
@@ -151,6 +182,61 @@
                 @test VXY_v2 == VXY_v4
                 @test EToV_v2 == EToV_v4
             end
+        end
+    end
+
+    @testset "Gmsh 3D tet mesh (v2.2)" begin
+        path = joinpath(@__DIR__, "testset_Gmsh_meshes", "cube1.msh")
+        (VX, VY, VZ), EToV = read_Gmsh_3D(path)
+        @test length(VX) == 14
+        @test size(EToV) == (24, 4)
+        @test extrema(VX) == (-0.5, 0.5)
+        @test extrema(VY) == (-0.5, 0.5)
+        @test extrema(VZ) == (-0.5, 0.5)
+        for e in axes(EToV, 1)
+            v_ids = @view EToV[e, :]
+            A, B, C, D = (SVector(VX[v_ids[i]], VY[v_ids[i]], VZ[v_ids[i]]) for i in 1:4)
+            tet = SVector{4}(A, B, C, D)
+            v = StartUpDG.compute_tet_signed_volume(tet)
+            @test v > 0
+            # check that the signed volume is the same after permuting the vertices.
+            # compute_tet_signed_volume should permute the vertices to correct the 
+            # sign of the volume if it's negative.
+            v_permute = StartUpDG.compute_tet_signed_volume(tet[[4, 1, 3, 2]])
+            @test v_permute ≈ v
+        end
+        rd = RefElemData(Tet(), 1)
+        md = MeshData(VX, VY, VZ, EToV, rd)
+        @test all(md.J .> 0)
+    end
+
+    # Polynomial() only: unstructured Gmsh meshes are exercised here; SBP is covered on uniform meshes.
+    @testset "Test DG derivatives on unstructured Gmsh meshes" begin
+        N = 3
+        tol = 5e3 * eps()
+
+        @testset "2D tri DG derivative on unstructured Gmsh mesh" begin
+            path = joinpath(@__DIR__, "testset_Gmsh_meshes", "mesh_no_pert.msh")
+            VXY, EToV = read_Gmsh_2D(path)
+            rd = RefElemData(Tri(), N)
+            md = MeshData(VXY, EToV, rd)
+            (; x, y) = md
+            u = @. x^2 + 2 * x * y
+            dudx_exact = @. 2 * x + 2 * y
+            dudx_num = calc_dg_derivative(u, rd, md)
+            @test norm(dudx_num - dudx_exact, Inf) / norm(dudx_exact, Inf) < tol
+        end
+
+        @testset "3D tet weak DG derivative on unstructured Gmsh mesh" begin
+            path = joinpath(@__DIR__, "testset_Gmsh_meshes", "cube1.msh")
+            (VX, VY, VZ), EToV = read_Gmsh_3D(path)
+            rd = RefElemData(Tet(), N)
+            md = MeshData(VX, VY, VZ, EToV, rd)
+            (; x, y, z) = md
+            u = @. x^2 + 2 * x * y + x * z
+            dudx_exact = @. 2 * x + 2 * y + z
+            dudx_num = calc_dg_derivative(u, rd, md)
+            @test norm(dudx_num - dudx_exact, Inf) / norm(dudx_exact, Inf) < tol
         end
     end
 end
