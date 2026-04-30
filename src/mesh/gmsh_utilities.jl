@@ -325,6 +325,102 @@ function read_Gmsh_2D_v2(filename::String)
     return (VX, VY), EToV
 end
 
+"""
+    read_Gmsh_3D(filename)
+
+Read a tetrahedral mesh from a Gmsh file. Currently **Gmsh format 2.2** is supported.
+Returns `(VX, VY, VZ), EToV` where `EToV` is `K × 4` (Gmsh type-4 elements only).
+
+Gmsh 4.1 3D files are not implemented yet.
+
+# Examples
+```julia
+VXYZ, EToV = read_Gmsh_3D(\"test/testset_Gmsh_meshes/cube1.msh\")
+```
+"""
+function read_Gmsh_3D(filename::String)
+    if !isfile(filename)
+        throw(ArgumentError("file $filename does not exist"))
+    end
+    lines = readlines(filename)
+    format_line = findline("\$MeshFormat", lines) + 1
+    version, _ = split(lines[format_line])
+    gmsh_version = parse(Float64, version)
+    if gmsh_version == 2.2
+        @info "reading 3D Gmsh file with format $gmsh_version"
+        return read_Gmsh_3D_v2(filename)
+    elseif gmsh_version == 4.1
+        throw(ArgumentError("Gmsh 4.1 3D meshes are not supported by read_Gmsh_3D yet; export as v2.2 or extend read_Gmsh_3D_v4"))
+    else
+        throw(ArgumentError("Gmsh file version $gmsh_version is not supported for read_Gmsh_3D"))
+    end
+end
+
+"""
+    read_Gmsh_3D_v2(filename)
+
+Read tetrahedra (Gmsh element type 4) from a Gmsh **2.2** `.msh` file.
+Returns `(VX, VY, VZ), EToV` with `EToV` of size `(K, 4)`.
+
+Surface triangles and other element types in the file are skipped.
+
+https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_0029
+"""
+function read_Gmsh_3D_v2(filename::String)
+    if !isfile(filename)
+        throw(ArgumentError("file $filename does not exist"))
+    end
+    lines = readlines(filename)
+
+    format_line = findline("\$MeshFormat", lines) + 1
+    version, _, _ = split(lines[format_line])
+    gmsh_version = parse(Float64, version)
+    @assert gmsh_version == 2.2
+
+    node_start = findline("\$Nodes", lines) + 1
+    Nv = parse(Int64, lines[node_start])
+    VX, VY, VZ = ntuple(_ -> zeros(Float64, Nv), 3)
+    for i in 1:Nv
+        vals = [parse(Float64, c) for c in split(lines[i + node_start])]
+        VX[i] = vals[2]
+        VY[i] = vals[3]
+        VZ[i] = vals[4]
+    end
+
+    elem_start = findline("\$Elements", lines) + 1
+    K_all = parse(Int64, lines[elem_start])
+    K = 0
+    for e in 1:K_all
+        parts = split(lines[e + elem_start])
+        length(parts) < 2 && continue
+        typ = parse(Int, parts[2])
+        if typ == 4
+            K += 1
+        end
+    end
+
+    EToV = zeros(Int64, K, 4)
+    sk = 1
+    for e in 1:K_all
+        parts = split(lines[e + elem_start])
+        length(parts) < 2 && continue
+        typ = parse(Int, parts[2])
+        if typ == 4
+            ntags = parse(Int, parts[3])
+            first_node = 4 + ntags
+            @assert length(parts)>=first_node + 3 "invalid tetrahedron line: $(lines[e+elem_start])"
+            for j in 1:4
+                EToV[sk, j] = parse(Int, parts[first_node + j - 1])
+            end
+            sk += 1
+        end
+    end
+
+    EToV = correct_negative_tet_jacobians!((VX, VY, VZ), EToV)
+
+    return (VX, VY, VZ), EToV
+end
+
 #     compute_triangle_area(tri)
 #
 # Computes the area of a triangle given `tri`, which is a tuple of three points (vectors),
@@ -345,6 +441,39 @@ function correct_negative_Jacobians!((VX, VY), EToV)
         # so the area is positive
         if area < 0
             view(EToV, e, :) .= (v_ids[2], v_ids[1], v_ids[3])
+        end
+    end
+    return EToV
+end
+
+#     compute_tet_signed_volume(tet)
+#
+# Signed volume V = (1/6) (B-A) · ((C-A) × (D-A)) for a tetrahedron given `tet`, an
+# `SVector{4}` whose entries are vertices `A, B, C, D` as `SVector{3}`.
+function compute_tet_signed_volume(tet)
+    A, B, C, D = tet
+    b = B - A
+    c = C - A
+    d = D - A
+    return (b[1] * (c[2] * d[3] - c[3] * d[2]) +
+            b[2] * (c[3] * d[1] - c[1] * d[3]) +
+            b[3] * (c[1] * d[2] - c[2] * d[1])) / 6
+end
+
+function correct_negative_tet_jacobians!((VX, VY, VZ), EToV)
+    for e in 1:size(EToV, 1)
+        v_ids = view(EToV, e, :)
+        A, B, C, D = (SVector(VX[v_ids[i]], VY[v_ids[i]], VZ[v_ids[i]]) for i in 1:4)
+        tet = SVector{4}(A, B, C, D)
+        vol = compute_tet_signed_volume(tet)
+        if vol < 0
+            view(EToV, e, :) .= (v_ids[4], v_ids[1], v_ids[2], v_ids[3])
+            A, B, C, D = (SVector(VX[v_ids[i]], VY[v_ids[i]], VZ[v_ids[i]]) for i in 1:4)
+            tet = SVector{4}(A, B, C, D)
+            vol2 = compute_tet_signed_volume(tet)
+            if vol2 < 0
+                error("After applying a cyclic permutation of the tetrahedron vertices to fix orientation, signed volume is still negative.")
+            end
         end
     end
     return EToV
