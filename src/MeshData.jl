@@ -13,14 +13,14 @@ md = MeshData(VXY, EToV, rd)
 (; x, y ) = md
 ```
 """
-Base.@kwdef struct MeshData{Dim, MeshType, 
-                            VolumeType, FaceType, VolumeQType, FToFType, 
-                            VolumeWeightType, VolumeGeofacsType, VolumeJType, 
+Base.@kwdef struct MeshData{Dim, MeshType,
+                            VolumeType, FaceType, VolumeQType, FToFType,
+                            VolumeWeightType, VolumeGeofacsType, VolumeJType,
                             ConnectivityTypeM, ConnectivityTypeP, BoundaryMapType}
 
     # this field defaults to the element shape, but can be used to specify 
     # different mesh types (e.g., vertex-mapped, cut-cell, hybrid, non-conforming meshes. 
-    mesh_type::MeshType 
+    mesh_type::MeshType
 
     FToF::FToFType                  # face connectivity
 
@@ -49,11 +49,12 @@ Base.@kwdef struct MeshData{Dim, MeshType,
 end
 
 # MeshData constructor where we do not specify `nxyz` and instead compute it from `nrstJ` and `Jf`
-function MeshData(mesh_type, FToF, xyz, xyzf, xyzq, wJq, mapM, mapP, mapB, rstxyzJ, J, nxyzJ, Jf, is_periodic) 
+function MeshData(mesh_type, FToF, xyz, xyzf, xyzq, wJq, mapM, mapP, mapB, rstxyzJ, J,
+                  nxyzJ, Jf, is_periodic)
+    nxyz = map(nJ -> nJ ./ Jf, nxyzJ)
 
-    nxyz = map(nJ -> nJ ./ Jf, nxyzJ)        
-                         
-    return MeshData(mesh_type, FToF, xyz, xyzf, xyzq, wJq, mapM, mapP, mapB, rstxyzJ, J, nxyz, nxyzJ, Jf, is_periodic)
+    return MeshData(mesh_type, FToF, xyz, xyzf, xyzq, wJq, mapM, mapP, mapB, rstxyzJ, J,
+                    nxyz, nxyzJ, Jf, is_periodic)
 end
 
 function ConstructionBase.setproperties(md::MeshData, patch::NamedTuple)
@@ -61,99 +62,104 @@ function ConstructionBase.setproperties(md::MeshData, patch::NamedTuple)
     return MeshData(fields...)
 end
 
-ConstructionBase.getproperties(md::MeshData) = 
-    (; mesh_type=md.mesh_type, FToF=md.FToF, xyz=md.xyz, xyzf=md.xyzf, xyzq=md.xyzq, wJq=md.wJq,
-       mapM=md.mapM, mapP=md.mapP, mapB=md.mapB, rstxyzJ=md.rstxyzJ, J=md.J, nxyz = md.nxyz, nxyzJ=md.nxyzJ, Jf=md.Jf,
-       is_periodic=md.is_periodic)
+function ConstructionBase.getproperties(md::MeshData)
+    (; mesh_type = md.mesh_type, FToF = md.FToF, xyz = md.xyz, xyzf = md.xyzf,
+     xyzq = md.xyzq, wJq = md.wJq,
+     mapM = md.mapM, mapP = md.mapP, mapB = md.mapB, rstxyzJ = md.rstxyzJ, J = md.J,
+     nxyz = md.nxyz, nxyzJ = md.nxyzJ, Jf = md.Jf,
+     is_periodic = md.is_periodic)
+end
 
 function Base.show(io::IO, md::MeshData{DIM}) where {DIM}
     @nospecialize md
-    print(io,"MeshData{$DIM}")
+    print(io, "MeshData{$DIM}")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", md::MeshData{DIM, MeshType}) where {DIM, MeshType}
+function Base.show(io::IO, ::MIME"text/plain",
+                   md::MeshData{DIM, MeshType}) where {DIM, MeshType}
     @nospecialize md
-    print(io,"MeshData of dimension $DIM with $(md.num_elements) elements with periodicity = $(md.is_periodic).")
+    print(io,
+          "MeshData of dimension $DIM with $(md.num_elements) elements with periodicity = $(md.is_periodic).")
 end
 
 function Base.propertynames(x::MeshData{1}, private::Bool = false)
     return (fieldnames(MeshData)...,
             :num_elements, :VX, :x, :xq, :xf, :nx, :rxJ)
 end
-function Base.propertynames(x::MeshData{2}, private::Bool = false) 
+function Base.propertynames(x::MeshData{2}, private::Bool = false)
     return (fieldnames(MeshData)...,
-            :num_elements, :VX, :VY, :x, :y, :xq, :yq, :xf, :yf, 
+            :num_elements, :VX, :VY, :x, :y, :xq, :yq, :xf, :yf,
             :nx, :ny, :rxJ, :sxJ, :ryJ, :syJ)
 end
-function Base.propertynames(x::MeshData{3}, private::Bool = false) 
+function Base.propertynames(x::MeshData{3}, private::Bool = false)
     return (fieldnames(MeshData)...,
-            :num_elements, :VX, :VY, :VZ, :x, :y, :z, :xq, :yq, :zq, :xf, :yf, :zf, 
+            :num_elements, :VX, :VY, :VZ, :x, :y, :z, :xq, :yq, :zq, :xf, :yf, :zf,
             :nx, :ny, :nz, :rxJ, :sxJ, :txJ, :ryJ, :syJ, :tyJ, :rzJ, :szJ, :tzJ)
 end
 
 # seems like we need to use @inline to ensure type stability
 @inline function meshdata_getproperty(x::MeshData, s::Symbol)
-    if s==:x
+    if s == :x
         return getfield(x, :xyz)[1]
-    elseif s==:y
+    elseif s == :y
         return getfield(x, :xyz)[2]
-    elseif s==:z
+    elseif s == :z
         return getfield(x, :xyz)[3]
 
-    elseif s==:xq
+    elseif s == :xq
         return getfield(x, :xyzq)[1]
-    elseif s==:yq
+    elseif s == :yq
         return getfield(x, :xyzq)[2]
-    elseif s==:zq
+    elseif s == :zq
         return getfield(x, :xyzq)[3]
 
-    elseif s==:xf
+    elseif s == :xf
         return getfield(x, :xyzf)[1]
-    elseif s==:yf
+    elseif s == :yf
         return getfield(x, :xyzf)[2]
-    elseif s==:zf
+    elseif s == :zf
         return getfield(x, :xyzf)[3]
 
-    elseif s==:nxJ
+    elseif s == :nxJ
         return getfield(x, :nxyzJ)[1]
-    elseif s==:nyJ
+    elseif s == :nyJ
         return getfield(x, :nxyzJ)[2]
-    elseif s==:nzJ
+    elseif s == :nzJ
         return getfield(x, :nxyzJ)[3]
 
-    elseif s==:nx
+    elseif s == :nx
         return getfield(x, :nxyz)[1]
-    elseif s==:ny
+    elseif s == :ny
         return getfield(x, :nxyz)[2]
-    elseif s==:nz
-        return getfield(x, :nxyz)[3]        
+    elseif s == :nz
+        return getfield(x, :nxyz)[3]
 
-    elseif s==:rxJ
-        return getfield(x, :rstxyzJ)[1,1]
-    elseif s==:sxJ
-        return getfield(x, :rstxyzJ)[1,2]
-    elseif s==:txJ
-        return getfield(x, :rstxyzJ)[1,3]
-    elseif s==:ryJ
-        return getfield(x, :rstxyzJ)[2,1]
-    elseif s==:syJ
-        return getfield(x, :rstxyzJ)[2,2]
-    elseif s==:tyJ
-        return getfield(x, :rstxyzJ)[2,3]
-    elseif s==:rzJ
-        return getfield(x, :rstxyzJ)[3,1]
-    elseif s==:szJ
-        return getfield(x, :rstxyzJ)[3,2]
-    elseif s==:tzJ
-        return getfield(x, :rstxyzJ)[3,3]
-        
-    # old notation in the NDG book where K = num_elements
-    elseif s==:K || s==:num_elements 
+    elseif s == :rxJ
+        return getfield(x, :rstxyzJ)[1, 1]
+    elseif s == :sxJ
+        return getfield(x, :rstxyzJ)[1, 2]
+    elseif s == :txJ
+        return getfield(x, :rstxyzJ)[1, 3]
+    elseif s == :ryJ
+        return getfield(x, :rstxyzJ)[2, 1]
+    elseif s == :syJ
+        return getfield(x, :rstxyzJ)[2, 2]
+    elseif s == :tyJ
+        return getfield(x, :rstxyzJ)[2, 3]
+    elseif s == :rzJ
+        return getfield(x, :rstxyzJ)[3, 1]
+    elseif s == :szJ
+        return getfield(x, :rstxyzJ)[3, 2]
+    elseif s == :tzJ
+        return getfield(x, :rstxyzJ)[3, 3]
+
+        # old notation in the NDG book where K = num_elements
+    elseif s == :K || s == :num_elements
         return num_elements(x)
 
-    # old notation in the NDG book using sJ (surface Jacobian) 
-    # instead of Jf (Jacobian for the face)
-    elseif s==:sJ 
+        # old notation in the NDG book using sJ (surface Jacobian) 
+        # instead of Jf (Jacobian for the face)
+    elseif s == :sJ
         return getfield(x, :Jf)
 
     else
@@ -172,11 +178,11 @@ vertex locations and element-to-vertex connectivities. For example, these includ
 affine triangular meshes or bilinear quadrilateral or trilinear hexahedral meshes.
 
 # Fields
-element_type :: TE <: AbstractElemShape \\
+element_type :: TE <: AbstractElementShape \\
 VXYZ :: TV \\
 EToV :: TEV
 """
-struct VertexMappedMesh{TE <: AbstractElemShape, TV, TEV}
+struct VertexMappedMesh{TE <: AbstractElementShape, TV, TEV}
     element_type::TE
     VXYZ::TV
     EToV::TEV
@@ -184,14 +190,13 @@ end
 
 # convenience accessor routines for `VertexMappedMesh` types (lets you do `md.VX` instead of `md.mesh_type.VX`)
 function Base.getproperty(x::MeshData{Dim, <:VertexMappedMesh}, s::Symbol) where {Dim}
-
-    if s===:VX
+    if s === :VX
         return getfield(getfield(x, :mesh_type), :VXYZ)[1]
-    elseif s===:VY
+    elseif s === :VY
         return getfield(getfield(x, :mesh_type), :VXYZ)[2]
-    elseif s===:VZ
+    elseif s === :VZ
         return getfield(getfield(x, :mesh_type), :VXYZ)[3]
-    elseif s===:EToV
+    elseif s === :EToV
         return getfield(getfield(x, :mesh_type), s)
     else
         meshdata_getproperty(x, s)
@@ -215,11 +220,14 @@ Given new nodal positions `xyz...` (e.g., from mesh curving), recomputes geometr
 and outputs a new MeshData struct. Only fields modified are the coordinate-dependent terms
     `xyz`, `xyzf`, `xyzq`, `rstxyzJ`, `J`, `nxyzJ`, `Jf`.
 """
-MeshData(mesh::Tuple{<:Tuple, Matrix{Int64}}, rd::RefElemData, other_args...; kwargs...) = 
-    MeshData(mesh..., rd, other_args...; kwargs...)
+MeshData(mesh::Tuple{<:Tuple, Matrix{Int64}}, rd::RefElemData, other_args...; kwargs...) = MeshData(mesh...,
+                                                                                                    rd,
+                                                                                                    other_args...;
+                                                                                                    kwargs...)
 
-MeshData(VXYZ, EToV, rd::RefElemData, other_args...; kwargs...) = 
-    MeshData(VXYZ..., EToV, rd, other_args...; kwargs...) # splats VXYZ 
+function MeshData(VXYZ, EToV, rd::RefElemData, other_args...; kwargs...)
+    MeshData(VXYZ..., EToV, rd, other_args...; kwargs...)
+end # splats VXYZ 
 
 """
     MeshData(cells_per_dimension, rd::RefElemData{NDIMS}; 
@@ -231,41 +239,44 @@ Returns a `MeshData` initialized on a uniform mesh with `cells_per_dimension` el
 dimension scaled to the following tensor product domain: 
 `[coordinates_min[1], coordinates_max[1]]x[coordinates_min[2], coordinates_max[2]], ...`. 
 """
-MeshData(cells_per_dimension::Int, rd::RefElemData{1}; kwargs...) = 
-    MeshData((cells_per_dimension, ), rd; kwargs...)
-MeshData(cells_per_dimension_x::Int, cells_per_dimension_y::Int, rd::RefElemData{2}; kwargs...) = 
+MeshData(cells_per_dimension::Int, rd::RefElemData{1}; kwargs...) = MeshData((cells_per_dimension,),
+                                                                             rd; kwargs...)
+function MeshData(cells_per_dimension_x::Int, cells_per_dimension_y::Int,
+                  rd::RefElemData{2}; kwargs...)
     MeshData((cells_per_dimension_x, cells_per_dimension_y), rd; kwargs...)
-MeshData(cells_per_dimension_x::Int, cells_per_dimension_y::Int, 
-         cells_per_dimension_z::Int, rd::RefElemData{3}; kwargs...) = 
-    MeshData((cells_per_dimension_x, cells_per_dimension_y, cells_per_dimension_z), rd; kwargs...)
-
+end
+function MeshData(cells_per_dimension_x::Int, cells_per_dimension_y::Int,
+                  cells_per_dimension_z::Int, rd::RefElemData{3}; kwargs...)
+    MeshData((cells_per_dimension_x, cells_per_dimension_y, cells_per_dimension_z), rd;
+             kwargs...)
+end
 
 function MeshData(cells_per_dimension::Int, rd::RefElemData{NDIMS}; kwargs...) where {NDIMS}
     return MeshData(ntuple(_ -> cells_per_dimension, NDIMS), rd; kwargs...)
 end
 
-function MeshData(cells_per_dimension::NTuple{NDIMS, <:Int}, rd::RefElemData{NDIMS}; 
-                  coordinates_min = ntuple(_ -> -1.0, NDIMS), 
-                  coordinates_max = ntuple(_ -> 1.0, NDIMS),  
-                  is_periodic=ntuple(_ -> false, NDIMS)) where {NDIMS}
+function MeshData(cells_per_dimension::NTuple{NDIMS, <:Int}, rd::RefElemData{NDIMS};
+                  coordinates_min = ntuple(_ -> -1.0, NDIMS),
+                  coordinates_max = ntuple(_ -> 1.0, NDIMS),
+                  is_periodic = ntuple(_ -> false, NDIMS)) where {NDIMS}
     VXYZ, EToV = uniform_mesh(rd.element_type, cells_per_dimension...)
-    VXYZ = map((x, xmin, xmax) -> (@. 0.5 * (x + 1) * (xmax - xmin) + xmin), 
-                VXYZ, coordinates_min, coordinates_max)
-    return MeshData(VXYZ, EToV, rd; is_periodic)                
-end   
+    VXYZ = map((x, xmin, xmax) -> (@. 0.5 * (x + 1) * (xmax - xmin) + xmin),
+               VXYZ, coordinates_min, coordinates_max)
+    return MeshData(VXYZ, EToV, rd; is_periodic)
+end
 
-function MeshData(VX::AbstractVector, EToV, rd::RefElemData{1}; is_periodic=(false, ))
+function MeshData(VX::AbstractVector, EToV, rd::RefElemData{1}; is_periodic = (false,))
 
     # Construct global coordinates
-    (; V1 ) = rd
+    (; V1) = rd
     x = V1 * VX[transpose(EToV)]
     K = size(EToV, 1)
     Nfaces = 2
 
     FToF = zeros(Int, Nfaces, K)
     sk = 1
-    for e = 1:K
-        left = 2 * e-1
+    for e in 1:K
+        left = 2 * e - 1
         right = 2 * e
         FToF[1:2, e] .= [left - 1; right + 1]
         sk += 1
@@ -274,12 +285,12 @@ function MeshData(VX::AbstractVector, EToV, rd::RefElemData{1}; is_periodic=(fal
     FToF[Nfaces, K] = Nfaces * K
 
     # Connectivity maps
-    (; Vf ) = rd
+    (; Vf) = rd
     xf = Vf * x
-    mapM = reshape(1:2*K, 2, K)
+    mapM = reshape(1:(2 * K), 2, K)
     mapP = copy(mapM)
-    mapP[1, 2:end] .= mapM[2, 1:end-1]
-    mapP[2, 1:end-1] .= mapM[1, 2:end]
+    mapP[1, 2:end] .= mapM[2, 1:(end - 1)]
+    mapP[2, 1:(end - 1)] .= mapM[1, 2:end]
     mapB = findall(@. mapM[:] == mapP[:])
 
     # Geometric factors and surface normals
@@ -288,16 +299,16 @@ function MeshData(VX::AbstractVector, EToV, rd::RefElemData{1}; is_periodic=(fal
     nxJ = repeat([-1.0; 1.0], 1, K)
     Jf = abs.(nxJ)
 
-    (; Vq, wq ) = rd
+    (; Vq, wq) = rd
     xq = Vq * x
     wJq = diagm(wq) * (Vq * J)
-    
+
     # create non-periodic version by default
-    periodicity = (false, )
+    periodicity = (false,)
     md = MeshData(VertexMappedMesh(rd.element_type, tuple(VX), EToV), FToF,
                   tuple(x), tuple(xf), tuple(xq), wJq,
                   collect(mapM), mapP, mapB,
-                  SMatrix{1,1}(tuple(rxJ)), J,
+                  SMatrix{1, 1}(tuple(rxJ)), J,
                   tuple(nxJ), Jf, periodicity)
 
     # if any coordinates are periodic
@@ -308,19 +319,18 @@ function MeshData(VX::AbstractVector, EToV, rd::RefElemData{1}; is_periodic=(fal
     return md
 end
 
-function MeshData(VX, VY, EToV, rd::RefElemData{2}; is_periodic=(false, false))
-
-    (; fv ) = rd
+function MeshData(VX, VY, EToV, rd::RefElemData{2}; is_periodic = (false, false))
+    (; fv) = rd
     FToF = connect_mesh(EToV, fv)
     Nfaces, K = size(FToF)
 
     #Construct global coordinates
-    (; V1 ) = rd
+    (; V1) = rd
     x = V1 * VX[transpose(EToV)]
     y = V1 * VY[transpose(EToV)]
 
     # Compute connectivity maps: uP = exterior value used in DG numerical fluxes
-    (; Vf ) = rd
+    (; Vf) = rd
     xf = Vf * x
     yf = Vf * y
     mapM, mapP, mapB = build_node_maps(FToF, (xf, yf))
@@ -329,11 +339,11 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2}; is_periodic=(false, false))
     mapP = reshape(mapP, Nfp * Nfaces, K)
 
     #Compute geometric factors and surface normals
-    (; Dr, Ds ) = rd
+    (; Dr, Ds) = rd
     rxJ, sxJ, ryJ, syJ, J = geometric_factors(x, y, Dr, Ds)
     rstxyzJ = SMatrix{2, 2}(rxJ, ryJ, sxJ, syJ)
 
-    (; Vq, wq ) = rd
+    (; Vq, wq) = rd
     xq, yq = (x -> Vq * x).((x, y))
     wJq = diagm(wq) * (Vq * J)
 
@@ -345,23 +355,21 @@ function MeshData(VX, VY, EToV, rd::RefElemData{2}; is_periodic=(false, false))
                   mapM, mapP, mapB,
                   SMatrix{2, 2}(tuple(rxJ, ryJ, sxJ, syJ)), J,
                   tuple(nxJ, nyJ), Jf, periodicity)
-    
+
     if any(is_periodic)
         md = make_periodic(md, is_periodic)
     end
 
     return md
-
 end
 
-function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3}; is_periodic=(false, false, false))
-
-    (; fv ) = rd
+function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3}; is_periodic = (false, false, false))
+    (; fv) = rd
     FToF = connect_mesh(EToV, fv)
     Nfaces, K = size(FToF)
 
     #Construct global coordinates
-    (; V1 ) = rd
+    (; V1) = rd
     x, y, z = (x -> V1 * x[transpose(EToV)]).((VX, VY, VZ))
 
     #Compute connectivity maps: uP = exterior value used in DG numerical fluxes
@@ -370,13 +378,13 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3}; is_periodic=(false, fals
     mapM, mapP, mapB = build_node_maps(rd, FToF, (xf, yf, zf))
     mapM = reshape(mapM, :, K)
     mapP = reshape(mapP, :, K)
-    
+
     #Compute geometric factors and surface normals
-    (; Dr, Ds, Dt ) = rd
+    (; Dr, Ds, Dt) = rd
     rxJ, sxJ, txJ, ryJ, syJ, tyJ, rzJ, szJ, tzJ, J = geometric_factors(x, y, z, Dr, Ds, Dt)
     rstxyzJ = SMatrix{3, 3}(rxJ, ryJ, rzJ, sxJ, syJ, szJ, txJ, tyJ, tzJ)
 
-    (; Vq, wq ) = rd
+    (; Vq, wq) = rd
     xq, yq, zq = (x -> Vq * x).((x, y, z))
     wJq = diagm(wq) * (Vq * J)
 
@@ -386,12 +394,12 @@ function MeshData(VX, VY, VZ, EToV, rd::RefElemData{3}; is_periodic=(false, fals
     md = MeshData(VertexMappedMesh(rd.element_type, tuple(VX, VY, VZ), EToV), FToF,
                   tuple(x, y, z), tuple(xf, yf, zf), tuple(xq, yq, zq), wJq,
                   mapM, mapP, mapB,
-                  rstxyzJ, J, tuple(nxJ, nyJ, nzJ), Jf, 
+                  rstxyzJ, J, tuple(nxJ, nyJ, nzJ), Jf,
                   periodicity)
 
     if any(is_periodic)
         # loosen the tolerance if N >> 1
-        tol = length(rd.r) * 100 * eps() 
+        tol = length(rd.r) * 100 * eps()
         md = make_periodic(md, is_periodic; tol)
     end
 
@@ -408,12 +416,12 @@ function recompute_geometry(rd::RefElemData{Dim}, xyz) where {Dim}
     J = last(geo)
     wJq = diagm(rd.wq) * (rd.Vq * J)
 
-    if Dim==1
+    if Dim == 1
         rstxyzJ = SMatrix{Dim, Dim}(geo[1])
-    elseif Dim==2
+    elseif Dim == 2
         rstxyzJ = SMatrix{Dim, Dim}(geo[1], geo[3],
                                     geo[2], geo[4])
-    elseif Dim==3
+    elseif Dim == 3
         rstxyzJ = SMatrix{Dim, Dim}(geo[1], geo[4], geo[7],
                                     geo[2], geo[5], geo[8],
                                     geo[3], geo[6], geo[9])
@@ -434,10 +442,9 @@ original_mesh_type :: T\\
 """
 struct CurvedMesh{T}
     original_mesh_type::T
-end 
+end
 
 function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
-
     xyzf, xyzq, rstxyzJ, J, wJq, nxyzJ, Jf = recompute_geometry(rd, xyz)
 
     nxyz = map(n -> n ./ Jf, nxyzJ)
@@ -445,5 +452,6 @@ function MeshData(rd::RefElemData, md::MeshData{Dim}, xyz...) where {Dim}
     mesh_type = CurvedMesh(md.mesh_type)
 
     # TODO: should we warp VXYZ as well? Or create a new mesh type?
-    return setproperties(md, (; mesh_type, xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyz, nxyzJ, Jf))
+    return setproperties(md,
+                         (; mesh_type, xyz, xyzq, xyzf, rstxyzJ, J, wJq, nxyz, nxyzJ, Jf))
 end

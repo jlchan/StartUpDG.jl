@@ -3,7 +3,7 @@ function coordinate_face_centroids(xf, md)
     Nfaces = size(md.FToF, 1)
     Nfp = size(md.xf, 1) ÷ Nfaces
     xc = reshape(xf, Nfp, :)
-    return vec(typeof(xf)(sum(xc, dims=1) / size(xc, 1)))
+    return vec(typeof(xf)(sum(xc, dims = 1) / size(xc, 1)))
 end
 
 """
@@ -17,7 +17,7 @@ function boundary_face_centroids(md)
     boundary_face_ids = findall(vec(md.FToF) .== 1:length(md.FToF))
 
     # compute coordinates of face centroids on the boundary
-    xyzb = map(x -> x[boundary_face_ids], xyzc) 
+    xyzb = map(x -> x[boundary_face_ids], xyzc)
     return xyzb, boundary_face_ids
 end
 
@@ -52,7 +52,8 @@ function _tag_boundary_faces(boundary_face_ids, boundary_list, xyzb)
 end
 
 # specialization to 1D
-function _tag_boundary_faces(boundary_face_ids, boundary_list, xyzb::NTuple{1,Tv}) where {Tv}        
+function _tag_boundary_faces(boundary_face_ids, boundary_list,
+                             xyzb::NTuple{1, Tv}) where {Tv}
     boundary_face_ids_list = Vector{Int}[]
     for boundary_face_flag in values(boundary_list)
         push!(boundary_face_ids_list, boundary_face_ids[boundary_face_flag.(xyzb[1])])
@@ -75,16 +76,14 @@ end
 
 function tag_boundary_nodes(rd, md, boundary_list::NamedTuple)
     boundary_faces = tag_boundary_faces(md, boundary_list)
-    mapM = reshape(md.mapM, size(md.mapM, 1) ÷ rd.Nfaces, rd.num_faces * md.num_elements)    
+    mapM = reshape(md.mapM, size(md.mapM, 1) ÷ rd.Nfaces, rd.num_faces * md.num_elements)
     node_tags = (mapM[:, getproperty(boundary_faces, tag)] for tag in keys(boundary_faces))
     return NamedTuple(Pair.(keys(boundary_list), node_tags))
 end
 
 function tag_boundary_nodes(rd, md, boundary_list::Dict)
     boundary_faces = tag_boundary_faces(md, boundary_list)
-    mapM = reshape(md.mapM, size(md.mapM, 1) ÷ rd.Nfaces, rd.num_faces * md.num_elements)    
+    mapM = reshape(md.mapM, size(md.mapM, 1) ÷ rd.Nfaces, rd.num_faces * md.num_elements)
     node_tags = (mapM[:, boundary_faces[tag]] for tag in keys(boundary_faces))
     return Dict(Pair.(keys(boundary_list), node_tags))
 end
-
-
