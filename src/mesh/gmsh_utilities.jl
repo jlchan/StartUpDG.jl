@@ -380,8 +380,8 @@ function read_Gmsh_3D_v2(filename::String)
     node_start = findline("\$Nodes", lines) + 1
     Nv = parse(Int64, lines[node_start])
     VX, VY, VZ = ntuple(_ -> zeros(Float64, Nv), 3)
-    for i = 1:Nv
-        vals = [parse(Float64, c) for c in split(lines[i+node_start])]
+    for i in 1:Nv
+        vals = [parse(Float64, c) for c in split(lines[i + node_start])]
         VX[i] = vals[2]
         VY[i] = vals[3]
         VZ[i] = vals[4]
@@ -390,8 +390,8 @@ function read_Gmsh_3D_v2(filename::String)
     elem_start = findline("\$Elements", lines) + 1
     K_all = parse(Int64, lines[elem_start])
     K = 0
-    for e = 1:K_all
-        parts = split(lines[e+elem_start])
+    for e in 1:K_all
+        parts = split(lines[e + elem_start])
         length(parts) < 2 && continue
         typ = parse(Int, parts[2])
         if typ == 4
@@ -401,16 +401,16 @@ function read_Gmsh_3D_v2(filename::String)
 
     EToV = zeros(Int64, K, 4)
     sk = 1
-    for e = 1:K_all
-        parts = split(lines[e+elem_start])
+    for e in 1:K_all
+        parts = split(lines[e + elem_start])
         length(parts) < 2 && continue
         typ = parse(Int, parts[2])
         if typ == 4
             ntags = parse(Int, parts[3])
             first_node = 4 + ntags
-            @assert length(parts) >= first_node + 3 "invalid tetrahedron line: $(lines[e+elem_start])"
-            for j = 1:4
-                EToV[sk, j] = parse(Int, parts[first_node+j-1])
+            @assert length(parts)>=first_node + 3 "invalid tetrahedron line: $(lines[e+elem_start])"
+            for j in 1:4
+                EToV[sk, j] = parse(Int, parts[first_node + j - 1])
             end
             sk += 1
         end
