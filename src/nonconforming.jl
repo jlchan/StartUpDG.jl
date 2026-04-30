@@ -73,13 +73,13 @@ struct NonConformingQuadMeshExample{T1, T2, T3, T4}
     EToV::T2
     FToF::T3
     nonconforming_faces::T4
-end 
+end
 
 function NonConformingQuadMeshExample()
-    VX = [-1, -1,  1,  1, 1,  2, 2, 2]
-    VY = [-1,  1, -1,  1, 0, -1, 0, 1]
+    VX = [-1, -1, 1, 1, 1, 2, 2, 2]
+    VY = [-1, 1, -1, 1, 0, -1, 0, 1]
     EToV = [1 3 2 4; 3 6 5 7; 5 7 4 8]
-    FToF = [1,  2,  3,  4,  13,  6,  7,  11,  14,  10,  8,  12,  5,  9]
+    FToF = [1, 2, 3, 4, 13, 6, 7, 11, 14, 10, 8, 12, 5, 9]
     nonconforming_faces = [2]
     return NonConformingQuadMeshExample((VX, VY), EToV, FToF, nonconforming_faces)
 end
@@ -88,13 +88,15 @@ end
 num_mortars_per_face(rd::RefElemData) = num_mortars_per_face(rd.element_type)
 num_mortars_per_face(::Union{Quad, Tri}) = 2
 
-num_elements(md::MeshData{Dim, <:NonConformingMesh}) where {Dim} = 
-    length(getfield(getfield(md, :mesh_type), :VXYZ)[1]) 
+function num_elements(md::MeshData{Dim, <:NonConformingMesh}) where {Dim}
+    length(getfield(getfield(md, :mesh_type), :VXYZ)[1])
+end
 
-MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad}) = 
+function MeshData(mesh::NonConformingQuadMeshExample, rd::RefElemData{2, Quad})
     MeshData(mesh.VXY, mesh.EToV, mesh.FToF, mesh.nonconforming_faces, rd)
+end
 
-function MeshData(VXY, EToV, FToF, nonconforming_faces, rd::RefElemData{2, Quad})    
+function MeshData(VXY, EToV, FToF, nonconforming_faces, rd::RefElemData{2, Quad})
 
     # vector of arrays containing vertex coordinates per element
     VX, VY = VXY
@@ -104,9 +106,8 @@ function MeshData(VXY, EToV, FToF, nonconforming_faces, rd::RefElemData{2, Quad}
     return MeshData((VX_local, VY_local), FToF, nonconforming_faces, rd)
 end
 
-function MeshData(VXY_local::Tuple{<:Vector{<:AbstractArray}, Vararg}, 
+function MeshData(VXY_local::Tuple{<:Vector{<:AbstractArray}, Vararg},
                   FToF, nonconforming_faces, rd::RefElemData{2})
-
     VX_local, VY_local = VXY_local
     num_elements = length(VX_local)
 
@@ -119,18 +120,21 @@ function MeshData(VXY_local::Tuple{<:Vector{<:AbstractArray}, Vararg},
         r1D = rd.rf[1:num_face_points]
         w1D = rd.wf[1:num_face_points]
     end
-    r_split = vcat(0.5 * (1 .+ r1D) .- 1, 0.5 * (1 .+ r1D)) 
+    r_split = vcat(0.5 * (1 .+ r1D) .- 1, 0.5 * (1 .+ r1D))
     w_split = 0.5 * vcat(w1D, w1D)
 
     # maps interpolation to face node onto mortars
-    mortar_interpolation_matrix = vandermonde(Line(), rd.N, r_split) / vandermonde(Line(), rd.N, r1D)
-    mortar_mass_matrix = mortar_interpolation_matrix' * diagm(w_split) * mortar_interpolation_matrix
+    mortar_interpolation_matrix = vandermonde(Line(), rd.N, r_split) /
+                                  vandermonde(Line(), rd.N, r1D)
+    mortar_mass_matrix = mortar_interpolation_matrix' * diagm(w_split) *
+                         mortar_interpolation_matrix
 
     # L2 projection of mortars back to face nodes
-    mortar_projection_matrix = mortar_mass_matrix \ (mortar_interpolation_matrix' * diagm(w_split))
-    
+    mortar_projection_matrix = mortar_mass_matrix \
+                               (mortar_interpolation_matrix' * diagm(w_split))
+
     # construct element nodal coordinates
-    (; V1 ) = rd
+    (; V1) = rd
     x = zeros(size(V1, 1), length(VX_local))
     y = zeros(size(V1, 1), length(VX_local))
     for e in eachindex(VX_local)
@@ -139,7 +143,7 @@ function MeshData(VXY_local::Tuple{<:Vector{<:AbstractArray}, Vararg},
     end
 
     # construct face coordinates
-    (; Vf ) = rd
+    (; Vf) = rd
     xf = Vf * x
     yf = Vf * y
 
@@ -147,10 +151,10 @@ function MeshData(VXY_local::Tuple{<:Vector{<:AbstractArray}, Vararg},
     num_element_faces = num_faces(rd.element_type) * num_elements
     xf, yf = reshape.((xf, yf), num_face_points, num_element_faces)
 
-    x_mortar = reshape(mortar_interpolation_matrix * xf[:, nonconforming_faces], :, 
+    x_mortar = reshape(mortar_interpolation_matrix * xf[:, nonconforming_faces], :,
                        num_mortars_per_face(rd) * length(nonconforming_faces))
-    y_mortar = reshape(mortar_interpolation_matrix * yf[:, nonconforming_faces], :, 
-                       num_mortars_per_face(rd) * length(nonconforming_faces))                       
+    y_mortar = reshape(mortar_interpolation_matrix * yf[:, nonconforming_faces], :,
+                       num_mortars_per_face(rd) * length(nonconforming_faces))
 
     # each nonconforming face is split into 2 mortar faces. we append the mortar faces to the existing element faces. 
     # TODO: should we use LazyArrays.Hcat for this in the future?
@@ -171,13 +175,13 @@ function MeshData(VXY_local::Tuple{<:Vector{<:AbstractArray}, Vararg},
 
     nxJ, nyJ, Jf = compute_normals(rstxyzJ, rd.Vf, rd.nrstJ...)
 
-    mesh_type = NonConformingMesh(VXY_local, 
-                                  nonconforming_faces, 
-                                  mortar_interpolation_matrix, 
+    mesh_type = NonConformingMesh(VXY_local,
+                                  nonconforming_faces,
+                                  mortar_interpolation_matrix,
                                   mortar_projection_matrix)
 
-    is_periodic = (false, false)                                  
-    
+    is_periodic = (false, false)
+
     return MeshData(mesh_type, FToF,
                     tuple(x, y), tuple(x_mortar, y_mortar), tuple(xq, yq), wJq,
                     mapM, mapP, mapB,

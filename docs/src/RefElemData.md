@@ -1,7 +1,7 @@
 # `RefElemData` type
 
 [`RefElemData`](@ref) contains the following fields
-* `element_type::AbstractElemShape`: element shape. `Line, Tri, Quad, Hex, Wedge, Pyr, Tet` currently supported.
+* `element_type::AbstractElementShape`: element shape. `Line, Tri, Quad, Hex, Wedge, Pyr, Tet` currently supported.
 * `approximation_type`: approximation type. Defaults to `Polynomial()`, but `SBP()` is also supported (see [RefElemData based on SBP finite differences](@ref)).
 * `Nfaces`: number of faces on a given type of reference element.
 * `fv`: list of vertices defining faces, e.g., `[1,2], [2,3], [3,1]` for a triangle
