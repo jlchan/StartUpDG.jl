@@ -7,13 +7,13 @@ using StartUpDG
 
 # Required for visualization code
 using SummationByPartsOperators:
-    SummationByPartsOperators,
-    DerivativeOperator,
-    grid,
-    AbstractDerivativeOperator,
-    AbstractNonperiodicDerivativeOperator,
-    PeriodicDerivativeOperator,
-    AbstractPeriodicDerivativeOperator
+                                 SummationByPartsOperators,
+                                 DerivativeOperator,
+                                 grid,
+                                 AbstractDerivativeOperator,
+                                 AbstractNonperiodicDerivativeOperator,
+                                 PeriodicDerivativeOperator,
+                                 AbstractPeriodicDerivativeOperator
 
 function construct_1d_operators(D::AbstractDerivativeOperator, tol)
     nodes_1d = collect(grid(D))
@@ -39,9 +39,9 @@ function construct_1d_operators(D::AbstractDerivativeOperator, tol)
 end
 
 function StartUpDG.RefElemData(element_type::Line,
-    D::AbstractDerivativeOperator;
-    tol = 100 * eps(),
-    Nplot = 10)
+                               D::AbstractDerivativeOperator;
+                               tol = 100 * eps(),
+                               Nplot = 10)
     approximation_type = D
     N = SummationByPartsOperators.accuracy_order(D) # kind of polynomial degree
 
@@ -86,33 +86,33 @@ function StartUpDG.RefElemData(element_type::Line,
          StartUpDG.vandermonde(element_type, 1, r1)
 
     return RefElemData(element_type,
-        approximation_type,
-        N,
-        face_vertices,
-        V1,
-        rst,
-        VDM,
-        face_mask,
-        rst,
-        LinearAlgebra.I, # plotting
-        rstq,
-        wq,
-        Vq, # quadrature
-        rstf,
-        wf,
-        Vf,
-        nrstJ, # faces
-        M,
-        Pq,
-        Drst,
-        LIFT,
-        Nplot)
+                       approximation_type,
+                       N,
+                       face_vertices,
+                       V1,
+                       rst,
+                       VDM,
+                       face_mask,
+                       rst,
+                       LinearAlgebra.I, # plotting
+                       rstq,
+                       wq,
+                       Vq, # quadrature
+                       rstf,
+                       wf,
+                       Vf,
+                       nrstJ, # faces
+                       M,
+                       Pq,
+                       Drst,
+                       LIFT,
+                       Nplot)
 end
 
 function StartUpDG.RefElemData(element_type::Quad,
-    D::AbstractDerivativeOperator;
-    tol = 100 * eps(),
-    Nplot = 10)
+                               D::AbstractDerivativeOperator;
+                               tol = 100 * eps(),
+                               Nplot = 10)
     approximation_type = D
     N = SummationByPartsOperators.accuracy_order(D) # kind of polynomial degree
 
@@ -143,7 +143,7 @@ function StartUpDG.RefElemData(element_type::Quad,
     face_mask = vcat(StartUpDG.find_face_nodes(element_type, r, s)...)
 
     rf, sf, wf, nrJ, nsJ = StartUpDG.init_face_data(element_type,
-        quad_rule_face = (nodes_1d, weights_1d))
+                                                    quad_rule_face = (nodes_1d, weights_1d))
     if D isa AbstractPeriodicDerivativeOperator
         # we do not need any face stuff for periodic operators
         Vf = spzeros(length(wf), length(wq))
@@ -161,33 +161,33 @@ function StartUpDG.RefElemData(element_type::Quad,
          StartUpDG.vandermonde(element_type, 1, r1, s1)
 
     return RefElemData(element_type,
-        approximation_type,
-        N,
-        face_vertices,
-        V1,
-        rst,
-        VDM,
-        face_mask,
-        rst,
-        LinearAlgebra.I, # plotting
-        rstq,
-        wq,
-        Vq, # quadrature
-        rstf,
-        wf,
-        Vf,
-        nrstJ, # faces
-        M,
-        Pq,
-        Drst,
-        LIFT,
-        Nplot)
+                       approximation_type,
+                       N,
+                       face_vertices,
+                       V1,
+                       rst,
+                       VDM,
+                       face_mask,
+                       rst,
+                       LinearAlgebra.I, # plotting
+                       rstq,
+                       wq,
+                       Vq, # quadrature
+                       rstf,
+                       wf,
+                       Vf,
+                       nrstJ, # faces
+                       M,
+                       Pq,
+                       Drst,
+                       LIFT,
+                       Nplot)
 end
 
 function StartUpDG.RefElemData(element_type::Hex,
-    D::AbstractDerivativeOperator;
-    tol = 100 * eps(),
-    Nplot = 10,)
+                               D::AbstractDerivativeOperator;
+                               tol = 100 * eps(),
+                               Nplot = 10,)
     approximation_type = D
     N = SummationByPartsOperators.accuracy_order(D) # kind of polynomial degree
 
@@ -237,34 +237,34 @@ function StartUpDG.RefElemData(element_type::Hex,
          StartUpDG.vandermonde(element_type, 1, r1, s1, t1)
 
     return RefElemData(element_type,
-        approximation_type,
-        N,
-        face_vertices,
-        V1,
-        rst,
-        VDM,
-        face_mask,
-        rst,
-        LinearAlgebra.I, # plotting
-        rstq,
-        wq,
-        Vq, # quadrature
-        rstf,
-        wf,
-        Vf,
-        nrstJ, # faces
-        M,
-        Pq,
-        Drst,
-        LIFT,
-        Nplot)
+                       approximation_type,
+                       N,
+                       face_vertices,
+                       V1,
+                       rst,
+                       VDM,
+                       face_mask,
+                       rst,
+                       LinearAlgebra.I, # plotting
+                       rstq,
+                       wq,
+                       Vq, # quadrature
+                       rstf,
+                       wf,
+                       Vf,
+                       nrstJ, # faces
+                       M,
+                       Pq,
+                       Drst,
+                       LIFT,
+                       Nplot)
 end
 
 # specialized Hex constructor in 3D to reduce memory usage.
 function StartUpDG.RefElemData(element_type::Hex,
-    D::AbstractPeriodicDerivativeOperator;
-    tol = 100 * eps(),
-    Nplot = 10)
+                               D::AbstractPeriodicDerivativeOperator;
+                               tol = 100 * eps(),
+                               Nplot = 10)
     approximation_type = D
     N = SummationByPartsOperators.accuracy_order(D) # kind of polynomial degree
 
@@ -307,36 +307,38 @@ function StartUpDG.RefElemData(element_type::Hex,
     V1 = nothing # do not need to store V1, since we specialize StartUpDG.MeshData to avoid using it.
 
     return RefElemData(element_type,
-        approximation_type,
-        N,
-        face_vertices,
-        V1,
-        rst,
-        VDM,
-        face_mask,
-        rst,
-        LinearAlgebra.I, # plotting
-        rstq,
-        wq,
-        Vq, # quadrature
-        rstf,
-        wf,
-        Vf,
-        nrstJ, # faces
-        M,
-        Pq,
-        Drst,
-        LIFT,
-        Nplot)
+                       approximation_type,
+                       N,
+                       face_vertices,
+                       V1,
+                       rst,
+                       VDM,
+                       face_mask,
+                       rst,
+                       LinearAlgebra.I, # plotting
+                       rstq,
+                       wq,
+                       Vq, # quadrature
+                       rstf,
+                       wf,
+                       Vf,
+                       nrstJ, # faces
+                       M,
+                       Pq,
+                       Drst,
+                       LIFT,
+                       Nplot)
 end
 
 function Base.show(io::IO,
-    mime::MIME"text/plain",
-    rd::RefElemData{NDIMS, ElementType, ApproximationType}) where {
-    NDIMS,
-    ElementType <: StartUpDG.AbstractElemShape,
-    ApproximationType <: AbstractDerivativeOperator,
-}
+                   mime::MIME"text/plain",
+                   rd::RefElemData{NDIMS, ElementType, ApproximationType}) where {
+                                                                                  NDIMS,
+                                                                                  ElementType <:
+                                                                                  StartUpDG.AbstractElemShape,
+                                                                                  ApproximationType <:
+                                                                                  AbstractDerivativeOperator
+                                                                                  }
     @nospecialize rd
     print(io, "RefElemData for an approximation using an ")
     show(IOContext(io, :compact => true), rd.approximation_type)
@@ -344,24 +346,28 @@ function Base.show(io::IO,
 end
 
 function Base.show(io::IO,
-    rd::RefElemData{NDIMS, ElementType, ApproximationType}) where {
-    NDIMS,
-    ElementType <: StartUpDG.AbstractElemShape,
-    ApproximationType <: AbstractDerivativeOperator,
-}
+                   rd::RefElemData{NDIMS, ElementType, ApproximationType}) where {
+                                                                                  NDIMS,
+                                                                                  ElementType <:
+                                                                                  StartUpDG.AbstractElemShape,
+                                                                                  ApproximationType <:
+                                                                                  AbstractDerivativeOperator
+                                                                                  }
     @nospecialize rd
     print(io, "RefElemData{", summary(rd.approximation_type), ", ", rd.element_type, "}")
 end
 
-function StartUpDG.inverse_trace_constant(rd::RefElemData{
-    NDIMS,
-    ElementType,
-    ApproximationType,
-}) where {
-    NDIMS,
-    ElementType <: Union{Line, Quad, Hex},
-    ApproximationType <: AbstractDerivativeOperator,
-}
+function StartUpDG.inverse_trace_constant(rd::RefElemData{NDIMS,
+                                                          ElementType,
+                                                          ApproximationType}) where {
+                                                                                     NDIMS,
+                                                                                     ElementType <:
+                                                                                     Union{Line,
+                                                                                           Quad,
+                                                                                           Hex},
+                                                                                     ApproximationType <:
+                                                                                     AbstractDerivativeOperator
+                                                                                     }
     D = rd.approximation_type
 
     # the inverse trace constant is the maximum eigenvalue corresponding to
@@ -387,12 +393,14 @@ end
 # based on the reference grid provided by SummationByPartsOperators.jl and information about the domain size
 # provided by `md::MeshData``.
 function StartUpDG.estimate_h(e,
-    rd::RefElemData{NDIMS, ElementType, ApproximationType},
-    md::MeshData) where {
-    NDIMS,
-    ElementType <: StartUpDG.AbstractElemShape,
-    ApproximationType <: SummationByPartsOperators.AbstractPeriodicDerivativeOperator,
-}
+                              rd::RefElemData{NDIMS, ElementType, ApproximationType},
+                              md::MeshData) where {
+                                                   NDIMS,
+                                                   ElementType <:
+                                                   StartUpDG.AbstractElemShape,
+                                                   ApproximationType <:
+                                                   SummationByPartsOperators.AbstractPeriodicDerivativeOperator
+                                                   }
     D = rd.approximation_type
     x = grid(D)
 

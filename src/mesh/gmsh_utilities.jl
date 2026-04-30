@@ -31,7 +31,7 @@ end
  ## Notes: Gmsh includes elements in a .msh file of multiple dimensions. We want a count of how many
  2D elements are in our file. This corisponds to the number of elements in our tri mesh.
 """
-function get_num_elements(lines::Vector{String}, Dim=2)
+function get_num_elements(lines::Vector{String}, Dim = 2)
     elem_start = findline("\$Elements", lines) + 1
     temp_num_blocks = split(lines[elem_start])[1]
     num_blocks = parse(Int, temp_num_blocks)
@@ -59,7 +59,7 @@ remap_element_grouping([16,16,17,17]) -> [1,1,2,2]
 function remap_element_grouping(eg::Vector{Int})
     groupids = unique(eg)
     newids = 1:length(groupids)
-    map = Dict{Int,Int}()
+    map = Dict{Int, Int}()
     for (i, id) in enumerate(groupids)
         map[id] = newids[i]
     end
@@ -141,11 +141,11 @@ function read_Gmsh_2D_v4(filename::String, options::MeshImportOptions)
 
         surface_start_line = entities_start_line + numPoints + numCurves
         @info "Expecting Surface data to start on line $surface_start_line of .msh file"
-        surfaceData = Dict{Int,Int}()
+        surfaceData = Dict{Int, Int}()
         for i in 1:numSurfaces
-            surfaceInfo = split(lines[i+surface_start_line])
+            surfaceInfo = split(lines[i + surface_start_line])
             surfTag, numPhysTag, PhysTag = [parse(Int, c) for c in surfaceInfo[[1, 8, 9]]]
-            @assert numPhysTag == 1 "Surfaces must have one physical tag associated you have $numPhysTag"
+            @assert numPhysTag==1 "Surfaces must have one physical tag associated you have $numPhysTag"
             surfaceData[surfTag] = PhysTag
         end
         @info "Tag grouping: $surfaceData"
@@ -194,7 +194,7 @@ function read_Gmsh_2D_v4(filename::String, options::MeshImportOptions)
         if elem_block_dim == 2 # only interesed in 2d triangle elements
             for e_idx in 1:num_elem_in_block
                 elem_global_idx = elem_global_idx + 1
-                vals = [parse(Int, c) for c in split(lines[e_idx+block_line_start])]
+                vals = [parse(Int, c) for c in split(lines[e_idx + block_line_start])]
                 _, nodeA, nodeB, nodeC = vals
                 EToV[elem_global_idx, :] .= [nodeA, nodeB, nodeC]
                 if grouping
@@ -266,7 +266,8 @@ For brevity when grouping is the only supported feature.
     example: VXY, EToV, grouping = read_Gmsh_2D_v4("file.msh",true)
     example: VXY, EToV = read_Gmsh_2D_v4("file.msh",false)
 """
-function read_Gmsh_2D_v4(filename::String, groupOpt::Bool=false, remap_group_name::Bool=false)
+function read_Gmsh_2D_v4(filename::String, groupOpt::Bool = false,
+                         remap_group_name::Bool = false)
     options = MeshImportOptions(groupOpt, remap_group_name)
     return read_Gmsh_2D_v4(filename, options)
 end
@@ -294,8 +295,8 @@ function read_Gmsh_2D_v2(filename::String)
     node_start = findline("\$Nodes", lines) + 1
     Nv = parse(Int64, lines[node_start])
     VX, VY, VZ = ntuple(x -> zeros(Float64, Nv), 3)
-    for i = 1:Nv
-        vals = [parse(Float64, c) for c in split(lines[i+node_start])]
+    for i in 1:Nv
+        vals = [parse(Float64, c) for c in split(lines[i + node_start])]
         # first entry =
         VX[i] = vals[2]
         VY[i] = vals[3]
@@ -304,16 +305,16 @@ function read_Gmsh_2D_v2(filename::String)
     elem_start = findline("\$Elements", lines) + 1
     K_all = parse(Int64, lines[elem_start])
     K = 0
-    for e = 1:K_all
-        if length(split(lines[e+elem_start])) == 8
+    for e in 1:K_all
+        if length(split(lines[e + elem_start])) == 8
             K = K + 1
         end
     end
     EToV = zeros(Int64, K, 3)
     sk = 1
-    for e = 1:K_all
-        if length(split(lines[e+elem_start])) == 8
-            vals = [parse(Int64, c) for c in split(lines[e+elem_start])]
+    for e in 1:K_all
+        if length(split(lines[e + elem_start])) == 8
+            vals = [parse(Int64, c) for c in split(lines[e + elem_start])]
             EToV[sk, :] .= vals[6:8]
             sk = sk + 1
         end
