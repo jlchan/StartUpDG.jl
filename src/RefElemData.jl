@@ -278,7 +278,7 @@ struct SBP{Type} end
 SBP() = SBP{DefaultSBPType}() # no-parameter default
 
 # sets default to TensorProductLobatto on Quads 
-function RefElemData(elem::Union{Line, Quad, Hex}, approxT::SBP{DefaultSBPType}, N;
+function RefElemData(elem::AbstractTensorProductElement, approxT::SBP{DefaultSBPType}, N;
                      kwargs...)
     RefElemData(elem, SBP{TensorProductLobatto}(), N; kwargs...)
 end

@@ -516,11 +516,11 @@ function RefElemData(elem::Union{Wedge},
 end
 
 """
-    RefElemData(elem::Union{Line, Quad, Hex}, approximation_type::Polynomial{Gauss}, N)
+    RefElemData(elem::AbstractTensorProductElement, approximation_type::Polynomial{Gauss}, N)
 
 Builds a `rd::RefElemData` with (N+1)-point Gauss quadrature in each dimension. 
 """
-function RefElemData(element_type::Union{Line, Quad, Hex},
+function RefElemData(element_type::AbstractTensorProductElement,
                      approximation_type::Polynomial{<:TensorProductGaussCollocation},
                      N; kwargs...)
     quadrature_type = TensorProductQuadrature(gauss_quad(0, 0, N))
@@ -528,7 +528,8 @@ function RefElemData(element_type::Union{Line, Quad, Hex},
     return @set rd.approximation_type = approximation_type
 end
 
-function RefElemData(element_type::Union{Line, Quad, Hex}, ::TensorProductGaussCollocation,
+function RefElemData(element_type::AbstractTensorProductElement,
+                     ::TensorProductGaussCollocation,
                      N; kwargs...)
     RefElemData(element_type, Polynomial{TensorProductGaussCollocation}(), N; kwargs...)
 end
