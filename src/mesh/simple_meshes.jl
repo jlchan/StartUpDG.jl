@@ -305,4 +305,4 @@ end
 uniform_mesh(elem::Union{Hex, Wedge, Pyr, Tet}, Kx) = uniform_mesh(elem, Kx, Kx, Kx)
 
 # keyword argument version
-uniform_mesh(elem::AbstractElemShape; K1D) = uniform_mesh(elem, K1D)
+uniform_mesh(elem::AbstractElementShape; K1D) = uniform_mesh(elem, K1D)

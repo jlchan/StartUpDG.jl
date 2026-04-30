@@ -266,8 +266,8 @@ function MeshData(rds::MultipleRefElemData,
                   md::MeshData{Dim}, xyz_curved...) where {Dim}
 
     # TODO: can this be made type stable?
-    tuple_fields = Dict{AbstractElemShape, NamedTuple}()
-    scalar_fields = Dict{AbstractElemShape, NamedTuple}()
+    tuple_fields = Dict{AbstractElementShape, NamedTuple}()
+    scalar_fields = Dict{AbstractElementShape, NamedTuple}()
     for rd in values(rds)
         # compute curved geometric properties for each element type
         xyz = getproperty.(xyz_curved, typename(rd.element_type))

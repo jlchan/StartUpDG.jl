@@ -2,7 +2,7 @@
 @inline Np_cut(N) = (N + 1) * (N + 2) ÷ 2
 
 """
-    `PhysicalFrame{NDIMS} <: AbstractElemShape{NDIMS}`
+    `PhysicalFrame{NDIMS} <: AbstractElementShape{NDIMS}`
     
 `PhysicalFrame` element type. Uses a total degree N approximation space, but is 
 computed with a tensor product Legendre basis as opposed to a triangular PKDO basis.
@@ -16,7 +16,7 @@ they are on the reference element.
 Constructors for a PhysicalFrame object (optionally uses arrays of points `x`, `y` on a cut element).
 """
 struct PhysicalFrame{NDIMS, Shifting <: SVector{NDIMS}, Scaling <: SVector{NDIMS}, VXYZ} <:
-       AbstractElemShape{NDIMS}
+       AbstractElementShape{NDIMS}
     shifting::Shifting
     scaling::Scaling
     vxyz::VXYZ # coordinates of background Cartesian cell

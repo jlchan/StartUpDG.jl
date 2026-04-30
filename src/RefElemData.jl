@@ -11,7 +11,7 @@ rd = RefElemData(Tri(), N)
 (; r, s ) = rd
 ```
 """
-struct RefElemData{Dim, ElemShape <: AbstractElemShape{Dim}, ApproximationType,
+struct RefElemData{Dim, ElemShape <: AbstractElementShape{Dim}, ApproximationType,
                    NT, FV, RST, RSTP, RSTQ, RSTF, NRSTJ, FMASK, TVDM,
                    VQ, VF, MM, P, D, L, VP, V1Type, WQ, WF, NP}
     element_type::ElemShape
@@ -174,7 +174,7 @@ RefElemData(elem, N::Int; kwargs...) = RefElemData(elem, Polynomial(), N; kwargs
 @inline face_type(::Tet) = Tri()
 
 # generic fallback 
-@inline face_type(elem::AbstractElemShape, id) = face_type(elem)
+@inline face_type(elem::AbstractElementShape, id) = face_type(elem)
 
 # Wedges have different types of faces depending on the face. 
 # We define the first three faces to be quadrilaterals and the 
