@@ -342,8 +342,8 @@ function RefElemData(elem::Quad,
     VDM_1D = vandermonde(Line(), N, r1D)
     Vq1D = vandermonde(Line(), N, rq1D) / VDM_1D
     invVDM_1D = inv(VDM_1D)
-    invM_1D = VDM_1D * VDM_1D'
     M1D = Vq1D' * diagm(wq1D) * Vq1D
+    invM_1D = inv(M1D)
 
     # form kronecker products of multidimensional matrices to invert/multiply
     VDM = kron(VDM_1D, VDM_1D)
@@ -402,8 +402,8 @@ function RefElemData(elem::Hex,
     VDM_1D = vandermonde(Line(), N, r1D)
     Vq1D = vandermonde(Line(), N, rq1D) / VDM_1D
     invVDM_1D = inv(VDM_1D)
-    invM_1D = VDM_1D * VDM_1D'
     M1D = Vq1D' * diagm(wq1D) * Vq1D
+    invM_1D = inv(M1D)
 
     # form kronecker products of multidimensional matrices to invert/multiply
     # use dense matrix "kron" if N is small.
