@@ -116,7 +116,8 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
 
     # set the polynomial degree as the tuple of the line and triangle degree for now
     return RefElemData(Wedge(node_ids_by_face), approximation_type, (line.N, tri.N), fv, V1,
-                       tuple(r, s, t), VDM, Fmask,
+                       tuple(r, s, t), VDM, 
+                       vcat(Fmask...), # flatten Fmask to a single vector
                        tuple(rp, sp, tp), Vp,
                        tuple(rq, sq, tq), wq, Vq,
                        rstf, wf, Vf, tuple(nrJ, nsJ, ntJ),
