@@ -3,10 +3,12 @@
 [![Docs-dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://jlchan.github.io/StartUpDG.jl/dev)
 [![Build status](https://github.com/jlchan/StartUpDG.jl/workflows/CI/badge.svg)](https://github.com/jlchan/StartUpDG.jl/actions)
 [![Codecov](https://codecov.io/gh/jlchan/StartUpDG.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/jlchan/StartUpDG.jl)
+[![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://opensource.org/licenses/MIT)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12576091.svg)](https://doi.org/10.5281/zenodo.12576091)
 
-This package contains routines to initialize reference element operators, physical mesh arrays, and connectivity arrays for nodal discontinuous Galerkin (DG) methods. It is intended to quick-start the implementation of from-scratch high order time-domain nodal DG solvers for partial differential equations (PDEs), and is designed for flexibility and experimentation. 
+This package contains routines to initialize reference element operators, physical mesh arrays, and connectivity arrays for nodal discontinuous Galerkin (DG) methods. It is intended to quick-start the implementation of from-scratch high order time-domain nodal DG solvers for partial differential equations (PDEs), and is designed for flexibility and experimentation.
 
-The codes are roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007). The original port from Matlab to Julia was by [Yimin Lin](https://github.com/yiminllin), with subsequent modifications by Jesse Chan and other contributors. 
+The codes are roughly based on *Nodal Discontinuous Galerkin Methods* by Hesthaven and Warburton (2007). The original port from Matlab to Julia was by [Yimin Lin](https://github.com/yiminllin), with subsequent modifications by Jesse Chan and other contributors.
 
 This package is registered and can be installed via `] add StartUpDG` or `using Pkg; Pkg.add("StartUpDG")`.
 
@@ -38,7 +40,11 @@ dudx = (rxJ .* (Dr * u) + sxJ .* (Ds * u)) ./ J
 
 # Contributors
 
-* SBP nodal points were contributed by [Ethan Kubatko](https://sites.google.com/site/chilatosu/ethan-bio) and [Jason Hicken](https://doi.org/10.1007/s10915-020-01154-8). 
-* [Hendrik Ranocha](https://ranocha.de) contributed to array types used in cut-cell and hybrid meshes. 
+* SBP nodal points were contributed by [Ethan Kubatko](https://sites.google.com/site/chilatosu/ethan-bio) and [Jason Hicken](https://doi.org/10.1007/s10915-020-01154-8).
+* [Hendrik Ranocha](https://ranocha.de) contributed to array types used in cut-cell and hybrid meshes.
 * [Mason McCallum](https://github.com/masonamccallum) contributed Gmsh reading capabilities
 * [David Knapp](https://github.com/Davknapp) contributed VTK visualization capabilities and tensor product wedges.
+
+## Referencing
+
+If you use [StartUpDG.jl](https://github.com/jlchan/StartUpDG.jl) for your research, please cite it using the DOI [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12576091.svg)](https://doi.org/10.5281/zenodo.12576091).
