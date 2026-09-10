@@ -39,11 +39,11 @@ A corresponding bibtex entry is
 
 ```bibtex
 @misc{chan2026startupdg,
-  title={StartUpDG.jl: Initializes and sets up reference elements and physical meshes for DG},
-  author={Jesse Chan and David Knapp and Mason McCallum and
-          Hendrik Ranocha and Christina G Taylor and Philipp Baasch
-          and Daniel Doehring and Johannes Markert and Joshua Lampert
-          and Tristan Montoya and Vincent X. Wang},
+  title={{StartUpDG.jl{}: Initializes and sets up reference elements and physical meshes for {DG}},
+  author={Chan, Jesse and Knapp, David and McCallum, Mason and
+          Ranocha, Hendrik and Taylor, Christina G. and Baasch, Philipp
+          and Doehring, Daniel and Markert, Johannes and Lampert, Joshua
+          and Montoya, Tristan and Wang, Vincent X.},
   year={2026},
   howpublished={\url{https://github.com/jlchan/StartUpDG.jl}},
   doi={10.5281/zenodo.19906078}
