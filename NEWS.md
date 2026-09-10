@@ -2,6 +2,12 @@
 
 StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https://julialang.github.io/Pkg.jl/dev/compatibility/#Version-specifier-format-1) used in the Julia ecosystem. Recent changes will be documented in this file for human readability.
 
+## Changes when updating to v1.4.1
+
+#### Fixed
+
+* Fixed an incorrect inverse mass matrix used in the projection operator for `Polynomial(TensorProductQuadrature(...))` approximations on quads and hexes. The 1D inverse mass matrix is now computed as `inv(M1D)` instead of `VDM_1D * VDM_1D'`.
+
 ## Changes when updating to v1.0.0
 
 Most of the major changes are tracked in this [PR](https://github.com/jlchan/StartUpDG.jl/pull/160). Some descriptions of other changes are listed below. 
