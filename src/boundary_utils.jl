@@ -88,21 +88,16 @@ function tag_boundary_nodes(rd, md, boundary_list::Dict)
     return Dict(Pair.(keys(boundary_list), node_tags))
 end
 
-
-# TODO: Implement tagging of boundary nodes & faces based on physical names
-# IDEA: Maybe compute the face cnetroid for the labeled faces and then use these to identify the boundary indices?
 """
     tag_boundary_faces_from_edges_dict(md, edges_dict, boundary_names = :all; atol = 1e-13)
  
-Map edges from Gmsh `edges_dict` to boundary face indices in `MeshData` 
-by matching face centroids against edge midpoints.
- 
-This is the most direct approach: compares the centroid of each DG boundary face
-to the precomputed midpoints of Gmsh edges with the same physical tag.
+Map edges from Gmsh `edges_dict` to boundary edge/face indices in `md`.
+This follows the approach: Compare the centroid of each DG boundary edge/face
+to the precomputed (based on mesh info) midpoints of the edges/faces with the same physical tag.
  
 # Arguments
 - `md`: MeshData object
-- `edges_dict`: Dictionary from `build_edges_dict()` with :midpoints field
+- `edges_dict`: Dictionary from `build_edges_dict()` with `:midpoints` field
 - `boundary_names`: Symbol(s) to extract (default `:all` for all boundaries)
 - `atol`: Absolute tolerance for coordinate matching (default 1e-13)
  
@@ -123,10 +118,10 @@ function tag_boundary_faces_from_edges_dict(md, edges_dict,
     
     # Compute boundary face centroids (using existing StartUpDG function)
     xyzb, boundary_face_ids = boundary_face_centroids(md)
-    xb, yb = xyzb[1], xyzb[2]  # Face centroids
+    xb, yb = xyzb[1], xyzb[2] # Face centroids
     
     # Build a list of all Gmsh edge midpoints with their tags and names
-    gmsh_edge_midpoints = []  # Vector of (x, y, tag, name)
+    gmsh_edge_midpoints = [] # Vector of (x, y, tag, name)
     
     for (name, info) in edges_dict
         tag = info[:tag]
@@ -138,7 +133,7 @@ function tag_boundary_faces_from_edges_dict(md, edges_dict,
     
     # Determine which boundaries to include
     if boundary_names isa Symbol && boundary_names == :all
-        names_to_use = keys(edges_dict)
+        names_to_use = keys(edges_dict) # Select all detected boundaries
     else
         names_to_use = boundary_names isa Symbol ? [boundary_names] : boundary_names
     end
@@ -153,34 +148,27 @@ function tag_boundary_faces_from_edges_dict(md, edges_dict,
         end
         
         matched_faces = Int[]
-        target_tag = edges_dict[name][:tag]
+        target_tag = edges_dict[name][:tag] # mesh info
         
-        # For each boundary face
-        for (face_idx, face_id) in enumerate(boundary_face_ids)
-            face_x = xb[face_idx]
-            face_y = yb[face_idx]
-            
-            # Find nearest Gmsh edge midpoint with matching tag
-            best_dist = Inf
-            best_gmsh_edge = nothing
-            
-            for (mx, my, tag, gmsh_name) in gmsh_edge_midpoints
-                if tag == target_tag
-                    dist = sqrt((face_x - mx)^2 + (face_y - my)^2)
-                    if dist < best_dist
-                        best_dist = dist
-                        best_gmsh_edge = (mx, my, tag, gmsh_name)
-                    end
-                end
+        # For each Gmsh edge with this boundary tag
+        for (mx, my, tag, gmsh_name) in gmsh_edge_midpoints
+            if tag != target_tag
+                continue
             end
-            
-            # Match if within tolerance
-            if best_dist < atol
-                push!(matched_faces, face_id)
+
+            # Find first (up to tolerance) matching DG boundary face
+            for (face_idx, face_id) in enumerate(boundary_face_ids)
+                face_x = xb[face_idx]
+                face_y = yb[face_idx]
+                dist = sqrt((face_x - mx)^2 + (face_y - my)^2)
+                if dist <= atol
+                    push!(matched_faces, face_id)
+                    break
+                end
             end
         end
         
-        result[name] = sort!(unique!(matched_faces))
+        result[name] = sort!(matched_faces)
     end
     
     return result

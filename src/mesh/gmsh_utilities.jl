@@ -73,8 +73,9 @@ end
 """
     parse_physical_names(lines::Vector{String})
  
-Extract physical name -> tag mapping from MSH 2.2 file.
-Returns: Dict{String, Int} mapping names to physical tags
+Extract physical name -> integer tag mapping from MSH 2.2 file.
+# Returns:
+- Dict{String, Int} mapping names to physical tags.
 """
 function parse_physical_names(lines::Vector{String})
     physical_names = Dict{String, Int}()
@@ -196,6 +197,7 @@ function read_Gmsh_2D_v4(filename::String, options::MeshImportOptions)
 
     f = open(filename)
     lines = readlines(f)
+    close(f)
 
     format_line = findline("\$MeshFormat", lines) + 1
     version, _, dataSize = split(lines[format_line])
@@ -330,6 +332,7 @@ https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_00
 function read_Gmsh_2D(filename::String, args...)
     f = open(filename)
     lines = readlines(f)
+    close(f)
 
     format_line = findline("\$MeshFormat", lines) + 1
     version, _ = split(lines[format_line])
