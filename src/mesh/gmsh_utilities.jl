@@ -105,7 +105,7 @@ function parse_physical_names(lines::Vector{String})
 end
 
 """
-    build_edges_dict(edge_list::Vector, physical_names::Dict)
+    build_edges_dict(edge_list::Vector, physical_names::Dict, coords::Tuple)
  
 Build a dictionary mapping physical tag names to edge information.
  
@@ -114,11 +114,7 @@ Returns: `Dict{Symbol, Dict}` with structure:
 ```julia
   :boundary_name => Dict(
       :tag => Int,
-      :edges => Vector{Tuple},
-      :nodes => Vector{Int},
-      :midpoints => Vector{Tuple{Float64, Float64}}, # Edge midpoints
-      :n_edges => Int,
-      :n_nodes => Int
+      :midpoints => Vector{Tuple{Float64, Float64}} # Edge midpoints
   )
 ```
 """
@@ -153,18 +149,12 @@ function build_edges_dict(edge_list::Vector, physical_names::Dict, coords::Tuple
         
         edges_dict[name_sym] = Dict(
             :tag => tag,
-            :edges => edges,
-            :nodes => nodes,
-            :midpoints => midpoints,
-            :n_edges => length(edges),
-            :n_nodes => length(nodes)
+            :midpoints => midpoints # Midpoints sufficient for DG boundary face matching
         )
     end
     
     return edges_dict
 end
-
-
 
 """
     function read_Gmsh_2D_v4(filename, options)
