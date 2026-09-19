@@ -52,6 +52,24 @@ end
         @test StartUpDG.remap_element_grouping(testvec) == [1, 2, 1, 3, 4]
     end
 
+    @testset "test gmsh v2.2 boundary edge tagging" begin
+        options = MeshImportOptions(false, false, true)
+        VXY, EToV, edges_dict = read_Gmsh_2D("test/testset_Gmsh_meshes/cube2.msh", options)
+
+        # Create MeshData
+        rd = RefElemData(Tri(), N=3)
+        md = MeshData(VXY, EToV, rd)
+
+        # Get boundary faces and nodes directly from Gmsh
+        boundary_faces = StartUpDG.tag_boundary_faces(md, edges_dict)
+
+        # Test specific boundaries
+        @test boundary_faces[:bottom] == [40, 82, 85, 115, 130]
+        @test boundary_faces[:right] == [28, 46, 64, 124, 127]
+        @test boundary_faces[:top] == [31, 49, 79, 112, 121]
+        @test boundary_faces[:left] == [34, 52, 76, 109, 118]
+    end
+
     @testset "$approxType MeshData initialization with gmsh import" for approxType in [
         Polynomial(),
         SBP()

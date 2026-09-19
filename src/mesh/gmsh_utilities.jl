@@ -16,7 +16,7 @@ end
 """
     MeshImportOptions
 This struct allows the user to opt for supported features when importing
-a Gmsh 4.1 .msh file.
+a Gmsh .msh file.
 ## Support
 - grouping::Bool | On import would you like to include physical group assignements of 2D elements?
 - remap\\_group\\_name::Bool | On import would you like to maintain or remap physical group ID? Remap results in groupIds in the range 1:number\\_group\\_ids.
@@ -24,7 +24,11 @@ a Gmsh 4.1 .msh file.
 struct MeshImportOptions
     grouping::Bool
     remap_group_name::Bool
+    edges_dict::Bool
 end
+
+MeshImportOptions(grouping::Bool, remap_group_name::Bool) =
+    MeshImportOptions(grouping, remap_group_name, false)
 
 """
  returns the number of elements in a .msh file of a specified dimension
@@ -324,9 +328,13 @@ Returns (VX, VY), EToV.
 VXY, EToV = read_Gmsh_2D("eulerSquareCylinder2D.msh") # v2.2 file format
 VXY, EToV = read_Gmsh_2D("test/testset_Gmsh_meshes/periodicity_mesh_v4.msh") # v4.1 file format
 
-# if MeshImportOptions.grouping=true, then a third variable `grouping` is returned
+# if `MeshImportOptions.grouping=true`, then a third variable `grouping` is returned (only for v4.1 files)
 VXY, EToV, grouping = read_Gmsh_2D("test/testset_Gmsh_meshes/periodicity_mesh_v4.msh", MeshImportOptions(true, false))
 VXY, EToV, grouping = read_Gmsh_2D("test/testset_Gmsh_meshes/periodicity_mesh_v4.msh", true) # same as above
+
+# if `MeshImportOptions.edges_dict=true`, then a third variable `edges_dict` is returned (only for v2.2 files)
+VXY, EToV, edges_dict = read_Gmsh_2D("test/testset_Gmsh_meshes/cube2.msh",
+                                     MeshImportOptions(false, false, true))
 ```
 
 # See also
@@ -343,7 +351,7 @@ function read_Gmsh_2D(filename::String, args...)
     gmsh_version = parse(Float64, version)
     if gmsh_version == 2.2
         @info "reading Gmsh file with legacy ($gmsh_version) format"
-        return read_Gmsh_2D_v2(filename)
+        return read_Gmsh_2D_v2(filename, args...)
     elseif gmsh_version == 4.1
         @info "reading Gmsh file with legacy ($gmsh_version) format"
         return read_Gmsh_2D_v4(filename, args...)
@@ -365,11 +373,13 @@ function read_Gmsh_2D_v4(filename::String, groupOpt::Bool = false,
 end
 
 """
-    read_Gmsh_2D_v2(filename::String)
+    read_Gmsh_2D_v2(filename::String,
+                    options::MeshImportOptions = MeshImportOptions(false, false, false))
 
 Reads triangular GMSH 2D file format 2.2 0 8.
-Returns: (VX, VY), EToV, edges_dict
-where edges_dict maps physical_tag_names to edge connectivity and node lists.
+Returns `(VX, VY), EToV` by default. If `options.edges_dict` is true, also
+returns `edges_dict`, which maps physical tag names to edge connectivity and
+node lists.
 
 # Examples
 ```julia
@@ -378,7 +388,8 @@ VXY, EToV = read_Gmsh_2D_v2("eulerSquareCylinder2D.msh")
 
 https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_0029
 """
-function read_Gmsh_2D_v2(filename::String)
+function read_Gmsh_2D_v2(filename::String,
+                          options::MeshImportOptions = MeshImportOptions(false, false, false))
     f = open(filename)
     lines = readlines(f)
     close(f)
@@ -409,7 +420,8 @@ function read_Gmsh_2D_v2(filename::String)
     # First pass: count triangular elements
     K = 0
     for e in 1:K_all
-        if length(split(lines[e + elem_start])) == 8
+        fields = split(lines[e + elem_start])
+        if parse(Int64, fields[2]) == 2
             K = K + 1
         end
     end
@@ -444,10 +456,14 @@ function read_Gmsh_2D_v2(filename::String)
     # Correct negative Jacobians (for triangles)
     EToV = correct_negative_Jacobians!((VX, VY), EToV)
  
-    # Build edges dictionary indexed by physical tag name
-    edges_dict = build_edges_dict(edge_list, physical_names, (VX, VY))
- 
-    return (VX, VY), EToV, edges_dict
+    if options.edges_dict
+        # Build edges dictionary indexed by physical tag name
+        edges_dict = build_edges_dict(edge_list, physical_names, (VX, VY))
+        
+        return (VX, VY), EToV, edges_dict
+    end
+
+    return (VX, VY), EToV
 end
 
 """
