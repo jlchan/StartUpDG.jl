@@ -89,8 +89,7 @@ function tag_boundary_nodes(rd, md, boundary_list::Dict)
 end
 
 """
-    function tag_boundary_faces(md::MeshData{2}, edges_dict::Dict{Symbol, Dict},
-                                boundary_names::Union{Symbol, Vector{Symbol}};
+    function tag_boundary_faces(md::MeshData{2}, edges_dict::Dict{Symbol, Dict};
                                 atol = 1e-13)
  
 Map edges from Gmsh `edges_dict` to boundary edge/face indices in `md`.
@@ -100,7 +99,6 @@ to the precomputed (based on mesh info) midpoints of the edges/faces with the sa
 Arguments:
 - `md`: MeshData object
 - `edges_dict`: Dictionary from `build_edges_dict()` with `:midpoints` field
-- `boundary_names`: Symbol(s) to extract (default `:all` for all boundaries)
 - `atol`: Absolute tolerance for coordinate matching (default 1e-13)
  
 Returns `Dict{Symbol, Vector{Int}}` mapping boundary names to face indices in `md`
@@ -109,12 +107,11 @@ Example usage:
 ```julia
 coords, EToV, edges_dict, elem_type = read_Gmsh_2D_v2("mesh.msh")
 md = MeshData(coords, EToV, rd)
-boundary_faces = tag_boundary_faces(md, edges_dict, :all)
+boundary_faces = tag_boundary_faces(md, edges_dict)
 # boundary_faces[:bottom] => [1, 2, 5, 6, ...] (face indices)
 ```
 """
-function tag_boundary_faces(md::MeshData{2}, edges_dict::Dict{Symbol, Dict},
-                            boundary_names::Union{Symbol, Vector{Symbol}};
+function tag_boundary_faces(md::MeshData{2}, edges_dict::Dict{Symbol, Dict};
                             atol = 1e-13)
 
     # Compute boundary face centroids (using existing StartUpDG function)
@@ -132,21 +129,9 @@ function tag_boundary_faces(md::MeshData{2}, edges_dict::Dict{Symbol, Dict},
         end
     end
 
-    # Determine which boundaries to include
-    if boundary_names isa Symbol && boundary_names == :all
-        names_to_use = keys(edges_dict) # Select all detected boundaries
-    else
-        names_to_use = boundary_names isa Symbol ? [boundary_names] : boundary_names
-    end
-
     edges_per_symbol = Dict{Symbol, Vector{Int}}()
 
-    for name in names_to_use
-        if !haskey(edges_dict, name)
-            @warn "Boundary '$name' not found in edges_dict. Skipping."
-            continue
-        end
-
+    for name in keys(edges_dict)
         matched_faces = Int[] # faces per boundary name
         target_tag = edges_dict[name][:tag] # mesh info
 
