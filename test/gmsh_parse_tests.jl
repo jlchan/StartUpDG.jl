@@ -54,7 +54,8 @@ end
 
     @testset "test gmsh v2.2 boundary edge tagging" begin
         options = MeshImportOptions(false, false, true)
-        VXY, EToV, edges_dict = read_Gmsh_2D("test/testset_Gmsh_meshes/cube2.msh", options)
+        VXY, EToV, edges_dict = read_Gmsh_2D(joinpath(@__DIR__, "testset_Gmsh_meshes",
+                                                      "cube2.msh"), options)
 
         # Create MeshData
         rd = RefElemData(Tri(), N = 3)
