@@ -89,32 +89,32 @@ function tag_boundary_nodes(rd, md, boundary_list::Dict)
 end
 
 """
-    tag_boundary_faces_from_edges_dict(md, edges_dict, boundary_names = :all; atol = 1e-13)
+    function tag_boundary_faces(md::MeshData{2}, edges_dict,
+                                boundary_names = :all; atol = 1e-13)
  
 Map edges from Gmsh `edges_dict` to boundary edge/face indices in `md`.
 This follows the approach: Compare the centroid of each DG boundary edge/face
 to the precomputed (based on mesh info) midpoints of the edges/faces with the same physical tag.
  
-# Arguments
+Arguments:
 - `md`: MeshData object
 - `edges_dict`: Dictionary from `build_edges_dict()` with `:midpoints` field
 - `boundary_names`: Symbol(s) to extract (default `:all` for all boundaries)
 - `atol`: Absolute tolerance for coordinate matching (default 1e-13)
  
-# Returns
-`Dict{Symbol, Vector{Int}}` mapping boundary names to face indices in `md`
+Returns `Dict{Symbol, Vector{Int}}` mapping boundary names to face indices in `md`
  
-# Example
+Example usage:
 ```julia
 coords, EToV, edges_dict, elem_type = read_Gmsh_2D_v2("mesh.msh")
 md = MeshData(coords, EToV, rd)
-boundary_faces = tag_boundary_faces_from_edges_dict(md, edges_dict)
+boundary_faces = tag_boundary_faces(md, edges_dict)
 # boundary_faces[:bottom] => [1, 2, 5, 6, ...] (face indices)
 ```
 """
-function tag_boundary_faces_from_edges_dict(md, edges_dict, 
-                                            boundary_names::Union{Symbol, Vector{Symbol}} = :all;
-                                            atol = 1e-13)
+function tag_boundary_faces(md::MeshData{2}, edges_dict, 
+                            boundary_names::Union{Symbol, Vector{Symbol}} = :all;
+                            atol = 1e-13)
     
     # Compute boundary face centroids (using existing StartUpDG function)
     xyzb, boundary_face_ids = boundary_face_centroids(md)
@@ -137,9 +137,8 @@ function tag_boundary_faces_from_edges_dict(md, edges_dict,
     else
         names_to_use = boundary_names isa Symbol ? [boundary_names] : boundary_names
     end
-    
-    # Match face centroids to edge midpoints
-    result = Dict{Symbol, Vector{Int}}()
+
+    edges_per_symbol = Dict{Symbol, Vector{Int}}()
     
     for name in names_to_use
         if !haskey(edges_dict, name)
@@ -147,12 +146,12 @@ function tag_boundary_faces_from_edges_dict(md, edges_dict,
             continue
         end
         
-        matched_faces = Int[]
+        matched_faces = Int[] # faces per boundary name
         target_tag = edges_dict[name][:tag] # mesh info
         
         # For each Gmsh edge with this boundary tag
         for (mx, my, tag, gmsh_name) in gmsh_edge_midpoints
-            if tag != target_tag
+            if tag != target_tag # Skip edges that don't match the current boundary tag
                 continue
             end
 
@@ -168,8 +167,8 @@ function tag_boundary_faces_from_edges_dict(md, edges_dict,
             end
         end
         
-        result[name] = sort!(matched_faces)
+        edges_per_symbol[name] = sort!(matched_faces) # sorting is not strictly necessary
     end
     
-    return result
+    return edges_per_symbol
 end

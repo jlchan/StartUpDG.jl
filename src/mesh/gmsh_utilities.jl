@@ -74,7 +74,8 @@ end
     parse_physical_names(lines::Vector{String})
  
 Extract physical name -> integer tag mapping from MSH 2.2 file.
-# Returns:
+
+Returns:
 - Dict{String, Int} mapping names to physical tags.
 """
 function parse_physical_names(lines::Vector{String})
@@ -102,15 +103,18 @@ end
  
 Build a dictionary mapping physical tag names to edge information.
  
-Returns: Dict{Symbol, Dict} with structure:
+Returns: `Dict{Symbol, Dict}` with structure:
+
+```julia
   :boundary_name => Dict(
       :tag => Int,
       :edges => Vector{Tuple},
       :nodes => Vector{Int},
-      :midpoints => Vector{Tuple{Float64, Float64}},  # Edge midpoints
+      :midpoints => Vector{Tuple{Float64, Float64}}, # Edge midpoints
       :n_edges => Int,
       :n_nodes => Int
   )
+```
 """
 function build_edges_dict(edge_list::Vector, physical_names::Dict, coords::Tuple)
     edges_dict = Dict{Symbol, Dict}()
@@ -134,7 +138,7 @@ function build_edges_dict(edge_list::Vector, physical_names::Dict, coords::Tuple
         name = get(tag_to_name, tag, "boundary_$tag")
         name_sym = Symbol(name)
         
-        # Collect all unique nodes on this boundary
+        # Collect all unique nodes on this boundary/with this physical tag
         nodes = unique(vcat(first.(edges), last.(edges)))
         sort!(nodes)
         
