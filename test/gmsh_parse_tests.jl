@@ -62,7 +62,7 @@ end
         md = MeshData(VXY, EToV, rd)
 
         # Get boundary faces and nodes directly from Gmsh
-        boundary_faces = StartUpDG.tag_boundary_faces(md, edges_dict)
+        boundary_faces = StartUpDG.tag_boundary_faces(md, edges_dict, :all)
 
         # Test specific boundaries
         @test boundary_faces[:bottom] == [40, 82, 85, 115, 130]

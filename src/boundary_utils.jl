@@ -89,7 +89,7 @@ function tag_boundary_nodes(rd, md, boundary_list::Dict)
 end
 
 """
-    function tag_boundary_faces(md::MeshData{2}, edges_dict,
+    function tag_boundary_faces(md::MeshData{2}, edges_dict::Dict{Symbol, Dict},
                                 boundary_names::Union{Symbol, Vector{Symbol}};
                                 atol = 1e-13)
  
@@ -113,7 +113,7 @@ boundary_faces = tag_boundary_faces(md, edges_dict, :all)
 # boundary_faces[:bottom] => [1, 2, 5, 6, ...] (face indices)
 ```
 """
-function tag_boundary_faces(md::MeshData{2}, edges_dict,
+function tag_boundary_faces(md::MeshData{2}, edges_dict::Dict{Symbol, Dict},
                             boundary_names::Union{Symbol, Vector{Symbol}};
                             atol = 1e-13)
 
