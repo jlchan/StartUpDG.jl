@@ -16,10 +16,12 @@ end
 """
     MeshImportOptions
 This struct allows the user to opt for supported features when importing
-a Gmsh .msh file.
+a Gmsh `.msh` file.
 ## Support
-- grouping::Bool | On import would you like to include physical group assignements of 2D elements?
-- remap\\_group\\_name::Bool | On import would you like to maintain or remap physical group ID? Remap results in groupIds in the range 1:number\\_group\\_ids.
+On import, would you like to ...
+- `grouping::Bool` ... include physical group assignements of 2D elements?
+- `remap_group_name::Bool` ... maintain or remap physical group ID? Remap results in `groupIds` in the range `1:number_group_ids`.
+- `edges_dict::Bool` ... include a dictionary of edges and their physical groupings? This is only supported for Gmsh 2.2 files.
 """
 struct MeshImportOptions
     grouping::Bool
