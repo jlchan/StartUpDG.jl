@@ -392,8 +392,10 @@ function read_Gmsh_2D_v2(filename::String,
     gmsh_version = parse(Float64, version)
     @assert gmsh_version == 2.2
 
-    # Parse physical names (to get name -> tag mapping)
-    physical_names = parse_physical_names(lines)
+    if options.edges_dict
+        # Parse physical names (to get name -> tag mapping)
+        physical_names = parse_physical_names(lines)
+    end
 
     # Parse nodes
     node_start = findline("\$Nodes", lines) + 1
