@@ -29,8 +29,9 @@ struct MeshImportOptions
     edges_dict::Bool
 end
 
-MeshImportOptions(grouping::Bool, remap_group_name::Bool) =
+function MeshImportOptions(grouping::Bool, remap_group_name::Bool)
     MeshImportOptions(grouping, remap_group_name, false)
+end
 
 """
  returns the number of elements in a .msh file of a specified dimension
@@ -86,12 +87,12 @@ Returns:
 """
 function parse_physical_names(lines::Vector{String})
     physical_names = Dict{String, Int}()
-    
+
     idx = findline("\$PhysicalNames", lines)
     if idx == 0
         return physical_names # No physical names defined
     end
-    
+
     n_physical = parse(Int64, lines[idx + 1])
     for i in 1:n_physical
         parts = split(lines[idx + 1 + i])
@@ -100,7 +101,7 @@ function parse_physical_names(lines::Vector{String})
         name = strip(parts[3], ['"'])
         physical_names[name] = tag
     end
-    
+
     return physical_names
 end
 
@@ -120,12 +121,12 @@ Returns: `Dict{Symbol, Dict}` with structure:
 """
 function build_edges_dict(edge_list::Vector, physical_names::Dict, coords::Tuple)
     edges_dict = Dict{Symbol, Dict}()
-    
+
     VX, VY = coords
-    
+
     # Invert physical_names to get tag -> name mapping
     tag_to_name = Dict(v => k for (k, v) in physical_names)
-    
+
     # Group edges by physical tag
     edges_by_tag = Dict{Int64, Vector{Tuple{Int64, Int64}}}()
     for (n1, n2, tag) in edge_list
@@ -134,25 +135,23 @@ function build_edges_dict(edge_list::Vector, physical_names::Dict, coords::Tuple
         end
         push!(edges_by_tag[tag], (n1, n2))
     end
-    
+
     # Build result dictionary
     for (tag, edges) in edges_by_tag
         name = get(tag_to_name, tag, "boundary_$tag")
         name_sym = Symbol(name)
-        
+
         # Collect all unique nodes on this boundary/with this physical tag
         nodes = unique(vcat(first.(edges), last.(edges)))
         sort!(nodes)
-        
+
         # Compute edge midpoints
-        midpoints = [((VX[n1] + VX[n2])/2, (VY[n1] + VY[n2])/2) for (n1, n2) in edges]
-        
-        edges_dict[name_sym] = Dict(
-            :tag => tag,
-            :midpoints => midpoints # Midpoints sufficient for DG boundary face matching
-        )
+        midpoints = [((VX[n1] + VX[n2]) / 2, (VY[n1] + VY[n2]) / 2) for (n1, n2) in edges]
+
+        edges_dict[name_sym] = Dict(:tag => tag,
+                                    :midpoints => midpoints)
     end
-    
+
     return edges_dict
 end
 
@@ -381,20 +380,21 @@ VXY, EToV = read_Gmsh_2D_v2("eulerSquareCylinder2D.msh")
 https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_0029
 """
 function read_Gmsh_2D_v2(filename::String,
-                          options::MeshImportOptions = MeshImportOptions(false, false, false))
+                         options::MeshImportOptions = MeshImportOptions(false, false,
+                                                                        false))
     f = open(filename)
     lines = readlines(f)
     close(f)
- 
+
     # Parse format
     format_line = findline("\$MeshFormat", lines) + 1
     version, _, dataSize = split(lines[format_line])
     gmsh_version = parse(Float64, version)
     @assert gmsh_version == 2.2
- 
+
     # Parse physical names (to get name -> tag mapping)
     physical_names = parse_physical_names(lines)
- 
+
     # Parse nodes
     node_start = findline("\$Nodes", lines) + 1
     Nv = parse(Int64, lines[node_start])
@@ -404,11 +404,11 @@ function read_Gmsh_2D_v2(filename::String,
         VX[i] = vals[2]
         VY[i] = vals[3]
     end
- 
+
     # Parse elements and edges
     elem_start = findline("\$Elements", lines) + 1
     K_all = parse(Int64, lines[elem_start])
-    
+
     # First pass: count triangular elements
     K = 0
     for e in 1:K_all
@@ -418,11 +418,11 @@ function read_Gmsh_2D_v2(filename::String,
         end
     end
     K > 0 || error("No triangular elements found in mesh")
- 
+
     # Allocate arrays
     EToV = zeros(Int64, K, 3)
     edge_list = Vector{Tuple{Int64, Int64, Int64}}() # (node1, node2, physical_tag)
-    
+
     sk = 1
     for e in 1:K_all
         # Gmsh 2.2 format: [elem_id, type, n_tags, tag1, tag2, ..., node1, node2]
@@ -444,14 +444,14 @@ function read_Gmsh_2D_v2(filename::String,
             push!(edge_list, (node1, node2, physical_tag))
         end
     end
- 
+
     # Correct negative Jacobians (for triangles)
     EToV = correct_negative_Jacobians!((VX, VY), EToV)
- 
+
     if options.edges_dict
         # Build edges dictionary indexed by physical tag name
         edges_dict = build_edges_dict(edge_list, physical_names, (VX, VY))
-        
+
         return (VX, VY), EToV, edges_dict
     end
 

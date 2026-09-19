@@ -112,17 +112,17 @@ boundary_faces = tag_boundary_faces(md, edges_dict)
 # boundary_faces[:bottom] => [1, 2, 5, 6, ...] (face indices)
 ```
 """
-function tag_boundary_faces(md::MeshData{2}, edges_dict, 
+function tag_boundary_faces(md::MeshData{2}, edges_dict,
                             boundary_names::Union{Symbol, Vector{Symbol}} = :all;
                             atol = 1e-13)
-    
+
     # Compute boundary face centroids (using existing StartUpDG function)
     xyzb, boundary_face_ids = boundary_face_centroids(md)
     xb, yb = xyzb[1], xyzb[2] # Face centroids
-    
+
     # Build a list of all Gmsh edge midpoints with their tags and names
     gmsh_edge_midpoints = [] # Vector of (x, y, tag, name)
-    
+
     for (name, info) in edges_dict
         tag = info[:tag]
         midpoints = get(info, :midpoints, [])
@@ -130,7 +130,7 @@ function tag_boundary_faces(md::MeshData{2}, edges_dict,
             push!(gmsh_edge_midpoints, (mx, my, tag, name))
         end
     end
-    
+
     # Determine which boundaries to include
     if boundary_names isa Symbol && boundary_names == :all
         names_to_use = keys(edges_dict) # Select all detected boundaries
@@ -139,16 +139,16 @@ function tag_boundary_faces(md::MeshData{2}, edges_dict,
     end
 
     edges_per_symbol = Dict{Symbol, Vector{Int}}()
-    
+
     for name in names_to_use
         if !haskey(edges_dict, name)
             @warn "Boundary '$name' not found in edges_dict. Skipping."
             continue
         end
-        
+
         matched_faces = Int[] # faces per boundary name
         target_tag = edges_dict[name][:tag] # mesh info
-        
+
         # For each Gmsh edge with this boundary tag
         for (mx, my, tag, gmsh_name) in gmsh_edge_midpoints
             if tag != target_tag # Skip edges that don't match the current boundary tag
@@ -166,9 +166,9 @@ function tag_boundary_faces(md::MeshData{2}, edges_dict,
                 end
             end
         end
-        
+
         edges_per_symbol[name] = sort!(matched_faces) # sorting is not strictly necessary
     end
-    
+
     return edges_per_symbol
 end

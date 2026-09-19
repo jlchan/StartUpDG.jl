@@ -57,7 +57,7 @@ end
         VXY, EToV, edges_dict = read_Gmsh_2D("test/testset_Gmsh_meshes/cube2.msh", options)
 
         # Create MeshData
-        rd = RefElemData(Tri(), N=3)
+        rd = RefElemData(Tri(), N = 3)
         md = MeshData(VXY, EToV, rd)
 
         # Get boundary faces and nodes directly from Gmsh
