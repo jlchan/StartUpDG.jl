@@ -1,0 +1,17 @@
+name: Format suggestions
+
+on:
+  push:
+    branches:
+      - 'main'
+    tags: '*'
+  pull_request:
+
+jobs:
+  format-suggestions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/julia-format@v4
+        with:
+          version: "1.0.60"
