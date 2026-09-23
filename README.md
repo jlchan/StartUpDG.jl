@@ -42,7 +42,7 @@ dudx = (rxJ .* (Dr * u) + sxJ .* (Ds * u)) ./ J
 
 * SBP nodal points were contributed by [Ethan Kubatko](https://sites.google.com/site/chilatosu/ethan-bio) and [Jason Hicken](https://doi.org/10.1007/s10915-020-01154-8).
 * [Hendrik Ranocha](https://ranocha.de) contributed to array types used in cut-cell and hybrid meshes.
-* [Mason McCallum](https://github.com/masonamccallum) contributed Gmsh reading capabilities
+* [Mason McCallum](https://github.com/macmccallum) contributed Gmsh reading capabilities
 * [David Knapp](https://github.com/Davknapp) contributed VTK visualization capabilities and tensor product wedges.
 
 ## Referencing
