@@ -87,3 +87,74 @@ function tag_boundary_nodes(rd, md, boundary_list::Dict)
     node_tags = (mapM[:, boundary_faces[tag]] for tag in keys(boundary_faces))
     return Dict(Pair.(keys(boundary_list), node_tags))
 end
+
+"""
+    function tag_boundary_faces(md::MeshData{2}, edges_dict::Dict{Symbol, Dict};
+                                atol = 1e-13)
+ 
+Map edges from Gmsh `edges_dict` to boundary edge/face indices in `md`.
+This follows the approach: Compare the centroid of each DG boundary edge/face
+to the precomputed (based on mesh info) midpoints of the edges/faces with the same physical tag.
+ 
+Arguments:
+- `md`: MeshData object
+- `edges_dict`: Dictionary from `build_edges_dict()` with `:midpoints` field
+- `atol`: Absolute tolerance for coordinate matching (default 1e-13)
+ 
+Returns `Dict{Symbol, Vector{Int}}` mapping boundary names to face indices in `md`
+ 
+Example usage:
+```julia
+coords, EToV, edges_dict, elem_type = read_Gmsh_2D_v2("mesh.msh")
+md = MeshData(coords, EToV, rd)
+boundary_faces = tag_boundary_faces(md, edges_dict)
+# boundary_faces[:bottom] => [1, 2, 5, 6, ...] (face indices)
+```
+"""
+function tag_boundary_faces(md::MeshData{2}, edges_dict::Dict{Symbol, Dict};
+                            atol = 1e-13)
+
+    # Compute boundary face centroids (using existing StartUpDG function)
+    xyzb, boundary_face_ids = boundary_face_centroids(md)
+    xb, yb = xyzb[1], xyzb[2] # Face centroids
+
+    # Build a list of all Gmsh edge midpoints with their tags and names
+    gmsh_edge_midpoints = [] # Vector of (x, y, tag, name)
+
+    for (name, info) in edges_dict
+        tag = info[:tag]
+        midpoints = get(info, :midpoints, [])
+        for (mx, my) in midpoints
+            push!(gmsh_edge_midpoints, (mx, my, tag, name))
+        end
+    end
+
+    edges_per_symbol = Dict{Symbol, Vector{Int}}()
+
+    for name in keys(edges_dict)
+        matched_faces = Int[] # faces per boundary name
+        target_tag = edges_dict[name][:tag] # mesh info
+
+        # For each Gmsh edge with this boundary tag
+        for (mx, my, tag, gmsh_name) in gmsh_edge_midpoints
+            if tag != target_tag # Skip edges that don't match the current boundary tag
+                continue
+            end
+
+            # Find first (up to tolerance) matching DG boundary face
+            for (face_idx, face_id) in enumerate(boundary_face_ids)
+                face_x = xb[face_idx]
+                face_y = yb[face_idx]
+                dist = sqrt((face_x - mx)^2 + (face_y - my)^2)
+                if dist <= atol
+                    push!(matched_faces, face_id)
+                    break
+                end
+            end
+        end
+
+        edges_per_symbol[name] = sort!(matched_faces) # sorting is not strictly necessary
+    end
+
+    return edges_per_symbol
+end
