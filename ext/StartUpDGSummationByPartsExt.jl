@@ -50,24 +50,11 @@ function StartUpDG.diagE_sbp_nodes(::Tet, approxType::SBP{<:SummationByPartsDiag
     r, s, t = nodes[1, :], nodes[2, :], nodes[3, :]
     w = SymCubatures.calcweights(cub)
 
-    # reverse-engineer the triangular face cubature rule by matching the number of face nodes
-    num_face_nodes = SymCubatures.getnumfacenodes(cub)
-    face_quadrature_degree = 0
-    face_cub, face_vtx = nothing, nothing
-    for qf in 2:2:10
-        face_cub, face_vtx = Cubature.getTriCubatureForTetFaceDiagE(qf, Float64;
-                                                                    faceopertype = :DiagE,
-                                                                    tol)
-        if face_cub.numnodes == num_face_nodes
-            face_quadrature_degree = qf
-            break
-        end
-    end
-    if face_quadrature_degree == 0
-        error("Could not find a triangular face cubature rule with $num_face_nodes nodes " *
-              "matching the tetrahedral cubature rule of degree $q.")
-    end
-    @assert face_quadrature_degree >= 2 * N
+    # The tet DiagE rule of degree q pairs with the face rule of degree q rounded up to even,
+    # which is exactly what getTriCubatureForTetFaceDiagE(q) returns.
+    # Note: tol seems to be overwritten with default_tol(T) in Cubature.    
+    face_cub, face_vtx = Cubature.getTriCubatureForTetFaceDiagE(q, Float64; tol)
+    @assert face_cub.numnodes == SymCubatures.getnumfacenodes(cub)
 
     face_nodes = SymCubatures.calcnodes(face_cub, face_vtx) # 2 x num_face_nodes matrix
     rf, sf = face_nodes[1, :], face_nodes[2, :]
