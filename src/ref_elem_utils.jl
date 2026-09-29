@@ -169,7 +169,16 @@ end
 function inverse_trace_constant(rd::RefElemData{2, Tri, <:Polynomial})
     _inverse_trace_constants(rd)[rd.N]
 end
-inverse_trace_constant(rd::RefElemData{2, Tri, <:SBP}) = _inverse_trace_constants(rd)[rd.N]
+function inverse_trace_constant(rd::RefElemData{2, Tri, <:SBP{<:Union{Hicken, Kubatko}}})
+    _inverse_trace_constants(rd)[rd.N]
+end
+
+# SBP nodes from SummationByParts.jl are not tabulated; the matrices involved are small, 
+# so we compute the inverse trace constant directly via an eigenvalue problem. 
+function inverse_trace_constant(rd::RefElemData{Dim, <:Union{Tri, Tet},
+                                                <:SBP{<:SummationByPartsDiagE}}) where {Dim}
+    return eigenvalue_inverse_trace_constant(rd)
+end
 function inverse_trace_constant(rd::RefElemData{3, Tet, <:Polynomial})
     _inverse_trace_constants(rd)[rd.N]
 end

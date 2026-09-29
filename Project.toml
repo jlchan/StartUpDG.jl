@@ -24,9 +24,11 @@ WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [weakdeps]
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+SummationByParts = "55d25451-638a-4804-8089-59924bcb4a40"
 SummationByPartsOperators = "9f78cca6-572e-554e-b819-917d2f1cf240"
 
 [extensions]
+StartUpDGSummationByPartsExt = "SummationByParts"
 StartUpDGSummationByPartsOperatorsExt = "SummationByPartsOperators"
 TriangulatePlotsExt = "Plots"
 
@@ -44,6 +46,7 @@ RecursiveArrayTools = "3.8, 4.3"
 Reexport = "1"
 Setfield = "1"
 StaticArrays = "1.9.8"
+SummationByParts = "0.2"
 SummationByPartsOperators = "0.5.52"
 Triangulate = "2.2, 3"
 WriteVTK = "1.18"

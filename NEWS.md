@@ -2,6 +2,18 @@
 
 StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https://julialang.github.io/Pkg.jl/dev/compatibility/#Version-specifier-format-1) used in the Julia ecosystem. Recent changes will be documented in this file for human readability.
 
+## Changes when updating to v1.5.0
+
+#### Added
+
+* Added a package extension for [SummationByParts.jl](https://github.com/OptimalDesignLab/SummationByParts.jl) and a new `SummationByPartsDiagE{FaceNodeType}` SBP type. When SummationByParts.jl is loaded, `RefElemData(Tri(), SBP(SummationByPartsDiagE{LobattoFaceNodes}()), N)` (or with `LegendreFaceNodes`) constructs diagonal-E SBP operators from cubature rules generated on demand, with an optional `quadrature_degree` keyword argument (defaults to `2N-1`).
+* Added support for SBP `RefElemData` on `Tet()` elements via `SummationByPartsDiagE{LobattoFaceNodes}`. `RefElemData(Tet(), SBP(), N)` now defaults to this type.
+
+#### Changed
+
+* `SBP{T}` now stores its type parameter as a field `data::T`, mirroring `Polynomial{T}`. Both `SBP{T}()` and `SBP(T())` construct an `SBP{T}`, so existing code (e.g., `SBP{Hicken}()`) is unaffected. 
+* `inverse_trace_constant` for SBP types without tabulated constants now falls back to an eigenvalue computation.
+
 ## Changes when updating to v1.4.1
 
 #### Fixed
