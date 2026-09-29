@@ -285,14 +285,9 @@ rd = RefElemData(Tri(), SBP(SummationByPartsDiagE{LegendreFaceNodes}(quadrature_
 rd = RefElemData(Tet(), SBP(SummationByPartsDiagE{LobattoFaceNodes}()), N)
 ```
 """
-struct SummationByPartsDiagE{FaceNodeType, Tq, Ttol}
-    quadrature_degree::Tq   # Int, or `nothing` (defaults to 2N-1 at construction)
-    tol::Ttol
-end
-
-function SummationByPartsDiagE{F}(; quadrature_degree = nothing,
-                                  tol = 100 * eps()) where {F}
-    SummationByPartsDiagE{F, typeof(quadrature_degree), typeof(tol)}(quadrature_degree, tol)
+Base.@kwdef struct SummationByPartsDiagE{FaceNodeType}
+    quadrature_degree::Union{Int, Nothing} = nothing # `nothing` defaults to 2N-1 at construction
+    tol::Float64 = 100 * eps()
 end
 
 """
