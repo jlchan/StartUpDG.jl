@@ -22,6 +22,7 @@
 
     @testset "Tri, $F, q = $q, N = $N" for F in (LobattoFaceNodes, LegendreFaceNodes),
                                            N in (3, 5), q in (2 * N - 1, 2 * N)
+
         approx_type = SBP(SummationByPartsDiagE{F}(; quadrature_degree = q))
         rd = RefElemData(Tri(), approx_type, N)
         (; r, s, rq, sq, wq, Dr, Ds) = rd
