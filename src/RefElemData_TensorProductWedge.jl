@@ -179,7 +179,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
     Drst = (Dr, Ds, Dt)
 
     # assumes interpolation nodes contain face nodes
-    Fmask = find_face_nodes(elem, r, s, t)
+    Fmask = vcat(find_face_nodes(elem, r, s, t)...)
 
     # build face quadrature nodes
     rft, sft = map(x -> reshape(x, :, 3), tri.rstf)
