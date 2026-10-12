@@ -247,7 +247,8 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
     if line.approximation_type isa Polynomial
         Vf_line, _ = basis(line.element_type, line.N, tf)
         Vf_line = Vf_line / line.VDM
-    elseif line.approximation_type isa SBP
+    elseif line.approximation_type isa SBP || isnothing(line.VDM)
+        # isnothing(line.VDM) accounts for `RefElemData` built from SummationByPartsOperators.jl
         # 3 = number of quad faces
         line_Vq = line.Vq isa UniformScaling ? I(num_line_nodes) : line.Vq
         interp_to_quad_faces = repeat(kron(line_Vq, ones(tri.Nfq ÷ 3)), 3, 1) 
@@ -267,7 +268,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
         end
     end
 
-    if tri.approximation_type isa SBP && line.approximation_type isa SBP
+    if tri.approximation_type isa SBP && (line.approximation_type isa SBP || isnothing(line.VDM))
         Fmask = []
         for i in eachindex(rf)
             for j in eachindex(r)
