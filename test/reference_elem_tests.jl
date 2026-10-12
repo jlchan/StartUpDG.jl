@@ -322,19 +322,21 @@ end
             quad_rule_vol = quad_vol(0, 0, N)
             quad_rule_face = quad_face(0, 0, N)
             quad_rule_face_md = elem isa Quad ? quad_rule_face :
-                                StartUpDG.tensor_product_quadrature(face_type(elem), quad_rule_face...)
+                                StartUpDG.tensor_product_quadrature(face_type(elem),
+                                                                    quad_rule_face...)
 
             rd_tp = RefElemData(elem,
                                 Polynomial(TensorProductQuadrature(quad_rule_vol)), N;
                                 quad_rule_face = quad_rule_face_md)
             rd_md = RefElemData(elem,
                                 Polynomial{MultidimensionalQuadrature}(), N;
-                                quad_rule_vol = StartUpDG.tensor_product_quadrature(elem, quad_rule_vol...),
+                                quad_rule_vol = StartUpDG.tensor_product_quadrature(elem,
+                                                                                    quad_rule_vol...),
                                 quad_rule_face = quad_rule_face_md)
 
-            @test rd_tp.M ≈ rd_md.M atol=tol
-            @test rd_tp.Pq ≈ rd_md.Pq atol=tol
-            @test rd_tp.LIFT ≈ rd_md.LIFT atol=tol
+            @test rd_tp.M≈rd_md.M atol=tol
+            @test rd_tp.Pq≈rd_md.Pq atol=tol
+            @test rd_tp.LIFT≈rd_md.LIFT atol=tol
         end
     end
 end
