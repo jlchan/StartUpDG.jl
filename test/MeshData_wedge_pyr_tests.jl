@@ -164,12 +164,14 @@ approx_elem_types_to_test = [(Polynomial(), Wedge()),
                         md_periodic = make_periodic(md, (true, true, true))
                         @test md_periodic.mapP != md.mapP # check that the node mapping actually changed
 
-                        u = @. sin(pi * (0.5 + x)) * sin(pi * (0.5 + y)) * sin(pi * (0.5 + z))
+                        u = @. sin(pi * (0.5 + x)) * sin(pi * (0.5 + y)) *
+                               sin(pi * (0.5 + z))
                         (; mapP) = md_periodic
                         uf = Vf * u
                         @test uf ≈ uf[mapP]
 
-                        md = MeshData(uniform_mesh(rd.element_type, K1D)..., rd; is_periodic = true)
+                        md = MeshData(uniform_mesh(rd.element_type, K1D)..., rd;
+                                      is_periodic = true)
                         @test isempty(md.mapB)
                     end
                 end

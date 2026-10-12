@@ -81,22 +81,26 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
         Vf_tri = Vf_tri / tri.VDM
     elseif tri.approximation_type isa SBP
         tri_Vq = tri.Vq isa UniformScaling ? I(num_tri_face_nodes) : tri.Vq
-        
+
         # the rows of tri.Vf are ordered by nodes, then by faces. we construct the 
         # interpolation operator to quadrilateral faces by extracting rows corresponding 
         # to each face of the triangle and repeating it line.Nq times 
         num_points_per_tri_face = size(tri.Vf, 1) ÷ 3
-        interp_to_quad_faces = 
-            vcat(kron(ones(line.Nq), tri.Vf[(1:num_points_per_tri_face), :]), 
-                 kron(ones(line.Nq), tri.Vf[num_points_per_tri_face .+ (1:num_points_per_tri_face), :]), 
-                 kron(ones(line.Nq), tri.Vf[2 * num_points_per_tri_face .+ (1:num_points_per_tri_face), :]))
+        interp_to_quad_faces = vcat(kron(ones(line.Nq),
+                                         tri.Vf[(1:num_points_per_tri_face), :]),
+                                    kron(ones(line.Nq),
+                                         tri.Vf[num_points_per_tri_face .+ (1:num_points_per_tri_face),
+                                                :]),
+                                    kron(ones(line.Nq),
+                                         tri.Vf[2 * num_points_per_tri_face .+ (1:num_points_per_tri_face),
+                                                :]))
 
         # the interpolation to triangular faces is simply the interpolation to 
         # triangular quadrature nodes, once for the top triangular face and once 
         # for the bottom triangular face. 
         interp_to_tri_faces = vcat(tri_Vq, tri_Vq)
         Vf_tri = vcat(interp_to_quad_faces, interp_to_tri_faces)
-    else 
+    else
         error("approximation type $(tri.approximation_type) not yet supported")
     end
 
@@ -107,11 +111,11 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
         # isnothing(line.VDM) accounts for `RefElemData` built from SummationByPartsOperators.jl
         # 3 = number of quad faces
         line_Vq = line.Vq isa UniformScaling ? I(num_line_nodes) : line.Vq
-        interp_to_quad_faces = repeat(kron(line_Vq, ones(tri.Nfq ÷ 3)), 3, 1) 
+        interp_to_quad_faces = repeat(kron(line_Vq, ones(tri.Nfq ÷ 3)), 3, 1)
 
-        interp_to_tri_faces = kron(line.Vf, ones(tri.Nq)) 
+        interp_to_tri_faces = kron(line.Vf, ones(tri.Nq))
         Vf_line = vcat(interp_to_quad_faces, interp_to_tri_faces)
-    else 
+    else
         error("approximation type $(line.approximation_type) not yet supported")
     end
 
@@ -124,7 +128,8 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
         end
     end
 
-    if tri.approximation_type isa SBP && (line.approximation_type isa SBP || isnothing(line.VDM))
+    if tri.approximation_type isa SBP &&
+       (line.approximation_type isa SBP || isnothing(line.VDM))
         Fmask = []
         for i in eachindex(rf)
             for j in eachindex(r)
@@ -147,9 +152,9 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
         Vq = kron(line.Vq isa UniformScaling ? I(num_line_nodes) : line.Vq,
                   tri.Vq isa UniformScaling ? I(num_tri_face_nodes) : tri.Vq)
     end
-    M  = Vq' * diagm(wq) * Vq
-    Pq = tri.Pq isa UniformScaling && line.Pq isa UniformScaling ? 
-            I : M \ (Vq' * diagm(wq))
+    M = Vq' * diagm(wq) * Vq
+    Pq = tri.Pq isa UniformScaling && line.Pq isa UniformScaling ?
+         I : M \ (Vq' * diagm(wq))
     LIFT = M \ (Vf' * diagm(wf))
 
     if line.Nplot != tri.Nplot

@@ -55,7 +55,10 @@
         @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd)
     end
 
-    @testset "TensorProductWedge with $tri_type triangle" for tri_type in [SBP(), Polynomial()]
+    @testset "TensorProductWedge with $tri_type triangle" for tri_type in [
+        SBP(),
+        Polynomial()
+    ]
         line = RefElemData(Line(), D)
         tri = RefElemData(Tri(), tri_type, N)
         rd = RefElemData(Wedge(), TensorProductWedge(tri, line))
