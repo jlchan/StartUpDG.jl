@@ -314,9 +314,12 @@ function construct_cut_volume_quadrature(N, cutcells, physical_frame_elements;
     # The minimum exactness of volume quadrature is degree N(N-1) + 2N-2 polynomials,
     # which ensures Qh * 1 = 0, where Qh = hybridized SBP operator.
 
+    # We also require degree 2N exactness so that the mass matrix of `rd_tri` is
+    # nonsingular. This only matters for N = 1, where 2N^2 - N + 2(N-1) = 1.
+
     # Integral     ∫    v     du/dx        J     over reference element D̂
     # TODO: why can we decrease this and still see exactness?
-    N_phys_frame_geo = 2 * N^2 - N + 2 * (N - 1)
+    N_phys_frame_geo = max(2 * N, 2 * N^2 - N + 2 * (N - 1))
 
     rd_tri = RefElemData(Tri(), Polynomial(MultidimensionalQuadrature()), N,
                          quad_rule_vol = NodesAndModes.quad_nodes_tri(N_phys_frame_geo))
