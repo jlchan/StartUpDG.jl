@@ -2,6 +2,12 @@
 
 StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https://julialang.github.io/Pkg.jl/dev/compatibility/#Version-specifier-format-1) used in the Julia ecosystem. Recent changes will be documented in this file for human readability.
 
+## Changes when updating to v1.4.2
+
+#### Fixed
+
+* Fixed a singular mass matrix in the subtriangulation used to construct `Subtriangulation` volume quadratures for cut-cell meshes with `N = 1` ([#232](https://github.com/jlchan/StartUpDG.jl/issues/232)). The quadrature on each subtriangle is now exact for degree `2N` polynomials or higher.
+
 ## Changes when updating to v1.4.1
 
 #### Fixed
