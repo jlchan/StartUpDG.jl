@@ -29,6 +29,10 @@ using StartUpDG: PathIntersections
         # test constructor with only one "cells_per_dimension" argument
         @test_nowarn MeshData(rd, (circle,), cells_per_dimension_x, quadrature_type)
 
+        # test N = 1 cut meshes (https://github.com/jlchan/StartUpDG.jl/issues/232)
+        @test_nowarn MeshData(RefElemData(Quad(), N = 1), (circle,),
+                              cells_per_dimension_x, quadrature_type)
+
         # check the volume of the domain
         A = 4 - pi * 0.33^2
         @test abs(sum(md.wJq) - A) < 7e-5 # should be 6.417e-5

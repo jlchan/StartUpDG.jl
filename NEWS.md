@@ -13,6 +13,11 @@ StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https:
 
 * `SBP{T}` now stores its type parameter as a field `data::T`, mirroring `Polynomial{T}`. Both `SBP{T}()` and `SBP(T())` construct an `SBP{T}`, so existing code (e.g., `SBP{Hicken}()`) is unaffected. 
 * `inverse_trace_constant` for SBP types without tabulated constants now falls back to an eigenvalue computation.
+## Changes when updating to v1.4.2
+
+#### Fixed
+
+* Fixed a singular mass matrix in the subtriangulation used to construct `Subtriangulation` volume quadratures for cut-cell meshes with `N = 1` ([#232](https://github.com/jlchan/StartUpDG.jl/issues/232)). The quadrature on each subtriangle is now exact for degree `2N` polynomials or higher.
 
 ## Changes when updating to v1.4.1
 
