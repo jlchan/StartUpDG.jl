@@ -35,7 +35,7 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
     Drst = (Dr, Ds, Dt)
 
     # assumes interpolation nodes contain face nodes
-    Fmask = find_face_nodes(elem, r, s, t)
+    Fmask = vcat(find_face_nodes(elem, r, s, t)...)
 
     # build face quadrature nodes
     rft, sft = map(x -> reshape(x, :, 3), tri.rstf)
@@ -76,18 +76,73 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
     ntJ = [zq; zq; zq; -et; et]
 
     # Create face interpolation matrix
-    vandermonde_tensor_wedge = zeros(length(rf), length(r))
-    V_tri, _, _ = basis(tri.element_type, tri.N, rf, sf)
-    V_line, _ = basis(line.element_type, line.N, tf)
+    if tri.approximation_type isa Polynomial
+        Vf_tri, _, _ = basis(tri.element_type, tri.N, rf, sf)
+        Vf_tri = Vf_tri / tri.VDM
+    elseif tri.approximation_type isa SBP
+        tri_Vq = tri.Vq isa UniformScaling ? I(num_tri_face_nodes) : tri.Vq
+
+        # the rows of tri.Vf are ordered by nodes, then by faces. we construct the 
+        # interpolation operator to quadrilateral faces by extracting rows corresponding 
+        # to each face of the triangle and repeating it line.Nq times 
+        num_points_per_tri_face = size(tri.Vf, 1) ÷ 3
+        interp_to_quad_faces = vcat(kron(ones(line.Nq),
+                                         tri.Vf[(1:num_points_per_tri_face), :]),
+                                    kron(ones(line.Nq),
+                                         tri.Vf[num_points_per_tri_face .+ (1:num_points_per_tri_face),
+                                                :]),
+                                    kron(ones(line.Nq),
+                                         tri.Vf[2 * num_points_per_tri_face .+ (1:num_points_per_tri_face),
+                                                :]))
+
+        # the interpolation to triangular faces is simply the interpolation to 
+        # triangular quadrature nodes, once for the top triangular face and once 
+        # for the bottom triangular face. 
+        interp_to_tri_faces = vcat(tri_Vq, tri_Vq)
+        Vf_tri = vcat(interp_to_quad_faces, interp_to_tri_faces)
+    else
+        error("approximation type $(tri.approximation_type) not yet supported")
+    end
+
+    if line.approximation_type isa Polynomial
+        Vf_line, _ = basis(line.element_type, line.N, tf)
+        Vf_line = Vf_line / line.VDM
+    elseif line.approximation_type isa SBP || isnothing(line.VDM)
+        # isnothing(line.VDM) accounts for `RefElemData` built from SummationByPartsOperators.jl
+        # 3 = number of quad faces
+        line_Vq = line.Vq isa UniformScaling ? I(num_line_nodes) : line.Vq
+        interp_to_quad_faces = repeat(kron(line_Vq, ones(tri.Nfq ÷ 3)), 3, 1)
+
+        interp_to_tri_faces = kron(line.Vf, ones(tri.Nq))
+        Vf_line = vcat(interp_to_quad_faces, interp_to_tri_faces)
+    else
+        error("approximation type $(line.approximation_type) not yet supported")
+    end
+
+    Vf = spzeros(length(rf), length(r))
     id = 1
-    for j in axes(V_line, 2)
-        for i in axes(V_tri, 2)
-            @. vandermonde_tensor_wedge[:, id] = V_tri[:, i] * V_line[:, j]
+    for j in axes(Vf_line, 2)
+        for i in axes(Vf_tri, 2)
+            @. Vf[:, id] = Vf_tri[:, i] * Vf_line[:, j]
             id += 1
         end
     end
 
-    Vf = vandermonde_tensor_wedge / VDM
+    # brute-force determine Fmask so that rf = r[Fmask], etc. An absolute tolerance
+    # is used since face nodes on the r + s = 0 face can lie at the origin.
+    if tri.approximation_type isa SBP &&
+       (line.approximation_type isa SBP || isnothing(line.VDM))
+        Fmask = zeros(Int, length(rf))
+        for fid in eachindex(rf)
+            rstf_node = SVector(getindex.(rstf, fid))
+            for i in eachindex(r)
+                if isapprox(rstf_node, SVector(r[i], s[i], t[i]); atol = 100 * eps())
+                    Fmask[fid] = i
+                    break
+                end
+            end
+        end
+    end
 
     # create tensor product quadrature rule
     tq, rq = _wedge_tensor_product(line.rq, tri.rq)
@@ -95,12 +150,15 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
     wt, wrs = _wedge_tensor_product(line.wq, tri.wq)
     wq = wt .* wrs
 
-    # `line.Vq` is a `UniformScaling` type for `RefElemData` built 
-    # from SummationByPartsOperators.jl
-    Vq = line.Vq isa UniformScaling ? kron(I(num_line_nodes), tri.Vq) :
-         kron(line.Vq, tri.Vq)
+    if line.Vq isa UniformScaling && tri.Vq isa UniformScaling
+        Vq = I
+    else
+        Vq = kron(line.Vq isa UniformScaling ? I(num_line_nodes) : line.Vq,
+                  tri.Vq isa UniformScaling ? I(num_tri_face_nodes) : tri.Vq)
+    end
     M = Vq' * diagm(wq) * Vq
-    Pq = M \ (Vq' * diagm(wq))
+    Pq = tri.Pq isa UniformScaling && line.Pq isa UniformScaling ?
+         I : M \ (Vq' * diagm(wq))
     LIFT = M \ (Vf' * diagm(wf))
 
     if line.Nplot != tri.Nplot
