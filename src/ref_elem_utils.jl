@@ -169,7 +169,9 @@ end
 function inverse_trace_constant(rd::RefElemData{2, Tri, <:Polynomial})
     _inverse_trace_constants(rd)[rd.N]
 end
-inverse_trace_constant(rd::RefElemData{2, Tri, <:SBP}) = _inverse_trace_constants(rd)[rd.N]
+function inverse_trace_constant(rd::RefElemData{2, Tri, <:SBP{<:Union{Hicken, Kubatko}}})
+    _inverse_trace_constants(rd)[rd.N]
+end
 function inverse_trace_constant(rd::RefElemData{3, Tet, <:Polynomial})
     _inverse_trace_constants(rd)[rd.N]
 end

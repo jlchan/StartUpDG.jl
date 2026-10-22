@@ -37,6 +37,7 @@ export TensorProductWedge
 
 include("RefElemData_SBP.jl")
 export SBP, DefaultSBPType, TensorProductLobatto, Hicken, Kubatko # types for SBP node dispatch
+export SummationByPartsDiagE # SBP nodes from SummationByParts.jl (requires `using SummationByParts`)
 export LobattoFaceNodes, LegendreFaceNodes # type parameters for SBP{Kubatko{...}}
 export hybridized_SBP_operators
 

@@ -265,19 +265,53 @@ struct LegendreFaceNodes end
 struct LobattoFaceNodes end
 
 """
-    `SBP{Type}`
+    SummationByPartsDiagE{FaceNodeType}(; quadrature_degree = nothing, tol = 100 * eps())
 
-Represents polynomial approximation types (as opposed to finite differences). 
-By default, `Polynomial()` constructs a `Polynomial{StartUpDG.DefaultPolynomialType}`.
-Specifying a type parameters allows for dispatch on additional structure within a
-polynomial approximation (e.g., collocation, tensor product quadrature, etc). 
+Diagonal-E SBP nodes generated on demand by
+[SummationByParts.jl](https://github.com/OptimalDesignLab/SummationByParts.jl). Using this type
+requires loading SummationByParts.jl first (e.g., `using SummationByParts`).
+
+`FaceNodeType` is either `LobattoFaceNodes` (face nodes include the vertices) or `LegendreFaceNodes`
+(face nodes are interior to each face). Only `LobattoFaceNodes` is supported on `Tet()` elements.
+
+`quadrature_degree` is the degree of exactness of the volume cubature rule. If `nothing`, it
+defaults to `2N-1`. `tol` is passed to SummationByParts.jl when refining the cubature rule.
+
+Example:
+```julia
+using StartUpDG, SummationByParts
+rd = RefElemData(Tri(), SBP(SummationByPartsDiagE{LobattoFaceNodes}()), N)
+rd = RefElemData(Tri(), SBP(SummationByPartsDiagE{LegendreFaceNodes}(quadrature_degree = 2N)), N)
+rd = RefElemData(Tet(), SBP(SummationByPartsDiagE{LobattoFaceNodes}()), N)
+```
 """
-# SBP approximation type: the more common diagonal E and diagonal-norm SBP operators on tri/quads.
-struct SBP{Type} end
+Base.@kwdef struct SummationByPartsDiagE{FaceNodeType}
+    quadrature_degree::Union{Int, Nothing} = nothing # `nothing` defaults to 2N-1 at construction
+    tol::Float64 = 100 * eps()
+end
 
-SBP() = SBP{DefaultSBPType}() # no-parameter default
+"""
+    SBP{Type}
 
-# sets default to TensorProductLobatto on Quads 
+Represents multidimensional summation-by-parts (SBP) finite difference approximation types
+with diagonal norm and diagonal boundary (E) operators. The type parameter `Type` determines
+the SBP nodes used (e.g., `TensorProductLobatto`, `Hicken`, `Kubatko{LobattoFaceNodes}`,
+`Kubatko{LegendreFaceNodes}`, or `SummationByPartsDiagE{...}`).
+
+By default, `SBP()` constructs an `SBP{StartUpDG.DefaultSBPType}`, which dispatches to an
+element-dependent default. Both `SBP{Type}()` and `SBP(Type())` construct an `SBP{Type}`.
+"""
+struct SBP{Type}
+    data::Type
+end
+
+SBP() = SBP(DefaultSBPType()) # no-parameter default
+
+# this constructor enables us to construct an `SBP` type via `SBP{Hicken}()`,
+# `SBP{Kubatko{LobattoFaceNodes}}()`, etc.
+SBP{T}() where {T} = SBP(T())
+
+# sets default to TensorProductLobatto on Quads
 function RefElemData(elem::AbstractTensorProductElement, approxT::SBP{DefaultSBPType}, N;
                      kwargs...)
     RefElemData(elem, SBP{TensorProductLobatto}(), N; kwargs...)
@@ -286,6 +320,11 @@ end
 # sets default to Kubatko{LobattoFaceNodes} on Tris
 function RefElemData(elem::Tri, approxT::SBP{DefaultSBPType}, N; kwargs...)
     RefElemData(elem, SBP{Kubatko{LobattoFaceNodes}}(), N; kwargs...)
+end
+
+# sets default to SummationByPartsDiagE{LobattoFaceNodes} on Tets
+function RefElemData(elem::Tet, approxT::SBP{DefaultSBPType}, N; kwargs...)
+    RefElemData(elem, SBP(SummationByPartsDiagE{LobattoFaceNodes}()), N; kwargs...)
 end
 
 # ====================================
