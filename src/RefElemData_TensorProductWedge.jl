@@ -128,13 +128,17 @@ function RefElemData(elem::Wedge, approximation_type::TensorProductWedge; kwargs
         end
     end
 
+    # brute-force determine Fmask so that rf = r[Fmask], etc. An absolute tolerance
+    # is used since face nodes on the r + s = 0 face can lie at the origin.
     if tri.approximation_type isa SBP &&
        (line.approximation_type isa SBP || isnothing(line.VDM))
-        Fmask = []
-        for i in eachindex(rf)
-            for j in eachindex(r)
-                if Vf[i, j] != 0
-                    push!(Fmask, j)
+        Fmask = zeros(Int, length(rf))
+        for fid in eachindex(rf)
+            rstf_node = SVector(getindex.(rstf, fid))
+            for i in eachindex(r)
+                if isapprox(rstf_node, SVector(r[i], s[i], t[i]); atol = 100 * eps())
+                    Fmask[fid] = i
+                    break
                 end
             end
         end
