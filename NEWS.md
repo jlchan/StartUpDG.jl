@@ -2,7 +2,15 @@
 
 StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https://julialang.github.io/Pkg.jl/dev/compatibility/#Version-specifier-format-1) used in the Julia ecosystem. Recent changes will be documented in this file for human readability.
 
-## Changes when updating to v1.4.2
+## Changes when updating to v1.5.0
+
+#### Added
+
+* `TensorProductWedge` now supports all combinations of `Polynomial` and `SBP` triangles with `Polynomial`, `SBP`, or SummationByPartsOperators.jl lines. Previously, using an `SBP` triangle resulted in an error ([#217](https://github.com/jlchan/StartUpDG.jl/pull/217)).
+
+#### Changed
+
+* For `RefElemData` built from a `TensorProductWedge` (experimental), `rd.Fmask` is now a flat vector of node indices, consistent with other element types, instead of a tuple of per-face index vectors. For wedges built from `SBP` triangles and lines, `rd.Fmask` is ordered so that `rd.rf == rd.r[rd.Fmask]`. `rd.Vf` is now a sparse matrix ([#217](https://github.com/jlchan/StartUpDG.jl/pull/217)).
 
 #### Fixed
 
