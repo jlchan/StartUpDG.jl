@@ -54,6 +54,41 @@
         @test rd.Pq * rd.Vq ≈ I
         @test StartUpDG.eigenvalue_inverse_trace_constant(rd) ≈ inverse_trace_constant(rd)
     end
+
+    @testset "TensorProductWedge with $tri_type triangle" for tri_type in [
+        SBP(),
+        Polynomial()
+    ]
+        line = RefElemData(Line(), D)
+        tri = RefElemData(Tri(), tri_type, N)
+        rd = RefElemData(Wedge(), TensorProductWedge(tri, line))
+        @test rd.Np == length(rd.r) == tri.Np * line.Np
+        @test rd.Nq == length(rd.rq) == tri.Nq * line.Nq
+        @test abs(sum(rd.wq)) ≈ 4
+        @test abs(sum(rd.wf)) ≈ 3 * 4 + 2 * 2
+        @test abs(sum(rd.wf .* rd.nrJ)) < tol
+        @test abs(sum(rd.wf .* rd.nsJ)) < tol
+        @test abs(sum(rd.wf .* rd.ntJ)) < tol
+        @test rd.Pq * rd.Vq ≈ I
+        @test all(rd.rstq .≈ (x -> rd.Vq * x).(rd.rst))
+        @test all(rd.rstf .≈ (x -> rd.Vf * x).(rd.rst))
+        @test rd.Dr * rd.r ≈ ones(rd.Np)
+        @test rd.Ds * rd.s ≈ ones(rd.Np)
+        @test rd.Dt * rd.t ≈ ones(rd.Np)
+        if tri_type isa SBP
+            # `Vf` should be consistent with the flattened `Fmask`
+            @test all(vec.(rd.rstf) .≈ (x -> getindex(x, rd.Fmask)).(rd.rst))
+            u = randn(rd.Np)
+            @test rd.Vf * u ≈ u[rd.Fmask]
+        end
+
+        md = MeshData(uniform_mesh(Wedge(), 2)..., rd)
+        @test all(md.J .> 0)
+        @test sum(md.wJq) ≈ 8
+        @test rd.Vf * md.x ≈ md.xf
+        uf = rd.Vf * md.x
+        @test uf ≈ uf[md.mapP]
+    end
 end
 
 @testset "SummationByPartsOperators ext tests for periodic operators" begin

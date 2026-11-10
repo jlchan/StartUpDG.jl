@@ -6,14 +6,15 @@ StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https:
 
 #### Added
 
-* Added a package extension for [SummationByParts.jl](https://github.com/OptimalDesignLab/SummationByParts.jl) and a new `SummationByPartsDiagE{FaceNodeType}` SBP type. When SummationByParts.jl is loaded, `RefElemData(Tri(), SBP(SummationByPartsDiagE{LobattoFaceNodes}()), N)` (or with `LegendreFaceNodes`) constructs diagonal-E SBP operators from cubature rules generated on demand, with an optional `quadrature_degree` keyword argument (defaults to `2N-1`).
-* Added support for SBP `RefElemData` on `Tet()` elements via `SummationByPartsDiagE{LobattoFaceNodes}`. `RefElemData(Tet(), SBP(), N)` now defaults to this type.
+* `TensorProductWedge` now supports all combinations of `Polynomial` and `SBP` triangles with `Polynomial`, `SBP`, or SummationByPartsOperators.jl lines. Previously, using an `SBP` triangle resulted in an error ([#217](https://github.com/jlchan/StartUpDG.jl/pull/217)).
+* Added a package extension for [SummationByParts.jl](https://github.com/OptimalDesignLab/SummationByParts.jl) and a new `SummationByPartsDiagE{FaceNodeType}` SBP type. When SummationByParts.jl is loaded, `RefElemData(Tri(), SBP(SummationByPartsDiagE{LobattoFaceNodes}()), N)` (or with `LegendreFaceNodes`) constructs diagonal-E SBP operators from cubature rules generated on demand, with an optional `quadrature_degree` keyword argument (defaults to `2N-1`) ([#231](https://github.com/jlchan/StartUpDG.jl/pull/231)).
+* Added support for SBP `RefElemData` on `Tet()` elements via `SummationByPartsDiagE{LobattoFaceNodes}`. `RefElemData(Tet(), SBP(), N)` now defaults to this type ([#231](https://github.com/jlchan/StartUpDG.jl/pull/231)).
 
 #### Changed
 
-* `SBP{T}` now stores its type parameter as a field `data::T`, mirroring `Polynomial{T}`. Both `SBP{T}()` and `SBP(T())` construct an `SBP{T}`, so existing code (e.g., `SBP{Hicken}()`) is unaffected. 
-* `inverse_trace_constant` for SBP types without tabulated constants now falls back to an eigenvalue computation.
-## Changes when updating to v1.4.2
+* For `RefElemData` built from a `TensorProductWedge` (experimental), `rd.Fmask` is now a flat vector of node indices, consistent with other element types, instead of a tuple of per-face index vectors. For wedges built from `SBP` triangles and lines, `rd.Fmask` is ordered so that `rd.rf == rd.r[rd.Fmask]`. `rd.Vf` is now a sparse matrix ([#217](https://github.com/jlchan/StartUpDG.jl/pull/217)).
+* `SBP{T}` now stores its type parameter as a field `data::T`, mirroring `Polynomial{T}`. Both `SBP{T}()` and `SBP(T())` construct an `SBP{T}`, so existing code (e.g., `SBP{Hicken}()`) is unaffected ([#231](https://github.com/jlchan/StartUpDG.jl/pull/231)).
+* `inverse_trace_constant` for SBP types without tabulated constants now falls back to an eigenvalue computation ([#231](https://github.com/jlchan/StartUpDG.jl/pull/231)).
 
 #### Fixed
 

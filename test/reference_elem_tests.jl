@@ -311,6 +311,21 @@ end
                   inverse_trace_constant_compare(rd)[line_grad][tri_grad]
         end
     end
+
+    @testset "SBP wedge: Fmask consistent with Vf" begin
+        @testset "Degree $tri_grad triangle" for tri_grad in [1, 2, 3]
+            @testset "Degree $line_grad line" for line_grad in [1, 2, 3]
+                line = RefElemData(Line(), SBP(), line_grad)
+                tri = RefElemData(Tri(), SBP(), tri_grad)
+                rd = RefElemData(Wedge(), TensorProductWedge(tri, line))
+
+                @test length(rd.Fmask) == length(rd.rf)
+                @test all(vec.(rd.rstf) .≈ (x -> getindex(x, rd.Fmask)).(rd.rst))
+                u = randn(rd.Np)
+                @test rd.Vf * u ≈ u[rd.Fmask]
+            end
+        end
+    end
 end
 
 @testset "TensorProductQuadrature matches MultidimensionalQuadrature" begin
