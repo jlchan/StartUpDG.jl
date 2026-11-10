@@ -15,6 +15,7 @@ StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https:
 * For `RefElemData` built from a `TensorProductWedge` (experimental), `rd.Fmask` is now a flat vector of node indices, consistent with other element types, instead of a tuple of per-face index vectors. For wedges built from `SBP` triangles and lines, `rd.Fmask` is ordered so that `rd.rf == rd.r[rd.Fmask]`. `rd.Vf` is now a sparse matrix ([#217](https://github.com/jlchan/StartUpDG.jl/pull/217)).
 * `SBP{T}` now stores its type parameter as a field `data::T`, mirroring `Polynomial{T}`. Both `SBP{T}()` and `SBP(T())` construct an `SBP{T}`, so existing code (e.g., `SBP{Hicken}()`) is unaffected ([#231](https://github.com/jlchan/StartUpDG.jl/pull/231)).
 * `inverse_trace_constant` for SBP types without tabulated constants now falls back to an eigenvalue computation ([#231](https://github.com/jlchan/StartUpDG.jl/pull/231)).
+* The minimum supported Julia version is now 1.10. This matches the Julia requirement of the supported RecursiveArrayTools.jl versions (v3.8 and later), so StartUpDG.jl could not be installed on earlier Julia versions anyway.
 
 #### Fixed
 
