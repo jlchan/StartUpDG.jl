@@ -76,6 +76,15 @@
 
             md = MeshData(uniform_mesh(Line(), K1D)..., rd; is_periodic = true)
             @test isempty(md.mapB)
+
+            # 1D periodicity can also be specified as a tuple
+            md_tuple = MeshData(uniform_mesh(Line(), K1D)..., rd; is_periodic = (true,))
+            @test md_tuple.mapP == md.mapP
+            @test md_tuple.FToF == md.FToF
+            @test isempty(md_tuple.mapB)
+            @test md_tuple.is_periodic == (true,)
+            md_tuple = make_periodic(MeshData(uniform_mesh(Line(), K1D)..., rd), (true,))
+            @test md_tuple.mapP == md.mapP
         end
 
         @testset "2D tri mesh initialization" begin

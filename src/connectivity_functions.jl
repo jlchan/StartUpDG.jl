@@ -217,6 +217,11 @@ function make_periodic(md::MeshData{1, Tv, Ti}, is_periodic::Bool = true;
     end
 end
 
+# allows `is_periodic = (true,)` in 1D for consistency with 2D and 3D
+function make_periodic(md::MeshData{1}, is_periodic::Tuple{Bool}; kwargs...)
+    return make_periodic(md, only(is_periodic); kwargs...)
+end
+
 # Helper functions for `make_nodemaps_periodic!`, 2D version which modifies FToF.
 function build_periodic_boundary_maps!(xf, yf, is_periodic_x, is_periodic_y,
                                        NfacesTotal, mapM, mapP, mapB, FToF;
