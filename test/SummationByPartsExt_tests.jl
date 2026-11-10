@@ -8,7 +8,6 @@
         @test SBP{TensorProductLobatto}() isa SBP{TensorProductLobatto}
         approx_type = SBP(SummationByPartsDiagE{LobattoFaceNodes}())
         @test approx_type.data.quadrature_degree === nothing
-        @test approx_type.data.tol == 100 * eps()
     end
 
     # checks the SBP property Q + Q' = E' * B * E for each coordinate direction

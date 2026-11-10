@@ -175,13 +175,13 @@ end
 # is accurate enough for a degree N SBP operator.
 function _resolve_quadrature_degree(approxType::SBP{<:SummationByPartsDiagE{F}},
                                     N) where {F}
-    (; quadrature_degree, tol) = approxType.data
+    (; quadrature_degree) = approxType.data
     q = something(quadrature_degree, 2 * N - 1)
     if q < 2 * N - 1
         throw(ArgumentError("`quadrature_degree = $q` is too small for a degree N = $N SBP operator; " *
                             "`quadrature_degree` must be at least 2N-1 = $(2 * N - 1)."))
     end
-    return q, SBP(SummationByPartsDiagE{F}(; quadrature_degree = q, tol))
+    return q, SBP(SummationByPartsDiagE{F}(; quadrature_degree = q))
 end
 
 # Determines the indices of face nodes among the volume nodes by matching coordinates.

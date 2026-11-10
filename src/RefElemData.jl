@@ -265,7 +265,7 @@ struct LegendreFaceNodes end
 struct LobattoFaceNodes end
 
 """
-    SummationByPartsDiagE{FaceNodeType}(; quadrature_degree = nothing, tol = 100 * eps())
+    SummationByPartsDiagE{FaceNodeType}(; quadrature_degree = nothing)
 
 Diagonal-E SBP nodes generated on demand by
 [SummationByParts.jl](https://github.com/OptimalDesignLab/SummationByParts.jl). Using this type
@@ -275,7 +275,7 @@ requires loading SummationByParts.jl first (e.g., `using SummationByParts`).
 (face nodes are interior to each face). Only `LobattoFaceNodes` is supported on `Tet()` elements.
 
 `quadrature_degree` is the degree of exactness of the volume cubature rule. If `nothing`, it
-defaults to `2N-1`. `tol` is passed to SummationByParts.jl when refining the cubature rule.
+defaults to `2N-1`.
 
 Example:
 ```julia
@@ -287,7 +287,6 @@ rd = RefElemData(Tet(), SBP(SummationByPartsDiagE{LobattoFaceNodes}()), N)
 """
 Base.@kwdef struct SummationByPartsDiagE{FaceNodeType}
     quadrature_degree::Union{Int, Nothing} = nothing # `nothing` defaults to 2N-1 at construction
-    tol::Float64 = 100 * eps()
 end
 
 """

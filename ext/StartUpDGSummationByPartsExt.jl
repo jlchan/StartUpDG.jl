@@ -20,9 +20,8 @@ function StartUpDG.diagE_sbp_nodes(::Tri, approxType::SBP{<:SummationByPartsDiag
                                    N) where {F}
     q, approxType = StartUpDG._resolve_quadrature_degree(approxType, N)
     vertices = _include_vertices(F)
-    (; tol) = approxType.data
 
-    cub, vtx = Cubature.getTriCubatureDiagE(q, Float64; vertices, tol)
+    cub, vtx = Cubature.getTriCubatureDiagE(q, Float64; vertices)
     nodes = SymCubatures.calcnodes(cub, vtx) # 2 x num_nodes matrix
     r, s = nodes[1, :], nodes[2, :]
     w = SymCubatures.calcweights(cub)
@@ -43,17 +42,15 @@ function StartUpDG.diagE_sbp_nodes(::Tet, approxType::SBP{<:SummationByPartsDiag
         throw(ArgumentError("`SummationByPartsDiagE{$F}` is not supported on `Tet()` " *
                             "elements; use `SummationByPartsDiagE{LobattoFaceNodes}` instead."))
     q, approxType = StartUpDG._resolve_quadrature_degree(approxType, N)
-    (; tol) = approxType.data
 
-    cub, vtx = Cubature.getTetCubatureDiagE(q, Float64; faceopertype = :DiagE, tol)
+    cub, vtx = Cubature.getTetCubatureDiagE(q, Float64; faceopertype = :DiagE)
     nodes = SymCubatures.calcnodes(cub, vtx) # 3 x num_nodes matrix
     r, s, t = nodes[1, :], nodes[2, :], nodes[3, :]
     w = SymCubatures.calcweights(cub)
 
     # The tet DiagE rule of degree q pairs with the face rule of degree q rounded up to even,
     # which is exactly what getTriCubatureForTetFaceDiagE(q) returns.
-    # Note: tol seems to be overwritten with default_tol(T) in Cubature.    
-    face_cub, face_vtx = Cubature.getTriCubatureForTetFaceDiagE(q, Float64; tol)
+    face_cub, face_vtx = Cubature.getTriCubatureForTetFaceDiagE(q, Float64)
     @assert face_cub.numnodes == SymCubatures.getnumfacenodes(cub)
 
     face_nodes = SymCubatures.calcnodes(face_cub, face_vtx) # 2 x num_face_nodes matrix

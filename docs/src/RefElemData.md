@@ -117,7 +117,7 @@ rd = RefElemData(Tri(), SBP(SummationByPartsDiagE{LobattoFaceNodes}(quadrature_d
 rd = RefElemData(Tet(), SBP(), N) # defaults to SBP(SummationByPartsDiagE{LobattoFaceNodes}())
 rd = RefElemData(Tet(), SBP(SummationByPartsDiagE{LobattoFaceNodes}(quadrature_degree = 2 * N)), N)
 ```
-The `quadrature_degree` keyword argument specifies the degree of exactness of the volume quadrature rule. It defaults to `2N-1` and must be at least `2N-1`; the value used is stored in `rd.approximation_type.data.quadrature_degree`. The `tol` keyword argument is passed to SummationByParts.jl when computing the cubature rule. Triangular rules are available up to quadrature degree 20 and tetrahedral rules up to quadrature degree 10. On tetrahedra, only `LobattoFaceNodes` (i.e., face nodes which include vertices and edge nodes) are supported. 
+The `quadrature_degree` keyword argument specifies the degree of exactness of the volume quadrature rule. It defaults to `2N-1` and must be at least `2N-1`; the value used is stored in `rd.approximation_type.data.quadrature_degree`. Triangular rules are available up to quadrature degree 20 and tetrahedral rules up to quadrature degree 10. On tetrahedra, only `LobattoFaceNodes` (i.e., face nodes which include vertices and edge nodes) are supported. 
 
 On triangles, we have the following SBP types with the following properties:
 * `SBP{Kubatko{LobattoFaceNodes}}`: degree `2N-1` accurate quadrature rules with `N+2` Lobatto nodes on each face. Nodes for `N=4`: 
