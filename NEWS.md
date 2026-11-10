@@ -2,6 +2,12 @@
 
 StartUpDG.jl follows the interpretation of [semantic versioning (semver)](https://julialang.github.io/Pkg.jl/dev/compatibility/#Version-specifier-format-1) used in the Julia ecosystem. Recent changes will be documented in this file for human readability.
 
+## Changes when updating to v1.5.1
+
+#### Fixed
+
+* 1D `MeshData` and `make_periodic` now accept `is_periodic = (true,)`, consistent with 2D and 3D. Previously, only `is_periodic = true` worked in 1D, and passing a tuple resulted in a `MethodError`.
+
 ## Changes when updating to v1.5.0
 
 #### Added
