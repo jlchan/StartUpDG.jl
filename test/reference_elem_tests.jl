@@ -375,6 +375,8 @@ end
     rd = RefElemData(Tri(), Polynomial(CollapsedGaussSBP()), N)
     (; Qr, Qs, R, V) = rd.approximation_type.data
 
+    @test StartUpDG._short_typeof(rd.approximation_type) == "Polynomial{CollapsedGaussSBP}"
+
     # Check that the quadrature rules have the expected number of points
     @test length(rd.wq) == (N + 1)^2
     @test length(rd.wf) == 3 * (N + 1)
