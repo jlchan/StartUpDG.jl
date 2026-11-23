@@ -496,6 +496,48 @@ function RefElemData(elem::Union{Tri, Tet, Pyr},
     return rd
 end
 
+function RefElemData(elem::Tri, ::Polynomial{<:CollapsedGaussSBP}, N; Nplot = 10)
+    z, w = gauss_quad(0, 0, N)
+    n = length(z)
+
+    # Map the product grid to the triangle with the second coordinate varying fastest.
+    a, b = vec.(meshgrid(z, z))
+    jacobian = @. (1 - z) / 2
+    rq = @. (1 + a) * (1 - b) / 2 - 1
+    sq = b
+    wq = kron(w, jacobian .* w)
+
+    # Create a standard RefElemData object with the computed quadrature rules.
+    rd = RefElemData(elem, Polynomial{MultidimensionalQuadrature}(), N;
+                     quad_rule_vol = (rq, sq, wq), quad_rule_face = (z, w), Nplot)
+
+    # Construct 1D operators
+    V1D = vandermonde(Line(), N, z)
+    D1D = grad_vandermonde(Line(), N, z) / V1D
+    W1D = sparse(Diagonal(w))
+    WD1D = sparse(Diagonal(w) * D1D)
+
+    # Use the chain rule and absorb its Jacobian into the weighted derivatives
+    Qr = kron(WD1D, W1D)
+    Qs = Diagonal((1 .+ a) ./ 2) * Qr +
+         kron(W1D, Diagonal(jacobian) * WD1D)
+
+    # Extrapolate along coordinate lines in StartUpDG's face order.
+    endpoints = vandermonde(Line(), N, [-1.0, 1.0]) / V1D
+    left = sparse(endpoints[1:1, :])
+    right = sparse(endpoints[2:2, :])
+    I1D = sparse(I, n, n)
+    # StartUpDG traverses face 3 in decreasing s.
+    R = [kron(I1D, left);
+         kron(right, I1D);
+         kron(left, I1D)[n:-1:1, :]]
+
+    V = vandermonde(elem, N, rq, sq)
+
+    # Replace the `data` field in Polynomial with the specialized operators.
+    return @set rd.approximation_type = Polynomial(CollapsedGaussSBP(Qr, Qs, R, V))
+end
+
 function RefElemData(elem::Union{Wedge},
                      approx_type::Polynomial{<:TensorProductQuadrature}, N;
                      quad_rule_tri = stroud_quad_nodes(Tri(), 2 * N),

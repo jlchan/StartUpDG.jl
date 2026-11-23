@@ -1,3 +1,5 @@
+using SparseArrays: issparse
+
 # some code not tested to avoid redundancy from tests in NodesAndModes.
 @testset "Reference elements" begin
     tol = 5e2 * eps()
@@ -366,6 +368,43 @@ end
         @test size(rd.Vq, 1) == size(rd.Vq, 2)
         @test length(rd.wq) == (N + 1)^ndims(element_type)
     end
+end
+
+@testset "Tensor-product Legendre-Gauss SBP operators on the triangle" begin
+    N = 3
+    rd = RefElemData(Tri(), Polynomial(CollapsedGaussSBP()), N)
+    (; Qr, Qs, R, V) = rd.approximation_type.data
+
+    # Check that the quadrature rules have the expected number of points
+    @test length(rd.wq) == (N + 1)^2
+    @test length(rd.wf) == 3 * (N + 1)
+
+    # Check polynomial exactness of facet interpolation
+    @test R * rd.Vq ≈ rd.Vf
+
+    # Check polynomial exactness of volume differentiation
+    Vrq, Vsq = grad_vandermonde(rd.element_type, N, rd.rstq...)
+    Wq = Diagonal(rd.wq)
+    @test Qr * V ≈ Wq * Vrq && Qs * V ≈ Wq * Vsq
+
+    # Check the SBP property of the volume operators
+    br = rd.wf .* rd.nrJ
+    bs = rd.wf .* rd.nsJ
+    @test Qr + Qr' ≈ R' * Diagonal(br) * R && Qs + Qs' ≈ R' * Diagonal(bs) * R
+
+    # Check that the hybridized collapsed tensor-product operators are sparse and that
+    # they satisfy the appropriate SBP-like property (Chan, JCP 2018, Theorem 1).
+    (Qrh, Qsh), _, _, _ = hybridized_SBP_operators(rd)
+    volume_zeros = zeros(eltype(rd.wq), rd.Nq)
+    Brh = Diagonal([volume_zeros; br])
+    Bsh = Diagonal([volume_zeros; bs])
+    @test issparse(Qrh) && issparse(Qsh) && Qrh + Qrh' ≈ Brh && Qsh + Qsh' ≈ Bsh
+
+    # Check that the hybridized operators annihilate constants
+    constant = ones(eltype(rd.wq), rd.Nq + rd.Nfq)
+    tol = 5e2 * eps(eltype(rd.wq)) # since comparisons to zero default to exact equality
+    residuals = [Qrh * constant Qsh * constant]
+    @test residuals≈zero(residuals) atol=tol
 end
 
 @testset "RefElemData SBP keyword arguments" begin
