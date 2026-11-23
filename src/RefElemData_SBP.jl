@@ -230,10 +230,20 @@ end
 Constructs hybridized SBP operators given a `RefElemData`. Returns operators `Qrsth..., VhP, Ph`.
 """
 function hybridized_SBP_operators(rd)
-    (; M, Vq, Pq, Vf, wf, Drst, nrstJ) = rd
+    (; M, Pq, Vf, Drst) = rd
     Qrst = (D -> Pq' * M * D * Pq).(Drst)
-    Ef = Vf * Pq
-    Brst = (nJ -> diagm(wf .* nJ)).(nrstJ)
+    return hybridized_SBP_operators(rd, Qrst, Vf * Pq)
+end
+
+function hybridized_SBP_operators(rd::RefElemData{2, Tri,
+                                                  <:Polynomial{<:CollapsedGaussSBP}})
+    (; Qr, Qs, R) = rd.approximation_type.data
+    return hybridized_SBP_operators(rd, (Qr, Qs), R)
+end
+
+function hybridized_SBP_operators(rd, Qrst, Ef)
+    (; M, Vq, Pq, Vf, wf, nrstJ) = rd
+    Brst = (nJ -> Diagonal(wf .* nJ)).(nrstJ)
     Qrsth = ((Q, B) -> 0.5 * [Q-Q' Ef'*B; -B*Ef B]).(Qrst, Brst)
     Vh = [Vq; Vf]
     Ph = M \ transpose(Vh)

@@ -249,6 +249,27 @@ Polynomial{TensorProductGaussCollocation} type indicates a tensor product
 struct TensorProductGaussCollocation end
 const Gauss = TensorProductGaussCollocation
 
+"""
+    CollapsedGaussSBP
+
+Polynomial approximation on triangles with tensor-product Legendre-Gauss quadrature in
+collapsed coordinates, using sparse SBP operators following the construction of
+[Montoya and Zingg (2024)](https://doi.org/10.1137/23M1573963).
+
+The `rd.approximation_type.data` field stores the weighted volume derivatives `Qr` and
+`Qs`, the volume-to-face extrapolation `R`, and the modal Vandermonde `V` at the volume
+quadrature nodes.
+"""
+struct CollapsedGaussSBP{SparseMatrixType, VandermondeType}
+    Qr::SparseMatrixType
+    Qs::SparseMatrixType
+    R::SparseMatrixType
+    V::VandermondeType
+end
+
+# Allow construction without building the operators first
+CollapsedGaussSBP() = CollapsedGaussSBP(nothing, nothing, nothing, nothing)
+
 # ========= SBP approximation types ============
 
 struct DefaultSBPType end
@@ -353,6 +374,8 @@ _short_typeof(approx_type::Polynomial{<:MultidimensionalQuadrature}) = "Polynomi
 function _short_typeof(approx_type::Polynomial{<:TensorProductGaussCollocation})
     "Polynomial{Gauss}"
 end
+_short_typeof(::Polynomial{<:CollapsedGaussSBP}) = "Polynomial{CollapsedGaussSBP}"
+
 function _short_typeof(approx_type::Polynomial{<:TensorProductQuadrature})
     "Polynomial{TensorProductQuadrature}"
 end
