@@ -356,6 +356,22 @@ end
     end
 end
 
+@testset "Plotting interpolation matrix Vp is consistent with plotting nodes rstp" begin
+    for elem in (Quad(), Hex()),
+        approx_type in (Polynomial(), Polynomial{Gauss}(),
+                        Polynomial{MultidimensionalQuadrature}(), SBP()),
+        N in 2:8,
+        Nplot in (N + 1):(2 * N)
+
+        # skip expensive high-degree Hex cases
+        (elem isa Hex && N > 4) && continue
+
+        rd = RefElemData(elem, approx_type, N; Nplot)
+        Vp = vandermonde(elem, N, rd.rstp...) / vandermonde(elem, N, rd.rst...)
+        @test rd.Vp ≈ Vp
+    end
+end
+
 @testset "Tensor product Gauss collocation" begin
     N = 3
     @testset "element_type = $element_type" for element_type in [Line(), Quad(), Hex()]

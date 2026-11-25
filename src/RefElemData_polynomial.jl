@@ -374,7 +374,10 @@ function RefElemData(elem::Quad,
     rp1D = LinRange(-1, 1, Nplot + 1)
     Vp1D = vandermonde(Line(), N, rp1D) / VDM_1D
     Vp = kron(Vp1D, Vp1D)
-    rp, sp = vec.(StartUpDG.NodesAndModes.meshgrid(rp1D, rp1D))
+    # `meshgrid` returns `(X, Y)` where `vec(Y)` varies fastest. The rows of `kron(Vp1D, Vp1D)`
+    # are ordered such that `r` varies fastest (consistent with `rd.rst` and `rd.rstq`), so we 
+    # assign `rp` from the second output of `meshgrid` to keep `rd.rstp` consistent with `rd.Vp`.
+    sp, rp = vec.(StartUpDG.NodesAndModes.meshgrid(rp1D, rp1D))
 
     return RefElemData(elem, approximation_type, N, fv, V1,
                        tuple(r, s), VDM, vec(Fmask),
