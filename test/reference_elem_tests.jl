@@ -357,12 +357,16 @@ end
 end
 
 @testset "Plotting interpolation matrix Vp is consistent with plotting nodes rstp" begin
-    N = 3
     for elem in (Quad(), Hex()),
         approx_type in (Polynomial(), Polynomial{Gauss}(),
-                        Polynomial{MultidimensionalQuadrature}(), SBP())
+                        Polynomial{MultidimensionalQuadrature}(), SBP()),
+        N in 2:8,
+        Nplot in (N + 1):(2 * N)
 
-        rd = RefElemData(elem, approx_type, N; Nplot = 4)
+        # skip expensive high-degree Hex cases
+        (elem isa Hex && N > 4) && continue
+
+        rd = RefElemData(elem, approx_type, N; Nplot)
         Vp = vandermonde(elem, N, rd.rstp...) / vandermonde(elem, N, rd.rst...)
         @test rd.Vp ≈ Vp
     end
